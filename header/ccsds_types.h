@@ -2,67 +2,62 @@
 #define CCSDS_H_INCLUDED
 
 #define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
+#define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH 10+4
-#define CCSDS_TELECOMMAND_MAX_PACKET_LENGTH 248
-#define CCSDS_PROCESS_ID 11
+#define CCSDS_TC_PKT_MAX_SIZE 248
+#define CCSDS_TC_TM_PACKET_OFFSET 7
+#define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
+#define CCSDS_DESTINATION_ID 0x21
 
-#define CCSDS_ERR_PID -1
-#define CCSDS_ERR_CAT -2
-#define CCSDS_ERR_LENGTH -3
-#define CCSDS_ERR_TYPE -4
-#define CCSDS_ERR_SUBTYPE -5
-#define CCSDS_ERR_SRC -6
-#define CCSDS_ERR_CRC -7
-#define CCSDS_TM_VALID 1
+#define SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED 24
+#define SIZE_TM_LFR_TC_EXE_CORRUPTED 32
 
-struct ccsdsTelemetrySourcePacketHeader_str
+#define ILLEGAL_APID 0
+#define WRONG_LEN_PACKET 1
+#define INCOR_CHECKSUM 2
+#define ILL_TYPE 3
+#define ILL_SUBTYPE 4
+#define WRONG_APP_DATA 5
+#define WRONG_CMD_CODE 6
+#define CCSDS_TM_VALID 7
+//
+#define TC_NOT_EXE 40000
+#define WRONG_SRC_ID 40001
+#define FUNCT_NOT_IMPL 40002
+#define FAIL_DETECTED 40003
+#define NOT_ALLOWED 40004
+#define CORRUPTED 40005
+//
+#define CCSDS_ERR_SRC 8
+#define CCSDS_ERR_CAT 9
+
+struct ccsdsTelemetryPacket_str
 {
-    unsigned char targetLogicalAddress;
-    unsigned char protocolIdentifier;
-    unsigned char reserved;
-    unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
-    unsigned char dataFieldHeader[10];
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char data[CCSDS_TM_PKT_MAX_SIZE-16];
 };
-typedef struct ccsdsTelemetrySourcePacketHeader_str ccsdsTelemetrySourcePacketHeader_t;
+typedef struct ccsdsTelemetryPacket_str ccsdsTelemetryPacket_t;
 
-struct ccsdsTelecommandSourcePacketHeader_str
+struct ccsdsTelecommandPacket_str
 {
-    unsigned char targetLogicalAddress;
-    unsigned char protocolIdentifier;
-    unsigned char reserved;
-    unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
-    unsigned char dataFieldHeader[4];
+    //unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[4];
+    volatile unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
 };
-typedef struct ccsdsTelemetrySourcePacketHeader_str ccsdsTelecommandSourcePacketHeader_t;
-
-// initialize the ccsds telemetry header
-ccsdsTelemetrySourcePacketHeader_t ccsdsTelemetryHeader;
-#define INIT_CCSDS_TELEMETRY_HEADER ccsdsTelemetryHeader.targetLogicalAddress = 0x21; \
-ccsdsTelemetryHeader.protocolIdentifier = 0x02; \
-ccsdsTelemetryHeader.reserved = 0x00; \
-ccsdsTelemetryHeader.userApplication = 0x00; \
-ccsdsTelemetryHeader.packetID[0] = 0x08; \
-ccsdsTelemetryHeader.packetID[1] = 0xbc; \
-ccsdsTelemetryHeader.packetSequenceControl[0] = 0xc0; \
-ccsdsTelemetryHeader.packetSequenceControl[1] = 0x00; \
-ccsdsTelemetryHeader.packetLength[0] = 0x00; \
-ccsdsTelemetryHeader.packetLength[1] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[0] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[1] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[2] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[3] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[4] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[5] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[6] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[7] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[8] = 0x00; \
-ccsdsTelemetryHeader.dataFieldHeader[9] = 0x00;
+typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;
 
 #endif // CCSDS_H_INCLUDED

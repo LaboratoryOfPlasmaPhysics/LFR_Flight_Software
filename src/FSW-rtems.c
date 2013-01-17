@@ -2,20 +2,18 @@
 // GPL reminder to be added
 //*************************
 
-#define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
+//#define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
 #ifdef PRINT_MESSAGES_ON_CONSOLE
 #define PRINTF(x) printf(x);
 #define PRINTF1(x,y) printf(x,y);
 #define PRINTF2(x,y,z) printf(x,y,z);
 #else
-#define PRINTF(x)
-#define PRINTF1(x,y)
-#define PRINTF2(x,y,z)
+#define PRINTF(x) ;
+#define PRINTF1(x,y) ;
+#define PRINTF2(x,y,z) ;
 #endif
 
-#define CCSDS_TC_PKT_MAX_SIZE 500 // 248
-#define CCSDS_TM_PKT_MAX_SIZE 4412
-#define OFFSET_COARSE_TIME 4+10-1 // -1 => the receiver suppressed the target logical address
+#define OFFSET_COARSE_TIME 4+10-1 // -1 => the receiver suppresses the target logical address
 #define OFFSET_FINE_TIME OFFSET_COARSE_TIME+4
 #define TC_FIFO_SIZE 5
 
@@ -72,7 +70,22 @@
 #include <FSW-config.c>
 #include <grspw.h>
 #include <apbuart.h>
+#include <TC_handler.h>
 #include <FSW-rtems-processing.h>
+
+char *errorCCSDSMsg[8] = { "ILLEGAL_APID 0",
+                            "WRONG_LEN_PACKET 1",
+                            "INCOR_CHECKSUM 2",
+                            "ILL_TYPE 3",
+                            "ILL_SUBTYPE 4",
+                            "WRONG_APP_DATA 5",
+                            "WRONG_CMD_CODE 6",
+                            "CCSDS_TM_VALID 7"
+};
+
+char *tmGeneratorMsg[2] = { "NOTHING_TO_DO",
+                            "TM_GENERATED"
+};
 
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
 rtems_task spw_recv_task(rtems_task_argument argument);
@@ -124,8 +137,7 @@ rtems_id sem_tc_fifo_id;
 
 rtems_task Init( rtems_task_argument ignored ) {
     rtems_status_code status;
-    struct apbuart_regs_str *apbuart_regs;
-    int i;
+    //struct apbuart_regs_str *apbuart_regs;
     rtems_isr_entry old_isr_handler;
 
     Task_name[1] = rtems_build_name( 'R', 'E', 'C', 'V' );
@@ -190,27 +202,18 @@ rtems_task Init( rtems_task_argument ignored ) {
 
     //********************************************
     // Send the console outputs on the serial port
-    apbuart_regs = (struct apbuart_regs_str *) ADDRESS_APBUART_REGISTERS;
-    apbuart_regs->ctrl = apbuart_regs->ctrl & APBUART_CTRL_REG_MASK_DB;
-    PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
+    //apbuart_regs = (struct apbuart_regs_str *) ADDRESS_APBUART_REGISTERS;
+    //apbuart_regs->ctrl = apbuart_regs->ctrl & APBUART_CTRL_REG_MASK_DB;
+    //PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
     //
     //********************************************
 
     configure_spw_link();
 
-    for (i = 0; i<TC_FIFO_SIZE; i++){
-        if (i==TC_FIFO_SIZE-1) tc_fifo[i].next = &tc_fifo[0];
-        else tc_fifo[i].next = &tc_fifo[i+1];
-        tc_fifo[i].tc_pkt = (unsigned char *) malloc(CCSDS_TC_PKT_MAX_SIZE);
-        tc_fifo[i].tc_pktlength = 0;
-        tc_fifo[i].ready = 0;
-    }
-
     status = rtems_interrupt_catch( spectral_matrices_isr, 0x1c, &old_isr_handler) ; // 0x1c comes from sparcv8.pdf p.76
     if (status==RTEMS_SUCCESSFUL) PRINTF("In INIT *** rtems_interrupt_catch successfullly configured\n")
 
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRICES );
-
 
     status = rtems_task_start( Task_id[2], spw_tcck_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_TCCK\n")
@@ -221,8 +224,8 @@ rtems_task Init( rtems_task_argument ignored ) {
     status = rtems_task_start( Task_id[1], spw_recv_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_RECV\n")
 
-    status = rtems_task_start( Task_id[4], spw_bppr_task_rate_monotonic, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPPR\n")
+    //status = rtems_task_start( Task_id[4], spw_bppr_task_rate_monotonic, 1 );
+    //if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPPR\n")
 
     status = rtems_task_start( Task_id[5], spw_stat_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_STAT\n")
@@ -233,10 +236,12 @@ rtems_task Init( rtems_task_argument ignored ) {
     status = rtems_task_start( Task_id[7], spw_bpf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPF0\n")
 
+    InitLookUpTableForCRC(); // in TC_handler.h
+
     status = rtems_task_delete(RTEMS_SELF);
 }
 
-rtems_task spw_recv_task( rtems_task_argument unused ) {
+rtems_task spw_recv_task_old( rtems_task_argument unused ) {
     rtems_status_code status;
     int len = 0;
     unsigned int i;
@@ -288,26 +293,66 @@ rtems_task spw_recv_task( rtems_task_argument unused ) {
     close(fdSPW);
 }
 
+rtems_task spw_recv_task( rtems_task_argument unused ) {
+    rtems_status_code status;
+    int len = 0;
+
+    PRINTF("In RECV BIS *** \n")
+
+    currentTC_processedFlag = 1; // reset the flag
+
+    while(1){
+        while(currentTC_processedFlag == 0) sched_yield();
+        len = read(fdSPW, (char*) &currentTC, CCSDS_TC_PKT_MAX_SIZE); // the call to read is blocking
+        if (len == -1){ // error during the read call
+            PRINTF("In RECV *** last read call returned -1\n")
+            if (rtems_event_send( Task_id[3], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL)
+                PRINTF("IN RECV *** Error: rtems_event_send SPW_LINKERR_EVENT\n")
+            if (rtems_task_suspend(RTEMS_SELF) != RTEMS_SUCCESSFUL)
+                PRINTF("In RECV *** Error: rtems_task_suspend(RTEMS_SELF)\n")
+        }
+        else {
+            currentTC_processedFlag = 0;
+            PRINTF1("In RECV *** Got Message of length %d\n", len)
+            currentTC_LEN_RCV[0] = 0x00;
+            currentTC_LEN_RCV[1] = (unsigned char) len - CCSDS_TC_TM_PACKET_OFFSET - 3; //  build the corresponding packet size field
+            currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) len - CCSDS_TC_TM_PACKET_OFFSET - 3; // => -3 is for Prot ID, Reserved and User App bytes
+            status = rtems_event_send( Task_id[2], RTEMS_EVENT_0 ); // sending an event to the task TCCK
+            if (status == RTEMS_INVALID_ID) PRINTF("IN TASK RECV *** invalid task id when sending RTEMS_EVENT_0\n")
+        }
+    }
+
+    close(fdSPW);
+}
+
 rtems_task spw_tcck_task( rtems_task_argument unused ) {
     rtems_status_code status;
     rtems_event_set event_out;
+    unsigned char result;
+    unsigned int code;
 
     PRINTF("In TCCK ***\n")
     while(1){
-        status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
+        status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an event to process a TC packet
         if (status == RTEMS_SUCCESSFUL)
         {
-            while(tc_being_processed->ready==1){
-                printf("In TCCK *** COARSE TIME 0x%x 0x%x 0x%x 0x%x FINE_TIME 0x%x 0x%x\n",
-                tc_being_processed->tc_pkt[OFFSET_COARSE_TIME],
-                tc_being_processed->tc_pkt[OFFSET_COARSE_TIME+1],
-                tc_being_processed->tc_pkt[OFFSET_COARSE_TIME+2],
-                tc_being_processed->tc_pkt[OFFSET_COARSE_TIME+3],
-                tc_being_processed->tc_pkt[OFFSET_FINE_TIME],
-                tc_being_processed->tc_pkt[OFFSET_FINE_TIME+1]);
-                tc_being_processed->ready = 0;
-                tc_being_processed = tc_being_processed->next;
+            GetCRCAsTwoBytes((unsigned char*)currentTC.packetID, currentTC_COMPUTED_CRC, currentTC_LEN_RCV_AsUnsignedInt + 5);
+            code = TM_checker(&currentTC);
+            PRINTF1("     %s\n", errorCCSDSMsg[code])
+            if (code == 7){     // if the TC is valid, the TM_LFR_TC_EXE_NOT_IMPLEMENTED packet is sent
+                result = TM_not_implemented_generator(&currentTC, &currentTM);
+                PRINTF1("     %s\n", tmGeneratorMsg[result])
+                result = write( fdSPW, (char*)&currentTM, currentTM_length );
+                if (result==-1) printf("IN TCCK *** error sending TM of size: %d\n", currentTM_length);
             }
+            else{               // if the TC is not valid, the TM_LFR_TC_EXE_CORRUPTED is sent
+                result =  TM_acceptance_generator(&currentTC, code, &currentTM);
+                PRINTF1("     %s\n", tmGeneratorMsg[result])
+                result = write( fdSPW, (char*)&currentTM, currentTM_length );
+                if (result==-1) printf("IN TCCK *** error sending TM of size: %d\n", currentTM_length);
+            }
+
+            currentTC_processedFlag = 1;
         }
     }
 }
@@ -374,14 +419,22 @@ int configure_spw_link()
     // sets a few parameters of the link
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RMAPEN, 1);      // sets the RMAP enable bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RMAPEN\n")
-    ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
-    ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[3]);    // sets the task ID to which an event is sent when a
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[3]);    // sets the task ID to which an event is sent when a
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
-    ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 1);          // automatic link-disabling due to link-error interrupts
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 1);          // automatic link-disabling due to link-error interrupts
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
-    ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    //
+    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destinatino key
+    //if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    //
     PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
 
     return RTEMS_SUCCESSFUL;
