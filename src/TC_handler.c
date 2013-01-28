@@ -1,4 +1,15 @@
 #include <TC_handler.h>
+#include <FSW-config.h>
+
+char *errorCCSDSMsg[8] = { "ILLEGAL_APID 0",
+                            "WRONG_LEN_PACKET 1",
+                            "INCOR_CHECKSUM 2",
+                            "ILL_TYPE 3",
+                            "ILL_SUBTYPE 4",
+                            "WRONG_APP_DATA 5",
+                            "WRONG_CMD_CODE 6",
+                            "CCSDS_TM_VALID 7"
+};
 
 unsigned int Crc_opt( unsigned char D, unsigned int Chk)
 {
@@ -23,7 +34,8 @@ void InitLookUpTableForCRC()
     }
 }
 
-void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData){
+void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData)
+{
     unsigned int Chk;
     int j;
     Chk = 0xffff; // reset the syndrom to all ones
@@ -34,7 +46,46 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
     crcAsTwoBytes[1] = (unsigned char) (Chk & 0x00ff);
 }
 
-unsigned char TM_checker(ccsdsTelecommandPacket_t * TMPacket)
+unsigned int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV,
+                         TMHeader_t *TM_Header, unsigned int *hlen, char *data)
+{
+    unsigned int code = 0;
+    unsigned int data_length = 0;
+    unsigned char computed_CRC[2];
+    unsigned char subtype = 0;
+
+    subtype = TC->dataFieldHeader[2];
+    GetCRCAsTwoBytes( (unsigned char*) TC->packetID, computed_CRC, TC_LEN_RCV + 5 );
+    code = acceptTM( TC, TC_LEN_RCV ) ;
+    //PRINTF1("in TC_checker *** %s\n", errorCCSDSMsg[code]);
+    if ( (code == 0) | (code == 1) | (code == 2)
+        | (code == 3) | (code == 4) | (code == 5) )
+    { // generate TM_LFR_TC_EXE_CORRUPTED
+        // BUILD HEADER
+        TM_build_header( TM_LFR_TC_EXE_ERR, SID_EXE_CORR, TM_LEN_EXE_CORR, 0, 0, TM_Header);
+        // BUILD DATA
+        TM_build_data( TC, data, SID_EXE_CORR, computed_CRC);
+        data_length = TM_LEN_EXE_CORR + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+    }
+    if (subtype == SID_TC_UPDT_TIME){
+        // BUILD HEADER
+        TM_build_header( TM_LFR_TC_EXE_OK, SID_DEFAULT, TM_LEN_EXE, 0, 0, TM_Header);
+        // BUILD DATA
+        TM_build_data( TC, data, SID_DEFAULT, computed_CRC);
+        data_length = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+    }
+    else { // TM_LFR_TC_EXE_NOT_IMPLEMENTED
+        // BUILD HEADER
+        TM_build_header( TM_LFR_TC_EXE_ERR, SID_NOT_IMP, TM_LEN_NOT_IMP, 0, 0, TM_Header);
+        // BUILD DATA
+        TM_build_data( TC, data, SID_NOT_IMP, computed_CRC);
+        data_length = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+    }
+
+    return data_length;
+}
+
+unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV)
 {
     unsigned char pid = 0;
     unsigned char category = 0;
@@ -51,7 +102,7 @@ unsigned char TM_checker(ccsdsTelecommandPacket_t * TMPacket)
 
     // packet length check
     length = TMPacket->packetLength[0] * 256 + TMPacket->packetLength[1];
-    if (length != (currentTC_LEN_RCV[0] * 256 + currentTC_LEN_RCV[1]) ) return WRONG_LEN_PACKET; // LEN RCV != SIZE FIELD
+    if (length != TC_LEN_RCV ) return WRONG_LEN_PACKET; // LEN RCV != SIZE FIELD
     if (length >= CCSDS_TC_PKT_MAX_SIZE) return WRONG_LEN_PACKET; // check that the packet does not exceed the MAX size
 
     packetType = TMPacket->dataFieldHeader[1];
@@ -114,94 +165,112 @@ unsigned char TM_checker(ccsdsTelecommandPacket_t * TMPacket)
     return CCSDS_TM_VALID;
 }
 
-unsigned char TM_acceptance_generator(ccsdsTelecommandPacket_t * TCPacket, unsigned int code, ccsdsTelemetryPacket_t * TMPacket)
+unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int SID, unsigned int packetLength,
+                              unsigned int coarseTime, unsigned int fineTime, TMHeader_t *TMHeader)
 {
-    unsigned int packetLength = 0;
-    packetLength = TMPacket->packetLength[0] * 256 + TMPacket->packetLength[1];
-    if ( (code == 0) | (code == 1) | (code == 2)
-        | (code == 3) | (code == 4) | (code == 5) )
-        { // generated TM_LFR_TC_EXE_CORRUPTED
-            TMPacket->targetLogicalAddress = CCSDS_DESTINATION_ID;
-            TMPacket->protocolIdentifier = 0x02;
-            TMPacket->reserved = 0x00;
-            TMPacket->userApplication = 0x00;
-            //
-            TMPacket->packetID[0] = 0x0c;
-            TMPacket->packetID[1] = 0xc1;
-            TMPacket->packetSequenceControl[0] = 0xc0;
-            TMPacket->packetSequenceControl[1] = 0x00;
-            TMPacket->packetLength[0] = 0x00;
-            TMPacket->packetLength[1] = SIZE_TM_LFR_TC_EXE_CORRUPTED-CCSDS_TC_TM_PACKET_OFFSET;
-            //
-            TMPacket->dataFieldHeader[0] = 0x10;
-            TMPacket->dataFieldHeader[1] = 0x01; // service type
-            TMPacket->dataFieldHeader[2] = 0x08; // service subtype
-            TMPacket->dataFieldHeader[3] = CCSDS_DESTINATION_ID;
-            TMPacket->dataFieldHeader[4] = 0x00; // time
-            TMPacket->dataFieldHeader[5] = 0x00; // time
-            TMPacket->dataFieldHeader[6] = 0x00; // time
-            TMPacket->dataFieldHeader[7] = 0x00; // time
-            TMPacket->dataFieldHeader[8] = 0x00; // time
-            TMPacket->dataFieldHeader[9] = 0x00; // time
-            //
-            TMPacket->data[0] = 0x9c; // failure code
-            TMPacket->data[1] = 0x45; // failure code
-            TMPacket->data[2] = TCPacket->packetID[0];
-            TMPacket->data[3] = TCPacket->packetID[1];
-            TMPacket->data[4] = TCPacket->packetSequenceControl[0];
-            TMPacket->data[5] = TCPacket->packetSequenceControl[1];
-            TMPacket->data[6] = TCPacket->dataFieldHeader[1]; // type
-            TMPacket->data[7] = TCPacket->dataFieldHeader[2]; // subtype
-            TMPacket->data[8] = currentTC_LEN_RCV[0];
-            TMPacket->data[9] = currentTC_LEN_RCV[1];
-            TMPacket->data[10] = TCPacket->packetLength[0];
-            TMPacket->data[11] = TCPacket->packetLength[1];
-            TMPacket->data[12] = TCPacket->dataAndCRC[packetLength];
-            TMPacket->data[13] = TCPacket->dataAndCRC[packetLength+1];
-            TMPacket->data[14] = currentTC_COMPUTED_CRC[0];
-            TMPacket->data[15] = currentTC_COMPUTED_CRC[1];
-            //
-            currentTM_length = SIZE_TM_LFR_TC_EXE_CORRUPTED-CCSDS_TC_TM_PACKET_OFFSET;
-        }
-    else return 0;
+    TMHeader->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TMHeader->protocolIdentifier = 0x02;
+    TMHeader->reserved = 0x00;
+    TMHeader->userApplication = 0x00;
+    TMHeader->packetID[0] = 0x0c;
+    TMHeader->packetSequenceControl[0] = 0xc0;
+    TMHeader->packetSequenceControl[1] = 0x00;
+    TMHeader->packetLength[0] = (unsigned char) (packetLength>>8);
+    TMHeader->packetLength[1] = (unsigned char) packetLength;
+    TMHeader->dataFieldHeader[0] = 0x10;
+    TMHeader->dataFieldHeader[3] = CCSDS_DESTINATION_ID;
+    switch (tm_type){
+        case(TM_LFR_TC_EXE_OK):
+            TMHeader->packetID[1] = 0xc1;
+            TMHeader->dataFieldHeader[1] = 1; // type
+            TMHeader->dataFieldHeader[2] = 7; // subtype
+            break;
+        case(TM_LFR_TC_EXE_ERR):
+            TMHeader->packetID[1] = 0xc1;
+            TMHeader->dataFieldHeader[1] = 1; // type
+            TMHeader->dataFieldHeader[2] = 8; // subtype
+            break;
+        case(TM_LFR_HK):
+            TMHeader->packetID[1] = 0xc4;
+            TMHeader->dataFieldHeader[1] = 3;  // type
+            TMHeader->dataFieldHeader[2] = 25; // subtype
+            break;
+        case(TM_LFR_SCI):
+            TMHeader->packetID[1] = 0xcc;
+            TMHeader->dataFieldHeader[1] = 21;  // type
+            TMHeader->dataFieldHeader[2] = 3; // subtype
+            break;
+        case(TM_LFR_SCI_SBM):
+            TMHeader->packetID[1] = 0xfc;
+            TMHeader->dataFieldHeader[1] = 21;  // type
+            TMHeader->dataFieldHeader[2] = 3; // subtype
+            break;
+        case(TM_LFR_PAR_DUMP):
+            TMHeader->packetID[1] = 0xc9;
+            TMHeader->dataFieldHeader[1] = 181;  // type
+            TMHeader->dataFieldHeader[2] = 31; // subtype
+            break;
+        default:
+            return 0;
+    }
+    /*TMHeader->dataFieldHeader[4] = (unsigned char) (coarseTime>>24);
+    TMHeader->dataFieldHeader[5] = (unsigned char) (coarseTime>>16);
+    TMHeader->dataFieldHeader[6] = (unsigned char) (coarseTime>>8);
+    TMHeader->dataFieldHeader[7] = (unsigned char) (coarseTime);
+    TMHeader->dataFieldHeader[8] = (unsigned char) (fineTime>>8);
+    TMHeader->dataFieldHeader[9] = (unsigned char) (fineTime);*/
+    TMHeader->dataFieldHeader[4] = 0xaa;
+    TMHeader->dataFieldHeader[5] = 0xbb;
+    TMHeader->dataFieldHeader[6] = 0xcc;
+    TMHeader->dataFieldHeader[7] = 0xdd;
+    TMHeader->dataFieldHeader[8] = 0xee;
+    TMHeader->dataFieldHeader[9] = 0xff;
     return 1;
 }
 
-unsigned char TM_not_implemented_generator(ccsdsTelecommandPacket_t * TCPacket, ccsdsTelemetryPacket_t * TMPacket)
+unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned int SID, unsigned char *computed_CRC)
 {
-    TMPacket->targetLogicalAddress = CCSDS_DESTINATION_ID;
-    TMPacket->protocolIdentifier = 0x02;
-    TMPacket->reserved = 0x00;
-    TMPacket->userApplication = 0x00;
-    //
-    TMPacket->packetID[0] = 0x0c;
-    TMPacket->packetID[1] = 0xc1;
-    TMPacket->packetSequenceControl[0] = 0xc0;
-    TMPacket->packetSequenceControl[1] = 0x00;
-    TMPacket->packetLength[0] = 0x00;
-    TMPacket->packetLength[1] = SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED-CCSDS_TC_TM_PACKET_OFFSET;
-    //
-    TMPacket->dataFieldHeader[0] = 0x10;
-    TMPacket->dataFieldHeader[1] = 0x01; // service type
-    TMPacket->dataFieldHeader[2] = 0x08; // service subtype
-    TMPacket->dataFieldHeader[3] = CCSDS_DESTINATION_ID;
-    TMPacket->dataFieldHeader[4] = 0x00; // time
-    TMPacket->dataFieldHeader[5] = 0x00; // time
-    TMPacket->dataFieldHeader[6] = 0x00; // time
-    TMPacket->dataFieldHeader[7] = 0x00; // time
-    TMPacket->dataFieldHeader[8] = 0x00; // time
-    TMPacket->dataFieldHeader[9] = 0x00; // time
-    //
-    TMPacket->data[0] = 0x9c; // failure code
-    TMPacket->data[1] = 0x42; // failure code
-    TMPacket->data[2] = TCPacket->packetID[0];
-    TMPacket->data[3] = TCPacket->packetID[1];
-    TMPacket->data[4] = TCPacket->packetSequenceControl[0];
-    TMPacket->data[5] = TCPacket->packetSequenceControl[1];
-    TMPacket->data[6] = TCPacket->dataFieldHeader[1]; // type
-    TMPacket->data[7] = TCPacket->dataFieldHeader[2]; // subtype
-    //
-    currentTM_length = SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED-CCSDS_TC_TM_PACKET_OFFSET;
-
+    unsigned int packetLength;
+    packetLength = TC->packetLength[0] * 256 + TC->packetLength[1];
+    switch (SID){
+        case (SID_NOT_EXE):
+            break;
+        case (SID_NOT_IMP):
+            data[0] = 0x9c;
+            data[1] = 0x42;
+            data[2] = TC->packetID[0];
+            data[3] = TC->packetID[1];
+            data[4] = TC->packetSequenceControl[0];
+            data[5] = TC->packetSequenceControl[1];
+            data[6] = TC->dataFieldHeader[1]; // type
+            data[7] = TC->dataFieldHeader[2]; // subtype
+            break;
+        case (SID_EXE_ERR):
+            break;
+        case (SID_EXE_CORR):
+            data[0] = 0x9c;
+            data[1] = 0x45;
+            data[2] = TC->packetID[0];
+            data[3] = TC->packetID[1];
+            data[4] = TC->packetSequenceControl[0];
+            data[5] = TC->packetSequenceControl[1];
+            data[6] = TC->dataFieldHeader[1]; // type
+            data[7] = TC->dataFieldHeader[2]; // subtype
+            data[8] = currentTC_LEN_RCV[0];
+            data[9] = currentTC_LEN_RCV[1];
+            data[10] = TC->packetLength[0];
+            data[11] = TC->packetLength[1];
+            data[12] = TC->dataAndCRC[packetLength];
+            data[13] = TC->dataAndCRC[packetLength+1];
+            data[14] = computed_CRC[0];
+            data[15] = computed_CRC[1];
+            break;
+        default:
+            return 0;
+    }
     return 1;
 }
+
+
+
+

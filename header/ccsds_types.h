@@ -9,6 +9,8 @@
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_DESTINATION_ID 0x21
+#define CCSDS_PROTOCOLE_ID 0x02
+#define CCSDS_USER_APP 0x00
 
 #define SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED 24
 #define SIZE_TM_LFR_TC_EXE_CORRUPTED 32
@@ -29,10 +31,50 @@
 #define NOT_ALLOWED 40004
 #define CORRUPTED 40005
 //
-#define CCSDS_ERR_SRC 8
-#define CCSDS_ERR_CAT 9
+#define SID_TC_RESET 3
+#define SID_TC_LOAD_COMM 20
+#define SID_TC_LOAD_NORM 21
+#define SID_TC_LOAD_BURST 24
+#define SID_TC_LOAD_SBM1 27
+#define SID_TC_LOAD_SBM2 28
+#define SID_TC_DUMP 30
+#define SID_TC_ENTER 40
+#define SID_TC_UPDT_INFO 50
+#define SID_TC_EN_CAL 60
+#define SID_TC_DIS_CAL 61
+#define SID_TC_UPDT_TIME 129
 
-struct ccsdsTelemetryPacket_str
+#define SID_DEFAULT 0
+#define SID_EXE_INC 5
+#define SID_NOT_EXE 40000
+#define SID_NOT_IMP 40002
+#define SID_EXE_ERR 40003
+#define SID_EXE_CORR 40005
+
+#define SID_NORM_SWF_F0 3
+#define SID_NORM_SWF_F1 4
+#define SID_NORM_SWF_F2 5
+#define SID_NORM_CWF_F3 1
+
+#define TM_LEN_EXE 20 - CCSDS_TC_TM_PACKET_OFFSET
+#define TM_LEN_NOT_EXE 26 - CCSDS_TC_TM_PACKET_OFFSET
+#define TM_LEN_NOT_IMP 24 - CCSDS_TC_TM_PACKET_OFFSET
+#define TM_LEN_EXE_ERR 24 - CCSDS_TC_TM_PACKET_OFFSET
+#define TM_LEN_EXE_CORR 32 - CCSDS_TC_TM_PACKET_OFFSET
+#define TM_HEADER_LEN 16
+#define TM_LEN_SCI_NORM_SWF_340 340 * 12 + 6 + 10 - 1
+#define TM_LEN_SCI_NORM_SWF_8 8 * 12 + 6 + 10 - 1
+
+enum TM_TYPE{
+    TM_LFR_TC_EXE_OK,
+    TM_LFR_TC_EXE_ERR,
+    TM_LFR_HK,
+    TM_LFR_SCI,
+    TM_LFR_SCI_SBM,
+    TM_LFR_PAR_DUMP
+};
+
+struct TMHeader_str
 {
     volatile unsigned char targetLogicalAddress;
     volatile unsigned char protocolIdentifier;
@@ -42,13 +84,26 @@ struct ccsdsTelemetryPacket_str
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
     volatile unsigned char dataFieldHeader[10];
-    volatile unsigned char data[CCSDS_TM_PKT_MAX_SIZE-16];
 };
-typedef struct ccsdsTelemetryPacket_str ccsdsTelemetryPacket_t;
+typedef struct TMHeader_str TMHeader_t;
+
+struct ExtendedTMHeader_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char auxiliaryHeader[6];
+};
+typedef struct ExtendedTMHeader_str ExtendedTMHeader_t;
 
 struct ccsdsTelecommandPacket_str
 {
-    //unsigned char targetLogicalAddress;
+    //unsigned char targetLogicalAddress; // removed by the grspw module
     volatile unsigned char protocolIdentifier;
     volatile unsigned char reserved;
     volatile unsigned char userApplication;
