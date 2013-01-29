@@ -17,10 +17,13 @@ unsigned int currentTC_LEN_RCV_AsUnsignedInt;
 unsigned int currentTM_length;
 unsigned char currentTC_processedFlag;
 
+//**********************
+// GENERAL USE FUNCTIONS
 unsigned int lookUpTableForCRC[256];
 void InitLookUpTableForCRC();
 void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData);
 
+//*********************
 // ACCEPTANCE FUNCTIONS
 unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV);
 
@@ -30,6 +33,7 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
 unsigned int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV,
                          TMHeader_t *TM_Header, unsigned int *hlen, char *data);
 
+//***********
 // RTEMS TASK
 rtems_task spw_recv_task( rtems_task_argument unused );
 

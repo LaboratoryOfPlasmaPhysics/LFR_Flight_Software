@@ -11,6 +11,8 @@ char *errorCCSDSMsg[8] = { "ILLEGAL_APID 0",
                             "CCSDS_TM_VALID 7"
 };
 
+//**********************
+// GENERAL USE FUNCTIONS
 unsigned int Crc_opt( unsigned char D, unsigned int Chk)
 {
     return(((Chk << 8) & 0xff00)^lookUpTableForCRC [(((Chk >> 8)^D) & 0x00ff)]);
@@ -46,6 +48,9 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
     crcAsTwoBytes[1] = (unsigned char) (Chk & 0x00ff);
 }
 
+
+//*********************
+// ACCEPTANCE FUNCTIONS
 unsigned int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV,
                          TMHeader_t *TM_Header, unsigned int *hlen, char *data)
 {
@@ -271,6 +276,13 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
     return 1;
 }
 
+unsigned char actionLauncher(unsigned int sid)
+{
+
+}
+
+//***********
+// RTEMS TASK
 rtems_task spw_recv_task( rtems_task_argument unused )
 {
     rtems_status_code status;
