@@ -52,6 +52,14 @@
 #define NB_SAMPLES_PER_SNAPSHOT 2048
 #define NB_BYTES_SWF_BLK 2 * 6
 
+struct param_norm_str{
+    unsigned int sy_lfr_n_swf_l; // length of the snapshots
+    unsigned int sy_lfr_n_swf_p; // time between two snapshots
+    unsigned int sy_lfr_n_asm_p; // time between two asm
+    unsigned char sy_lfr_n_bp_p0; // timebetween two products BP1 set
+    unsigned char sy_lfr_n_bp_p1; // time between two products BP2 set
+};
+
 extern volatile int wf_snap_f0[ ]; // 24576 bytes
 extern volatile int wf_snap_f1[ ]; // 24576 bytes
 extern volatile int wf_snap_f2[ ]; // 24576 bytes

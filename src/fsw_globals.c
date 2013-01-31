@@ -28,7 +28,10 @@ volatile int spec_mat_f0_h[ TOTAL_SIZE_SPEC_MAT ];
 float averaged_spec_mat_f0[ TOTAL_SIZE_SPEC_MAT ];
 float compressed_spec_mat_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 
-// BASIC PARAMETERS GLOBAL VAIRABLES
+// NORMAL MODE PARAMETERS
+struct param_norm_str param_norm;
+
+// BASIC PARAMETERS GLOBAL VARIABLES
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];
 
 BP1_t data_BP1[ NB_BINS_COMPRESSED_MATRIX_f0 ];

@@ -61,7 +61,7 @@ rtems_task Init( rtems_task_argument ignored )
     //send_console_outputs_on_serial_port();
 
     InitLookUpTableForCRC(); // in tc_handler.h
-
+    init_default_mode_parameters();
     create_message_queue();
     create_all_tasks();
     start_all_tasks();
@@ -98,6 +98,15 @@ rtems_task spiq_task(rtems_task_argument unused)
         if (rtems_task_restart(Task_id[1], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
             PRINTF("In SPIQ *** Error resume RECV Task\n")
     }
+}
+
+void init_default_mode_parameters()
+{
+    param_norm.sy_lfr_n_swf_l = 2048;   // nb sample
+    param_norm.sy_lfr_n_swf_p = 300;    // sec
+    param_norm.sy_lfr_n_asm_p = 3600;   // sec
+    param_norm.sy_lfr_n_bp_p0 = 4;      // sec
+    param_norm.sy_lfr_n_bp_p1 = 20;     // sec
 }
 
 int create_all_tasks()

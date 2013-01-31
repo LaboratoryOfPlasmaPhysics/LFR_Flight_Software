@@ -66,7 +66,7 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
         | (code == 3) | (code == 4) | (code == 5) )
     { // generate TM_LFR_TC_EXE_CORRUPTED
         // BUILD HEADER
-        TM_build_header( TM_LFR_TC_EXE_ERR, SID_EXE_CORR, TM_LEN_EXE_CORR, 0, 0, &TM_header);
+        TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_EXE_CORR, 0, 0, &TM_header);
         // BUILD DATA
         TM_build_data( TC, data, SID_EXE_CORR, computed_CRC);
         // PREPARE TM SENDING
@@ -77,7 +77,7 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
         // SEND PACKET
         write_spw(&spw_ioctl_send);
     }
-    else { // TM_LFR_TC_EXE_NOT_IMPLEMENTED
+    else { // send valid TC to the action launcher
         status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET);
         return -1;
     }
@@ -164,7 +164,7 @@ unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_
     return CCSDS_TM_VALID;
 }
 
-unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int SID, unsigned int packetLength,
+unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
                               unsigned int coarseTime, unsigned int fineTime, TMHeader_t *TMHeader)
 {
     TMHeader->targetLogicalAddress = CCSDS_DESTINATION_ID;
@@ -330,6 +330,7 @@ rtems_task actn_task( rtems_task_argument unused )
                 case TC_SUBTYPE_LOAD_COMM:
                     break;
                 case TC_SUBTYPE_LOAD_NORM:
+                    action_load_norm( &TC );
                     break;
                 case TC_SUBTYPE_LOAD_BURST:
                     break;
@@ -338,9 +339,10 @@ rtems_task actn_task( rtems_task_argument unused )
                 case TC_SUBTYPE_LOAD_SBM2:
                     break;
                 case TC_SUBTYPE_DUMP:
-                    default_action( &TC );
+                    action_default( &TC );
                     break;
                 case TC_SUBTYPE_ENTER:
+                    action_enter( &TC );
                     break;
                 case TC_SUBTYPE_UPDT_INFO:
                     break;
@@ -370,13 +372,13 @@ int create_message_queue()
 
 //***********
 // TC ACTIONS
-int default_action(ccsdsTelecommandPacket_t *TC)
+int action_default(ccsdsTelecommandPacket_t *TC)
 {
     char data[100];                     // buffer for the generic TM packet
     TMHeader_t TM_header;               // TM header
     spw_ioctl_pkt_send spw_ioctl_send;  // structure to send the TM packet if any
     // BUILD HEADER
-    TM_build_header( TM_LFR_TC_EXE_ERR, SID_NOT_IMP, TM_LEN_NOT_IMP, 0, 0, &TM_header);
+    TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_NOT_IMP, 0, 0, &TM_header);
     // BUILD DATA
     TM_build_data( TC, data, SID_NOT_IMP, NULL);
     // filling the strture for the spcawire transmission
@@ -390,7 +392,23 @@ int default_action(ccsdsTelecommandPacket_t *TC)
     return 0;
 }
 
+int action_enter(ccsdsTelecommandPacket_t *TC)
+{
+    return 0;
+}
 
+int action_load_norm(ccsdsTelecommandPacket_t *TC)
+{
+    param_norm.sy_lfr_n_swf_l = TC->dataAndCRC[0] * 256 + TC->dataAndCRC[1];
+    param_norm.sy_lfr_n_swf_p = TC->dataAndCRC[2] * 256 + TC->dataAndCRC[3];
+    param_norm.sy_lfr_n_asm_p = TC->dataAndCRC[4] * 256 + TC->dataAndCRC[5];
+    param_norm.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
+    param_norm.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
+    printf("sy_lfr_n_ => swf_l %d, swf_p %d, asm_p %d, bsp_p0 %d, bsp_p1 %d\n",
+           param_norm.sy_lfr_n_swf_l, param_norm.sy_lfr_n_swf_p,
+           param_norm.sy_lfr_n_asm_p, param_norm.sy_lfr_n_bp_p0, param_norm.sy_lfr_n_bp_p1);
+    return 0;
+}
 
 
 

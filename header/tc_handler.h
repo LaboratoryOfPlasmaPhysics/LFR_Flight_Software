@@ -12,7 +12,8 @@
 extern int fdSPW;
 extern rtems_name misc_name[ ];
 extern rtems_name misc_id[ ];
-extern rtems_id Task_id[ ];         /* array of task ids */
+extern rtems_id Task_id[ ];         // array of task ids
+extern struct param_norm_str param_norm;
 
 unsigned char currentTC_LEN_RCV[2]; //  SHALL be equal to the current TC packet estimated packet length field
 unsigned char currentTC_COMPUTED_CRC[2];
@@ -30,7 +31,7 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 // ACCEPTANCE FUNCTIONS
 unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int tc_len_recv);
 
-unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int SID, unsigned int packetLength,
+unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
                               unsigned int coarseTime, unsigned int fineTime, TMHeader_t *TMHeader);
 unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned int SID, unsigned char *computed_CRC);
 int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV);
@@ -43,6 +44,11 @@ int create_message_queue();
 
 //***********
 // TC ACTIONS
-int default_action(ccsdsTelecommandPacket_t *TC);
+int action_default(ccsdsTelecommandPacket_t *TC);
+int action_load_norm(ccsdsTelecommandPacket_t *TC);
+int action_enter(ccsdsTelecommandPacket_t *TC);
 
 #endif // TC_HANDLER_H_INCLUDED
+
+
+

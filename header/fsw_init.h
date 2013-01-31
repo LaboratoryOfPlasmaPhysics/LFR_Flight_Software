@@ -23,6 +23,7 @@ extern rtems_name Task_name[ ];     /* array of task names */
 extern rtems_name misc_name[ ];    /* arry of miscellaneous names for rtems objects */
 extern int fdSPW;   // grspw file descriptor
 extern int fdUART;  // uart file descriptor
+extern struct param_norm_str param_norm;
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
@@ -35,6 +36,7 @@ int start_all_tasks();
 int create_message_queue();
 
 // OTHER functions
+void init_default_mode_parameters();
 int configure_spw_link();
 int send_console_outputs_on_serial_port();
 extern int rtems_cpu_usage_report();
