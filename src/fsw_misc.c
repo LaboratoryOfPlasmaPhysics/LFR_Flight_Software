@@ -53,7 +53,7 @@ int send_console_outputs_on_serial_port() // Send the console outputs on the ser
     return 0;
 }
 
-rtems_task spw_stat_task(rtems_task_argument argument)
+rtems_task stat_task(rtems_task_argument argument)
 {
     int i;
     i = 0;

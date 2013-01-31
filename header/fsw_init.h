@@ -18,14 +18,18 @@
 
 extern int sched_yield();
 extern int errno;
-extern rtems_name misc_names[ ];
+extern rtems_id   Task_id[ ];       /* array of task ids */
+extern rtems_name Task_name[ ];     /* array of task names */
+extern rtems_name misc_name[ ];    /* arry of miscellaneous names for rtems objects */
+extern int fdSPW;   // grspw file descriptor
+extern int fdUART;  // uart file descriptor
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
-rtems_task spw_recv_task(rtems_task_argument argument);
-rtems_task spw_spiq_task(rtems_task_argument argument);
-rtems_task spw_stat_task(rtems_task_argument argument);
-rtems_task spw_wfrm_task(rtems_task_argument argument);
+rtems_task recv_task(rtems_task_argument argument);
+rtems_task spiq_task(rtems_task_argument argument);
+rtems_task stat_task(rtems_task_argument argument);
+rtems_task wfrm_task(rtems_task_argument argument);
 int create_all_tasks();
 int start_all_tasks();
 int create_message_queue();

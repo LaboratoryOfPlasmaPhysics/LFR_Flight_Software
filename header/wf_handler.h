@@ -15,6 +15,6 @@ extern rtems_id Task_id[];         /* array of task ids */
 extern int fdSPW;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );
-rtems_task spw_wfrm_task(rtems_task_argument argument);
+rtems_task wfrm_task(rtems_task_argument argument);
 
 #endif // WF_HANDLER_H_INCLUDED

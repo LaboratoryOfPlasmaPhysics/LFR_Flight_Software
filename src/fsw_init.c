@@ -22,6 +22,7 @@
 #define CONFIGURE_INIT_TASK_PRIORITY	100
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 1
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 1
 
 #include <rtems/confdefs.h>
 
@@ -43,9 +44,6 @@
 #include <fsw_init.h>
 #include <fsw_config.c>
 
-int fdSPW;
-int fdUART;
-
 char *link_status(int status);
 
 char *lstates[6] = {"Error-reset",
@@ -55,9 +53,6 @@ char *lstates[6] = {"Error-reset",
                     "Connecting",
                     "Run"
 };
-
-rtems_id   Task_id[10];         /* array of task ids */
-rtems_name Task_name[10];       /* array of task names */
 
 rtems_task Init( rtems_task_argument ignored )
 {
@@ -85,7 +80,7 @@ rtems_task Init( rtems_task_argument ignored )
     status = rtems_task_delete(RTEMS_SELF);
 }
 
-rtems_task spw_spiq_task(rtems_task_argument unused)
+rtems_task spiq_task(rtems_task_argument unused)
 {
     rtems_event_set event_out;
     struct grspw_regs_str *grspw_regs;
@@ -105,17 +100,12 @@ rtems_task spw_spiq_task(rtems_task_argument unused)
     }
 }
 
-int create_message_queue()
-{
-    misc_names[0] = rtems_build_name( 'D', 'O', 'I', 'T' );
-    return 0;
-}
-
 int create_all_tasks()
 {
     rtems_status_code status;
 
     Task_name[1] = rtems_build_name( 'R', 'E', 'C', 'V' );
+    Task_name[2] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[3] = rtems_build_name( 'S', 'P', 'I', 'Q' );
     Task_name[4] = rtems_build_name( 'S', 'M', 'I', 'Q' );
     Task_name[5] = rtems_build_name( 'S', 'T', 'A', 'T' );
@@ -128,6 +118,12 @@ int create_all_tasks()
         Task_name[1], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[1]
+    );
+    // ACTN
+    status = rtems_task_create(
+        Task_name[2], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[2]
     );
     // SPIQ
     status = rtems_task_create(
@@ -173,26 +169,28 @@ int start_all_tasks()
 {
     rtems_status_code status;
 
-    status = rtems_task_start( Task_id[3], spw_spiq_task, 1 );
+    status = rtems_task_start( Task_id[3], spiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_SPIQ\n")
 
-    status = rtems_task_start( Task_id[1], spw_recv_task, 1 );
+    status = rtems_task_start( Task_id[1], recv_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_RECV\n")
 
-    //status = rtems_task_start( Task_id[4], spw_bppr_task_rate_monotonic, 1 );
-    status = rtems_task_start( Task_id[4], spw_smiq_task, 1 );
+    status = rtems_task_start( Task_id[2], actn_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_ACTN\n")
+
+    status = rtems_task_start( Task_id[4], smiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPPR\n")
 
-    status = rtems_task_start( Task_id[5], spw_stat_task, 1 );
+    status = rtems_task_start( Task_id[5], stat_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_STAT\n")
 
-    status = rtems_task_start( Task_id[6], spw_avf0_task, 1 );
+    status = rtems_task_start( Task_id[6], avf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_AVF0\n")
 
-    status = rtems_task_start( Task_id[7], spw_bpf0_task, 1 );
+    status = rtems_task_start( Task_id[7], bpf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPF0\n")
 
-    status = rtems_task_start( Task_id[8], spw_wfrm_task, 1 );
+    status = rtems_task_start( Task_id[8], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_WFRM\n")
 
     return 0;

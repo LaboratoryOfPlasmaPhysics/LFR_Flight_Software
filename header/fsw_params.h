@@ -4,6 +4,8 @@
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
+//*****************************
+// APB REGISTERS BASE ADDRESSES
 #define REGS_ADDR_APBUART 0x80000100
 #define REGS_ADDR_GPTIMER 0x80000300
 #define REGS_ADDR_GRSPW 0x80000500
@@ -21,7 +23,10 @@
 #define TIMER_SM_SIMULATOR 1
 #define TIMER_WF_SIMULATOR 2
 
+//******
+// RTEMS
 #define TASKID_RECV 1
+#define TASKID_ACTN 1
 #define TASKID_SPIQ 3
 #define TASKID_SMIQ 4
 #define TASKID_STAT 5
@@ -29,6 +34,10 @@
 #define TASKID_BPF0 7
 #define TASKID_WFRM 8
 
+#define ACTION_MSG_QUEUE_COUNT 10
+
+//*******
+// MACROS
 #define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
 #ifdef PRINT_MESSAGES_ON_CONSOLE
 #define PRINTF(x) printf(x);

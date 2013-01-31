@@ -51,43 +51,37 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-unsigned int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV,
-                         TMHeader_t *TM_Header, unsigned int *hlen, char *data)
+int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
 {
+    rtems_status_code status;
+    spw_ioctl_pkt_send spw_ioctl_send;
+    TMHeader_t TM_header;
     unsigned int code = 0;
-    unsigned int data_length = 0;
     unsigned char computed_CRC[2];
-    unsigned char subtype = 0;
+    char data[ TM_LEN_EXE_CORR + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN ];
 
-    subtype = TC->dataFieldHeader[2];
-    GetCRCAsTwoBytes( (unsigned char*) TC->packetID, computed_CRC, TC_LEN_RCV + 5 );
-    code = acceptTM( TC, TC_LEN_RCV ) ;
-    //PRINTF1("in TC_checker *** %s\n", errorCCSDSMsg[code]);
+    GetCRCAsTwoBytes( (unsigned char*) TC->packetID, computed_CRC, tc_len_recv + 5 );
+    code = acceptTM( TC, tc_len_recv ) ;
     if ( (code == 0) | (code == 1) | (code == 2)
         | (code == 3) | (code == 4) | (code == 5) )
     { // generate TM_LFR_TC_EXE_CORRUPTED
         // BUILD HEADER
-        TM_build_header( TM_LFR_TC_EXE_ERR, SID_EXE_CORR, TM_LEN_EXE_CORR, 0, 0, TM_Header);
+        TM_build_header( TM_LFR_TC_EXE_ERR, SID_EXE_CORR, TM_LEN_EXE_CORR, 0, 0, &TM_header);
         // BUILD DATA
         TM_build_data( TC, data, SID_EXE_CORR, computed_CRC);
-        data_length = TM_LEN_EXE_CORR + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
-    }
-    if (subtype == SID_TC_UPDT_TIME){
-        // BUILD HEADER
-        TM_build_header( TM_LFR_TC_EXE_OK, SID_DEFAULT, TM_LEN_EXE, 0, 0, TM_Header);
-        // BUILD DATA
-        TM_build_data( TC, data, SID_DEFAULT, computed_CRC);
-        data_length = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+        // PREPARE TM SENDING
+        spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
+        spw_ioctl_send.hdr = (char*) &TM_header;
+        spw_ioctl_send.dlen = TM_LEN_EXE_CORR + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+        spw_ioctl_send.data = data;
+        // SEND PACKET
+        write_spw(&spw_ioctl_send);
     }
     else { // TM_LFR_TC_EXE_NOT_IMPLEMENTED
-        // BUILD HEADER
-        TM_build_header( TM_LFR_TC_EXE_ERR, SID_NOT_IMP, TM_LEN_NOT_IMP, 0, 0, TM_Header);
-        // BUILD DATA
-        TM_build_data( TC, data, SID_NOT_IMP, computed_CRC);
-        data_length = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+        status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET);
+        return -1;
     }
-
-    return data_length;
+    return -1;
 }
 
 unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV)
@@ -276,29 +270,22 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
     return 1;
 }
 
-unsigned char actionLauncher(unsigned int sid)
-{
-    return 0;
-}
-
 //***********
 // RTEMS TASK
-rtems_task spw_recv_task( rtems_task_argument unused )
+rtems_task recv_task( rtems_task_argument unused )
 {
-    rtems_status_code status;
     int len = 0;
     unsigned int i = 0;
     unsigned int data_length = 0;
     ccsdsTelecommandPacket_t currentTC;
-    spw_ioctl_pkt_send spw_ioctl_send;
-    TMHeader_t TM_header;
     char data[100];
 
     for(i=0; i<100; i++) data[i] = 0;
 
     PRINTF("In RECV *** \n")
 
-    while(1){
+    while(1)
+    {
         len = read(fdSPW, (char*) &currentTC, CCSDS_TC_PKT_MAX_SIZE); // the call to read is blocking
         if (len == -1){ // error during the read call
             PRINTF("In RECV *** last read call returned -1\n")
@@ -313,19 +300,97 @@ rtems_task spw_recv_task( rtems_task_argument unused )
             currentTC_LEN_RCV[1] = (unsigned char) len - CCSDS_TC_TM_PACKET_OFFSET - 3; //  build the corresponding packet size field
             currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) len - CCSDS_TC_TM_PACKET_OFFSET - 3; // => -3 is for Prot ID, Reserved and User App bytes
             // CHECK THE TC AND BUILD THE APPROPRIATE TM
-            data_length = TC_checker(&currentTC, currentTC_LEN_RCV_AsUnsignedInt,
-                       &TM_header, &spw_ioctl_send.hlen, data);
-            spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-            spw_ioctl_send.hdr = (char*) &TM_header;
-            spw_ioctl_send.dlen = data_length;
-            spw_ioctl_send.data = data;
-            //printf("hlen %d, dlen %d\n", spw_ioctl_send.hlen, spw_ioctl_send.dlen);
-            // SEND PACKET
-            status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-            if (status!=RTEMS_SUCCESSFUL) printf("In TC_checker *** Error SPACEWIRE_IOCTRL_SEND\n");
-            //PRINTF1("In TC_checker *** packet of size %d sent\n", spw_ioctl_send.sent)
+            data_length = TC_checker(&currentTC, currentTC_LEN_RCV_AsUnsignedInt);
+            if (data_length!=-1)
+            {
+            }
         }
     }
 }
+
+rtems_task actn_task( rtems_task_argument unused )
+{
+    rtems_status_code status;           // RTEMS status code
+    ccsdsTelecommandPacket_t TC;        // TC sent to the ACTN task
+    size_t size;                        // size of the incoming TC packet
+    unsigned char subtype = 0;          // subtype of the current TC packet
+
+    while(1)
+    {
+        status = rtems_message_queue_receive(misc_id[0], (char*) &TC, &size,
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        if (status!=RTEMS_SUCCESSFUL) PRINTF1("in task ACTN *** error receiving a message, code %d \n", status)
+        else
+        {
+            subtype = TC.dataFieldHeader[2];
+            switch(subtype)
+            {
+                case TC_SUBTYPE_RESET:
+                    break;
+                case TC_SUBTYPE_LOAD_COMM:
+                    break;
+                case TC_SUBTYPE_LOAD_NORM:
+                    break;
+                case TC_SUBTYPE_LOAD_BURST:
+                    break;
+                case TC_SUBTYPE_LOAD_SBM1:
+                    break;
+                case TC_SUBTYPE_LOAD_SBM2:
+                    break;
+                case TC_SUBTYPE_DUMP:
+                    default_action( &TC );
+                    break;
+                case TC_SUBTYPE_ENTER:
+                    break;
+                case TC_SUBTYPE_UPDT_INFO:
+                    break;
+                case TC_SUBTYPE_EN_CAL:
+                    break;
+                case TC_SUBTYPE_DIS_CAL:
+                    break;
+                case TC_SUBTYPE_UPDT_TIME:
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+int create_message_queue()
+{
+    rtems_status_code status;
+    misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
+    status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in create_message_queue *** error creating message queue\n")
+
+    return 0;
+}
+
+//***********
+// TC ACTIONS
+int default_action(ccsdsTelecommandPacket_t *TC)
+{
+    char data[100];                     // buffer for the generic TM packet
+    TMHeader_t TM_header;               // TM header
+    spw_ioctl_pkt_send spw_ioctl_send;  // structure to send the TM packet if any
+    // BUILD HEADER
+    TM_build_header( TM_LFR_TC_EXE_ERR, SID_NOT_IMP, TM_LEN_NOT_IMP, 0, 0, &TM_header);
+    // BUILD DATA
+    TM_build_data( TC, data, SID_NOT_IMP, NULL);
+    // filling the strture for the spcawire transmission
+    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
+    spw_ioctl_send.hdr = (char*) &TM_header;
+    spw_ioctl_send.dlen = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+    spw_ioctl_send.data = data;
+    // SEND DATA
+    write_spw(&spw_ioctl_send);
+
+    return 0;
+}
+
+
+
 
 

@@ -56,7 +56,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
         printf("In spectral_matrices_isr *** Error sending event to AVF0\n");
 }
 
-rtems_task spw_smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
+rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
 {
     rtems_event_set event_out;
     gptimer_regs_t *gptimer_regs;
@@ -68,7 +68,7 @@ rtems_task spw_smiq_task(rtems_task_argument argument) // process the Spectral M
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
         if (nb_interrupt_f0 == (NB_SM_TO_RECEIVE_BEFORE_AVF0-1) ){
             if (rtems_event_send( Task_id[6], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-                printf("In spw_smiq_task *** Error sending event to AVF0\n");
+                printf("In smiq_task *** Error sending event to AVF0\n");
             nb_interrupt_f0 = 0;
         }
         gptimer_regs->timer[1].ctrl = gptimer_regs->timer[1].ctrl | 0x00000010;
@@ -329,7 +329,7 @@ void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
     }
 }
 
-rtems_task spw_avf0_task(rtems_task_argument argument){
+rtems_task avf0_task(rtems_task_argument argument){
     int i;
     static int nb_average;
     rtems_event_set event_out;
@@ -365,7 +365,7 @@ rtems_task spw_avf0_task(rtems_task_argument argument){
     }
 }
 
-rtems_task spw_bpf0_task(rtems_task_argument argument){
+rtems_task bpf0_task(rtems_task_argument argument){
     rtems_event_set event_out;
 
     while(1){

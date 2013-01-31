@@ -2,7 +2,12 @@
 #include <rtems.h>
 
 // RTEMS GLOBAL VARIABLES
-rtems_name misc_names[5];
+rtems_name misc_name[5];
+rtems_name misc_id[5];
+rtems_id   Task_id[10];         /* array of task ids */
+rtems_name Task_name[10];       /* array of task names */
+int fdSPW;
+int fdUART;
 
 // WAVEFORMS GLOBAL VARIABLES
 volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes

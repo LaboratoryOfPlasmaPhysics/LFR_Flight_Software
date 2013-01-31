@@ -6,7 +6,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         printf("In spectral_matrices_isr *** Error sending event to WFRM\n");
 }
 
-rtems_task spw_wfrm_task(rtems_task_argument argument)
+rtems_task wfrm_task(rtems_task_argument argument)
 {
     unsigned int length;
     unsigned int i = 0;
