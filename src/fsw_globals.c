@@ -1,4 +1,8 @@
 #include <fsw_processing.h>
+#include <rtems.h>
+
+// RTEMS GLOBAL VARIABLES
+rtems_name misc_names[5];
 
 // WAVEFORMS GLOBAL VARIABLES
 volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes

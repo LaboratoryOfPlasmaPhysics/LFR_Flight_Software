@@ -18,6 +18,7 @@
 
 extern int sched_yield();
 extern int errno;
+extern rtems_name misc_names[ ];
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
@@ -27,6 +28,7 @@ rtems_task spw_stat_task(rtems_task_argument argument);
 rtems_task spw_wfrm_task(rtems_task_argument argument);
 int create_all_tasks();
 int start_all_tasks();
+int create_message_queue();
 
 // OTHER functions
 int configure_spw_link();

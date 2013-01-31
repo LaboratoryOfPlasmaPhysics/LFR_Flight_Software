@@ -67,6 +67,7 @@ rtems_task Init( rtems_task_argument ignored )
 
     InitLookUpTableForCRC(); // in tc_handler.h
 
+    create_message_queue();
     create_all_tasks();
     start_all_tasks();
 
@@ -102,6 +103,12 @@ rtems_task spw_spiq_task(rtems_task_argument unused)
         if (rtems_task_restart(Task_id[1], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
             PRINTF("In SPIQ *** Error resume RECV Task\n")
     }
+}
+
+int create_message_queue()
+{
+    misc_names[0] = rtems_build_name( 'D', 'O', 'I', 'T' );
+    return 0;
 }
 
 int create_all_tasks()

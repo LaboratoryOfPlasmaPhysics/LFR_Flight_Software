@@ -278,7 +278,7 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
 
 unsigned char actionLauncher(unsigned int sid)
 {
-
+    return 0;
 }
 
 //***********
