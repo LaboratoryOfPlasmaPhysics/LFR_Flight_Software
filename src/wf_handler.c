@@ -48,6 +48,8 @@ rtems_task wfrm_task(rtems_task_argument argument)
     spw_ioctl_send.hlen = TM_HEADER_LEN + 4 + 6; // + 4 is for the protocole extra header, + 6 is for the auxiliary header
     spw_ioctl_send.hdr = (char*) &header;
 
+    PRINTF("In WFRM *** \n")
+
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         for (i=0; i<7; i++) // send F0

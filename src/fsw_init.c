@@ -60,22 +60,17 @@ rtems_task Init( rtems_task_argument ignored )
 
     //send_console_outputs_on_serial_port();
 
-    InitLookUpTableForCRC(); // in tc_handler.h
+    initLookUpTableForCRC(); // in tc_handler.h
     init_default_mode_parameters();
     create_message_queue();
     create_all_tasks();
     start_all_tasks();
 
     configure_spw_link();
-    // configure timer for spectral matrices simulation
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
-    // configure timer for waveforms simulation
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_isr );
-
-    LEON_Unmask_interrupt( IRQ_SM );
-    LEON_Unmask_interrupt( IRQ_WF );
 
     status = rtems_task_delete(RTEMS_SELF);
 }
@@ -102,11 +97,24 @@ rtems_task spiq_task(rtems_task_argument unused)
 
 void init_default_mode_parameters()
 {
+    // COMMON PARAMETERS
+    param_common[0] = 0x00;
+    param_common[1] = 0x10;             // default value 0 0 0 1 0 0 0 0
+    // NORMAL MODE
     param_norm.sy_lfr_n_swf_l = 2048;   // nb sample
     param_norm.sy_lfr_n_swf_p = 300;    // sec
     param_norm.sy_lfr_n_asm_p = 3600;   // sec
     param_norm.sy_lfr_n_bp_p0 = 4;      // sec
     param_norm.sy_lfr_n_bp_p1 = 20;     // sec
+    // BURST MODE
+    param_burst.sy_lfr_b_bp_p0 = 1;     // sec
+    param_burst.sy_lfr_b_bp_p1 = 5;     // sec
+    // SBM1 MODE
+    param_sbm1.sy_lfr_s1_bp_p0 = 1;     // sec
+    param_sbm1.sy_lfr_s1_bp_p1 = 1;     // sec
+    // SBM2 MODE
+    param_sbm2.sy_lfr_s2_bp_p0 = 1;     // sec
+    param_sbm2.sy_lfr_s2_bp_p0 = 5;     // sec
 }
 
 int create_all_tasks()
@@ -239,7 +247,7 @@ int configure_spw_link()
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
 
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);         // sets the link-error interrupt bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     //
     //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destination key
     //if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")

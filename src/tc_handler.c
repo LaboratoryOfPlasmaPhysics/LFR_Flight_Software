@@ -18,7 +18,7 @@ unsigned int Crc_opt( unsigned char D, unsigned int Chk)
     return(((Chk << 8) & 0xff00)^lookUpTableForCRC [(((Chk >> 8)^D) & 0x00ff)]);
 }
 
-void InitLookUpTableForCRC()
+void initLookUpTableForCRC()
 {
     unsigned int i, tmp;
     for (i=0; i<256; i++)
@@ -72,13 +72,13 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
         // PREPARE TM SENDING
         spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
         spw_ioctl_send.hdr = (char*) &TM_header;
-        spw_ioctl_send.dlen = TM_LEN_EXE_CORR + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+        spw_ioctl_send.dlen = 16;
         spw_ioctl_send.data = data;
         // SEND PACKET
         write_spw(&spw_ioctl_send);
     }
     else { // send valid TC to the action launcher
-        status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET);
+        status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
         return -1;
     }
     return -1;
@@ -212,18 +212,12 @@ unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
         default:
             return 0;
     }
-    /*TMHeader->dataFieldHeader[4] = (unsigned char) (coarseTime>>24);
-    TMHeader->dataFieldHeader[5] = (unsigned char) (coarseTime>>16);
-    TMHeader->dataFieldHeader[6] = (unsigned char) (coarseTime>>8);
-    TMHeader->dataFieldHeader[7] = (unsigned char) (coarseTime);
-    TMHeader->dataFieldHeader[8] = (unsigned char) (fineTime>>8);
-    TMHeader->dataFieldHeader[9] = (unsigned char) (fineTime);*/
-    TMHeader->dataFieldHeader[4] = 0xaa;
-    TMHeader->dataFieldHeader[5] = 0xbb;
-    TMHeader->dataFieldHeader[6] = 0xcc;
-    TMHeader->dataFieldHeader[7] = 0xdd;
-    TMHeader->dataFieldHeader[8] = 0xee;
-    TMHeader->dataFieldHeader[9] = 0xff;
+    TMHeader->dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TMHeader->dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TMHeader->dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TMHeader->dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
+    TMHeader->dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
+    TMHeader->dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
     return 1;
 }
 
@@ -310,10 +304,13 @@ rtems_task recv_task( rtems_task_argument unused )
 
 rtems_task actn_task( rtems_task_argument unused )
 {
+    int result = 0;
     rtems_status_code status;           // RTEMS status code
     ccsdsTelecommandPacket_t TC;        // TC sent to the ACTN task
     size_t size;                        // size of the incoming TC packet
     unsigned char subtype = 0;          // subtype of the current TC packet
+
+    PRINTF("In ACTN *** \n")
 
     while(1)
     {
@@ -326,32 +323,56 @@ rtems_task actn_task( rtems_task_argument unused )
             switch(subtype)
             {
                 case TC_SUBTYPE_RESET:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_LOAD_COMM:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_LOAD_NORM:
-                    action_load_norm( &TC );
+                    result = action_load_norm( &TC );
+                    send_tm_lfr_tc_exe_success( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_LOAD_BURST:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_LOAD_SBM1:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_LOAD_SBM2:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_DUMP:
-                    action_default( &TC );
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_ENTER:
-                    action_enter( &TC );
+                    result = action_enter( &TC );
+                    send_tm_lfr_tc_exe_success( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_UPDT_INFO:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_EN_CAL:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_DIS_CAL:
+                    result = action_default( &TC );
                     break;
+                    //
                 case TC_SUBTYPE_UPDT_TIME:
+                    result = action_updt_time( &TC );
+                    send_tm_lfr_tc_exe_success( &TC );
                     break;
+                    //
                 default:
                     break;
             }
@@ -384,7 +405,7 @@ int action_default(ccsdsTelecommandPacket_t *TC)
     // filling the strture for the spcawire transmission
     spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
     spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = TM_LEN_NOT_IMP + CCSDS_TC_TM_PACKET_OFFSET - TM_HEADER_LEN;
+    spw_ioctl_send.dlen = 8;
     spw_ioctl_send.data = data;
     // SEND DATA
     write_spw(&spw_ioctl_send);
@@ -394,6 +415,25 @@ int action_default(ccsdsTelecommandPacket_t *TC)
 
 int action_enter(ccsdsTelecommandPacket_t *TC)
 {
+    unsigned char lfr_mode = TC->dataAndCRC[1];
+    printf("enter mode %d\n", lfr_mode);
+    switch(lfr_mode)
+    {
+        case(LFR_MODE_STANDBY):
+            LEON_Mask_interrupt( IRQ_WF );
+            LEON_Mask_interrupt( IRQ_SM );
+            break;
+        case(LFR_MODE_NORMAL):
+            LEON_Unmask_interrupt( IRQ_WF );
+            LEON_Unmask_interrupt( IRQ_SM );
+            break;
+        case(LFR_MODE_BURST):
+            break;
+        case(LFR_MODE_SBM1):
+            break;
+        case(LFR_MODE_SBM2):
+            break;
+    }
     return 0;
 }
 
@@ -404,11 +444,46 @@ int action_load_norm(ccsdsTelecommandPacket_t *TC)
     param_norm.sy_lfr_n_asm_p = TC->dataAndCRC[4] * 256 + TC->dataAndCRC[5];
     param_norm.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
     param_norm.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
-    printf("sy_lfr_n_ => swf_l %d, swf_p %d, asm_p %d, bsp_p0 %d, bsp_p1 %d\n",
+    /*printf("sy_lfr_n_ => swf_l %d, swf_p %d, asm_p %d, bsp_p0 %d, bsp_p1 %d\n",
            param_norm.sy_lfr_n_swf_l, param_norm.sy_lfr_n_swf_p,
-           param_norm.sy_lfr_n_asm_p, param_norm.sy_lfr_n_bp_p0, param_norm.sy_lfr_n_bp_p1);
+           param_norm.sy_lfr_n_asm_p, param_norm.sy_lfr_n_bp_p0, param_norm.sy_lfr_n_bp_p1);*/
     return 0;
 }
 
+int action_updt_time(ccsdsTelecommandPacket_t *TC)
+{
+    time_management_regs->coarse_time_load = (TC->dataAndCRC[0] << 24)
+                                                + (TC->dataAndCRC[1] << 16)
+                                                + (TC->dataAndCRC[2] << 8)
+                                                + TC->dataAndCRC[3];
+    time_management_regs->ctrl = time_management_regs->ctrl | 1;
+    return 0;
+}
+
+int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
+{
+    TMHeader_t TM_header;
+    char data[4];
+    spw_ioctl_pkt_send spw_ioctl_send;
+
+    TM_build_header( TM_LFR_TC_EXE_OK, TM_LEN_EXE,
+                              time_management_regs->coarse_time, time_management_regs->fine_time, &TM_header);
+
+    data[0] = TC->packetID[0];
+    data[1] = TC->packetID[1];
+    data[2] = TC->packetSequenceControl[0];
+    data[3] = TC->packetSequenceControl[1];
+
+    // filling the structure for the spacewire transmission
+    spw_ioctl_send.hlen = TM_HEADER_LEN + 3; // + 4 is for the protocole extra header
+    spw_ioctl_send.hdr = (char*) &TM_header;
+    spw_ioctl_send.dlen = 3;
+    spw_ioctl_send.data = data;
+
+    // SEND DATA
+    write_spw(&spw_ioctl_send);
+
+    return 0;
+}
 
 

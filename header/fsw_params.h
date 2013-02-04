@@ -4,11 +4,20 @@
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
+//**********
+// LFR MODES
+#define LFR_MODE_STANDBY 0
+#define LFR_MODE_NORMAL 1
+#define LFR_MODE_BURST 2
+#define LFR_MODE_SBM1 3
+#define LFR_MODE_SBM2 4
+
 //*****************************
 // APB REGISTERS BASE ADDRESSES
 #define REGS_ADDR_APBUART 0x80000100
 #define REGS_ADDR_GPTIMER 0x80000300
 #define REGS_ADDR_GRSPW 0x80000500
+#define REGS_ADDR_TIME_MANAGEMENT 0x80000600
 #define REGS_ADDR_SPECTRAL_MATRICES 0x80000700
 
 #define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
@@ -58,6 +67,21 @@ struct param_norm_str{
     unsigned int sy_lfr_n_asm_p; // time between two asm
     unsigned char sy_lfr_n_bp_p0; // timebetween two products BP1 set
     unsigned char sy_lfr_n_bp_p1; // time between two products BP2 set
+};
+
+struct param_burst_str{
+    unsigned char sy_lfr_b_bp_p0; // timebetween two products BP1 set
+    unsigned char sy_lfr_b_bp_p1; // time between two products BP2 set
+};
+
+struct param_sbm1_str{
+    unsigned char sy_lfr_s1_bp_p0; // timebetween two products BP1 set
+    unsigned char sy_lfr_s1_bp_p1; // time between two products BP2 set
+};
+
+struct param_sbm2_str{
+    unsigned char sy_lfr_s2_bp_p0; // timebetween two products BP1 set
+    unsigned char sy_lfr_s2_bp_p1; // time between two products BP2 set
 };
 
 extern volatile int wf_snap_f0[ ]; // 24576 bytes

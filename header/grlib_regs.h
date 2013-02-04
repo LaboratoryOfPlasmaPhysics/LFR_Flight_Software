@@ -37,4 +37,12 @@ struct spectral_matrices_regs_str{
 };
 typedef struct spectral_matrices_regs_str spectral_matrices_regs_t;
 
+struct time_management_regs_str{
+    volatile int ctrl; // bit 0 forces the load of the coarse_time_load value and resets the fine_time
+    volatile int coarse_time_load;
+    volatile int coarse_time;
+    volatile int fine_time;
+};
+typedef struct time_management_regs_str time_management_regs_t;
+
 #endif // GRLIBREGS_H_INCLUDED

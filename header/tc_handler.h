@@ -2,6 +2,7 @@
 #define TC_HANDLER_H_INCLUDED
 
 #include <rtems.h>
+#include <bsp.h>        // for the LEON_Unmask_interrupt function
 #include <stdio.h>
 #include <unistd.h>     // for the read call
 #include <sys/ioctl.h>  // for the ioctl call
@@ -13,7 +14,12 @@ extern int fdSPW;
 extern rtems_name misc_name[ ];
 extern rtems_name misc_id[ ];
 extern rtems_id Task_id[ ];         // array of task ids
+// MODE PARAMETERS
 extern struct param_norm_str param_norm;
+extern struct param_sbm1_str param_sbm1;
+extern struct param_sbm2_str param_sbm2;
+extern time_management_regs_t *time_management_regs;
+extern unsigned char param_common[];
 
 unsigned char currentTC_LEN_RCV[2]; //  SHALL be equal to the current TC packet estimated packet length field
 unsigned char currentTC_COMPUTED_CRC[2];
@@ -24,7 +30,7 @@ unsigned char currentTC_processedFlag;
 //**********************
 // GENERAL USE FUNCTIONS
 unsigned int lookUpTableForCRC[256];
-void InitLookUpTableForCRC();
+void initLookUpTableForCRC();
 void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData);
 
 //*********************
@@ -45,8 +51,11 @@ int create_message_queue();
 //***********
 // TC ACTIONS
 int action_default(ccsdsTelecommandPacket_t *TC);
+int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
+//
 int action_load_norm(ccsdsTelecommandPacket_t *TC);
 int action_enter(ccsdsTelecommandPacket_t *TC);
+int action_updt_time(ccsdsTelecommandPacket_t *TC);
 
 #endif // TC_HANDLER_H_INCLUDED
 

@@ -23,7 +23,12 @@ extern rtems_name Task_name[ ];     /* array of task names */
 extern rtems_name misc_name[ ];    /* arry of miscellaneous names for rtems objects */
 extern int fdSPW;   // grspw file descriptor
 extern int fdUART;  // uart file descriptor
+// MODE PARAMETERS
 extern struct param_norm_str param_norm;
+extern struct param_burst_str param_burst;
+extern struct param_sbm1_str param_sbm1;
+extern struct param_sbm2_str param_sbm2;
+extern unsigned char param_common[];
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */

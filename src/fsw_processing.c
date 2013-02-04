@@ -63,6 +63,8 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
     gptimer_regs = (gptimer_regs_t *) REGS_ADDR_GPTIMER;
     unsigned char nb_interrupt_f0 = 0;
 
+    PRINTF("In SMIQ *** \n")
+
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
@@ -367,6 +369,8 @@ rtems_task avf0_task(rtems_task_argument argument){
 
 rtems_task bpf0_task(rtems_task_argument argument){
     rtems_event_set event_out;
+
+    PRINTF("In BPFO *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
