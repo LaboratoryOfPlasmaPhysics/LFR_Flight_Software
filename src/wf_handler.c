@@ -30,12 +30,6 @@ rtems_task wfrm_task(rtems_task_argument argument)
     header.dataFieldHeader[1] = 0x15; // service type
     header.dataFieldHeader[2] = 0x03; // service subtype
     header.dataFieldHeader[3] = CCSDS_DESTINATION_ID;
-    header.dataFieldHeader[4] = 0xaa;
-    header.dataFieldHeader[5] = 0xbb;
-    header.dataFieldHeader[6] = 0xcc;
-    header.dataFieldHeader[7] = 0xdd;
-    header.dataFieldHeader[8] = 0xee;
-    header.dataFieldHeader[9] = 0xff;
 
     header.auxiliaryHeader[0] = 0x00;
     header.auxiliaryHeader[1] = 0x1f;
@@ -52,6 +46,12 @@ rtems_task wfrm_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        header.dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
+        header.dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
+        header.dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
+        header.dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
+        header.dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
+        header.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
         for (i=0; i<7; i++) // send F0
         {
             // BUILD THE DATA

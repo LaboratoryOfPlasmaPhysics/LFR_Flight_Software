@@ -27,6 +27,11 @@ unsigned int currentTC_LEN_RCV_AsUnsignedInt;
 unsigned int currentTM_length;
 unsigned char currentTC_processedFlag;
 
+//****
+// ISR
+rtems_isr commutation_isr1( rtems_vector_number vector );
+rtems_isr commutation_isr2( rtems_vector_number vector );
+
 //**********************
 // GENERAL USE FUNCTIONS
 unsigned int lookUpTableForCRC[256];
@@ -46,6 +51,7 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV);
 // RTEMS TASK
 rtems_task recv_task( rtems_task_argument unused );
 rtems_task actn_task( rtems_task_argument unused );
+rtems_task dumb_task( rtems_task_argument unused );
 int create_message_queue();
 
 //***********

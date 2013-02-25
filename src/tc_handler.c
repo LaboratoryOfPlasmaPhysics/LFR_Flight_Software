@@ -289,7 +289,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("In RECV *** Error: rtems_task_suspend(RTEMS_SELF)\n")
         }
         else {
-            //PRINTF1("In RECV *** Got Message of length %d\n", len)
+            PRINTF1("In RECV *** Got Message of length %d\n", len)
             currentTC_LEN_RCV[0] = 0x00;
             currentTC_LEN_RCV[1] = (unsigned char) len - CCSDS_TC_TM_PACKET_OFFSET - 3; //  build the corresponding packet size field
             currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) len - CCSDS_TC_TM_PACKET_OFFSET - 3; // => -3 is for Prot ID, Reserved and User App bytes
@@ -456,7 +456,7 @@ int action_updt_time(ccsdsTelecommandPacket_t *TC)
                                                 + (TC->dataAndCRC[1] << 16)
                                                 + (TC->dataAndCRC[2] << 8)
                                                 + TC->dataAndCRC[3];
-    time_management_regs->ctrl = time_management_regs->ctrl | 1;
+    //time_management_regs->ctrl = time_management_regs->ctrl | 1;
     return 0;
 }
 
@@ -485,5 +485,36 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 
     return 0;
 }
+
+//***************************
+// Interrupt Service Routines
+rtems_isr commutation_isr1( rtems_vector_number vector )
+{
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        printf("In spectral_matrices_isr *** Error sending event to DUMB\n");
+}
+
+rtems_isr commutation_isr2( rtems_vector_number vector )
+{
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        printf("In spectral_matrices_isr *** Error sending event to DUMB\n");
+}
+
+rtems_task dumb_task( rtems_task_argument unused )
+{
+    unsigned int coarse_time;
+    unsigned int fine_time;
+    rtems_event_set event_out;
+
+    PRINTF("In DUMB *** \n")
+
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        coarse_time = time_management_regs->coarse_time;
+        fine_time = time_management_regs->fine_time;
+        printf("commutation_isr*, coarse time = %x, fine time = %x\n", coarse_time, fine_time);
+    }
+}
+
 
 

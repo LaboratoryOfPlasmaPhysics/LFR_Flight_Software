@@ -22,10 +22,16 @@
 
 #define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
 
+//**********
+// IRQ LINES
 #define IRQ_SM 9
 #define IRQ_SPARC_SM 0x19 // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WF 10
 #define IRQ_SPARC_WF 0x1a // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_TIME1 12
+#define IRQ_SPARC_TIME1 0x1c // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_TIME2 13
+#define IRQ_SPARC_TIME2 0x1d // see sparcv8.pdf p.76 for interrupt levels
 
 #define CLKDIV_SM_SIMULATOR 9999
 #define CLKDIV_WF_SIMULATOR 9999999
@@ -42,11 +48,13 @@
 #define TASKID_AVF0 6
 #define TASKID_BPF0 7
 #define TASKID_WFRM 8
+#define TASKID_DUMB 9
 
 #define ACTION_MSG_QUEUE_COUNT 10
 
 //*******
 // MACROS
+//#define PRINT_TASK_STATISTICS
 #define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
 #ifdef PRINT_MESSAGES_ON_CONSOLE
 #define PRINTF(x) printf(x);

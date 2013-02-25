@@ -62,8 +62,10 @@ rtems_task stat_task(rtems_task_argument argument)
         rtems_task_wake_after(1000);
         PRINTF1("%d\n", i)
         if (i == 2) {
+            #ifdef PRINT_TASK_STATISTICS
             rtems_cpu_usage_report();
             rtems_cpu_usage_reset();
+            #endif
             i = 0;
         }
         else i++;

@@ -57,6 +57,7 @@ char *lstates[6] = {"Error-reset",
 rtems_task Init( rtems_task_argument ignored )
 {
     rtems_status_code status;
+    rtems_isr_entry old_isr_handler;
 
     //send_console_outputs_on_serial_port();
 
@@ -71,6 +72,22 @@ rtems_task Init( rtems_task_argument ignored )
                     IRQ_SPARC_SM, spectral_matrices_isr );
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_isr );
+
+    // irq handling of the time management unit
+    /*status = rtems_interrupt_catch( commutation_isr1,
+                                   IRQ_SPARC_TIME1,
+                                   &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
+    if (status==RTEMS_SUCCESSFUL)
+        PRINTF("commutation_isr1 *** rtems_interrupt_catch successfullly configured\n")
+
+    status = rtems_interrupt_catch( commutation_isr2,
+                                   IRQ_SPARC_TIME2,
+                                   &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
+    if (status==RTEMS_SUCCESSFUL)
+        PRINTF("commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
+
+    LEON_Unmask_interrupt( IRQ_TIME1 );
+    LEON_Unmask_interrupt( IRQ_TIME2 );*/
 
     status = rtems_task_delete(RTEMS_SELF);
 }
@@ -129,6 +146,7 @@ int create_all_tasks()
     Task_name[6] = rtems_build_name( 'A', 'V', 'F', '0' );
     Task_name[7] = rtems_build_name( 'B', 'P', 'F', '0' );
     Task_name[8] = rtems_build_name( 'W', 'F', 'R', 'M' );
+    //Task_name[9] = rtems_build_name( 'D', 'U', 'M', 'B' );
 
     // RECV
     status = rtems_task_create(
@@ -156,7 +174,7 @@ int create_all_tasks()
     );
     // STAT
     status = rtems_task_create(
-        Task_name[5], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[5], 150, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[5]
     );
@@ -178,6 +196,12 @@ int create_all_tasks()
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[8]
     );
+    // DUMB
+    /*status = rtems_task_create(
+        Task_name[9], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[9]
+    );*/
 
     return 0;
 }
@@ -209,6 +233,9 @@ int start_all_tasks()
 
     status = rtems_task_start( Task_id[8], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_WFRM\n")
+
+    /*status = rtems_task_start( Task_id[9], dumb_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_DUMB\n")*/
 
     return 0;
 }

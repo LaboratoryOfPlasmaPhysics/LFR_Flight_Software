@@ -1,34 +1,47 @@
 #include <fsw_processing.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <leon.h>
 
-float k14_re = 1;
-float k14_im = 1;
-float k14_bis_re = 1;
-float k14_bis_im = 1;
-float k14_tris_re = 1;
-float k14_tris_im = 1;
-float k15_re = 1;
-float k15_im = 1;
-float k15_bis_re = 1;
-float k15_bis_im = 1;
-float k24_re = 1;
-float k24_im = 1;
-float k24_bis_re = 1;
-float k24_bis_im = 1;
-float k24_tris_re = 1;
-float k24_tris_im = 1;
-float k25_re = 1;
-float k25_im = 1;
-float k25_bis_re = 1;
-float k25_bis_im = 1;
-float k34_re = 1;
-float k34_im = 1;
-float k44 = 1;
-float k55 = 1;
-float k45_re = 1;
-float k45_im = 1;
+// TOTAL = 32 coefficients * 4 = 128 octets * 3 * 12 = 4608 octets
+// SX 12 coefficients
+float k14_sx_re = 1;
+float k14_sx_im = 1;
+float k15_sx_re = 1;
+float k15_sx_im = 1;
+float k24_sx_re = 1;
+float k24_sx_im = 1;
+float k25_sx_re = 1;
+float k25_sx_im = 1;
+float k34_sx_re = 1;
+float k34_sx_im = 1;
+float k35_sx_re = 1;
+float k35_sx_im = 1;
+// NY 8 coefficients
+float k24_ny_re = 1;
+float k24_ny_im = 1;
+float k25_ny_re = 1;
+float k25_ny_im = 1;
+float k34_ny_re = 1;
+float k34_ny_im = 1;
+float k35_ny_re = 1;
+float k35_ny_im = 1;
+// NZ 8 coefficients
+float k24_nz_re = 1;
+float k24_nz_im = 1;
+float k25_nz_re = 1;
+float k25_nz_im = 1;
+float k34_nz_re = 1;
+float k34_nz_im = 1;
+float k35_nz_re = 1;
+float k35_nz_im = 1;
+// PE 4 coefficients
+float k44_pe = 1;
+float k55_pe = 1;
+float k45_pe_re = 1;
+float k45_pe_im = 1;
+
 float alpha_M = M_PI/4;
 
 extern volatile int spec_mat_f0_a[ ];
@@ -175,32 +188,32 @@ void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
     unsigned char * pt_char;
     float PSDB, PSDE;
     float NVEC_V0, NVEC_V1, NVEC_V2;
-    float significand;
-    int exponent;
+    //float significand;
+    //int exponent;
     float aux, tr_SB_SB, tmp;
-    float e_cross_b_re, e_cross_b_im;
-    float n_cross_e_scal_b_re = 0, n_cross_e_scal_b_im = 0;
-    float nx = 0, ny = 0;
-    float bz_bz_star = 0;
+    float sx_re, sx_im;
+    float nebx_re = 0, nebx_im = 0;
+    float ny = 0, nz = 0;
+    float bx_bx_star = 0;
     for(i=0; i<nb_bins_compressed_spec_mat; i++){
         //==============================================
         // BP1 PSD == B PAR_LFR_SC_BP1_PE_FL0 == 16 bits
         PSDB = compressed_spec_mat[i*30]      // S11
             + compressed_spec_mat[i*30+10]    // S22
             + compressed_spec_mat[i*30+18];   // S33
-        significand = frexp(PSDB, &exponent);
+        //significand = frexp(PSDB, &exponent);
         pt_char = (unsigned char*) &PSDB;
-        LFR_BP1[i*9+8] = pt_char[0]; // bits 31 downto 24 of the float
-        LFR_BP1[i*9+7] = pt_char[1];  // bits 23 downto 16 of the float
+        LFR_BP1[i*9+2] = pt_char[0]; // bits 31 downto 24 of the float
+        LFR_BP1[i*9+3] = pt_char[1];  // bits 23 downto 16 of the float
         //==============================================
         // BP1 PSD == E PAR_LFR_SC_BP1_PB_FL0 == 16 bits
-        PSDE = compressed_spec_mat[i*30+24] * k44     // S44
-            + compressed_spec_mat[i*30+28] * k55      // S55
-            + compressed_spec_mat[i*30+26] * k45_re   // S45
-            - compressed_spec_mat[i*30+27] * k45_im;  // S45
+        PSDE = compressed_spec_mat[i*30+24] * k44_pe     // S44
+            + compressed_spec_mat[i*30+28] * k55_pe      // S55
+            + compressed_spec_mat[i*30+26] * k45_pe_re   // S45
+            - compressed_spec_mat[i*30+27] * k45_pe_im;  // S45
         pt_char = (unsigned char*) &PSDE;
-        LFR_BP1[i*9+6] = pt_char[0]; // bits 31 downto 24 of the float
-        LFR_BP1[i*9+5] = pt_char[1]; // bits 23 downto 16 of the float
+        LFR_BP1[i*9+0] = pt_char[0]; // bits 31 downto 24 of the float
+        LFR_BP1[i*9+1] = pt_char[1]; // bits 23 downto 16 of the float
         //==============================================================================
         // BP1 normal wave vector == PAR_LFR_SC_BP1_NVEC_V0_F0 == 8 bits
                                // == PAR_LFR_SC_BP1_NVEC_V1_F0 == 8 bits
@@ -208,78 +221,85 @@ void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
         tmp = sqrt(
                     compressed_spec_mat[i*30+3]*compressed_spec_mat[i*30+3]     //Im S12
                     +compressed_spec_mat[i*30+5]*compressed_spec_mat[i*30+5]    //Im S13
-                    +compressed_spec_mat[i*30+5]*compressed_spec_mat[i*30+13]   //Im S23
+                    +compressed_spec_mat[i*30+13]*compressed_spec_mat[i*30+13]   //Im S23
                     );
         NVEC_V0 = compressed_spec_mat[i*30+13] / tmp;  // Im S23
         NVEC_V1 = -compressed_spec_mat[i*30+5] / tmp;  // Im S13
-        NVEC_V2 = compressed_spec_mat[i*30+1] / tmp;   // Im S12
-        LFR_BP1[i*9+4] = (char) (NVEC_V0*256);
-        LFR_BP1[i*9+3] = (char) (NVEC_V1*256);
+        NVEC_V2 = compressed_spec_mat[i*30+3] / tmp;   // Im S12
+        LFR_BP1[i*9+4] = (char) (NVEC_V0*127);
+        LFR_BP1[i*9+5] = (char) (NVEC_V1*127);
         pt_char = (unsigned char*) &NVEC_V2;
-        LFR_BP1[i*9+2] = pt_char[0] & 0x80;  // extract the sign of NVEC_V2
+        LFR_BP1[i*9+6] = pt_char[0] & 0x80;  // extract the sign of NVEC_V2
         //=======================================================
         // BP1 ellipticity == PAR_LFR_SC_BP1_ELLIP_F0   == 4 bits
         aux = 2*tmp / PSDB;                                             // compute the ellipticity
         tmp_u_char = (unsigned char) (aux*(16-1));                      // convert the ellipticity
-        LFR_BP1[i*9+2] = LFR_BP1[i*9+2] | ((tmp_u_char&0x0f)<<3); // keeps 4 bits of the resulting unsigned char
+        LFR_BP1[i*9+6] = LFR_BP1[i*9+6] | ((tmp_u_char&0x0f)<<3); // keeps 4 bits of the resulting unsigned char
         //==============================================================
         // BP1 degree of polarization == PAR_LFR_SC_BP1_DOP_F0 == 3 bits
         for(j = 0; j<NB_VALUES_PER_spec_mat;j++){
-            tr_SB_SB = compressed_spec_mat[i*30]*compressed_spec_mat[i*30]
-                    + compressed_spec_mat[i*30+10]*compressed_spec_mat[i*30+10]
-                    + compressed_spec_mat[i*30+18]*compressed_spec_mat[i*30+18]
-                    + 2 * compressed_spec_mat[i*30+2]*compressed_spec_mat[i*30+2]
-                    + 2 * compressed_spec_mat[i*30+3]*compressed_spec_mat[i*30+3]
-                    + 2 * compressed_spec_mat[i*30+4]*compressed_spec_mat[i*30+4]
-                    + 2 * compressed_spec_mat[i*30+5]*compressed_spec_mat[i*30+5]
-                    + 2 * compressed_spec_mat[i*30+12]*compressed_spec_mat[i*30+12]
-                    + 2 * compressed_spec_mat[i*30+13]*compressed_spec_mat[i*30+13];
+            tr_SB_SB = compressed_spec_mat[i*30] * compressed_spec_mat[i*30]
+                    + compressed_spec_mat[i*30+10] * compressed_spec_mat[i*30+10]
+                    + compressed_spec_mat[i*30+18] * compressed_spec_mat[i*30+18]
+                    + 2 * compressed_spec_mat[i*30+2] * compressed_spec_mat[i*30+2]
+                    + 2 * compressed_spec_mat[i*30+3] * compressed_spec_mat[i*30+3]
+                    + 2 * compressed_spec_mat[i*30+4] * compressed_spec_mat[i*30+4]
+                    + 2 * compressed_spec_mat[i*30+5] * compressed_spec_mat[i*30+5]
+                    + 2 * compressed_spec_mat[i*30+12] * compressed_spec_mat[i*30+12]
+                    + 2 * compressed_spec_mat[i*30+13] * compressed_spec_mat[i*30+13];
         }
         aux = PSDB*PSDB;
-        tmp = ( 3*tr_SB_SB - aux ) / ( 2 * aux );
+        tmp = sqrt( abs( ( 3*tr_SB_SB - aux ) / ( 2 * aux ) ) );
         tmp_u_char = (unsigned char) (NVEC_V0*(8-1));
-        LFR_BP1[i*9+2] = LFR_BP1[i*9+2] | ((tmp_u_char&0x07)); // keeps 3 bits of the resulting unsigned char
+        LFR_BP1[i*9+6] = LFR_BP1[i*9+6] | (tmp_u_char & 0x07); // keeps 3 bits of the resulting unsigned char
         //=======================================================================================
-        // BP1 z-component of the normalized Poynting flux == PAR_LFR_SC_BP1_SZ_F0 == 8 bits (7+1)
-        e_cross_b_re = compressed_spec_mat[i*30+20]*k34_re
-                        + compressed_spec_mat[i*30+6]*k14_re
-                        + compressed_spec_mat[i*30+8]*k15_re
-                        + compressed_spec_mat[i*30+14]*k24_re
-                        + compressed_spec_mat[i*30+16]*k25_re;
-        e_cross_b_im = compressed_spec_mat[i*30+21]*k34_im
-                        + compressed_spec_mat[i*30+7]*k14_im
-                        + compressed_spec_mat[i*30+9]*k15_im
-                        + compressed_spec_mat[i*30+15]*k24_im
-                        + compressed_spec_mat[i*30+17]*k25_im;
-        tmp = e_cross_b_re / PSDE; // compute ReaSz
-        LFR_BP1[i*9+1] = ((unsigned char) (tmp * 128)) & 0x7f; // is it always positive?
-        tmp = e_cross_b_re * e_cross_b_im;
-        pt_char = (unsigned char*) &tmp;
-        LFR_BP1[i*9+1] = LFR_BP1[i*9+1] | (pt_char[0] & 0x80);  // extract the sign of ArgSz
+        // BP1 x-component of the normalized Poynting flux == PAR_LFR_SC_BP1_SZ_F0 == 8 bits (7+1)
+        sx_re = compressed_spec_mat[i*30+20] * k34_sx_re
+                        + compressed_spec_mat[i*30+6] * k14_sx_re
+                        + compressed_spec_mat[i*30+8] * k15_sx_re
+                        + compressed_spec_mat[i*30+14] * k24_sx_re
+                        + compressed_spec_mat[i*30+16] * k25_sx_re
+                        + compressed_spec_mat[i*30+22] * k35_sx_re;
+        sx_im = compressed_spec_mat[i*30+21] * k34_sx_im
+                        + compressed_spec_mat[i*30+7] * k14_sx_im
+                        + compressed_spec_mat[i*30+9] * k15_sx_im
+                        + compressed_spec_mat[i*30+15] * k24_sx_im
+                        + compressed_spec_mat[i*30+17] * k25_sx_im
+                        + compressed_spec_mat[i*30+23] * k35_sx_im;
+        LFR_BP1[i*9+7] = ((unsigned char) (sx_re * 128)) & 0x7f; // cf DOC for the compression
+        if ( abs(sx_re) > abs(sx_im) )
+            LFR_BP1[i*9+7] = LFR_BP1[i*9+1] | (0x80);  // extract the sector of sx
+        else
+            LFR_BP1[i*9+7] = LFR_BP1[i*9+1] & (0x7f);  // extract the sector of sx
         //======================================================================
         // BP1 phase velocity estimator == PAR_LFR_SC_BP1_VPHI_F0 == 8 bits (7+1)
-        nx = -sin(alpha_M)*NVEC_V0 - cos(alpha_M)*NVEC_V1;
-        ny = NVEC_V2;
-        bz_bz_star = cos(alpha_M) * cos(alpha_M) * compressed_spec_mat[i*30]              // re S11
-                        + sin(alpha_M) * sin(alpha_M) * compressed_spec_mat[i*30+10]      // re S22
-                        - 2 * sin(alpha_M) * cos(alpha_M) * compressed_spec_mat[i*30+2];  // re S12
-        n_cross_e_scal_b_re = nx * (compressed_spec_mat[i*30+8]*k15_bis_re
-                                        +compressed_spec_mat[i*30+6]*k14_bis_re
-                                        +compressed_spec_mat[i*30+16]*k25_bis_re
-                                        +compressed_spec_mat[i*30+14]*k24_bis_re)
-                                + ny * (compressed_spec_mat[i*30+6]*k14_tris_re
-                                        +compressed_spec_mat[i*30+14]*k24_tris_re);
-        n_cross_e_scal_b_im = nx * (compressed_spec_mat[i*30+8]*k15_bis_im
-                                        +compressed_spec_mat[i*30+6]*k14_bis_im
-                                        +compressed_spec_mat[i*30+16]*k25_bis_im
-                                        +compressed_spec_mat[i*30+14]*k24_bis_im)
-                                + ny * (compressed_spec_mat[i*30+6]*k14_tris_im
-                                        +compressed_spec_mat[i*30+14]*k24_tris_im);
-        tmp = n_cross_e_scal_b_re / bz_bz_star;
-        LFR_BP1[i*9+0] = ((unsigned char) (tmp * 128)) & 0x7f; // is it always positive?
-        tmp = n_cross_e_scal_b_re * n_cross_e_scal_b_im;
-        pt_char = (unsigned char*) &tmp;
-        LFR_BP1[i*9+1] = LFR_BP1[i*9+0] | (pt_char[0] & 0x80);  // extract the sign of ArgV
+        ny = sin(alpha_M)*NVEC_V1 + cos(alpha_M)*NVEC_V2;
+        nz = NVEC_V0;
+        bx_bx_star = cos(alpha_M) * cos(alpha_M) * compressed_spec_mat[i*30+10]            // re S22
+                        + sin(alpha_M) * sin(alpha_M) * compressed_spec_mat[i*30+18]       // re S33
+                        - 2 * sin(alpha_M) * cos(alpha_M) * compressed_spec_mat[i*30+12];  // re S23
+        nebx_re = ny * (compressed_spec_mat[i*30+14] * k24_ny_re
+                                        +compressed_spec_mat[i*30+16] * k25_ny_re
+                                        +compressed_spec_mat[i*30+20] * k34_ny_re
+                                        +compressed_spec_mat[i*30+22] * k35_ny_re)
+                                + nz * (compressed_spec_mat[i*30+14] * k24_nz_re
+                                        +compressed_spec_mat[i*30+16] * k25_nz_re
+                                        +compressed_spec_mat[i*30+20] * k34_nz_re
+                                        +compressed_spec_mat[i*30+22] * k35_nz_re);
+        nebx_im = ny * (compressed_spec_mat[i*30+15]*k24_ny_re
+                                        +compressed_spec_mat[i*30+17] * k25_ny_re
+                                        +compressed_spec_mat[i*30+21] * k34_ny_re
+                                        +compressed_spec_mat[i*30+23] * k35_ny_re)
+                                + nz * (compressed_spec_mat[i*30+15] * k24_nz_im
+                                        +compressed_spec_mat[i*30+17] * k25_nz_im
+                                        +compressed_spec_mat[i*30+21] * k34_nz_im
+                                        +compressed_spec_mat[i*30+23] * k35_nz_im);
+        tmp = nebx_re / bx_bx_star;
+        LFR_BP1[i*9+8] = ((unsigned char) (tmp * 128)) & 0x7f; // cf DOC for the compression
+        if ( abs(nebx_re) > abs(nebx_im) )
+            LFR_BP1[i*9+8] = LFR_BP1[i*9+8] | (0x80);  // extract the sector of nebx
+        else
+            LFR_BP1[i*9+8] = LFR_BP1[i*9+8] & (0x7f);  // extract the sector of nebx
     }
 
 }
