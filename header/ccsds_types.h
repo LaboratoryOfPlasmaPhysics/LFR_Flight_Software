@@ -8,8 +8,8 @@
 #define CCSDS_TC_TM_PACKET_OFFSET 7
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
-#define CCSDS_NODE_ADDRESS 0x01     // SY_DPU_LFR_LA 1 is not allowed by the StarDundee brick, use 101 instead 0x65
-#define CCSDS_DESTINATION_ID 0x02   // SY_LFR_DPU_LA 2 is not allowed by the StarDundee brick, use 102 instead 0x66
+#define CCSDS_NODE_ADDRESS 0xfe
+#define CCSDS_DESTINATION_ID 0x01
 #define CCSDS_PROTOCOLE_ID 0x02
 #define CCSDS_USER_APP 0x00
 
