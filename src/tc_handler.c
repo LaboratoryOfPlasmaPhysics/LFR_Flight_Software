@@ -289,7 +289,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("In RECV *** Error: rtems_task_suspend(RTEMS_SELF)\n")
         }
         else {
-            PRINTF1("In RECV *** Got Message of length %d\n", len)
+            PRINTF1("Got pck of length %d\n", len+1)
             currentTC_LEN_RCV[0] = 0x00;
             currentTC_LEN_RCV[1] = (unsigned char) len - CCSDS_TC_TM_PACKET_OFFSET - 3; //  build the corresponding packet size field
             currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) len - CCSDS_TC_TM_PACKET_OFFSET - 3; // => -3 is for Prot ID, Reserved and User App bytes

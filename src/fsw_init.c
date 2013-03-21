@@ -74,7 +74,7 @@ rtems_task Init( rtems_task_argument ignored )
                     IRQ_SPARC_WF, waveforms_isr );
 
     // irq handling of the time management unit
-    /*status = rtems_interrupt_catch( commutation_isr1,
+    status = rtems_interrupt_catch( commutation_isr1,
                                    IRQ_SPARC_TIME1,
                                    &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
     if (status==RTEMS_SUCCESSFUL)
@@ -87,7 +87,7 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF("commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
 
     LEON_Unmask_interrupt( IRQ_TIME1 );
-    LEON_Unmask_interrupt( IRQ_TIME2 );*/
+    LEON_Unmask_interrupt( IRQ_TIME2 );
 
     status = rtems_task_delete(RTEMS_SELF);
 }
@@ -146,7 +146,7 @@ int create_all_tasks()
     Task_name[6] = rtems_build_name( 'A', 'V', 'F', '0' );
     Task_name[7] = rtems_build_name( 'B', 'P', 'F', '0' );
     Task_name[8] = rtems_build_name( 'W', 'F', 'R', 'M' );
-    //Task_name[9] = rtems_build_name( 'D', 'U', 'M', 'B' );
+    Task_name[9] = rtems_build_name( 'D', 'U', 'M', 'B' );
 
     // RECV
     status = rtems_task_create(
@@ -197,11 +197,11 @@ int create_all_tasks()
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[8]
     );
     // DUMB
-    /*status = rtems_task_create(
+    status = rtems_task_create(
         Task_name[9], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[9]
-    );*/
+    );
 
     return 0;
 }
@@ -234,8 +234,8 @@ int start_all_tasks()
     status = rtems_task_start( Task_id[8], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_WFRM\n")
 
-    /*status = rtems_task_start( Task_id[9], dumb_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_DUMB\n")*/
+    status = rtems_task_start( Task_id[9], dumb_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_DUMB\n")
 
     return 0;
 }
@@ -275,10 +275,15 @@ int configure_spw_link()
 
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
-    //
-    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destination key
-    //if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
-    //
+
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destination key
+    PRINTF1("destination address set to: %d\n", CCSDS_DESTINATION_ID)
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_NODEADDR, CCSDS_NODE_ADDRESS);  // sets the destination key
+    PRINTF1("node address set to: %d\n", CCSDS_NODE_ADDRESS)
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+
     PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
 
     return RTEMS_SUCCESSFUL;
