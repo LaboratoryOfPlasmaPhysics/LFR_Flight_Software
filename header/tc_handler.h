@@ -57,6 +57,7 @@ int create_message_queue();
 //***********
 // TC ACTIONS
 int action_default(ccsdsTelecommandPacket_t *TC);
+int action_default_alt(ccsdsTelecommandPacket_t *TC);
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
 //
 int action_load_norm(ccsdsTelecommandPacket_t *TC);

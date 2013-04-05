@@ -51,3 +51,5 @@ struct drvmgr_bus_res grlib_drv_resources = {
         RES_EMPTY /* Mark end of device resource array */
     }
 };
+
+

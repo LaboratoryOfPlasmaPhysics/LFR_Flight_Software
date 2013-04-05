@@ -393,20 +393,31 @@ int create_message_queue()
 
 //***********
 // TC ACTIONS
+
 int action_default(ccsdsTelecommandPacket_t *TC)
 {
-    char data[100];                     // buffer for the generic TM packet
-    TMHeader_t TM_header;               // TM header
-    spw_ioctl_pkt_send spw_ioctl_send;  // structure to send the TM packet if any
-    // BUILD HEADER
-    TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_NOT_IMP, 0, 0, &TM_header);
-    // BUILD DATA
-    TM_build_data( TC, data, SID_NOT_IMP, NULL);
-    // filling the strture for the spcawire transmission
+    TMHeader_t TM_header;
+    char data[8];
+    spw_ioctl_pkt_send spw_ioctl_send;
+
+    TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_NOT_IMP,
+                        time_management_regs->coarse_time, time_management_regs->fine_time, &TM_header);
+
+    data[0] = 0x9c;
+    data[1] = 0x42;
+    data[2] = TC->packetID[0];
+    data[3] = TC->packetID[1];
+    data[4] = TC->packetSequenceControl[0];
+    data[5] = TC->packetSequenceControl[1];
+    data[6] = TC->dataFieldHeader[1]; // type
+    data[7] = TC->dataFieldHeader[2]; // subtype
+
+    // filling the structure for the spacewire transmission
     spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
     spw_ioctl_send.hdr = (char*) &TM_header;
     spw_ioctl_send.dlen = 8;
     spw_ioctl_send.data = data;
+
     // SEND DATA
     write_spw(&spw_ioctl_send);
 
@@ -491,13 +502,13 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 rtems_isr commutation_isr1( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        printf("In spectral_matrices_isr *** Error sending event to DUMB\n");
+        printf("In commutation_isr1 *** Error sending event to DUMB\n");
 }
 
 rtems_isr commutation_isr2( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        printf("In spectral_matrices_isr *** Error sending event to DUMB\n");
+        printf("In commutation_isr2 *** Error sending event to DUMB\n");
 }
 
 rtems_task dumb_task( rtems_task_argument unused )

@@ -3,7 +3,7 @@
 rtems_isr waveforms_isr( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        printf("In spectral_matrices_isr *** Error sending event to WFRM\n");
+        printf("In waveforms_isr *** Error sending event to WFRM\n");
 }
 
 rtems_task wfrm_task(rtems_task_argument argument)

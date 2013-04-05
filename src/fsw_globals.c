@@ -42,3 +42,4 @@ unsigned char param_common[2];
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];
 
 BP1_t data_BP1[ NB_BINS_COMPRESSED_MATRIX_f0 ];
+

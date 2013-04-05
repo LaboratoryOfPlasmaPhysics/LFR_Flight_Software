@@ -67,6 +67,8 @@ rtems_task Init( rtems_task_argument ignored )
     create_all_tasks();
     start_all_tasks();
 
+    grspw_timecode_callback = &timecode_irq_handler;
+
     configure_spw_link();
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
@@ -258,9 +260,12 @@ int configure_spw_link()
     PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" opened and started successfully\n")
 
     // sets a few parameters of the link
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RMAPEN, 1);      // sets the RMAP enable bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RMAPEN\n")
-    //
+    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RMAPEN, 1);      // sets the RMAP enable bit
+    //if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RMAPEN\n")
+
+    configure_spacewire_set_NP(1, REGS_ADDR_GRSPW); // No Port force
+    configure_spacewire_set_RE(1, REGS_ADDR_GRSPW); // the dedicated call seems to  break the no port force configuration
+
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
     //
@@ -272,21 +277,52 @@ int configure_spw_link()
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
-
+    //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
-
+    //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destination key
     PRINTF1("destination address set to: %d\n", CCSDS_DESTINATION_ID)
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
-
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_NODEADDR, CCSDS_NODE_ADDRESS);  // sets the destination key
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_DESTKEY\n")
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_NODEADDR, CCSDS_NODE_ADDRESS);  // sets the node address
     PRINTF1("node address set to: %d\n", CCSDS_NODE_ADDRESS)
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_NODEADDR\n")
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909);
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
 
     PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
 
     return RTEMS_SUCCESSFUL;
+}
+
+void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr) // No Port force
+{
+    unsigned int *spwptr;
+    spwptr = (unsigned int*) regAddr;
+    if (val == 1)
+    {
+        *spwptr = *spwptr | 0x00100000; // [NP] set the No port force bit
+    }
+    if (val== 0)
+    {
+        *spwptr = *spwptr & 0xffdfffff;
+    }
+}
+
+void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // RMAP Enable
+{
+    unsigned int *spwptr;
+    spwptr = (unsigned int*) regAddr;
+    if (val == 1)
+    {
+        *spwptr = *spwptr | 0x00010000; // [NP] set the No port force bit
+    }
+    if (val== 0)
+    {
+        *spwptr = *spwptr & 0xfffdffff;
+    }
 }
 
 char *link_status(int status){
@@ -301,4 +337,9 @@ rtems_status_code write_spw(spw_ioctl_pkt_send* spw_ioctl_send)
     return status;
 }
 
+void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc)
+{
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        printf("In timecode_irq_handler *** Error sending event to DUMB\n");
+}
 
