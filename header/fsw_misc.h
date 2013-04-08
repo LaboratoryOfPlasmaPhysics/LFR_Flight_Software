@@ -15,5 +15,6 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
 void print_statistics(spw_stats *stats);
 int send_console_outputs_on_serial_port();
 rtems_task stat_task(rtems_task_argument argument);
+rtems_task hous_task(rtems_task_argument argument);
 
 #endif // FSW_MISC_H_INCLUDED

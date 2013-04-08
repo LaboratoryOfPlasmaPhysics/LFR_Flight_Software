@@ -33,15 +33,18 @@
 #define IRQ_TIME2 13
 #define IRQ_SPARC_TIME2 0x1d // see sparcv8.pdf p.76 for interrupt levels
 
+//*****
+// TIME
 #define CLKDIV_SM_SIMULATOR 9999
 #define CLKDIV_WF_SIMULATOR 9999999
 #define TIMER_SM_SIMULATOR 1
 #define TIMER_WF_SIMULATOR 2
+#define HK_PERIOD 100 // 100 * 10ms => 1sec
 
 //******
 // RTEMS
 #define TASKID_RECV 1
-#define TASKID_ACTN 1
+#define TASKID_ACTN 2
 #define TASKID_SPIQ 3
 #define TASKID_SMIQ 4
 #define TASKID_STAT 5
@@ -49,8 +52,12 @@
 #define TASKID_BPF0 7
 #define TASKID_WFRM 8
 #define TASKID_DUMB 9
+#define TASKID_HOUS 10
 
 #define ACTION_MSG_QUEUE_COUNT 10
+
+// LENGTH (BYTES)
+#define LENGTH_TM_LFR_HK 126
 
 //*******
 // MACROS

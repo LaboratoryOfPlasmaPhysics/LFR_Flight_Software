@@ -15,7 +15,7 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS             10
+#define CONFIGURE_MAXIMUM_TASKS             15
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS         (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
@@ -70,6 +70,7 @@ rtems_task Init( rtems_task_argument ignored )
     grspw_timecode_callback = &timecode_irq_handler;
 
     configure_spw_link();
+
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
@@ -104,13 +105,18 @@ rtems_task spiq_task(rtems_task_argument unused)
         PRINTF("In SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
 
-        if (rtems_task_suspend(Task_id[1])!=RTEMS_SUCCESSFUL)   // suspend RECV task
+        if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL)   // suspend RECV task
             PRINTF("In SPIQ *** Error suspending RECV Task\n")
+        if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL)   // suspend HOUS task
+            PRINTF("In SPIQ *** Error suspending HOUS Task\n")
 
         configure_spw_link();
 
-        if (rtems_task_restart(Task_id[1], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
+        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
             PRINTF("In SPIQ *** Error resume RECV Task\n")
+        if (rtems_task_restart(Task_id[TASKID_HOUS], 1)!=RTEMS_SUCCESSFUL) // restart HOUS task
+            PRINTF("In SPIQ *** Error resume HOUS Task\n")
+
     }
 }
 
@@ -140,69 +146,76 @@ int create_all_tasks()
 {
     rtems_status_code status;
 
-    Task_name[1] = rtems_build_name( 'R', 'E', 'C', 'V' );
-    Task_name[2] = rtems_build_name( 'A', 'C', 'T', 'N' );
-    Task_name[3] = rtems_build_name( 'S', 'P', 'I', 'Q' );
-    Task_name[4] = rtems_build_name( 'S', 'M', 'I', 'Q' );
-    Task_name[5] = rtems_build_name( 'S', 'T', 'A', 'T' );
-    Task_name[6] = rtems_build_name( 'A', 'V', 'F', '0' );
-    Task_name[7] = rtems_build_name( 'B', 'P', 'F', '0' );
-    Task_name[8] = rtems_build_name( 'W', 'F', 'R', 'M' );
-    Task_name[9] = rtems_build_name( 'D', 'U', 'M', 'B' );
+    Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
+    Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
+    Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
+    Task_name[TASKID_SMIQ] = rtems_build_name( 'S', 'M', 'I', 'Q' );
+    Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
+    Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
+    Task_name[TASKID_BPF0] = rtems_build_name( 'B', 'P', 'F', '0' );
+    Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
+    Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
+    Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
 
     // RECV
     status = rtems_task_create(
-        Task_name[1], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_RECV], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[1]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_RECV]
     );
     // ACTN
     status = rtems_task_create(
-        Task_name[2], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_ACTN], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[2]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_ACTN]
     );
     // SPIQ
     status = rtems_task_create(
-        Task_name[3], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SPIQ], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[3]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]
     );
     // SMIQ
     status = rtems_task_create(
-        Task_name[4], 10, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SMIQ], 10, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[4]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SMIQ]
     );
     // STAT
     status = rtems_task_create(
-        Task_name[5], 150, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_STAT], 150, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[5]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
     );
     // AVF0
     status = rtems_task_create(
-        Task_name[6], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_AVF0], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
-        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[6]
+        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
     );
     // BPF0
     status = rtems_task_create(
-        Task_name[7], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_BPF0], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[7]
+        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_BPF0]
     );
     // WFRM
     status = rtems_task_create(
-        Task_name[8], 100, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_WFRM], 100, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[8]
+        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
     );
     // DUMB
     status = rtems_task_create(
-        Task_name[9], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_DUMB], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[9]
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
+    );
+    // HOUS
+    status = rtems_task_create(
+        Task_name[TASKID_HOUS], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
     );
 
     return 0;
@@ -212,32 +225,35 @@ int start_all_tasks()
 {
     rtems_status_code status;
 
-    status = rtems_task_start( Task_id[3], spiq_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_SPIQ], spiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_SPIQ\n")
 
-    status = rtems_task_start( Task_id[1], recv_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_RECV\n")
 
-    status = rtems_task_start( Task_id[2], actn_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_ACTN\n")
 
-    status = rtems_task_start( Task_id[4], smiq_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPPR\n")
 
-    status = rtems_task_start( Task_id[5], stat_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_STAT\n")
 
-    status = rtems_task_start( Task_id[6], avf0_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_AVF0\n")
 
-    status = rtems_task_start( Task_id[7], bpf0_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_BPF0], bpf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPF0\n")
 
-    status = rtems_task_start( Task_id[8], wfrm_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_WFRM\n")
 
-    status = rtems_task_start( Task_id[9], dumb_task, 1 );
+    status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_DUMB\n")
+
+    status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_HOUS\n")
 
     return 0;
 }
@@ -269,7 +285,7 @@ int configure_spw_link()
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[3]);    // sets the task ID to which an event is sent when a
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
     if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 1);          // automatic link-disabling due to link-error interrupts

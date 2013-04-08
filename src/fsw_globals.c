@@ -1,11 +1,12 @@
 #include <fsw_processing.h>
 #include <rtems.h>
+#include <ccsds_types.h>
 
 // RTEMS GLOBAL VARIABLES
 rtems_name misc_name[5];
 rtems_name misc_id[5];
-rtems_id   Task_id[10];         /* array of task ids */
-rtems_name Task_name[10];       /* array of task names */
+rtems_id   Task_id[15];         /* array of task ids */
+rtems_name Task_name[15];       /* array of task names */
 int fdSPW;
 int fdUART;
 
@@ -38,8 +39,11 @@ struct param_sbm1_str param_sbm1;
 struct param_sbm2_str param_sbm2;
 unsigned char param_common[2];
 
+// HK PACKETS
+TMHeader_t housekeeping_header;
+char housekeeping_data[LENGTH_TM_LFR_HK - 10 + 1];
+
 // BASIC PARAMETERS GLOBAL VARIABLES
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];
-
 BP1_t data_BP1[ NB_BINS_COMPRESSED_MATRIX_f0 ];
 
