@@ -21,6 +21,7 @@
 #define REGS_ADDR_SPECTRAL_MATRICES 0x80000700
 
 #define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
+#define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400
 
 //**********
 // IRQ LINES
@@ -56,12 +57,9 @@
 
 #define ACTION_MSG_QUEUE_COUNT 10
 
-// LENGTH (BYTES)
-#define LENGTH_TM_LFR_HK 126
-
 //*******
 // MACROS
-//#define PRINT_TASK_STATISTICS
+#define PRINT_TASK_STATISTICS
 #define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
 #ifdef PRINT_MESSAGES_ON_CONSOLE
 #define PRINTF(x) printf(x);
@@ -75,6 +73,7 @@
 
 #define NB_SAMPLES_PER_SNAPSHOT 2048
 #define NB_BYTES_SWF_BLK 2 * 6
+#define NB_WORDS_SWF_BLK 3
 
 struct param_norm_str{
     unsigned int sy_lfr_n_swf_l; // length of the snapshots

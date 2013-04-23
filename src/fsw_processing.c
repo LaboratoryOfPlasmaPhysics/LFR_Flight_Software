@@ -62,13 +62,16 @@ extern rtems_id Task_id[ ];         /* array of task ids */
 
 spectral_matrices_regs_t *spectral_matrices_regs;
 
+//***********************************************************
 // Interrupt Service Routine for spectral matrices processing
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        printf("In spectral_matrices_isr *** Error sending event to AVF0\n");
+        printf("in spectral_matrices_isr *** Error sending event to AVF0\n");
 }
 
+//************
+// RTEMS TASKS
 rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
 {
     rtems_event_set event_out;
@@ -76,17 +79,16 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
     gptimer_regs = (gptimer_regs_t *) REGS_ADDR_GPTIMER;
     unsigned char nb_interrupt_f0 = 0;
 
-    PRINTF("In SMIQ *** \n")
+    PRINTF("in SMIQ *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
         if (nb_interrupt_f0 == (NB_SM_TO_RECEIVE_BEFORE_AVF0-1) ){
-            if (rtems_event_send( Task_id[6], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-                printf("In smiq_task *** Error sending event to AVF0\n");
+            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+                printf("in SMIQ *** Error sending event to AVF0\n");
             nb_interrupt_f0 = 0;
         }
-        gptimer_regs->timer[1].ctrl = gptimer_regs->timer[1].ctrl | 0x00000010;
     }
 }
 
@@ -104,7 +106,7 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
     spectral_matrices_regs->address0 = (volatile int) spec_mat_f0_a;
     spectral_matrices_regs->address1 = (volatile int) spec_mat_f0_b;
 
-    printf("In BPPR ***\n");
+    printf("in BPPR ***\n");
 
     while(1){ // wait for an event to begin with the processing
         status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
@@ -131,6 +133,57 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
     }
 }
 
+rtems_task avf0_task(rtems_task_argument argument){
+    int i;
+    static int nb_average;
+    rtems_event_set event_out;
+    rtems_status_code status;
+
+    spectral_matrices_regs = (struct spectral_matrices_regs_str *) REGS_ADDR_SPECTRAL_MATRICES;
+    spectral_matrices_regs->address0 = (volatile int) spec_mat_f0_a;
+    spectral_matrices_regs->address1 = (volatile int) spec_mat_f0_b;
+
+    nb_average = 0;
+
+    PRINTF("in AVFO *** \n")
+
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        for(i=0; i<TOTAL_SIZE_SPEC_MAT; i++){
+            averaged_spec_mat_f0[i] = averaged_spec_mat_f0[i] + spec_mat_f0_a[i]
+                                            + spec_mat_f0_b[i]
+                                            + spec_mat_f0_c[i]
+                                            + spec_mat_f0_d[i]
+                                            + spec_mat_f0_e[i]
+                                            + spec_mat_f0_f[i]
+                                            + spec_mat_f0_g[i]
+                                            + spec_mat_f0_h[i];
+        }
+        spectral_matrices_regs->ctrl = spectral_matrices_regs->ctrl & 0xfffffffe; // reset the appropriate bit in the register
+        nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
+        if (nb_average == NB_AVERAGE_NORMAL_f0) {
+            nb_average = 0;
+            status = rtems_event_send( Task_id[7], RTEMS_EVENT_0 ); // sending an event to the task 7, BPF0
+            if (status != RTEMS_SUCCESSFUL) printf("iN TASK AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+        }
+    }
+}
+
+rtems_task bpf0_task(rtems_task_argument argument){
+    rtems_event_set event_out;
+
+    PRINTF("in BPFO *** \n")
+
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        matrix_compression(averaged_spec_mat_f0, 0, compressed_spec_mat_f0);
+        BP1_set(compressed_spec_mat_f0, NB_BINS_COMPRESSED_MATRIX_f0, LFR_BP1_F0);
+        //PRINTF("IN TASK BPF0 *** Matrix compressed, parameters calculated\n")
+    }
+}
+
+//*****************************
+// Spectral matrices processing
 void matrix_average(volatile int *spec_mat, float *averaged_spec_mat)
 {
     int i;
@@ -172,10 +225,10 @@ void matrix_compression(float *averaged_spec_mat, unsigned char fChannel, float 
                 }
             break;
         case 1:
-            // case fChannel = f1 tp be completed later
+            // case fChannel = f1 to be completed later
             break;
         case 2:
-            // case fChannel = f1 tp be completed later
+            // case fChannel = f1 to be completed later
             break;
         default:
             break;
@@ -350,98 +403,4 @@ void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
         compressed_spec_mat[i*30+23] = compressed_spec_mat[i*30+23] / aux;
     }
 }
-
-rtems_task avf0_task(rtems_task_argument argument){
-    int i;
-    static int nb_average;
-    rtems_event_set event_out;
-    rtems_status_code status;
-
-    spectral_matrices_regs = (struct spectral_matrices_regs_str *) REGS_ADDR_SPECTRAL_MATRICES;
-    spectral_matrices_regs->address0 = (volatile int) spec_mat_f0_a;
-    spectral_matrices_regs->address1 = (volatile int) spec_mat_f0_b;
-
-    nb_average = 0;
-
-    PRINTF("In AVFO *** \n")
-
-    while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        for(i=0; i<TOTAL_SIZE_SPEC_MAT; i++){
-            averaged_spec_mat_f0[i] = averaged_spec_mat_f0[i] + spec_mat_f0_a[i]
-                                            + spec_mat_f0_b[i]
-                                            + spec_mat_f0_c[i]
-                                            + spec_mat_f0_d[i]
-                                            + spec_mat_f0_e[i]
-                                            + spec_mat_f0_f[i]
-                                            + spec_mat_f0_g[i]
-                                            + spec_mat_f0_h[i];
-        }
-        spectral_matrices_regs->ctrl = spectral_matrices_regs->ctrl & 0xfffffffe; // reset the appropriate bit in the register
-        nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
-        if (nb_average == NB_AVERAGE_NORMAL_f0) {
-            nb_average = 0;
-            status = rtems_event_send( Task_id[7], RTEMS_EVENT_0 ); // sending an event to the task 7, BPF0
-            if (status != RTEMS_SUCCESSFUL) printf("IN TASK AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
-        }
-    }
-}
-
-rtems_task bpf0_task(rtems_task_argument argument){
-    rtems_event_set event_out;
-
-    PRINTF("In BPFO *** \n")
-
-    while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        matrix_compression(averaged_spec_mat_f0, 0, compressed_spec_mat_f0);
-        BP1_set(compressed_spec_mat_f0, NB_BINS_COMPRESSED_MATRIX_f0, LFR_BP1_F0);
-        //PRINTF("IN TASK BPF0 *** Matrix compressed, parameters calculated\n")
-    }
-}
-
-//*******
-// UNUSED
-rtems_task spw_bppr_task_rate_monotonic(rtems_task_argument argument)
-{/*
-    rtems_status_code status;
-    //static int nb_average_f1 = 0;
-    //static int nb_average_f2 = 0;
-
-    rtems_name  name;
-    rtems_id    period;
-    name = rtems_build_name( 'P', 'E', 'R', 'D' );
-    status = rtems_rate_monotonic_create( name, &period );
-    if( status != RTEMS_SUCCESSFUL ) {
-        printf( "rtems_rate_monotonic_create failed with status of %d\n", status );
-        //exit( 1 );
-    }
-
-    spectral_matrices_regs = (struct spectral_matrices_regs_str *) REGS_ADDR_SPECTRAL_MATRICES;
-    spectral_matrices_regs->address0 = (volatile int) spec_mat_f0_a;
-    spectral_matrices_regs->address1 = (volatile int) spec_mat_f0_b;
-
-    printf("In BPPR BIS ***\n");
-
-    while(1){ // launch the rate monotonic task
-        if ( rtems_rate_monotonic_period( period, 8 ) == RTEMS_TIMEOUT ){
-            printf("TIMEOUT\n");
-            //break;
-        }
-        status = rtems_event_send( Task_id[6], RTEMS_EVENT_0 ); // sending an event to the task 6, AVF0
-        if (status != RTEMS_SUCCESSFUL) printf("IN TASK BPPR BIS *** Error sending RTEMS_EVENT_0 to AVF0, code %d\n", status);
-    }
-
-    status = rtems_rate_monotonic_delete( period );
-    if ( status != RTEMS_SUCCESSFUL ) {
-        printf( "rtems_rate_monotonic_delete failed with status of %d.\n", status );
-        //exit( 1 );
-    }
-    status = rtems_task_delete( RTEMS_SELF ); // should not return
-    printf( "rtems_task_delete returned with status of %d.\n", status );
-    //exit( 1 );*/
-}
-
-
-
 

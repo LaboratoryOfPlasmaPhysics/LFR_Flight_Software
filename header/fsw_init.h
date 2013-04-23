@@ -39,6 +39,7 @@ rtems_task recv_task(rtems_task_argument argument);
 rtems_task spiq_task(rtems_task_argument argument);
 rtems_task stat_task(rtems_task_argument argument);
 rtems_task wfrm_task(rtems_task_argument argument);
+int create_names();
 int create_all_tasks();
 int start_all_tasks();
 int create_message_queue();

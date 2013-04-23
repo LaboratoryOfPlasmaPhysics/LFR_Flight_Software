@@ -48,7 +48,6 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
     crcAsTwoBytes[1] = (unsigned char) (Chk & 0x00ff);
 }
 
-
 //*********************
 // ACCEPTANCE FUNCTIONS
 int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
@@ -221,6 +220,64 @@ unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
     return 1;
 }
 
+unsigned char TM_build_header_bis( enum TM_TYPE tm_type, unsigned int packetLength,
+                              unsigned int coarseTime, unsigned int fineTime, Packet_TM_LFR_TC_EXE_t *packet)
+{
+
+    packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    packet->protocolIdentifier = 0x02;
+    packet->reserved = 0x00;
+    packet->userApplication = 0x00;
+    packet->packetID[0] = 0x0c;
+    packet->packetSequenceControl[0] = 0xc0;
+    packet->packetSequenceControl[1] = 0x00;
+    packet->packetLength[0] = (unsigned char) (packetLength>>8);
+    packet->packetLength[1] = (unsigned char) packetLength;
+    packet->dataFieldHeader[0] = 0x10;
+    packet->dataFieldHeader[3] = CCSDS_DESTINATION_ID;
+    switch (tm_type){
+        case(TM_LFR_TC_EXE_OK):
+            packet->packetID[1] = 0xc1;
+            packet->dataFieldHeader[1] = 1; // type
+            packet->dataFieldHeader[2] = 7; // subtype
+            break;
+        case(TM_LFR_TC_EXE_ERR):
+            packet->packetID[1] = 0xc1;
+            packet->dataFieldHeader[1] = 1; // type
+            packet->dataFieldHeader[2] = 8; // subtype
+            break;
+        case(TM_LFR_HK):
+            packet->packetID[1] = 0xc4;
+            packet->dataFieldHeader[1] = 3;  // type
+            packet->dataFieldHeader[2] = 25; // subtype
+            break;
+        case(TM_LFR_SCI):
+            packet->packetID[1] = 0xcc;
+            packet->dataFieldHeader[1] = 21;  // type
+            packet->dataFieldHeader[2] = 3; // subtype
+            break;
+        case(TM_LFR_SCI_SBM):
+            packet->packetID[1] = 0xfc;
+            packet->dataFieldHeader[1] = 21;  // type
+            packet->dataFieldHeader[2] = 3; // subtype
+            break;
+        case(TM_LFR_PAR_DUMP):
+            packet->packetID[1] = 0xc9;
+            packet->dataFieldHeader[1] = 181;  // type
+            packet->dataFieldHeader[2] = 31; // subtype
+            break;
+        default:
+            return 0;
+    }
+    packet->dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
+    packet->dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
+    packet->dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
+    packet->dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
+    packet->dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
+    packet->dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
+    return 1;
+}
+
 unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned int SID, unsigned char *computed_CRC)
 {
     unsigned int packetLength;
@@ -264,6 +321,17 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
     return 1;
 }
 
+int create_message_queue()
+{
+    rtems_status_code status;
+    misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
+    status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in create_message_queue *** error creating message queue\n")
+
+    return 0;
+}
+
 //***********
 // RTEMS TASK
 rtems_task recv_task( rtems_task_argument unused )
@@ -276,7 +344,7 @@ rtems_task recv_task( rtems_task_argument unused )
 
     for(i=0; i<100; i++) data[i] = 0;
 
-    PRINTF("In RECV *** \n")
+    PRINTF("in RECV *** \n")
 
     while(1)
     {
@@ -310,7 +378,7 @@ rtems_task actn_task( rtems_task_argument unused )
     size_t size;                        // size of the incoming TC packet
     unsigned char subtype = 0;          // subtype of the current TC packet
 
-    PRINTF("In ACTN *** \n")
+    PRINTF("in ACTN *** \n")
 
     while(1)
     {
@@ -380,15 +448,20 @@ rtems_task actn_task( rtems_task_argument unused )
     }
 }
 
-int create_message_queue()
+rtems_task dumb_task( rtems_task_argument unused )
 {
-    rtems_status_code status;
-    misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
-    status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in create_message_queue *** error creating message queue\n")
+    unsigned int coarse_time;
+    unsigned int fine_time;
+    rtems_event_set event_out;
 
-    return 0;
+    PRINTF("in DUMB *** \n")
+
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        coarse_time = time_management_regs->coarse_time;
+        fine_time = time_management_regs->fine_time;
+        printf("in DUMB *** coarse time = %x, fine time = %x\n", coarse_time, fine_time);
+    }
 }
 
 //***********
@@ -396,30 +469,23 @@ int create_message_queue()
 
 int action_default(ccsdsTelecommandPacket_t *TC)
 {
-    TMHeader_t TM_header;
-    char data[8];
-    spw_ioctl_pkt_send spw_ioctl_send;
+    Packet_TM_LFR_TC_EXE_t packet;
 
-    TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_NOT_IMP,
-                        time_management_regs->coarse_time, time_management_regs->fine_time, &TM_header);
+    TM_build_header_bis( TM_LFR_TC_EXE_ERR, TM_LEN_NOT_IMP,
+                        time_management_regs->coarse_time, time_management_regs->fine_time, &packet);
 
-    data[0] = 0x9c;
-    data[1] = 0x42;
-    data[2] = TC->packetID[0];
-    data[3] = TC->packetID[1];
-    data[4] = TC->packetSequenceControl[0];
-    data[5] = TC->packetSequenceControl[1];
-    data[6] = TC->dataFieldHeader[1]; // type
-    data[7] = TC->dataFieldHeader[2]; // subtype
-
-    // filling the structure for the spacewire transmission
-    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-    spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = 8;
-    spw_ioctl_send.data = data;
+    packet.data[0] = 0x9c;
+    packet.data[1] = 0x42;
+    packet.data[2] = TC->packetID[0];
+    packet.data[3] = TC->packetID[1];
+    packet.data[4] = TC->packetSequenceControl[0];
+    packet.data[5] = TC->packetSequenceControl[1];
+    packet.data[6] = TC->dataFieldHeader[1]; // type
+    packet.data[7] = TC->dataFieldHeader[2]; // subtype
 
     // SEND DATA
-    write_spw(&spw_ioctl_send);
+    if (write ( fdSPW, &packet, LEN_TM_LFR_TC_EXE_NOT_IMP)==-1)
+    PRINTF("ERR *** in action_default *** send TM packet\n");
 
     return 0;
 }
@@ -511,21 +577,6 @@ rtems_isr commutation_isr2( rtems_vector_number vector )
         printf("In commutation_isr2 *** Error sending event to DUMB\n");
 }
 
-rtems_task dumb_task( rtems_task_argument unused )
-{
-    unsigned int coarse_time;
-    unsigned int fine_time;
-    rtems_event_set event_out;
-
-    PRINTF("In DUMB *** \n")
-
-    while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        coarse_time = time_management_regs->coarse_time;
-        fine_time = time_management_regs->fine_time;
-        printf("commutation_isr*, coarse time = %x, fine time = %x\n", coarse_time, fine_time);
-    }
-}
 
 
 

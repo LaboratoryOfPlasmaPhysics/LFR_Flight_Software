@@ -40,8 +40,7 @@ struct param_sbm2_str param_sbm2;
 unsigned char param_common[2];
 
 // HK PACKETS
-TMHeader_t housekeeping_header;
-char housekeeping_data[LENGTH_TM_LFR_HK - 10 + 1];
+Packet_TM_LFR_HK_t housekeeping_packet;
 
 // BASIC PARAMETERS GLOBAL VARIABLES
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];

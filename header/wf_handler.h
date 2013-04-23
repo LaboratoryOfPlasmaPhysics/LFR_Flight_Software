@@ -17,4 +17,9 @@ extern int fdSPW;
 rtems_isr waveforms_isr( rtems_vector_number vector );
 rtems_task wfrm_task(rtems_task_argument argument);
 
+//******************
+// general functions
+void init_waveforms();
+int buil_value(int value1, int value0);
+
 #endif // WF_HANDLER_H_INCLUDED

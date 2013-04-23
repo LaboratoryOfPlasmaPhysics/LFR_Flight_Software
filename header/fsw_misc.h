@@ -10,10 +10,18 @@
 #include <grspw.h>
 #include <ccsds_types.h>
 
+rtems_name HK_name;             /* name of the HK rate monotonic */
+rtems_id HK_id;                 /* id of the HK rate monotonic period */
+
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
 void print_statistics(spw_stats *stats);
+
+// SERIAL LINK
 int send_console_outputs_on_serial_port();
+int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
+
+// RTEMS TASKS
 rtems_task stat_task(rtems_task_argument argument);
 rtems_task hous_task(rtems_task_argument argument);
 

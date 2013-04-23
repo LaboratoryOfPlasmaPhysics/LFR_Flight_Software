@@ -28,12 +28,13 @@ typedef struct BP1_str BP1_t;
 
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
+
 // RTEMS TASKS
 rtems_task spw_bppr_task(rtems_task_argument argument);
 rtems_task avf0_task(rtems_task_argument argument);
 rtems_task bpf0_task(rtems_task_argument argument);
 rtems_task smiq_task(rtems_task_argument argument); // added to test the spectral matrix simulator
-//
+
 rtems_task spw_bppr_task_rate_monotonic(rtems_task_argument argument);
 void matrix_average(volatile int *spec_mat, float *averaged_spec_mat);
 void matrix_compression(float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat);

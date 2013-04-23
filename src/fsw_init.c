@@ -21,7 +21,7 @@
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
 #define CONFIGURE_INIT_TASK_PRIORITY	100
 #define CONFIGURE_MAXIMUM_DRIVERS 16
-#define CONFIGURE_MAXIMUM_PERIODS 1
+#define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 1
 
 #include <rtems/confdefs.h>
@@ -59,17 +59,28 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_status_code status;
     rtems_isr_entry old_isr_handler;
 
+    PRINTF("\n\n\n\n\n")
+    PRINTF("***************************\n")
+    PRINTF("** START Flight Software **\n")
+    PRINTF("***************************\n")
+    PRINTF("\n\n")
+
     //send_console_outputs_on_serial_port();
+    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
     initLookUpTableForCRC(); // in tc_handler.h
     init_default_mode_parameters();
     create_message_queue();
+
+    create_names();
     create_all_tasks();
     start_all_tasks();
 
     grspw_timecode_callback = &timecode_irq_handler;
 
     configure_spw_link();
+
+    init_waveforms();
 
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
@@ -81,13 +92,13 @@ rtems_task Init( rtems_task_argument ignored )
                                    IRQ_SPARC_TIME1,
                                    &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
     if (status==RTEMS_SUCCESSFUL)
-        PRINTF("commutation_isr1 *** rtems_interrupt_catch successfullly configured\n")
+        PRINTF("OK  *** commutation_isr1 *** rtems_interrupt_catch successfullly configured\n")
 
     status = rtems_interrupt_catch( commutation_isr2,
                                    IRQ_SPARC_TIME2,
                                    &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
     if (status==RTEMS_SUCCESSFUL)
-        PRINTF("commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
+        PRINTF("OK  *** commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
 
     LEON_Unmask_interrupt( IRQ_TIME1 );
     LEON_Unmask_interrupt( IRQ_TIME2 );
@@ -100,23 +111,25 @@ rtems_task spiq_task(rtems_task_argument unused)
     rtems_event_set event_out;
     struct grspw_regs_str *grspw_regs;
     grspw_regs = (struct grspw_regs_str *) REGS_ADDR_GRSPW;
+    rtems_status_code status;
 
     while(1){
-        PRINTF("In SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
+        PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
 
         if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL)   // suspend RECV task
-            PRINTF("In SPIQ *** Error suspending RECV Task\n")
+            PRINTF("in SPIQ *** Error suspending RECV Task\n")
         if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL)   // suspend HOUS task
-            PRINTF("In SPIQ *** Error suspending HOUS Task\n")
+            PRINTF("in SPIQ *** Error suspending HOUS Task\n")
 
         configure_spw_link();
 
-        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
-            PRINTF("In SPIQ *** Error resume RECV Task\n")
-        if (rtems_task_restart(Task_id[TASKID_HOUS], 1)!=RTEMS_SUCCESSFUL) // restart HOUS task
-            PRINTF("In SPIQ *** Error resume HOUS Task\n")
+        status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
+        if (status!=RTEMS_SUCCESSFUL)
+        PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
 
+        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
+            PRINTF("in SPIQ *** Error restarting RECV Task\n")
     }
 }
 
@@ -142,10 +155,9 @@ void init_default_mode_parameters()
     param_sbm2.sy_lfr_s2_bp_p0 = 5;     // sec
 }
 
-int create_all_tasks()
+int create_names()
 {
-    rtems_status_code status;
-
+    // task names
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
     Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
@@ -156,6 +168,16 @@ int create_all_tasks()
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
+
+    // rate monotonic period name
+    HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
+
+    return 0;
+}
+
+int create_all_tasks()
+{
+    rtems_status_code status;
 
     // RECV
     status = rtems_task_create(
@@ -171,8 +193,8 @@ int create_all_tasks()
     );
     // SPIQ
     status = rtems_task_create(
-        Task_name[TASKID_SPIQ], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
-        RTEMS_DEFAULT_MODES,
+        Task_name[TASKID_SPIQ], 5, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]
     );
     // SMIQ
@@ -213,7 +235,7 @@ int create_all_tasks()
     );
     // HOUS
     status = rtems_task_create(
-        Task_name[TASKID_HOUS], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_HOUS], 199, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
     );
@@ -263,52 +285,42 @@ int configure_spw_link()
     rtems_status_code status;
 
     close(fdSPW); // close the device if it is already open
+    PRINTF("OK  *** in configure_spw_link *** try to open "GRSPW_DEVICE_NAME"\n")
     fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call reset the hardware
-    if (fdSPW<0) PRINTF("In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+    if (fdSPW<0) PRINTF("ERR *** in configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
     while(ioctl(fdSPW, SPACEWIRE_IOCTRL_START, 0) != RTEMS_SUCCESSFUL){
-        PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" not started, retry\n")
+        PRINTF(".")
+        fflush(stdout);
         close(fdSPW); // close the device
         fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call reset the hardware
-        if (fdSPW<0) PRINTF("In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+        if (fdSPW<0) PRINTF("ERR *** In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
         rtems_task_wake_after(100);
     }
 
-    PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" opened and started successfully\n")
-
-    // sets a few parameters of the link
-    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RMAPEN, 1);      // sets the RMAP enable bit
-    //if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RMAPEN\n")
+    PRINTF("OK  *** In configure_spw_link *** "GRSPW_DEVICE_NAME" opened and started successfully\n")
 
     configure_spacewire_set_NP(1, REGS_ADDR_GRSPW); // No Port force
     configure_spacewire_set_RE(1, REGS_ADDR_GRSPW); // the dedicated call seems to  break the no port force configuration
 
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 1);          // automatic link-disabling due to link-error interrupts
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);         // sets the link-error interrupt bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DESTKEY, CCSDS_DESTINATION_ID);  // sets the destination key
-    PRINTF1("destination address set to: %d\n", CCSDS_DESTINATION_ID)
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_DESTKEY\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_NODEADDR, CCSDS_NODE_ADDRESS);  // sets the node address
-    PRINTF1("node address set to: %d\n", CCSDS_NODE_ADDRESS)
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_NODEADDR\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909);
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In RECV *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
 
-    PRINTF("In configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
+    PRINTF("OK  *** in configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
 
     return RTEMS_SUCCESSFUL;
 }

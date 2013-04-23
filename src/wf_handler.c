@@ -29,7 +29,7 @@ rtems_task wfrm_task(rtems_task_argument argument)
     header.dataFieldHeader[0] = 0x10;
     header.dataFieldHeader[1] = 0x15; // service type
     header.dataFieldHeader[2] = 0x03; // service subtype
-    header.dataFieldHeader[3] = CCSDS_DESTINATION_ID;
+    header.dataFieldHeader[3] = CCSDS_DESTINATION_ID_GROUND;
 
     header.auxiliaryHeader[0] = 0x00;
     header.auxiliaryHeader[1] = 0x1f;
@@ -42,7 +42,7 @@ rtems_task wfrm_task(rtems_task_argument argument)
     spw_ioctl_send.hlen = TM_HEADER_LEN + 4 + 6; // + 4 is for the protocole extra header, + 6 is for the auxiliary header
     spw_ioctl_send.hdr = (char*) &header;
 
-    PRINTF("In WFRM *** \n")
+    PRINTF("in WFRM *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
@@ -54,14 +54,19 @@ rtems_task wfrm_task(rtems_task_argument argument)
         header.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
         for (i=0; i<7; i++) // send F0
         {
+            header.auxiliaryHeader[3] = (unsigned char) i+1; // PKT_NR
             // BUILD THE DATA
             if (i==6) {
                 spw_ioctl_send.dlen = 8 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_340;
-                }
+                length = TM_LEN_SCI_NORM_SWF_8;
+                header.auxiliaryHeader[4] = 0x00; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x08; // BLK_NR LSB
+            }
             else {
                 spw_ioctl_send.dlen = 340 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_8;
+                length = TM_LEN_SCI_NORM_SWF_340;
+                header.auxiliaryHeader[4] = 0x01; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x54; // BLK_NR LSB
             }
             spw_ioctl_send.data = (char*) &wf_snap_f0[i * 340 * NB_BYTES_SWF_BLK];
             // BUILD THE HEADER
@@ -73,14 +78,19 @@ rtems_task wfrm_task(rtems_task_argument argument)
         }
         for (i=0; i<7; i++) // send F1
         {
+            header.auxiliaryHeader[3] = (unsigned char) i+1; // PKT_NR
             // BUILD THE DATA
             if (i==6) {
                 spw_ioctl_send.dlen = 8 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_340;
-                }
+                length = TM_LEN_SCI_NORM_SWF_8;
+                header.auxiliaryHeader[4] = 0x00; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x08; // BLK_NR LSB
+            }
             else {
                 spw_ioctl_send.dlen = 340 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_8;
+                length = TM_LEN_SCI_NORM_SWF_340;
+                header.auxiliaryHeader[4] = 0x01; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x54; // BLK_NR LSB
             }
             spw_ioctl_send.data = (char*) &wf_snap_f1[i * 340 * NB_BYTES_SWF_BLK];
             // BUILD THE HEADER
@@ -90,16 +100,21 @@ rtems_task wfrm_task(rtems_task_argument argument)
             // SEND PACKET
             write_spw(&spw_ioctl_send);
         }
-        for (i=0; i<7; i++) // send F0
+        for (i=0; i<7; i++) // send F2
         {
+            header.auxiliaryHeader[3] = (unsigned char) i+1; // PKT_NR
             // BUILD THE DATA
             if (i==6) {
                 spw_ioctl_send.dlen = 8 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_340;
-                }
+                length = TM_LEN_SCI_NORM_SWF_8;
+                header.auxiliaryHeader[4] = 0x00; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x08; // BLK_NR LSB
+            }
             else {
                 spw_ioctl_send.dlen = 340 * NB_BYTES_SWF_BLK;
-                length = TM_LEN_SCI_NORM_SWF_8;
+                length = TM_LEN_SCI_NORM_SWF_340;
+                header.auxiliaryHeader[4] = 0x01; // BLK_NR MSB
+                header.auxiliaryHeader[5] = 0x54; // BLK_NR LSB
             }
             spw_ioctl_send.data = (char*) &wf_snap_f2[i * 340 * NB_BYTES_SWF_BLK];
             // BUILD THE HEADER
@@ -113,3 +128,49 @@ rtems_task wfrm_task(rtems_task_argument argument)
         gptimer_regs->timer[2].ctrl = gptimer_regs->timer[2].ctrl | 0x00000010;
     }
 }
+
+//******************
+// general functions
+void init_waveforms()
+{
+    int i = 0;
+
+    for (i=0; i< NB_SAMPLES_PER_SNAPSHOT; i++)
+    {
+        wf_snap_f0[ i* NB_WORDS_SWF_BLK + 0 ] = buil_value(   i, 2*i );   // v  and e1
+        wf_snap_f0[ i* NB_WORDS_SWF_BLK + 1 ] = buil_value( 3*i, 4*i );   // e2 and b1
+        wf_snap_f0[ i* NB_WORDS_SWF_BLK + 2 ] = buil_value(   i, 2*i );   // b2 and b3
+        wf_snap_f1[ i* NB_WORDS_SWF_BLK + 0 ] = buil_value(   i, 2*i );   // v  and 1
+        wf_snap_f1[ i* NB_WORDS_SWF_BLK + 1 ] = buil_value(   i, 2*i );   // e2 and b1
+        wf_snap_f1[ i* NB_WORDS_SWF_BLK + 2 ] = buil_value(   i, 2*i );   // b2 and b3
+        wf_snap_f2[ i* NB_WORDS_SWF_BLK + 0 ] = buil_value(   i, 2*i );   // v  and 1
+        wf_snap_f2[ i* NB_WORDS_SWF_BLK + 1 ] = buil_value(   i, 2*i );   // e2 and b1
+        wf_snap_f2[ i* NB_WORDS_SWF_BLK + 2 ] = buil_value(   i, 2*i );   // b2 and b3
+        wf_cont_f3[ i* NB_WORDS_SWF_BLK + 0 ] = buil_value(   i, 2*i );   // v  and 1
+        wf_cont_f3[ i* NB_WORDS_SWF_BLK + 1 ] = buil_value(   i, 2*i );   // e2 and b1
+        wf_cont_f3[ i* NB_WORDS_SWF_BLK + 2 ] = buil_value(   i, 2*i );   // b2 and b3
+    }
+}
+
+int buil_value(int value1, int value0)
+{
+    int aux  = 0;
+    int aux1 = 0;
+    int aux0 = 0;
+    //******
+    // B3 B2
+    aux1 = ( (int) ( (char) (value1 >> 8) ) << 8 )
+         + ( (int) ( (char) (value1     ) )      );
+
+    //******
+    // B1 B0
+    aux0 = ( (int) ( (char) (value0 >> 8) ) << 8  )
+         + ( (int) ( (char) (value0     ) )       );
+
+    aux = (aux1 << 16) + aux0;
+
+    return aux;
+}
+
+
+

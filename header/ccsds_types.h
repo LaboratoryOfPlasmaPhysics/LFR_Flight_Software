@@ -9,7 +9,11 @@
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_NODE_ADDRESS 0xfe
+//
+#define CCSDS_DESTINATION_ID_GROUND 0x00
 #define CCSDS_DESTINATION_ID 0x01
+#define CCSDS_DESTINATION_ID_DPU 0x01
+//
 #define CCSDS_PROTOCOLE_ID 0x02
 #define CCSDS_USER_APP 0x00
 
@@ -47,6 +51,7 @@
 #define TC_SUBTYPE_UPDT_TIME 129
 
 #define SID_DEFAULT 0
+#define SID_HK 1
 #define SID_EXE_INC 5
 #define SID_NOT_EXE 40000
 #define SID_NOT_IMP 40002
@@ -80,12 +85,21 @@
 #define SID_SBM1_BP1_F1 30
 #define SID_SBM1_BP2_F1 33
 
+// LENGTH (BYTES)
+#define LENGTH_TM_LFR_HK 126
+#define LENGTH_TM_LFR_TC_EXE_MAX 32
+#define LENGTH_TM_LFR_SCIENCE_NORMAL_WF_MAX 4102
+//
 #define TM_LEN_EXE 20 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_LEN_NOT_EXE 26 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_LEN_NOT_IMP 24 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_LEN_EXE_ERR 24 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_LEN_EXE_CORR 32 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_HEADER_LEN 16
+
+#define LEN_TM_LFR_HK 126 + 4
+#define LEN_TM_LFR_TC_EXE_NOT_IMP 24 +4
+
 #define TM_LEN_SCI_NORM_SWF_340 340 * 12 + 6 + 10 - 1
 #define TM_LEN_SCI_NORM_SWF_8 8 * 12 + 6 + 10 - 1
 
@@ -110,6 +124,49 @@ struct TMHeader_str
     volatile unsigned char dataFieldHeader[10];
 };
 typedef struct TMHeader_str TMHeader_t;
+
+struct Packet_TM_LFR_HK_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char data[LENGTH_TM_LFR_HK - 10 + 1];
+};
+typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
+
+struct Packet_TM_LFR_TC_EXE_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char data[LENGTH_TM_LFR_TC_EXE_MAX - 10 + 1];
+};
+typedef struct Packet_TM_LFR_TC_EXE_str Packet_TM_LFR_TC_EXE_t;
+
+struct Packet_TM_LFR_SCIENCE_NORMAL_WF_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char auxiliaryHeader[6];
+    volatile unsigned char data[LENGTH_TM_LFR_SCIENCE_NORMAL_WF_MAX - 10 + 1];
+};
+typedef struct Packet_TM_LFR_SCIENCE_NORMAL_WF_str Packet_TM_LFR_SCIENCE_NORMAL_WF_t;
 
 struct ExtendedTMHeader_str
 {
