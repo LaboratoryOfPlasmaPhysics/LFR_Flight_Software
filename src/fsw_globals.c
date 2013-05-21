@@ -7,17 +7,21 @@ rtems_name misc_name[5];
 rtems_name misc_id[5];
 rtems_id   Task_id[15];         /* array of task ids */
 rtems_name Task_name[15];       /* array of task names */
-int fdSPW;
-int fdUART;
+int fdSPW = 0;
+int fdUART = 0;
+
+spectral_matrices_regs_t *spectral_matrices_regs = NULL;
 
 // APB CONFIGURATION REGISTERS
 time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_ADDR_TIME_MANAGEMENT;
+waveform_picker_regs_t *waveform_picker_regs = (waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
+gptimer_regs_t         *gptimer_regs         = (gptimer_regs_t *)        REGS_ADDR_GPTIMER;
 
 // WAVEFORMS GLOBAL VARIABLES
-volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes
-volatile int wf_snap_f1[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes
-volatile int wf_snap_f2[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes
-volatile int wf_cont_f3[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_SWF_BLK ]; // 24576 bytes
+volatile int wf_snap_f0[ 2 * NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + 2]; // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
+volatile int wf_snap_f1[ 2 * NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + 2]; // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
+volatile int wf_snap_f2[ 2 * NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + 2]; // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
+volatile int wf_cont_f3[ 2 * NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + 2]; // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
 volatile int spec_mat_f0_a[ TOTAL_SIZE_SPEC_MAT ];

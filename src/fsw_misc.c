@@ -45,11 +45,10 @@ void print_statistics(spw_stats *stats)
         printf("Packets received: %i\n", stats->packets_received);
 }
 
-int send_console_outputs_on_serial_port() // Send the console outputs on the serial port
+int send_console_outputs_on_serial_port( void ) // Send the console outputs on the serial port
 {
-    struct apbuart_regs_str *apbuart_regs;
+    struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
 
-    apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
     apbuart_regs->ctrl = apbuart_regs->ctrl & APBUART_CTRL_REG_MASK_DB;
     PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 
@@ -58,9 +57,8 @@ int send_console_outputs_on_serial_port() // Send the console outputs on the ser
 
 int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
 {
-    struct apbuart_regs_str *apbuart_regs;
+    struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) regs;
 
-    apbuart_regs = (struct apbuart_regs_str *) regs;
     apbuart_regs->scaler = value;
     PRINTF1("OK  *** COM port scaler reload register set to %x\n", value)
 
@@ -94,16 +92,16 @@ rtems_task stat_task(rtems_task_argument argument)
 
 rtems_task hous_task(rtems_task_argument argument)
 {
-    PRINTF("in HOUS ***\n")
-
     int result;
     rtems_status_code status;
 
-    if (rtems_rate_monotonic_ident( HK_name, &HK_id)!=RTEMS_SUCCESSFUL)
-    {
+    PRINTF("in HOUS ***\n")
+
+    if (rtems_rate_monotonic_ident( HK_name, &HK_id)!=RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( HK_name, &HK_id );
-        if( status != RTEMS_SUCCESSFUL )
-        PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
+        if( status != RTEMS_SUCCESSFUL ) {
+            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
+        }
     }
 
     housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;

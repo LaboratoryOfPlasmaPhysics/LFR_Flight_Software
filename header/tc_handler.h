@@ -19,13 +19,9 @@ extern struct param_norm_str param_norm;
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
 extern time_management_regs_t *time_management_regs;
+extern waveform_picker_regs_t *waveform_picker_regs;
+extern gptimer_regs_t         *gptimer_regs;
 extern unsigned char param_common[];
-
-unsigned char currentTC_LEN_RCV[2]; //  SHALL be equal to the current TC packet estimated packet length field
-unsigned char currentTC_COMPUTED_CRC[2];
-unsigned int currentTC_LEN_RCV_AsUnsignedInt;
-unsigned int currentTM_length;
-unsigned char currentTC_processedFlag;
 
 //****
 // ISR
@@ -34,8 +30,7 @@ rtems_isr commutation_isr2( rtems_vector_number vector );
 
 //**********************
 // GENERAL USE FUNCTIONS
-unsigned int lookUpTableForCRC[256];
-void initLookUpTableForCRC();
+void initLookUpTableForCRC( void );
 void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData);
 
 //*********************
@@ -52,7 +47,7 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV);
 rtems_task recv_task( rtems_task_argument unused );
 rtems_task actn_task( rtems_task_argument unused );
 rtems_task dumb_task( rtems_task_argument unused );
-int create_message_queue();
+int create_message_queue( void );
 
 //***********
 // TC ACTIONS

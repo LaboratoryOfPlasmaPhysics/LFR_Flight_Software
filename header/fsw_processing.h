@@ -14,6 +14,9 @@
 #include <rtems.h>
 #include <grlib_regs.h>
 #include <fsw_params.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <leon.h>
 
 struct BP1_str{
     volatile unsigned char PE[2];
@@ -25,6 +28,24 @@ struct BP1_str{
     volatile unsigned char VPHI;
 };
 typedef struct BP1_str BP1_t;
+
+extern volatile int spec_mat_f0_a[ ];
+extern volatile int spec_mat_f0_b[ ];
+extern volatile int spec_mat_f0_c[ ];
+extern volatile int spec_mat_f0_d[ ];
+extern volatile int spec_mat_f0_e[ ];
+extern volatile int spec_mat_f0_f[ ];
+extern volatile int spec_mat_f0_g[ ];
+extern volatile int spec_mat_f0_h[ ];
+extern float averaged_spec_mat_f0[ ];
+extern float compressed_spec_mat_f0[ ];
+extern unsigned char LFR_BP1_F0[ ];
+
+extern BP1_t data_BP1[ ];
+
+extern rtems_id Task_id[ ];         /* array of task ids */
+
+extern spectral_matrices_regs_t *spectral_matrices_regs;
 
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );

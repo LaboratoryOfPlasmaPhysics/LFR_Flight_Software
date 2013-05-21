@@ -1,15 +1,20 @@
 #include <tc_handler.h>
 #include <fsw_params.h>
 
-char *errorCCSDSMsg[8] = { "ILLEGAL_APID 0",
-                            "WRONG_LEN_PACKET 1",
-                            "INCOR_CHECKSUM 2",
-                            "ILL_TYPE 3",
-                            "ILL_SUBTYPE 4",
-                            "WRONG_APP_DATA 5",
-                            "WRONG_CMD_CODE 6",
-                            "CCSDS_TM_VALID 7"
+char *DumbMessages[5] = {"default",
+                    "timecode_irq_handler",
+                    "waveforms_isr",
+                    "",
+                    ""
 };
+
+unsigned char currentTC_LEN_RCV[2]; //  SHALL be equal to the current TC packet estimated packet length field
+unsigned char currentTC_COMPUTED_CRC[2];
+unsigned int currentTC_LEN_RCV_AsUnsignedInt;
+unsigned int currentTM_length;
+unsigned char currentTC_processedFlag;
+
+unsigned int lookUpTableForCRC[256];
 
 //**********************
 // GENERAL USE FUNCTIONS
@@ -18,20 +23,38 @@ unsigned int Crc_opt( unsigned char D, unsigned int Chk)
     return(((Chk << 8) & 0xff00)^lookUpTableForCRC [(((Chk >> 8)^D) & 0x00ff)]);
 }
 
-void initLookUpTableForCRC()
+void initLookUpTableForCRC( void )
 {
-    unsigned int i, tmp;
+    unsigned int i;
+    unsigned int tmp;
+
     for (i=0; i<256; i++)
     {
         tmp = 0;
-        if((i & 1) != 0) tmp = tmp ^ 0x1021;
-        if((i & 2) != 0) tmp = tmp ^ 0x2042;
-        if((i & 4) != 0) tmp = tmp ^ 0x4084;
-        if((i & 8) != 0) tmp = tmp ^ 0x8108;
-        if((i & 16) != 0) tmp = tmp ^ 0x1231;
-        if((i & 32) != 0) tmp = tmp ^ 0x2462;
-        if((i & 64) != 0) tmp = tmp ^ 0x48c4;
-        if((i & 128) != 0) tmp = tmp ^ 0x9188;
+        if((i & 1) != 0) {
+            tmp = tmp ^ 0x1021;
+        }
+        if((i & 2) != 0) {
+            tmp = tmp ^ 0x2042;
+        }
+        if((i & 4) != 0) {
+            tmp = tmp ^ 0x4084;
+        }
+        if((i & 8) != 0) {
+            tmp = tmp ^ 0x8108;
+        }
+        if((i & 16) != 0) {
+            tmp = tmp ^ 0x1231;
+        }
+        if((i & 32) != 0) {
+            tmp = tmp ^ 0x2462;
+        }
+        if((i & 64) != 0) {
+            tmp = tmp ^ 0x48c4;
+        }
+        if((i & 128) != 0) {
+            tmp = tmp ^ 0x9188;
+        }
         lookUpTableForCRC[i] = tmp;
     }
 }
@@ -52,6 +75,7 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 // ACCEPTANCE FUNCTIONS
 int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
 {
+    int ret = 0;
     rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send;
     TMHeader_t TM_header;
@@ -78,89 +102,166 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
     }
     else { // send valid TC to the action launcher
         status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
-        return -1;
+        ret = -1;
     }
-    return -1;
+    return ret;
 }
 
 unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV)
 {
+    unsigned char ret = 0;
     unsigned char pid = 0;
     unsigned char category = 0;
     unsigned int length = 0;
     unsigned char packetType = 0;
     unsigned char packetSubtype = 0;
-    unsigned char * CCSDSContent;
+    unsigned char * CCSDSContent = NULL;
 
     // APID check *** APID on 2 bytes
     pid = ((TMPacket->packetID[0] & 0x07)<<4) + ( (TMPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
     category = (TMPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
-    if (pid!=CCSDS_PROCESS_ID) return ILLEGAL_APID;
-    if (category!=CCSDS_PACKET_CATEGORY) return ILLEGAL_APID;
-
-    // packet length check
-    length = TMPacket->packetLength[0] * 256 + TMPacket->packetLength[1];
-    if (length != TC_LEN_RCV ) return WRONG_LEN_PACKET; // LEN RCV != SIZE FIELD
-    if (length >= CCSDS_TC_PKT_MAX_SIZE) return WRONG_LEN_PACKET; // check that the packet does not exceed the MAX size
-
+    length = (TMPacket->packetLength[0] * 256) + TMPacket->packetLength[1];
     packetType = TMPacket->dataFieldHeader[1];
     packetSubtype = TMPacket->dataFieldHeader[2];
-    // service type, subtype and packet length check
-    if (packetType == 181){
+
+    if (pid!=CCSDS_PROCESS_ID) {
+        ret = ILLEGAL_APID;
+    }
+    else if (category!=CCSDS_PACKET_CATEGORY) {
+        ret = ILLEGAL_APID;
+    }
+    else if (length != TC_LEN_RCV ) {   // packet length check
+        ret = WRONG_LEN_PACKET; // LEN RCV != SIZE FIELD
+    }
+    else if (length >= CCSDS_TC_PKT_MAX_SIZE) {
+        ret = WRONG_LEN_PACKET; // check that the packet does not exceed the MAX size
+    }
+    else if (packetType == TC_TYPE_GEN){ // service type, subtype and packet length check
         switch(packetSubtype){ //subtype, autorized values are 3, 20, 21, 24, 27, 28, 30, 40, 50, 60, 61
-            case 3:
-                if (length!=(12-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_RESET:
+                if (length!=(TC_LEN_RESET-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 20:
-                if (length!=(14-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_LOAD_COMM:
+                if (length!=(TC_LEN_LOAD_COMM-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 21:
-                if (length!=(20-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_LOAD_NORM:
+                if (length!=(TC_LEN_LOAD_NORM-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 24:
-                if (length!=(14-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_LOAD_BURST:
+                if (length!=(TC_LEN_LOAD_BURST-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 27:
-                if (length!=(14-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_LOAD_SBM1:
+                if (length!=(TC_LEN_LOAD_SBM1-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 28:
-                if (length!=(14-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_LOAD_SBM2:
+                if (length!=(TC_LEN_LOAD_SBM2-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 30:
-                if (length!=(12-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_DUMP:
+                if (length!=(TC_LEN_DUMP-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 40:
-                if (length!=(20-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_ENTER:
+                if (length!=(TC_LEN_ENTER-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 50:
-                if (length!=(50-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_UPDT_INFO:
+                if (length!=(TC_LEN_UPDT_INFO-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 60:
-                if (length!=(12-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_EN_CAL:
+                if (length!=(TC_LEN_EN_CAL-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
-            case 61:
-                if (length!=(12-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+            case TC_SUBTYPE_DIS_CAL:
+                if (length!=(TC_LEN_DIS_CAL-CCSDS_TC_TM_PACKET_OFFSET)) {
+                    ret = WRONG_LEN_PACKET;
+                }
+                else {
+                    ret = CCSDS_TM_VALID;
+                }
                 break;
             default:
-                return ILL_SUBTYPE;
+                ret = ILL_SUBTYPE;
                 break;
-            }
+        }
     }
-    else if (packetType == 9){
-        if (packetSubtype!=129) return ILL_SUBTYPE;
-        if (length!=(18-CCSDS_TC_TM_PACKET_OFFSET)) return WRONG_LEN_PACKET;
+    else if (packetType == TC_TYPE_TIME){
+        if (packetSubtype!=TC_SUBTYPE_UPDT_TIME) {
+            ret = ILL_SUBTYPE;
+        }
+        else if (length!=(TC_LEN_UPDT_TIME-CCSDS_TC_TM_PACKET_OFFSET)) {
+            ret = WRONG_LEN_PACKET;
+        }
+        else {
+            ret = CCSDS_TM_VALID;
+        }
     }
-    else return ILL_TYPE;
+    else {
+        ret = ILL_TYPE;
+    }
 
     // source ID check // Source ID not documented in the ICD
 
     // packet error control, CRC check
     CCSDSContent = (unsigned char*) TMPacket->packetID;
     GetCRCAsTwoBytes(CCSDSContent, currentTC_COMPUTED_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
-    if (currentTC_COMPUTED_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) return INCOR_CHECKSUM;
-    if (currentTC_COMPUTED_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -1]) return INCOR_CHECKSUM;
+    if (currentTC_COMPUTED_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
+        ret = INCOR_CHECKSUM;
+    }
+    else if (currentTC_COMPUTED_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -1]) {
+        ret = INCOR_CHECKSUM;
+    }
+    else {
+        ret = CCSDS_TM_VALID;
+    }
 
-    return CCSDS_TM_VALID;
+    return ret;
 }
 
 unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
@@ -281,7 +382,7 @@ unsigned char TM_build_header_bis( enum TM_TYPE tm_type, unsigned int packetLeng
 unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned int SID, unsigned char *computed_CRC)
 {
     unsigned int packetLength;
-    packetLength = TC->packetLength[0] * 256 + TC->packetLength[1];
+    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];
     switch (SID){
         case (SID_NOT_EXE):
             break;
@@ -321,13 +422,15 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
     return 1;
 }
 
-int create_message_queue()
+int create_message_queue( void )
 {
     rtems_status_code status;
     misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
     status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
                                                  RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in create_message_queue *** error creating message queue\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in create_message_queue *** error creating message queue\n")
+    }
 
     return 0;
 }
@@ -351,16 +454,18 @@ rtems_task recv_task( rtems_task_argument unused )
         len = read(fdSPW, (char*) &currentTC, CCSDS_TC_PKT_MAX_SIZE); // the call to read is blocking
         if (len == -1){ // error during the read call
             PRINTF("In RECV *** last read call returned -1\n")
-            if (rtems_event_send( Task_id[3], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL)
+            if (rtems_event_send( Task_id[3], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL) {
                 PRINTF("IN RECV *** Error: rtems_event_send SPW_LINKERR_EVENT\n")
-            if (rtems_task_suspend(RTEMS_SELF) != RTEMS_SUCCESSFUL)
+            }
+            if (rtems_task_suspend(RTEMS_SELF) != RTEMS_SUCCESSFUL) {
                 PRINTF("In RECV *** Error: rtems_task_suspend(RTEMS_SELF)\n")
+            }
         }
         else {
             PRINTF1("Got pck of length %d\n", len+1)
             currentTC_LEN_RCV[0] = 0x00;
-            currentTC_LEN_RCV[1] = (unsigned char) len - CCSDS_TC_TM_PACKET_OFFSET - 3; //  build the corresponding packet size field
-            currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) len - CCSDS_TC_TM_PACKET_OFFSET - 3; // => -3 is for Prot ID, Reserved and User App bytes
+            currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
+            currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
             // CHECK THE TC AND BUILD THE APPROPRIATE TM
             data_length = TC_checker(&currentTC, currentTC_LEN_RCV_AsUnsignedInt);
             if (data_length!=-1)
@@ -450,17 +555,26 @@ rtems_task actn_task( rtems_task_argument unused )
 
 rtems_task dumb_task( rtems_task_argument unused )
 {
-    unsigned int coarse_time;
-    unsigned int fine_time;
+    unsigned int coarse_time = 0;
+    unsigned int fine_time = 0;
+    unsigned int indice = 0;
+    unsigned int shiftedIndice = 0;
     rtems_event_set event_out;
 
     PRINTF("in DUMB *** \n")
 
     while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        rtems_event_receive(RTEMS_EVENT_1, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        indice = 0;
+        shiftedIndice = (unsigned int) event_out;
+        while(!(shiftedIndice & 0x0001))
+        {
+            shiftedIndice = shiftedIndice >> 1;
+            indice++;
+        }
         coarse_time = time_management_regs->coarse_time;
         fine_time = time_management_regs->fine_time;
-        printf("in DUMB *** coarse time = %x, fine time = %x\n", coarse_time, fine_time);
+        printf("in DUMB *** time = coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[indice]);
     }
 }
 
@@ -484,8 +598,9 @@ int action_default(ccsdsTelecommandPacket_t *TC)
     packet.data[7] = TC->dataFieldHeader[2]; // subtype
 
     // SEND DATA
-    if (write ( fdSPW, &packet, LEN_TM_LFR_TC_EXE_NOT_IMP)==-1)
-    PRINTF("ERR *** in action_default *** send TM packet\n");
+    if (write ( fdSPW, &packet, LEN_TM_LFR_TC_EXE_NOT_IMP)==-1) {
+        PRINTF("ERR *** in action_default *** send TM packet\n");
+    }
 
     return 0;
 }
@@ -499,10 +614,20 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         case(LFR_MODE_STANDBY):
             LEON_Mask_interrupt( IRQ_WF );
             LEON_Mask_interrupt( IRQ_SM );
+            LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
+            waveform_picker_regs->burst_enable = 0x00;
             break;
         case(LFR_MODE_NORMAL):
+
+#ifdef GSA
             LEON_Unmask_interrupt( IRQ_WF );
-            LEON_Unmask_interrupt( IRQ_SM );
+#else
+            LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+            LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+            waveform_picker_regs->burst_enable = 0x07;
+            waveform_picker_regs->status = 0x00;
+#endif
+
             break;
         case(LFR_MODE_BURST):
             break;
@@ -510,15 +635,17 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
             break;
         case(LFR_MODE_SBM2):
             break;
+        default:
+            break;
     }
     return 0;
 }
 
 int action_load_norm(ccsdsTelecommandPacket_t *TC)
 {
-    param_norm.sy_lfr_n_swf_l = TC->dataAndCRC[0] * 256 + TC->dataAndCRC[1];
-    param_norm.sy_lfr_n_swf_p = TC->dataAndCRC[2] * 256 + TC->dataAndCRC[3];
-    param_norm.sy_lfr_n_asm_p = TC->dataAndCRC[4] * 256 + TC->dataAndCRC[5];
+    param_norm.sy_lfr_n_swf_l = (TC->dataAndCRC[0] * 256) + TC->dataAndCRC[1];
+    param_norm.sy_lfr_n_swf_p = (TC->dataAndCRC[2] * 256) + TC->dataAndCRC[3];
+    param_norm.sy_lfr_n_asm_p = (TC->dataAndCRC[4] * 256) + TC->dataAndCRC[5];
     param_norm.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
     param_norm.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
     /*printf("sy_lfr_n_ => swf_l %d, swf_p %d, asm_p %d, bsp_p0 %d, bsp_p1 %d\n",
@@ -567,14 +694,16 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 // Interrupt Service Routines
 rtems_isr commutation_isr1( rtems_vector_number vector )
 {
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
         printf("In commutation_isr1 *** Error sending event to DUMB\n");
+    }
 }
 
 rtems_isr commutation_isr2( rtems_vector_number vector )
 {
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
         printf("In commutation_isr2 *** Error sending event to DUMB\n");
+    }
 }
 
 

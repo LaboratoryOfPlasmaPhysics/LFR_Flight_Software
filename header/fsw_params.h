@@ -19,6 +19,7 @@
 #define REGS_ADDR_GRSPW 0x80000500
 #define REGS_ADDR_TIME_MANAGEMENT 0x80000600
 #define REGS_ADDR_SPECTRAL_MATRICES 0x80000700
+#define REGS_ADDR_WAVEFORM_PICKER 0x80000f20
 
 #define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
 #define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400
@@ -26,13 +27,15 @@
 //**********
 // IRQ LINES
 #define IRQ_SM 9
-#define IRQ_SPARC_SM 0x19 // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SPARC_SM 0x19               // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WF 10
-#define IRQ_SPARC_WF 0x1a // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SPARC_WF 0x1a               // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_TIME1 12
-#define IRQ_SPARC_TIME1 0x1c // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SPARC_TIME1 0x1c            // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_TIME2 13
-#define IRQ_SPARC_TIME2 0x1d // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SPARC_TIME2 0x1d            // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_WAVEFORM_PICKER 14
+#define IRQ_SPARC_WAVEFORM_PICKER 0x1e  // see sparcv8.pdf p.76 for interrupt levels
 
 //*****
 // TIME
@@ -59,8 +62,6 @@
 
 //*******
 // MACROS
-#define PRINT_TASK_STATISTICS
-#define PRINT_MESSAGES_ON_CONSOLE // enable or disable the printf instructions
 #ifdef PRINT_MESSAGES_ON_CONSOLE
 #define PRINTF(x) printf(x);
 #define PRINTF1(x,y) printf(x,y);
@@ -72,6 +73,8 @@
 #endif
 
 #define NB_SAMPLES_PER_SNAPSHOT 2048
+#define TIME_OFFSET 2
+#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK 2 * 6
 #define NB_WORDS_SWF_BLK 3
 
@@ -97,10 +100,5 @@ struct param_sbm2_str{
     unsigned char sy_lfr_s2_bp_p0; // timebetween two products BP1 set
     unsigned char sy_lfr_s2_bp_p1; // time between two products BP2 set
 };
-
-extern volatile int wf_snap_f0[ ]; // 24576 bytes
-extern volatile int wf_snap_f1[ ]; // 24576 bytes
-extern volatile int wf_snap_f2[ ]; // 24576 bytes
-extern volatile int wf_cont_f3[ ]; // 24576 bytes
 
 #endif // FSW_RTEMS_CONFIG_H_INCLUDED

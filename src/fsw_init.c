@@ -15,11 +15,11 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS             15
+#define CONFIGURE_MAXIMUM_TASKS 15
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_EXTRA_TASK_STACKS         (3 * RTEMS_MINIMUM_STACK_SIZE)
+#define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
-#define CONFIGURE_INIT_TASK_PRIORITY	100
+#define CONFIGURE_INIT_TASK_PRIORITY 100
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 1
@@ -43,8 +43,6 @@
 
 #include <fsw_init.h>
 #include <fsw_config.c>
-
-char *link_status(int status);
 
 char *lstates[6] = {"Error-reset",
                     "Error-wait",
@@ -80,56 +78,85 @@ rtems_task Init( rtems_task_argument ignored )
 
     configure_spw_link();
 
-    init_waveforms();
-
+    //****************************
+    // Spectral Matrices simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
-    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
-                    IRQ_SPARC_WF, waveforms_isr );
 
+    //**********
+    // WAVEFORMS
+    // simulator
+
+#ifdef GSA
+    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
+                    IRQ_SPARC_WF, waveforms_simulator_isr );
+#else
+    // configure the registers of the waveform picker
+    init_waveform_picker_regs();
+    // configure the waveform picker interrupt service routine
+    status = rtems_interrupt_catch( waveforms_isr,
+                                   IRQ_SPARC_WAVEFORM_PICKER,
+                                   &old_isr_handler) ;
+    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
+#endif
+
+    //**********
+
+    //*****************************************
     // irq handling of the time management unit
     status = rtems_interrupt_catch( commutation_isr1,
                                    IRQ_SPARC_TIME1,
                                    &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    if (status==RTEMS_SUCCESSFUL)
+    if (status==RTEMS_SUCCESSFUL) {
         PRINTF("OK  *** commutation_isr1 *** rtems_interrupt_catch successfullly configured\n")
+    }
 
     status = rtems_interrupt_catch( commutation_isr2,
                                    IRQ_SPARC_TIME2,
                                    &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    if (status==RTEMS_SUCCESSFUL)
+    if (status==RTEMS_SUCCESSFUL) {
         PRINTF("OK  *** commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
+    }
 
     LEON_Unmask_interrupt( IRQ_TIME1 );
     LEON_Unmask_interrupt( IRQ_TIME2 );
 
+#ifdef GSA
+    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+        printf("in INIT *** Error sending event to WFRM\n");
+    }
+#endif
+
     status = rtems_task_delete(RTEMS_SELF);
+
 }
 
 rtems_task spiq_task(rtems_task_argument unused)
 {
     rtems_event_set event_out;
-    struct grspw_regs_str *grspw_regs;
-    grspw_regs = (struct grspw_regs_str *) REGS_ADDR_GRSPW;
     rtems_status_code status;
 
-    while(1){
+    while(true){
         PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
 
-        if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL)   // suspend RECV task
+        if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
             PRINTF("in SPIQ *** Error suspending RECV Task\n")
-        if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL)   // suspend HOUS task
+        }
+        if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
             PRINTF("in SPIQ *** Error suspending HOUS Task\n")
+        }
 
         configure_spw_link();
 
         status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
-        if (status!=RTEMS_SUCCESSFUL)
-        PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
+        if (status!=RTEMS_SUCCESSFUL) {
+            PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
+        }
 
-        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) // restart RECV task
+        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) {    // restart RECV task
             PRINTF("in SPIQ *** Error restarting RECV Task\n")
+        }
     }
 }
 
@@ -155,7 +182,7 @@ void init_default_mode_parameters()
     param_sbm2.sy_lfr_s2_bp_p0 = 5;     // sec
 }
 
-int create_names()
+int create_names( void )
 {
     // task names
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
@@ -175,7 +202,7 @@ int create_names()
     return 0;
 }
 
-int create_all_tasks()
+int create_all_tasks( void )
 {
     rtems_status_code status;
 
@@ -243,44 +270,64 @@ int create_all_tasks()
     return 0;
 }
 
-int start_all_tasks()
+int start_all_tasks( void )
 {
     rtems_status_code status;
 
     status = rtems_task_start( Task_id[TASKID_SPIQ], spiq_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_SPIQ\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_SPIQ\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_RECV\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_RECV\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_ACTN\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_ACTN\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPPR\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_BPPR\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_STAT\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_STAT\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_AVF0\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_AVF0\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_BPF0], bpf0_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_BPF0\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_BPF0\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_WFRM\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_WFRM\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_DUMB\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_DUMB\n")
+    }
 
     status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("In INIT *** Error starting TASK_HOUS\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_HOUS\n")
+    }
 
     return 0;
 }
 
-int configure_spw_link()
+int configure_spw_link( void )
 {
     rtems_status_code status;
 
@@ -314,7 +361,7 @@ int configure_spw_link()
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);         // sets the link-error interrupt bit
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 0);      // transmission blocks on full
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909);
@@ -325,27 +372,25 @@ int configure_spw_link()
     return RTEMS_SUCCESSFUL;
 }
 
-void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr) // No Port force
+void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr) // [N]o [P]ort force
 {
-    unsigned int *spwptr;
-    spwptr = (unsigned int*) regAddr;
-    if (val == 1)
-    {
+    unsigned int *spwptr = (unsigned int*) regAddr;
+
+    if (val == 1) {
         *spwptr = *spwptr | 0x00100000; // [NP] set the No port force bit
     }
-    if (val== 0)
-    {
+    if (val== 0) {
         *spwptr = *spwptr & 0xffdfffff;
     }
 }
 
-void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // RMAP Enable
+void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]MAP [E]nable
 {
-    unsigned int *spwptr;
-    spwptr = (unsigned int*) regAddr;
+    unsigned int *spwptr = (unsigned int*) regAddr;
+
     if (val == 1)
     {
-        *spwptr = *spwptr | 0x00010000; // [NP] set the No port force bit
+        *spwptr = *spwptr | 0x00010000; // [RE] set the RMAP Enable bit
     }
     if (val== 0)
     {
@@ -353,21 +398,17 @@ void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // RMAP
     }
 }
 
-char *link_status(int status){
-        return lstates[status];
-}
-
 rtems_status_code write_spw(spw_ioctl_pkt_send* spw_ioctl_send)
 {
     rtems_status_code status;
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-    if (status!=RTEMS_SUCCESSFUL) printf("In write_spw *** Error SPACEWIRE_IOCTRL_SEND\n");
     return status;
 }
 
 void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc)
 {
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_1 ) != RTEMS_SUCCESSFUL) {
         printf("In timecode_irq_handler *** Error sending event to DUMB\n");
+    }
 }
 

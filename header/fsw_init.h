@@ -16,7 +16,7 @@
 #include <wf_handler.h>
 #include <grlib_regs.h>
 
-extern int sched_yield();
+extern int sched_yield( void );
 extern int errno;
 extern rtems_id   Task_id[ ];       /* array of task ids */
 extern rtems_name Task_name[ ];     /* array of task names */
@@ -39,21 +39,21 @@ rtems_task recv_task(rtems_task_argument argument);
 rtems_task spiq_task(rtems_task_argument argument);
 rtems_task stat_task(rtems_task_argument argument);
 rtems_task wfrm_task(rtems_task_argument argument);
-int create_names();
-int create_all_tasks();
-int start_all_tasks();
-int create_message_queue();
+int create_names( void );
+int create_all_tasks( void );
+int start_all_tasks( void );
+int create_message_queue( void );
 
 // OTHER functions
-void init_default_mode_parameters();
+void init_default_mode_parameters( void );
 
-int configure_spw_link();
+int configure_spw_link( void );
 void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr); // No Port force
 void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr); // RMAP Enable
 
-extern int rtems_cpu_usage_report();
-extern int rtems_cpu_usage_reset();
-void print_statistics(spw_stats *);
+extern int rtems_cpu_usage_report( void );
+extern int rtems_cpu_usage_reset( void );
+
 rtems_status_code write_spw(spw_ioctl_pkt_send* spw_ioctl_send);
 void (*grspw_timecode_callback) (void *pDev, void *regs, int minor, unsigned int tc);
 
