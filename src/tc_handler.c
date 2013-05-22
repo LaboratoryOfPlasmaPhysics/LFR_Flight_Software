@@ -611,14 +611,18 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
     printf("enter mode %d\n", lfr_mode);
     switch(lfr_mode)
     {
+        //********
+        // STANDBY
         case(LFR_MODE_STANDBY):
             LEON_Mask_interrupt( IRQ_WF );
             LEON_Mask_interrupt( IRQ_SM );
             LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
             waveform_picker_regs->burst_enable = 0x00;
             break;
-        case(LFR_MODE_NORMAL):
 
+        //******
+        // NORMAL
+        case(LFR_MODE_NORMAL):
 #ifdef GSA
             LEON_Unmask_interrupt( IRQ_WF );
 #else
@@ -627,14 +631,35 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
             waveform_picker_regs->burst_enable = 0x07;
             waveform_picker_regs->status = 0x00;
 #endif
-
+            LEON_Unmask_interrupt( IRQ_SM );
             break;
+
+        //******
+        // BURST
         case(LFR_MODE_BURST):
             break;
+
+        //*****
+        // SBM1
         case(LFR_MODE_SBM1):
+#ifdef GSA
+#else
+            LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+            LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+            waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] burst f2, f1, f0 enable f3 f2 f1 f0
+            waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x02;
+            waveform_picker_regs->status = 0x00;
+#endif
+            //LEON_Unmask_interrupt( IRQ_SM );
             break;
+
+        //*****
+        // SBM2
         case(LFR_MODE_SBM2):
             break;
+
+        //********
+        // DEFAULT
         default:
             break;
     }

@@ -2,7 +2,22 @@
 
 rtems_isr waveforms_isr( rtems_vector_number vector )
 {
-    if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){// if no channel is enable
+    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
+        printf("In waveforms_isr *** Error sending event to WFRM\n");
+    }
+    if (waveform_picker_regs->burst_enable == 0x22) {
+        if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
+            waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_bis);
+        }
+        else {
+            waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);
+        }
+        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+            printf("In waveforms_isr *** Error sending event to WFRM\n");
+        }
+    }
+    waveform_picker_regs->status = 0x00;
+    /*else if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){// if no channel is enable
         if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
             printf("In timecode_irq_handler *** Error sending event to DUMB\n");
         }
@@ -14,7 +29,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
                 printf("In waveforms_isr *** Error sending event to WFRM\n");
             }
         }
-    }
+    }*/
 }
 
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
@@ -74,19 +89,24 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         //***************
         // send snapshots
         // F0
-        send_waveform( &header, wf_snap_f0, SID_NORM_SWF_F0, &spw_ioctl_send);
+        //send_waveform( &header, wf_snap_f0, SID_NORM_SWF_F0, &spw_ioctl_send);
         // F1
-        send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
+        if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
+           send_waveform( &header, wf_snap_f1_bis, SID_NORM_SWF_F1, &spw_ioctl_send);
+        }
+        else {
+            send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
+        }
         // F2
-        send_waveform( &header, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send);
+        //send_waveform( &header, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send);
 
 #ifdef GSA
         // irq processed, reset the related register of the timer unit
         gptimer_regs->timer[2].ctrl = gptimer_regs->timer[2].ctrl | 0x00000010;
 #else
         // irq processed, reset the related register of the waveform picker
-        waveform_picker_regs->status = 0x00;
-        waveform_picker_regs->burst_enable = 0x07;
+        //waveform_picker_regs->status = 0x00;
+        //waveform_picker_regs->burst_enable = 0x07;
 #endif
 
     }
@@ -97,23 +117,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 void init_waveforms( void )
 {
     int i = 0;
-    int aux1 = 0;
-    int aux2 = 0;
-    int val1 = 0;
-    int val2 = 0;
-    int val3 = 0;
-    int val4 = 0;
-    int amplitude1 = pow(2, 10);
-    static int delta_phi = 0;
 
     for (i=0; i< NB_SAMPLES_PER_SNAPSHOT; i++)
     {
-        aux1 = (int) (amplitude1 * cos((2*pi*i)/2048 + (delta_phi*pi)/180));
-        aux2 = (int) (amplitude1 * sin((2*pi*i)/2048 + (delta_phi*pi)/180));
-        val1 = build_value(aux1, aux2);
-        val2 = build_value(i, 2*i);
-        val3 = build_value(-aux1, -aux2);
-        val4 = build_value(-i, -2*i);
         //***
         // F0
         wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET ] = 0x88887777;     //
@@ -122,14 +128,14 @@ void init_waveforms( void )
 
         //***
         // F1
-        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = val1;
-        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = val2;
+        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = 0x22221111;
+        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x44443333;
         wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0xaaaa0000;
 
         //***
         // F2
-        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = val1;
-        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = val2;
+        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = 0x44443333;
+        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x22221111;
         wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0xaaaa0000;
 
         //***
@@ -138,9 +144,6 @@ void init_waveforms( void )
         //wf_cont_f3[ (i* NB_WORDS_SWF_BLK) + 1 ] = val2;
         //wf_cont_f3[ (i* NB_WORDS_SWF_BLK) + 2 ] = 0xaaaa0000;
     }
-
-    delta_phi = delta_phi + 10;
-
 }
 
 void init_waveform_header( ExtendedTMHeader_t * header, unsigned int sid )
@@ -229,7 +232,7 @@ void send_waveform( ExtendedTMHeader_t *header, volatile int *waveform,
              spw_ioctl_send->data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) + (1 * TIME_OFFSET) ];
         }
         else if (sid == SID_NORM_SWF_F2) {
-             spw_ioctl_send->data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) + (0 * TIME_OFFSET) ];
+             spw_ioctl_send->data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) + (1 * TIME_OFFSET) ];
         }
         else {
              spw_ioctl_send->data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) ];

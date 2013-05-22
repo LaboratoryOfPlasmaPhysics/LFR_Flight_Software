@@ -122,9 +122,9 @@ rtems_task Init( rtems_task_argument ignored )
     LEON_Unmask_interrupt( IRQ_TIME2 );
 
 #ifdef GSA
-    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        printf("in INIT *** Error sending event to WFRM\n");
-    }
+    //if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+    //    printf("in INIT *** Error sending event to WFRM\n");
+    //}
 #endif
 
     status = rtems_task_delete(RTEMS_SELF);
