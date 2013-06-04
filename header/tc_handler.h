@@ -55,9 +55,15 @@ int action_default(ccsdsTelecommandPacket_t *TC);
 int action_default_alt(ccsdsTelecommandPacket_t *TC);
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
 //
+int stop_current_mode();
+int enter_normal_mode();
+int enter_sbm1_mode();
 int action_load_norm(ccsdsTelecommandPacket_t *TC);
 int action_enter(ccsdsTelecommandPacket_t *TC);
 int action_updt_time(ccsdsTelecommandPacket_t *TC);
+//
+rtems_status_code restart_if_needed(rtems_id id);
+rtems_status_code suspend_if_needed(rtems_id id);
 
 #endif // TC_HANDLER_H_INCLUDED
 

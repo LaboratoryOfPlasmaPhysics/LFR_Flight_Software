@@ -4,7 +4,8 @@
 #define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH 10+4
-#define CCSDS_TC_PKT_MAX_SIZE 50 // size of the TC_LFR_UPDATE_INFO packet
+#define CCSDS_TC_PKT_MAX_SIZE 256
+#define CCSDS_TC_PKT_MIN_SIZE 16
 #define CCSDS_TC_TM_PACKET_OFFSET 7
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
@@ -216,5 +217,91 @@ struct ccsdsTelecommandPacket_str
     volatile unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
 };
 typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;
+
+struct hk_packet_str{
+    unsigned char lfr_status_word[2];
+    unsigned char lfr_sw_version[4];
+    // tc statistics
+    unsigned char hk_lfr_update_info_tc_cnt[2];
+    unsigned char hk_lfr_update_time_tc_cnt[2];
+    unsigned char hk_dpu_exe_tc_lfr_cnt[2];
+    unsigned char hk_dpu_rej_tc_lfr_cnt[2];
+    unsigned char hk_lfr_last_exe_tc_id[2];
+    unsigned char hk_lfr_last_exe_tc_type[2];
+    unsigned char hk_lfr_last_exe_tc_subtype[2];
+    unsigned char hk_lfr_last_exe_tc_time[6];
+    unsigned char hk_lfr_last_rej_tc_id[2];
+    unsigned char hk_lfr_last_rej_tc_type[2];
+    unsigned char hk_lfr_last_rej_tc_subtype[2];
+    unsigned char hk_lfr_last_rej_tc_time[6];
+    // anomaly statistics
+    unsigned char hk_lfr_le_cnt[2];
+    unsigned char hk_lfr_me_cnt[2];
+    unsigned char hk_lfr_he_cnt[2];
+    unsigned char hk_lfr_last_er_rid[2];
+    unsigned char hk_lfr_last_er_code;
+    unsigned char hk_lfr_last_er_time[6];
+    // vhdl_blk_status
+    unsigned char hk_lfr_vhdl_aa_sm;
+    unsigned char hk_lfr_vhdl_fft_sr;
+    unsigned char hk_lfr_vhdl_cic_hk;
+    unsigned char hk_lfr_vhdl_iir_cal;
+    // spacewire_if_statistics
+    unsigned char hk_lfr_dpu_spw_pkt_rcv_cnt[2];
+    unsigned char hk_lfr_dpu_spw_pkt_sent_cnt[2];
+    unsigned char hk_lfr_dpu_spw_tick_out_cnt;
+    unsigned char hk_lfr_dpu_spw_last_timc;
+    // ahb error statistics
+    unsigned int hk_lfr_last_fail_addr;
+    // temperatures
+    unsigned char hk_lfr_temp_scm[2];
+    unsigned char hk_lfr_temp_pcb[2];
+    unsigned char hk_lfr_temp_fpga[2];
+    // error counters
+    unsigned char hk_lfr_dpu_spw_parity;
+    unsigned char hk_lfr_dpu_spw_disconnect;
+    unsigned char hk_lfr_dpu_spw_escape;
+    unsigned char hk_lfr_dpu_spw_credit;
+    unsigned char hk_lfr_dpu_spw_write_sync;
+    unsigned char hk_lfr_dpu_spw_rx_ahb;
+    unsigned char hk_lfr_dpu_spw_tx_ahb;
+    unsigned char hk_lfr_dpu_spw_header_crc;
+    unsigned char hk_lfr_dpu_spw_data_crc;
+    unsigned char hk_lfr_dpu_spw_early_eop;
+    unsigned char hk_lfr_dpu_spw_invalid_addr;
+    unsigned char hk_lfr_dpu_spw_eep;
+    unsigned char hk_lfr_dpu_spw_rx_too_big;
+    // timecode
+    unsigned char hk_lfr_timecode_erroneous;
+    unsigned char hk_lfr_timecode_missing;
+    unsigned char hk_lfr_timecode_invalid;
+    // time
+    unsigned char hk_lfr_time_timecode_it;
+    unsigned char hk_lfr_time_not_synchro;
+    unsigned char hk_lfr_time_timecode_ctr;
+    // hk_lfr_buffer_dpu_
+    unsigned char hk_lfr_buffer_dpu_tc_fifo;
+    unsigned char hk_lfr_buffer_dpu_tm_fifo;
+    // hk_lfr_ahb_
+    unsigned char hk_lfr_ahb_correctable;
+    unsigned char hk_lfr_ahb_uncorrectable;
+    unsigned char hk_lfr_ahb_fails_trans;
+    // hk_lfr_adc_
+    unsigned char hk_lfr_adc_failure;
+    unsigned char hk_lfr_adc_timeout;
+    unsigned char hk_lfr_toomany_err;
+    // hk_lfr_cpu_
+    unsigned char hk_lfr_cpu_write_err;
+    unsigned char hk_lfr_cpu_ins_access_err;
+    unsigned char hk_lfr_cpu_illegal_ins;
+    unsigned char hk_lfr_cpu_privilegied_ins;
+    unsigned char hk_lfr_cpu_register_hw;
+    unsigned char hk_lfr_cpu_not_aligned;
+    unsigned char hk_lfr_cpu_data_exception;
+    unsigned char hk_lfr_cpu_div_exception;
+    unsigned char hk_lfr_cpu_arith_overflow;
+
+};
+typedef struct hk_packet_str hk_packet_t;
 
 #endif // CCSDS_H_INCLUDED

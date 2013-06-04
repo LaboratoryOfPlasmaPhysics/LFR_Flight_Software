@@ -85,8 +85,8 @@ int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
 
     GetCRCAsTwoBytes( (unsigned char*) TC->packetID, computed_CRC, tc_len_recv + 5 );
     code = acceptTM( TC, tc_len_recv ) ;
-    if ( (code == 0) | (code == 1) | (code == 2)
-        | (code == 3) | (code == 4) | (code == 5) )
+    if ( (code == ILLEGAL_APID) | (code == WRONG_LEN_PACKET) | (code == INCOR_CHECKSUM)
+        | (code == ILL_TYPE) | (code == ILL_SUBTYPE) | (code == WRONG_APP_DATA) )
     { // generate TM_LFR_TC_EXE_CORRUPTED
         // BUILD HEADER
         TM_build_header( TM_LFR_TC_EXE_ERR, TM_LEN_EXE_CORR, 0, 0, &TM_header);
@@ -249,16 +249,18 @@ unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_
     // source ID check // Source ID not documented in the ICD
 
     // packet error control, CRC check
-    CCSDSContent = (unsigned char*) TMPacket->packetID;
-    GetCRCAsTwoBytes(CCSDSContent, currentTC_COMPUTED_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
-    if (currentTC_COMPUTED_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
-        ret = INCOR_CHECKSUM;
-    }
-    else if (currentTC_COMPUTED_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -1]) {
-        ret = INCOR_CHECKSUM;
-    }
-    else {
-        ret = CCSDS_TM_VALID;
+    if ( ret == CCSDS_TM_VALID ) {
+        CCSDSContent = (unsigned char*) TMPacket->packetID;
+        GetCRCAsTwoBytes(CCSDSContent, currentTC_COMPUTED_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
+        if (currentTC_COMPUTED_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
+            ret = INCOR_CHECKSUM;
+        }
+        else if (currentTC_COMPUTED_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -1]) {
+            ret = INCOR_CHECKSUM;
+        }
+        else {
+            ret = CCSDS_TM_VALID;
+        }
     }
 
     return ret;
@@ -454,7 +456,7 @@ rtems_task recv_task( rtems_task_argument unused )
         len = read(fdSPW, (char*) &currentTC, CCSDS_TC_PKT_MAX_SIZE); // the call to read is blocking
         if (len == -1){ // error during the read call
             PRINTF("In RECV *** last read call returned -1\n")
-            if (rtems_event_send( Task_id[3], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL) {
+            if (rtems_event_send( Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL) {
                 PRINTF("IN RECV *** Error: rtems_event_send SPW_LINKERR_EVENT\n")
             }
             if (rtems_task_suspend(RTEMS_SELF) != RTEMS_SUCCESSFUL) {
@@ -463,13 +465,18 @@ rtems_task recv_task( rtems_task_argument unused )
         }
         else {
             PRINTF1("Got pck of length %d\n", len+1)
-            currentTC_LEN_RCV[0] = 0x00;
-            currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
-            currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
-            // CHECK THE TC AND BUILD THE APPROPRIATE TM
-            data_length = TC_checker(&currentTC, currentTC_LEN_RCV_AsUnsignedInt);
-            if (data_length!=-1)
-            {
+            if ( (len+1) < CCSDS_TC_PKT_MIN_SIZE ) {
+                PRINTF("In RECV *** packet lenght too short\n")
+            }
+            else {
+                currentTC_LEN_RCV[0] = 0x00;
+                currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
+                currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
+                // CHECK THE TC AND BUILD THE APPROPRIATE TM
+                data_length = TC_checker(&currentTC, currentTC_LEN_RCV_AsUnsignedInt);
+                if (data_length!=-1)
+                {
+                }
             }
         }
     }
@@ -614,55 +621,101 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //********
         // STANDBY
         case(LFR_MODE_STANDBY):
-            LEON_Mask_interrupt( IRQ_WF );
-            LEON_Mask_interrupt( IRQ_SM );
-            LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
-            waveform_picker_regs->burst_enable = 0x00;
+            stop_current_mode();
             break;
 
         //******
         // NORMAL
         case(LFR_MODE_NORMAL):
-#ifdef GSA
-            LEON_Unmask_interrupt( IRQ_WF );
-#else
-            LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-            LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-            waveform_picker_regs->burst_enable = 0x07;
-            waveform_picker_regs->status = 0x00;
-#endif
-            LEON_Unmask_interrupt( IRQ_SM );
+            stop_current_mode();
+            enter_normal_mode();
             break;
 
         //******
         // BURST
         case(LFR_MODE_BURST):
+            stop_current_mode();
             break;
 
         //*****
         // SBM1
         case(LFR_MODE_SBM1):
-#ifdef GSA
-#else
-            LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-            LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-            waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] burst f2, f1, f0 enable f3 f2 f1 f0
-            waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x02;
-            waveform_picker_regs->status = 0x00;
-#endif
-            //LEON_Unmask_interrupt( IRQ_SM );
+            stop_current_mode();
+            enter_sbm1_mode();
             break;
 
         //*****
         // SBM2
         case(LFR_MODE_SBM2):
+            stop_current_mode();
             break;
 
         //********
         // DEFAULT
         default:
+            stop_current_mode();
             break;
     }
+    return 0;
+}
+
+int stop_current_mode()
+{
+    // mask all IRQ lines related to signal processing
+    LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
+    LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrices interrupt (coming from the timer VHDL IP)
+    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
+
+    // clear all pending interruptions related to signal processing
+    LEON_Clear_interrupt( IRQ_WF );                  // clear waveform interrupt (coming from the timer VHDL IP)
+    LEON_Clear_interrupt( IRQ_SM );                  // clear spectral matrices interrupt (coming from the timer VHDL IP)
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
+
+    // suspend several tasks
+    suspend_if_needed( Task_id[TASKID_AVF0] );
+    suspend_if_needed( Task_id[TASKID_BPF0] );
+    suspend_if_needed( Task_id[TASKID_WFRM] );
+
+    // initialize the registers
+    waveform_picker_regs->burst_enable = 0x00;      // initialize
+
+    return 0;
+}
+
+int enter_normal_mode()
+{
+
+    restart_if_needed( Task_id[TASKID_AVF0] );
+    restart_if_needed( Task_id[TASKID_BPF0] );
+    restart_if_needed( Task_id[TASKID_WFRM] );
+
+#ifdef GSA
+    LEON_Unmask_interrupt( IRQ_WF );
+#else
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->burst_enable = 0x07;
+    waveform_picker_regs->status = 0x00;
+#endif
+    LEON_Unmask_interrupt( IRQ_SM );
+    return 0;
+}
+
+int enter_sbm1_mode()
+{
+    restart_if_needed( Task_id[TASKID_AVF0] );
+    restart_if_needed( Task_id[TASKID_BPF0] );
+    restart_if_needed( Task_id[TASKID_WFRM] );
+
+#ifdef GSA
+#else
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] burst f2, f1, f0 enable f3 f2 f1 f0
+    waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x02;
+    waveform_picker_regs->status = 0x00;
+#endif
+    //LEON_Unmask_interrupt( IRQ_SM );
     return 0;
 }
 
@@ -713,6 +766,38 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
     write_spw(&spw_ioctl_send);
 
     return 0;
+}
+
+rtems_status_code restart_if_needed(rtems_id id)
+{
+    rtems_status_code status;
+
+    status = rtems_task_is_suspended( id );
+
+    if (status==RTEMS_SUCCESSFUL) {
+        status = rtems_task_restart( id, 0 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            PRINTF1("in restart_if_needed *** Error restarting with id %d\n", (int) id)
+        }
+    }
+
+    return status;
+}
+
+rtems_status_code suspend_if_needed(rtems_id id)
+{
+    rtems_status_code status;
+
+    status = rtems_task_is_suspended( id );
+
+    if (status!=RTEMS_SUCCESSFUL) {
+        status = rtems_task_suspend( id );
+        if (status!=RTEMS_SUCCESSFUL) {
+            PRINTF1("in suspend_if_needed *** Error suspending task with id %d\n", (int) id)
+        }
+    }
+
+    return status;
 }
 
 //***************************

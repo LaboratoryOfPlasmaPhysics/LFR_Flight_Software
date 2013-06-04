@@ -46,6 +46,7 @@ unsigned char param_common[2];
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
+hk_packet_t housekeeping_parameters;
 
 // BASIC PARAMETERS GLOBAL VARIABLES
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];
