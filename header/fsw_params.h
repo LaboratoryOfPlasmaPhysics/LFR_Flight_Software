@@ -4,6 +4,10 @@
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
+//************************
+// flight software version
+// this parameters is handled by the Qt project options
+
 //**********
 // LFR MODES
 #define LFR_MODE_STANDBY 0
@@ -11,6 +15,12 @@
 #define LFR_MODE_BURST 2
 #define LFR_MODE_SBM1 3
 #define LFR_MODE_SBM2 4
+
+#define RTEMS_EVENT_MODE_STANDBY RTEMS_EVENT_0
+#define RTEMS_EVENT_MODE_NORMAL RTEMS_EVENT_1
+#define RTEMS_EVENT_MODE_BURST RTEMS_EVENT_2
+#define RTEMS_EVENT_MODE_SBM1 RTEMS_EVENT_3
+#define RTEMS_EVENT_MODE_SBM2 RTEMS_EVENT_4
 
 //*****************************
 // APB REGISTERS BASE ADDRESSES
@@ -45,6 +55,11 @@
 #define TIMER_WF_SIMULATOR 2
 #define HK_PERIOD 100 // 100 * 10ms => 1sec
 
+//**********
+// LPP CODES
+#define LFR_SUCCESSFUL 0
+#define LFR_DEFAULT 1
+
 //******
 // RTEMS
 #define TASKID_RECV 1
@@ -77,6 +92,37 @@
 #define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK 2 * 6
 #define NB_WORDS_SWF_BLK 3
+
+//******************
+// SEQUENCE COUNTERS
+#define SEQ_CNT_NB_PID 2
+#define SEQ_CNT_NB_CAT 4
+#define SEQ_CNT_NB_DEST_ID 11
+// pid
+#define SEQ_CNT_PID_76 0
+#define SEQ_CNT_PID_79 1
+//cat
+#define SEQ_CNT_CAT_1 0
+#define SEQ_CNT_CAT_4 1
+#define SEQ_CNT_CAT_9 2
+#define SEQ_CNT_CAT_12 3
+// destination id
+#define SEQ_CNT_DST_ID_GROUND 0
+#define SEQ_CNT_DST_ID_MISSION_TIMELINE 1
+#define SEQ_CNT_DST_ID_TC_SEQUENCES 2
+#define SEQ_CNT_DST_ID_RECOVERY_ACTION_CMD 3
+#define SEQ_CNT_DST_ID_BACKUP_MISSION_TIMELINE 4
+#define SEQ_CNT_DST_ID_DIRECT_CMD 5
+#define SEQ_CNT_DST_ID_SPARE_GRD_SRC1 6
+#define SEQ_CNT_DST_ID_SPARE_GRD_SRC2 7
+#define SEQ_CNT_DST_ID_OBCP 8
+#define SEQ_CNT_DST_ID_SYSTEM_CONTROL 9
+#define SEQ_CNT_DST_ID_AOCS 10
+
+struct param_common_str{
+    unsigned char sy_lfr_common0;
+    unsigned char sy_lfr_common1;
+};
 
 struct param_norm_str{
     unsigned int sy_lfr_n_swf_l; // length of the snapshots

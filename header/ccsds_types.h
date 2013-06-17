@@ -20,6 +20,7 @@
 
 #define SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED 24
 #define SIZE_TM_LFR_TC_EXE_CORRUPTED 32
+#define SIZE_HK_PARAMETERS 112
 
 #define ILLEGAL_APID 0
 #define WRONG_LEN_PACKET 1
@@ -64,6 +65,7 @@
 
 // TM TYPES
 #define TM_TYPE_LFR_SCIENCE 21
+#define TM_TYPE_HK 3
 
 // TM SUBTYPES
 #define TM_SUBTYPE_EXE_OK 7
@@ -72,6 +74,7 @@
 #define TM_SUBTYPE_SCIENCE 3
 #define TM_SUBTYPE_LFR_SCIENCE 3
 
+// TM SID
 #define SID_DEFAULT 0
 #define SID_HK 1
 #define SID_EXE_INC 5
@@ -147,20 +150,6 @@ struct TMHeader_str
 };
 typedef struct TMHeader_str TMHeader_t;
 
-struct Packet_TM_LFR_HK_str
-{
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[10];
-    volatile unsigned char data[LENGTH_TM_LFR_HK - 10 + 1];
-};
-typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
-
 struct Packet_TM_LFR_TC_EXE_str
 {
     volatile unsigned char targetLogicalAddress;
@@ -218,7 +207,20 @@ struct ccsdsTelecommandPacket_str
 };
 typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;
 
-struct hk_packet_str{
+struct Packet_TM_LFR_HK_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    volatile unsigned char dataFieldHeader[10];
+    volatile unsigned char sid;
+
+    //**************
+    // HK PARAMETERS
     unsigned char lfr_status_word[2];
     unsigned char lfr_sw_version[4];
     // tc statistics
@@ -300,8 +302,7 @@ struct hk_packet_str{
     unsigned char hk_lfr_cpu_data_exception;
     unsigned char hk_lfr_cpu_div_exception;
     unsigned char hk_lfr_cpu_arith_overflow;
-
 };
-typedef struct hk_packet_str hk_packet_t;
+typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
 
 #endif // CCSDS_H_INCLUDED

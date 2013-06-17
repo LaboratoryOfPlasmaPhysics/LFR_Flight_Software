@@ -6,6 +6,13 @@ CONFIG -= qt
 
 include(./sparc.pri)
 
+# flight software version
+SW_VERSION=-0-5
+DEFINES += SW_VERSION_N1=0
+DEFINES += SW_VERSION_N2=0
+DEFINES += SW_VERSION_N3=0
+DEFINES += SW_VERSION_N4=5
+
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
 }
@@ -14,10 +21,10 @@ contains( CONFIG, cpu_usage_report ) {
     DEFINES += PRINT_TASK_STATISTICS
 }
 
-TARGET = fsw
+TARGET = fsw$(SW_VERSION)
 contains( CONFIG, gsa ) {
     DEFINES += GSA
-    TARGET = fsw-gsa
+    TARGET = fsw-gsa$(SW_VERSION)
 }
 
 INCLUDEPATH += \

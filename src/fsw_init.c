@@ -68,6 +68,7 @@ rtems_task Init( rtems_task_argument ignored )
 
     initLookUpTableForCRC(); // in tc_handler.h
     init_default_mode_parameters();
+    init_housekeeping_parameters();
     create_message_queue();
 
     create_names();
@@ -160,11 +161,11 @@ rtems_task spiq_task(rtems_task_argument unused)
     }
 }
 
-void init_default_mode_parameters()
+void init_default_mode_parameters(void)
 {
     // COMMON PARAMETERS
-    param_common[0] = 0x00;
-    param_common[1] = 0x10;             // default value 0 0 0 1 0 0 0 0
+    param_common.sy_lfr_common0 = 0x00;
+    param_common.sy_lfr_common1 = 0x10; // default value 0 0 0 1 0 0 0 0
     // NORMAL MODE
     param_norm.sy_lfr_n_swf_l = 2048;   // nb sample
     param_norm.sy_lfr_n_swf_p = 300;    // sec
@@ -180,6 +181,39 @@ void init_default_mode_parameters()
     // SBM2 MODE
     param_sbm2.sy_lfr_s2_bp_p0 = 1;     // sec
     param_sbm2.sy_lfr_s2_bp_p0 = 5;     // sec
+}
+
+void init_housekeeping_parameters(void)
+{
+    unsigned int i = 0;
+    unsigned int j = 0;
+    unsigned int k = 0;
+    char *parameters;
+
+    parameters = (char*) &housekeeping_packet.lfr_status_word;
+    for(i = 0; i< SIZE_HK_PARAMETERS; i++)
+    {
+        parameters[i] = 0x00;
+    }
+    // init status word
+    housekeeping_packet.lfr_status_word[0] = 0x00;
+    housekeeping_packet.lfr_status_word[1] = 0x00;
+    // init software version
+    housekeeping_packet.lfr_sw_version[0] = SW_VERSION_N1;
+    housekeeping_packet.lfr_sw_version[1] = SW_VERSION_N2;
+    housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
+    housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
+    // init sequence counters
+    for (i = 0; i<SEQ_CNT_NB_PID; i++)
+    {
+        for(j = 0; j<SEQ_CNT_NB_CAT; j++)
+        {
+            for(k = 0; k<SEQ_CNT_NB_DEST_ID; k++)
+            {
+                sequenceCounters[i][j][k] = 0x00;
+            }
+        }
+    }
 }
 
 int create_names( void )

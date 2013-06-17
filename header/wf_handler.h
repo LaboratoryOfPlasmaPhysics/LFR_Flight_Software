@@ -24,6 +24,7 @@ extern volatile int wf_cont_f3[ ];
 extern waveform_picker_regs_t *waveform_picker_regs;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );
+rtems_isr waveforms_isr_alternative( rtems_vector_number vector );
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector );
 rtems_task wfrm_task(rtems_task_argument argument);
 
@@ -33,6 +34,7 @@ void init_waveforms( void );
 void reset_waveforms( void );
 void send_waveform( ExtendedTMHeader_t *header, volatile int *waveform, unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
 void init_waveform_picker_regs();
+void set_data_shaping_parameters(unsigned char parameters);
 int build_value(int value1, int value0);
 
 #endif // WF_HANDLER_H_INCLUDED

@@ -15,6 +15,7 @@
 #include <tc_handler.h>
 #include <wf_handler.h>
 #include <grlib_regs.h>
+#include <ccsds_types.h>
 
 extern int sched_yield( void );
 extern int errno;
@@ -27,11 +28,13 @@ extern int fdUART;  // uart file descriptor
 void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc);
 
 // MODE PARAMETERS
+extern struct param_common_str param_common;
 extern struct param_norm_str param_norm;
 extern struct param_burst_str param_burst;
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
-extern unsigned char param_common[];
+extern Packet_TM_LFR_HK_t housekeeping_packet;
+extern unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
@@ -46,6 +49,7 @@ int create_message_queue( void );
 
 // OTHER functions
 void init_default_mode_parameters( void );
+void init_housekeeping_parameters( void );
 
 int configure_spw_link( void );
 void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr); // No Port force

@@ -1,10 +1,7 @@
 #include <wf_handler.h>
 
-rtems_isr waveforms_isr( rtems_vector_number vector )
+rtems_isr waveforms_isr_alternative( rtems_vector_number vector )
 {
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
-        printf("In waveforms_isr *** Error sending event to WFRM\n");
-    }
     if (waveform_picker_regs->burst_enable == 0x22) {
         if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
             waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_bis);
@@ -12,8 +9,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         else {
             waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);
         }
-        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-            printf("In waveforms_isr *** Error sending event to WFRM\n");
+        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
+            //rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
         }
     }
     waveform_picker_regs->status = 0x00;
@@ -30,6 +27,81 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             }
         }
     }*/
+}
+
+rtems_isr waveforms_isr( rtems_vector_number vector )
+{
+    unsigned char lfrMode;
+    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
+
+    switch(lfrMode)
+    {
+        //********
+        // STANDBY
+        case(LFR_MODE_STANDBY):
+            break;
+
+        //******
+        // NORMAL
+        case(LFR_MODE_NORMAL):
+#ifdef GSA
+            PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
+#else
+            if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){// if no channel is enable
+                if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
+                    PRINTF("in waveform_isr *** Error sending event to DUMB\n");
+                }
+            }
+            else {
+                if ( (waveform_picker_regs->status & 0x7) == 0x7 ){         // f2 f1 and f0 are full
+                    waveform_picker_regs->burst_enable = 0x00;
+                    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+                        if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
+                            PRINTF("in waveform_isr *** Error sending event to DUMB\n");
+                        }
+                    }
+                }
+            }
+#endif
+            break;
+
+        //******
+        // BURST
+        case(LFR_MODE_BURST):
+            break;
+
+        //*****
+        // SBM1
+        case(LFR_MODE_SBM1):
+#ifdef GSA
+            PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
+#else
+            if (waveform_picker_regs->burst_enable == 0x22) {
+                if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
+                    waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_bis);
+                }
+                else {
+                    waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);
+                }
+                if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM1 ) != RTEMS_SUCCESSFUL) {
+                    PRINTF("in waveforms_isr *** Error sending event to WFRM\n")
+                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+                }
+            }
+            waveform_picker_regs->status = 0x00;
+#endif
+            break;
+
+        //*****
+        // SBM2
+        case(LFR_MODE_SBM2):
+            break;
+
+        //********
+        // DEFAULT
+        default:
+            break;
+    }
 }
 
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
@@ -76,9 +148,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     PRINTF("in WFRM ***\n")
 
     while(1){
-
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        PRINTF("in WFRM *** send wfrm\n")
+        // wait for an RTEMS_EVENT
+        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4,
+                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         header.dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
         header.dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
         header.dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -86,29 +158,48 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         header.dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
         header.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
 
-        //***************
-        // send snapshots
-        // F0
-        //send_waveform( &header, wf_snap_f0, SID_NORM_SWF_F0, &spw_ioctl_send);
-        // F1
-        if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
-           send_waveform( &header, wf_snap_f1_bis, SID_NORM_SWF_F1, &spw_ioctl_send);
-        }
-        else {
-            send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
-        }
-        // F2
-        //send_waveform( &header, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send);
+        switch(event_out)
+        {
+            //********
+            // STANDBY
+            case(RTEMS_EVENT_MODE_STANDBY):
+                break;
 
+            //*******
+            // NORMAL
+            case(RTEMS_EVENT_MODE_NORMAL):
+                //***************
+                // send snapshots
+                // F0
+                send_waveform( &header, wf_snap_f0, SID_NORM_SWF_F0, &spw_ioctl_send);
+                // F1
+                send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
+                // F2
+                send_waveform( &header, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send);
 #ifdef GSA
-        // irq processed, reset the related register of the timer unit
-        gptimer_regs->timer[2].ctrl = gptimer_regs->timer[2].ctrl | 0x00000010;
+                // irq processed, reset the related register of the timer unit
+                gptimer_regs->timer[2].ctrl = gptimer_regs->timer[2].ctrl | 0x00000010;
 #else
-        // irq processed, reset the related register of the waveform picker
-        //waveform_picker_regs->status = 0x00;
-        //waveform_picker_regs->burst_enable = 0x07;
+                // irq processed, reset the related register of the waveform picker
+                waveform_picker_regs->status = 0x00;
+                waveform_picker_regs->burst_enable = 0x07;
 #endif
+                break;
 
+            //*****
+            // SBM1
+            case(RTEMS_EVENT_MODE_SBM1):
+                // F1
+                if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
+                   send_waveform( &header, wf_snap_f1_bis, SID_NORM_SWF_F1, &spw_ioctl_send);
+                }
+                else {
+                    send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
+                }
+                break;
+            default:
+                break;
+        }
     }
 }
 
@@ -290,8 +381,8 @@ int build_value(int value1, int value0)
 }
 
 void init_waveform_picker_regs()
-{                                                           //  1  1   0   0  0 BW = 0 => BIAS_WORKS
-    waveform_picker_regs->data_shaping = 0x18;              // R1 R0 SP1 SP0 BW
+{
+    set_data_shaping_parameters(param_common.sy_lfr_common1);
     waveform_picker_regs->burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);  //
     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);  //
@@ -310,3 +401,14 @@ void init_waveform_picker_regs()
     //waveform_picker_regs->nb_snapshot_param = 0xff;     // max 3 octets, 256 - 1
 }
 
+void set_data_shaping_parameters(unsigned char parameters)
+{
+    // get the parameters for the data shaping [BW SP0 SP1 R0 R1] in sy_lfr_common1 and configure the register
+    // waveform picker : [R1 R0 SP1 SP0 BW]
+    waveform_picker_regs->data_shaping =
+              ( (parameters & 0x10) >> 4 )     // BW
+            + ( (parameters & 0x08) >> 2 )     // SP0
+            + ( (parameters & 0x04)      )     // SP1
+            + ( (parameters & 0x02) << 2 )     // R0
+            + ( (parameters & 0x01) << 4 );    // R1
+}

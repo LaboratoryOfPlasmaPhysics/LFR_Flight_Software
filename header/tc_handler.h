@@ -15,13 +15,14 @@ extern rtems_name misc_name[ ];
 extern rtems_name misc_id[ ];
 extern rtems_id Task_id[ ];         // array of task ids
 // MODE PARAMETERS
+extern struct param_common_str param_common;
 extern struct param_norm_str param_norm;
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
+extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern time_management_regs_t *time_management_regs;
 extern waveform_picker_regs_t *waveform_picker_regs;
 extern gptimer_regs_t         *gptimer_regs;
-extern unsigned char param_common[];
 
 //****
 // ISR
@@ -58,9 +59,14 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
 int stop_current_mode();
 int enter_normal_mode();
 int enter_sbm1_mode();
+int action_load_comm(ccsdsTelecommandPacket_t *TC);
 int action_load_norm(ccsdsTelecommandPacket_t *TC);
 int action_enter(ccsdsTelecommandPacket_t *TC);
 int action_updt_time(ccsdsTelecommandPacket_t *TC);
+//
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
+void close_action(ccsdsTelecommandPacket_t *TC, int result);
 //
 rtems_status_code restart_if_needed(rtems_id id);
 rtems_status_code suspend_if_needed(rtems_id id);

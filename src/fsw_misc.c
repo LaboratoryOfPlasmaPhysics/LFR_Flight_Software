@@ -97,7 +97,7 @@ rtems_task hous_task(rtems_task_argument argument)
 
     PRINTF("in HOUS ***\n")
 
-    if (rtems_rate_monotonic_ident( HK_name, &HK_id)!=RTEMS_SUCCESSFUL) {
+    if (rtems_rate_monotonic_ident( HK_name, &HK_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( HK_name, &HK_id );
         if( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
@@ -115,9 +115,9 @@ rtems_task hous_task(rtems_task_argument argument)
     housekeeping_packet.packetLength[0] = 0x00;
     housekeeping_packet.packetLength[1] = 0x77;
     housekeeping_packet.dataFieldHeader[0] = 0x10;
-    housekeeping_packet.dataFieldHeader[1] = 0x03;
-    housekeeping_packet.dataFieldHeader[2] = 0x19;
-    housekeeping_packet.dataFieldHeader[3] = 0x00;
+    housekeeping_packet.dataFieldHeader[1] = TM_TYPE_HK;
+    housekeeping_packet.dataFieldHeader[2] = TM_SUBTYPE_HK;
+    housekeeping_packet.dataFieldHeader[3] = CCSDS_DESTINATION_ID_GROUND;
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL )
@@ -138,7 +138,7 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
             housekeeping_packet.dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
-            housekeeping_packet.data[0] = CCSDS_DESTINATION_ID_DPU;
+            housekeeping_packet.sid = CCSDS_DESTINATION_ID_DPU;
             result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
             if (result==-1)
             {
