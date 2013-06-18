@@ -58,7 +58,9 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
 //
 int stop_current_mode();
 int enter_normal_mode();
+int enter_burst_mode();
 int enter_sbm1_mode();
+int enter_sbm2_mode();
 int action_load_comm(ccsdsTelecommandPacket_t *TC);
 int action_load_norm(ccsdsTelecommandPacket_t *TC);
 int action_enter(ccsdsTelecommandPacket_t *TC);
@@ -67,9 +69,6 @@ int action_updt_time(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
 void close_action(ccsdsTelecommandPacket_t *TC, int result);
-//
-rtems_status_code restart_if_needed(rtems_id id);
-rtems_status_code suspend_if_needed(rtems_id id);
 
 #endif // TC_HANDLER_H_INCLUDED
 

@@ -1,13 +1,13 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** cpu_usage_report *** gsa
-CONFIG += console verbose
+CONFIG += console verbose gsa
 CONFIG -= qt
 
 include(./sparc.pri)
 
 # flight software version
-SW_VERSION=-0-5
+SWVERSION=-0-5
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
@@ -21,10 +21,10 @@ contains( CONFIG, cpu_usage_report ) {
     DEFINES += PRINT_TASK_STATISTICS
 }
 
-TARGET = fsw$(SW_VERSION)
+TARGET = fsw
 contains( CONFIG, gsa ) {
     DEFINES += GSA
-    TARGET = fsw-gsa$(SW_VERSION)
+    TARGET = fsw-gsa
 }
 
 INCLUDEPATH += \

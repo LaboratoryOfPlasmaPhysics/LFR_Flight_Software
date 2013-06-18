@@ -71,9 +71,10 @@ rtems_task Init( rtems_task_argument ignored )
     init_housekeeping_parameters();
     create_message_queue();
 
-    create_names();
-    create_all_tasks();
-    start_all_tasks();
+    create_names();         // create all names
+    create_all_tasks();     // create all tasks
+    start_all_tasks();      // start all tasks
+    stop_current_mode();    // go in STANDBY mode
 
     grspw_timecode_callback = &timecode_irq_handler;
 

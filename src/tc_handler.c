@@ -497,7 +497,7 @@ rtems_task actn_task( rtems_task_argument unused )
     {
         status = rtems_message_queue_receive(misc_id[0], (char*) &TC, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-        if (status!=RTEMS_SUCCESSFUL) PRINTF1("in task ACTN *** error receiving a message, code %d \n", status)
+        if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
         else
         {
             subtype = TC.dataFieldHeader[2];
@@ -538,6 +538,14 @@ rtems_task actn_task( rtems_task_argument unused )
                     break;
                     //
                 case TC_SUBTYPE_ENTER:
+                    if ( (housekeeping_packet.lfr_status_word[0] & 0xf0) != LFR_MODE_STANDBY)
+                    {
+                        status = stop_current_mode();
+                    }
+                    if (status != RTEMS_SUCCESSFUL)
+                    {
+                        PRINTF("ERR *** in task ACTN *** TC_SUBTYPE_ENTER *** stop_current_mode\n")
+                    }
                     result = action_enter( &TC );
                     close_action( &TC, result );
                     break;
@@ -630,7 +638,7 @@ int action_default(ccsdsTelecommandPacket_t *TC)
 
 int action_enter(ccsdsTelecommandPacket_t *TC)
 {
-    rtems_status_code status;
+    rtems_status_code status = RTEMS_SUCCESSFUL;
     unsigned char lfr_mode = TC->dataAndCRC[1];
     printf("enter mode %d\n", lfr_mode);
     switch(lfr_mode)
@@ -638,18 +646,12 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //********
         // STANDBY
         case(LFR_MODE_STANDBY):
-            status = stop_current_mode();
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                PRINTF("in action_enter *** error going back to STANDBY mode\n")
-            }
             housekeeping_packet.lfr_status_word[0] = (unsigned char) ((LFR_MODE_STANDBY << 4) + 0x0d);
             break;
 
         //******
         // NORMAL
         case(LFR_MODE_NORMAL):
-            status = stop_current_mode();
             status = enter_normal_mode();
             if (status == RTEMS_SUCCESSFUL)
             {
@@ -660,7 +662,7 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //******
         // BURST
         case(LFR_MODE_BURST):
-            status = stop_current_mode();
+            status = enter_burst_mode();
             if (status == RTEMS_SUCCESSFUL)
             {
                 housekeeping_packet.lfr_status_word[0] = (unsigned char) ((LFR_MODE_BURST << 4) + 0x0d);
@@ -670,7 +672,6 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //*****
         // SBM1
         case(LFR_MODE_SBM1):
-            status = stop_current_mode();
             status = enter_sbm1_mode();
             if (status == RTEMS_SUCCESSFUL)
             {
@@ -681,7 +682,7 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //*****
         // SBM2
         case(LFR_MODE_SBM2):
-            status = stop_current_mode();
+            status = enter_sbm2_mode();
             if (status == RTEMS_SUCCESSFUL)
             {
                 housekeeping_packet.lfr_status_word[0] = (unsigned char) ((LFR_MODE_SBM2 << 4) + 0x0d);
@@ -691,11 +692,7 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
         //********
         // DEFAULT
         default:
-            status = stop_current_mode();
-            if (status == RTEMS_SUCCESSFUL)
-            {
-                housekeeping_packet.lfr_status_word[0] = (unsigned char) ((LFR_MODE_STANDBY << 4) + 0x0d);
-            }
+            housekeeping_packet.lfr_status_word[0] = (unsigned char) ((LFR_MODE_STANDBY << 4) + 0x0d);
             break;
     }
     return status;
@@ -704,6 +701,7 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
 int stop_current_mode()
 {
     rtems_status_code status;
+
     // mask all IRQ lines related to signal processing
     LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
     LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrices interrupt (coming from the timer VHDL IP)
@@ -715,12 +713,18 @@ int stop_current_mode()
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
 
     // suspend several tasks
-    status = suspend_if_needed( Task_id[TASKID_AVF0] );
+
+    status = rtems_task_suspend( Task_id[TASKID_AVF0] );
     if (status == RTEMS_SUCCESSFUL) {
-        status = suspend_if_needed( Task_id[TASKID_BPF0] );
+        status = rtems_task_suspend( Task_id[TASKID_BPF0] );
         if (status == RTEMS_SUCCESSFUL) {
-            status = suspend_if_needed( Task_id[TASKID_WFRM] );
+            status = rtems_task_suspend( Task_id[TASKID_WFRM] );
         }
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF("ERR *** in stop_current_mode *** suspending tasks\n")
     }
 
     // initialize the registers
@@ -733,11 +737,11 @@ int enter_normal_mode()
 {
     rtems_status_code status;
 
-    status = restart_if_needed( Task_id[TASKID_AVF0] );
+    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
     if (status == RTEMS_SUCCESSFUL) {
-        status = restart_if_needed( Task_id[TASKID_BPF0] );
+        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
         if (status == RTEMS_SUCCESSFUL) {
-            status = restart_if_needed( Task_id[TASKID_WFRM] );
+            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
         }
     }
 
@@ -755,14 +759,15 @@ int enter_normal_mode()
     return status;
 }
 
-int enter_sbm1_mode()
+int enter_burst_mode()
 {
     rtems_status_code status;
-    status = restart_if_needed( Task_id[TASKID_AVF0] );
+
+    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
     if (status == RTEMS_SUCCESSFUL) {
-        status = restart_if_needed( Task_id[TASKID_BPF0] );
+        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
         if (status == RTEMS_SUCCESSFUL) {
-            status = restart_if_needed( Task_id[TASKID_WFRM] );
+            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
         }
     }
 
@@ -770,11 +775,65 @@ int enter_sbm1_mode()
 #else
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->addr_data_f2 = (int) wf_snap_f2;
+    waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] burst f2, f1, f0 enable f3 f2 f1 f0
+    waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04;
+    waveform_picker_regs->status = 0x00;
+#endif
+
+    LEON_Unmask_interrupt( IRQ_SM );
+    return status;
+}
+
+int enter_sbm1_mode()
+{
+    rtems_status_code status;
+
+    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
+    if (status == RTEMS_SUCCESSFUL) {
+        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
+        if (status == RTEMS_SUCCESSFUL) {
+            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
+        }
+    }
+
+#ifdef GSA
+#else
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
     waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] burst f2, f1, f0 enable f3 f2 f1 f0
     waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x02;
     waveform_picker_regs->status = 0x00;
 #endif
-    //LEON_Unmask_interrupt( IRQ_SM );
+
+    LEON_Unmask_interrupt( IRQ_SM );
+    return status;
+}
+
+int enter_sbm2_mode()
+{
+    rtems_status_code status;
+
+    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
+    if (status == RTEMS_SUCCESSFUL) {
+        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
+        if (status == RTEMS_SUCCESSFUL) {
+            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
+        }
+    }
+
+#ifdef GSA
+#else
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->addr_data_f2 = (int) wf_snap_f2;
+    waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] burst f2, f1, f0 enable f3 f2 f1 f0
+    waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04;
+    waveform_picker_regs->status = 0x00;
+#endif
+
+    LEON_Unmask_interrupt( IRQ_SM );
     return status;
 }
 
@@ -833,38 +892,6 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
     write_spw(&spw_ioctl_send);
 
     return 0;
-}
-
-rtems_status_code restart_if_needed(rtems_id id)
-{
-    rtems_status_code status;
-
-    status = rtems_task_is_suspended( id );
-
-    if (status==RTEMS_SUCCESSFUL) {
-        status = rtems_task_restart( id, 0 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            PRINTF1("in restart_if_needed *** Error restarting with id %d\n", (int) id)
-        }
-    }
-
-    return status;
-}
-
-rtems_status_code suspend_if_needed(rtems_id id)
-{
-    rtems_status_code status;
-
-    status = rtems_task_is_suspended( id );
-
-    if (status!=RTEMS_SUCCESSFUL) {
-        status = rtems_task_suspend( id );
-        if (status!=RTEMS_SUCCESSFUL) {
-            PRINTF1("in suspend_if_needed *** Error suspending task with id %d\n", (int) id)
-        }
-    }
-
-    return status;
 }
 
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)

@@ -20,11 +20,11 @@ extern volatile int wf_snap_f0[ ];
 extern volatile int wf_snap_f1[ ];
 extern volatile int wf_snap_f1_bis[ ];
 extern volatile int wf_snap_f2[ ];
+extern volatile int wf_snap_f2_bis[ ];
 extern volatile int wf_cont_f3[ ];
 extern waveform_picker_regs_t *waveform_picker_regs;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );
-rtems_isr waveforms_isr_alternative( rtems_vector_number vector );
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector );
 rtems_task wfrm_task(rtems_task_argument argument);
 

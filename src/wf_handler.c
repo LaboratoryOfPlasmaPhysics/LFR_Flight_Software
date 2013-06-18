@@ -1,34 +1,5 @@
 #include <wf_handler.h>
 
-rtems_isr waveforms_isr_alternative( rtems_vector_number vector )
-{
-    if (waveform_picker_regs->burst_enable == 0x22) {
-        if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
-            waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_bis);
-        }
-        else {
-            waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);
-        }
-        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
-            //rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-        }
-    }
-    waveform_picker_regs->status = 0x00;
-    /*else if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){// if no channel is enable
-        if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
-            printf("In timecode_irq_handler *** Error sending event to DUMB\n");
-        }
-    }
-    else {
-        if ( (waveform_picker_regs->status & 0x7) == 0x7 ){         // f2 f1 and f0 are full
-            waveform_picker_regs->burst_enable = 0x00;
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-                printf("In waveforms_isr *** Error sending event to WFRM\n");
-            }
-        }
-    }*/
-}
-
 rtems_isr waveforms_isr( rtems_vector_number vector )
 {
     unsigned char lfrMode;
@@ -95,6 +66,23 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         //*****
         // SBM2
         case(LFR_MODE_SBM2):
+#ifdef GSA
+            PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
+#else
+            if (waveform_picker_regs->burst_enable == 0x44) {
+                if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
+                    waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2_bis);
+                }
+                else {
+                    waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);
+                }
+                if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 ) != RTEMS_SUCCESSFUL) {
+                    PRINTF("in waveforms_isr *** Error sending event to WFRM\n")
+                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+                }
+            }
+            waveform_picker_regs->status = 0x00;
+#endif
             break;
 
         //********
@@ -106,8 +94,43 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
 {
-    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        printf("In waveforms_isr *** Error sending event to WFRM\n");
+    unsigned char lfrMode;
+    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
+
+    switch(lfrMode)
+    {
+        //********
+        // STANDBY
+        case(LFR_MODE_STANDBY):
+            break;
+
+        //******
+        // NORMAL
+        case(LFR_MODE_NORMAL):
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+                PRINTF("ERR *** in waveforms_isr *** error sending event to WFRM\n");
+            }
+            break;
+
+        //******
+        // BURST
+        case(LFR_MODE_BURST):
+            break;
+
+        //*****
+        // SBM1
+        case(LFR_MODE_SBM1):
+            break;
+
+        //*****
+        // SBM2
+        case(LFR_MODE_SBM2):
+            break;
+
+        //********
+        // DEFAULT
+        default:
+            break;
     }
 }
 
@@ -197,6 +220,21 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                     send_waveform( &header, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send);
                 }
                 break;
+
+            //*****
+            // SBM2
+            case(RTEMS_EVENT_MODE_SBM2):
+                // F2
+                if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
+                    send_waveform( &header, wf_snap_f2_bis, SID_NORM_SWF_F2, &spw_ioctl_send);
+                }
+                else {
+                    send_waveform( &header, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send);
+                }
+                break;
+
+            //********
+            // DEFAULT
             default:
                 break;
         }
