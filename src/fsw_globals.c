@@ -1,5 +1,6 @@
 #include <fsw_processing.h>
 #include <rtems.h>
+#include <grspw.h>
 #include <ccsds_types.h>
 
 // RTEMS GLOBAL VARIABLES
@@ -39,6 +40,7 @@ float averaged_spec_mat_f0[ TOTAL_SIZE_SPEC_MAT ];
 float compressed_spec_mat_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 
 // MODE PARAMETERS
+struct param_local_str param_local;
 struct param_common_str param_common;
 struct param_norm_str param_norm;
 struct param_burst_str param_burst;
@@ -47,7 +49,10 @@ struct param_sbm2_str param_sbm2;
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
+// sequence counters are incremented by APID (PID + CAT) and destination ID
 unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
+spw_stats spacewire_stats;
+spw_stats spacewire_stats_backup;
 
 // BASIC PARAMETERS GLOBAL VARIABLES
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_MATRIX_f0 * 9 ];

@@ -36,12 +36,12 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-unsigned char acceptTM(ccsdsTelecommandPacket_t * TMPacket, unsigned int tc_len_recv);
+int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV);
+unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV);
 
 unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
-                              unsigned int coarseTime, unsigned int fineTime, TMHeader_t *TMHeader);
+                              TMHeader_t *TMHeader, unsigned char tc_sid);
 unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned int SID, unsigned char *computed_CRC);
-int TC_checker(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV);
 
 //***********
 // RTEMS TASK
@@ -53,22 +53,33 @@ int create_message_queue( void );
 //***********
 // TC ACTIONS
 int action_default(ccsdsTelecommandPacket_t *TC);
-int action_default_alt(ccsdsTelecommandPacket_t *TC);
-int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
-//
+int action_enter(ccsdsTelecommandPacket_t *TC);
+int action_updt_info(ccsdsTelecommandPacket_t *TC);
+int action_enable_calibration(ccsdsTelecommandPacket_t *TC);
+int action_disable_calibration(ccsdsTelecommandPacket_t *TC);
+int action_updt_time(ccsdsTelecommandPacket_t *TC);
+// mode transition
+int transition_validation(unsigned char requestedMode);
 int stop_current_mode();
-int enter_normal_mode();
-int enter_burst_mode();
-int enter_sbm1_mode();
-int enter_sbm2_mode();
+int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC);
+int enter_standby_mode(ccsdsTelecommandPacket_t *TC);
+int enter_normal_mode(ccsdsTelecommandPacket_t *TC);
+int enter_burst_mode(ccsdsTelecommandPacket_t *TC);
+int enter_sbm1_mode(ccsdsTelecommandPacket_t *TC);
+int enter_sbm2_mode(ccsdsTelecommandPacket_t *TC);
+// parameters loading
 int action_load_comm(ccsdsTelecommandPacket_t *TC);
 int action_load_norm(ccsdsTelecommandPacket_t *TC);
-int action_enter(ccsdsTelecommandPacket_t *TC);
-int action_updt_time(ccsdsTelecommandPacket_t *TC);
-//
+int action_load_burst(ccsdsTelecommandPacket_t *TC);
+int action_load_sbm1(ccsdsTelecommandPacket_t *TC);
+int action_load_sbm2(ccsdsTelecommandPacket_t *TC);
+// other functions
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
 void close_action(ccsdsTelecommandPacket_t *TC, int result);
+int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
+int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC);
+int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC);
 
 #endif // TC_HANDLER_H_INCLUDED
 

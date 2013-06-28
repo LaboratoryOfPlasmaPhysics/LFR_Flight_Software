@@ -10,11 +10,34 @@
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_NODE_ADDRESS 0xfe
+
+// PACKET IDs
+#define TM_PACKET_ID_TC_EXE                  0x0cc1 // PID 76 CAT 1
+#define TM_PACKET_ID_HK                      0x0cc4 // PID 76 CAT 4
+#define TM_PACKET_ID_PARAMETER_DUMP          0x0cc9 // PID 76 CAT 9
+#define TM_PACKET_ID_SCIENCE_NORMAL          0x0ccc // PID 76 CAT 12
+#define TM_PACKET_ID_SCIENCE_BURST_SBM1_SBM2 0x0cfc // PID 79 CAT 12
+
+// FAILURE CODES
+#define FAILURE_CODE_INCONSISTENT       5       // 0x00 0x05
+#define FAILURE_CODE_NOT_EXECUTABLE     40000   // 0x9c 0x40
+#define FAILURE_CODE_NOT_IMPLEMENTED    40002   // 0x9c 0x42
+#define FAILURE_CODE_ERROR              40003   // 0x9c 0x43
+#define FAILURE_CODE_CORRUPTED          40005   // 0x9c 0x45
 //
-#define CCSDS_DESTINATION_ID_GROUND 0x00
+#define TM_DESTINATION_ID_GROUND 0
+#define TM_DESTINATION_ID_MISSION_TIMELINE 110
+#define TM_DESTINATION_ID_TC_SEQUENCES 111
+#define TM_DESTINATION_ID_RECOVERY_ACTION_COMMAND 112
+#define TM_DESTINATION_ID_BACKUP_MISSION_TIMELINE 113
+#define TM_DESTINATION_ID_DIRECT_CMD 120
+#define TM_DESTINATION_ID_SPARE_GRD_SRC1 121
+#define TM_DESTINATION_ID_SPARE_GRD_SRC2 122
+#define TM_DESTINATION_ID_OBCP 15
+#define TM_DESTINATION_ID_SYSTEM_CONTROL 14
+#define TM_DESTINATION_ID_AOCS 11
+
 #define CCSDS_DESTINATION_ID 0x01
-#define CCSDS_DESTINATION_ID_DPU 0x01
-//
 #define CCSDS_PROTOCOLE_ID 0x02
 #define CCSDS_USER_APP 0x00
 
@@ -64,8 +87,9 @@
 #define TC_LEN_UPDT_TIME 18
 
 // TM TYPES
-#define TM_TYPE_LFR_SCIENCE 21
+#define TM_TYPE_TC_EXE 1
 #define TM_TYPE_HK 3
+#define TM_TYPE_LFR_SCIENCE 21
 
 // TM SUBTYPES
 #define TM_SUBTYPE_EXE_OK 7
@@ -111,22 +135,26 @@
 #define SID_SBM1_BP2_F1 33
 
 // LENGTH (BYTES)
-#define LENGTH_TM_LFR_HK 126
 #define LENGTH_TM_LFR_TC_EXE_MAX 32
-#define LENGTH_TM_LFR_SCIENCE_NORMAL_WF_MAX 4102
-//
-#define TM_LEN_EXE 20 - CCSDS_TC_TM_PACKET_OFFSET
-#define TM_LEN_NOT_EXE 26 - CCSDS_TC_TM_PACKET_OFFSET
-#define TM_LEN_NOT_IMP 24 - CCSDS_TC_TM_PACKET_OFFSET
-#define TM_LEN_EXE_ERR 24 - CCSDS_TC_TM_PACKET_OFFSET
-#define TM_LEN_EXE_CORR 32 - CCSDS_TC_TM_PACKET_OFFSET
+#define LENGTH_TM_LFR_HK 126
+// PACKET_LENGTH
+#define PACKET_LENGTH_TC_EXE_SUCCESS            20 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_INCONSISTENT       26 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     26 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED    24 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_ERROR              24 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_CORRUPTED          32 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_HK                        126 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_PARAMETER_DUMP            28 - CCSDS_TC_TM_PACKET_OFFSET
 #define TM_HEADER_LEN 16
 
 #define LEN_TM_LFR_HK 126 + 4
 #define LEN_TM_LFR_TC_EXE_NOT_IMP 24 +4
 
-#define TM_LEN_SCI_NORM_SWF_340 340 * 12 + 6 + 10 - 1
-#define TM_LEN_SCI_NORM_SWF_8 8 * 12 + 6 + 10 - 1
+#define TM_LEN_SCI_SWF_340 340 * 12 + 10 + 12 - 1
+#define TM_LEN_SCI_SWF_8 8 * 12 + 10 + 12 - 1
+#define TM_LEN_SCI_CWF_340 340 * 12 + 10 + 10 - 1
+#define TM_LEN_SCI_CWF_8 8 * 12 + 10 + 10 - 1
 
 enum TM_TYPE{
     TM_LFR_TC_EXE_OK,
@@ -146,7 +174,12 @@ struct TMHeader_str
     volatile unsigned char packetID[2];
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[10];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
 };
 typedef struct TMHeader_str TMHeader_t;
 
@@ -159,12 +192,17 @@ struct Packet_TM_LFR_TC_EXE_str
     volatile unsigned char packetID[2];
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[10];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
     volatile unsigned char data[LENGTH_TM_LFR_TC_EXE_MAX - 10 + 1];
 };
 typedef struct Packet_TM_LFR_TC_EXE_str Packet_TM_LFR_TC_EXE_t;
 
-struct Packet_TM_LFR_SCIENCE_NORMAL_WF_str
+struct Header_TM_LFR_SCIENCE_SWF_str
 {
     volatile unsigned char targetLogicalAddress;
     volatile unsigned char protocolIdentifier;
@@ -173,13 +211,23 @@ struct Packet_TM_LFR_SCIENCE_NORMAL_WF_str
     volatile unsigned char packetID[2];
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[10];
-    volatile unsigned char auxiliaryHeader[6];
-    volatile unsigned char data[LENGTH_TM_LFR_SCIENCE_NORMAL_WF_MAX - 10 + 1];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    // AUXILIARY HEADER
+    volatile unsigned char sid;
+    volatile unsigned char hkBIA;
+    volatile unsigned char pktCnt;
+    volatile unsigned char pktNr;
+    volatile unsigned char acquisitionTime[6];
+    volatile unsigned char blkNr[2];
 };
-typedef struct Packet_TM_LFR_SCIENCE_NORMAL_WF_str Packet_TM_LFR_SCIENCE_NORMAL_WF_t;
+typedef struct Header_TM_LFR_SCIENCE_SWF_str Header_TM_LFR_SCIENCE_SWF_t;
 
-struct ExtendedTMHeader_str
+struct Header_TM_LFR_SCIENCE_CWF_str
 {
     volatile unsigned char targetLogicalAddress;
     volatile unsigned char protocolIdentifier;
@@ -188,10 +236,19 @@ struct ExtendedTMHeader_str
     volatile unsigned char packetID[2];
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[10];
-    volatile unsigned char auxiliaryHeader[6];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    // AUXILIARY DATA HEADER
+    volatile unsigned char sid;
+    volatile unsigned char hkBIA;
+    volatile unsigned char acquisitionTime[6];
+    volatile unsigned char blkNr[2];
 };
-typedef struct ExtendedTMHeader_str ExtendedTMHeader_t;
+typedef struct Header_TM_LFR_SCIENCE_CWF_str Header_TM_LFR_SCIENCE_CWF_t;
 
 struct ccsdsTelecommandPacket_str
 {
@@ -202,7 +259,11 @@ struct ccsdsTelecommandPacket_str
     volatile unsigned char packetID[2];
     volatile unsigned char packetSequenceControl[2];
     volatile unsigned char packetLength[2];
-    volatile unsigned char dataFieldHeader[4];
+    // DATA FIELD HEADER
+    volatile unsigned char headerFlag_pusVersion_Ack;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char sourceID;
     volatile unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
 };
 typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;

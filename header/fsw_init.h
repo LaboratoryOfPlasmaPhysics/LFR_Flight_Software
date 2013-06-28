@@ -28,6 +28,7 @@ extern int fdUART;  // uart file descriptor
 void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc);
 
 // MODE PARAMETERS
+extern struct param_local_str param_local;
 extern struct param_common_str param_common;
 extern struct param_norm_str param_norm;
 extern struct param_burst_str param_burst;
@@ -51,9 +52,11 @@ int create_message_queue( void );
 void init_default_mode_parameters( void );
 void init_housekeeping_parameters( void );
 
-int configure_spw_link( void );
-void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr); // No Port force
-void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr); // RMAP Enable
+int spacewire_configure_link( void );
+int spacewire_try_to_start(void);
+void spacewire_set_NP(unsigned char val, unsigned int regAddr); // No Port force
+void spacewire_set_RE(unsigned char val, unsigned int regAddr); // RMAP Enable
+void spacewire_compute_stats_offsets();
 
 extern int rtems_cpu_usage_report( void );
 extern int rtems_cpu_usage_reset( void );

@@ -31,10 +31,25 @@ rtems_task wfrm_task(rtems_task_argument argument);
 //******************
 // general functions
 void init_waveforms( void );
+void init_header_snapshot_wf( Header_TM_LFR_SCIENCE_SWF_t *header );
+void init_header_continuous_wf( Header_TM_LFR_SCIENCE_CWF_t *header );
 void reset_waveforms( void );
-void send_waveform( ExtendedTMHeader_t *header, volatile int *waveform, unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
-void init_waveform_picker_regs();
-void set_data_shaping_parameters(unsigned char parameters);
+void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send);
+void send_waveform_burst(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send);
+void send_waveform_sbm1(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send);
+void send_waveform_sbm2(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send);
+void send_waveform_SWF( Header_TM_LFR_SCIENCE_SWF_t *header, volatile int *waveform,
+                        unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
+void send_waveform_CWF( Header_TM_LFR_SCIENCE_CWF_t *header, volatile int *waveform,
+                        unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
+
+//**************
+// wfp registers
+void set_wfp_data_shaping(unsigned char data_shaping);
+void set_wfp_delta_snapshot(unsigned int delta_snapshot);
+void reset_wfp_burst_enable();
+void reset_wfp_regs();
+//
 int build_value(int value1, int value0);
 
 #endif // WF_HANDLER_H_INCLUDED

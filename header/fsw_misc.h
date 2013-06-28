@@ -12,10 +12,12 @@
 
 rtems_name HK_name;     // name of the HK rate monotonic
 rtems_id HK_id;         // id of the HK rate monotonic period
+extern spw_stats spacewire_stats;
+extern spw_stats spacewire_stats_backup;
 
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
-void print_statistics(spw_stats *stats);
+void update_spacewire_statistics();
 
 // SERIAL LINK
 int send_console_outputs_on_serial_port( void );

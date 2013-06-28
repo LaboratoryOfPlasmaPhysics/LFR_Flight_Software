@@ -26,23 +26,69 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
     return 1;
 }
 
-void print_statistics(spw_stats *stats)
+void update_spacewire_statistics()
 {
-        //printf(" ******** STATISTICS ********  \n");
-        printf("Transmit link errors: %i\n", stats->tx_link_err);
-        printf("Receiver RMAP header CRC errors: %i\n", stats->rx_rmap_header_crc_err);
-        printf("Receiver RMAP data CRC errors: %i\n", stats->rx_rmap_data_crc_err);
-        printf("Receiver EEP errors: %i\n", stats->rx_eep_err);
-        printf("Receiver truncation errors: %i\n", stats->rx_truncated);
-        printf("Parity errors: %i\n", stats->parity_err);
-        printf("Escape errors: %i\n", stats->escape_err);
-        printf("Credit errors: %i\n", stats->credit_err);
-        printf("Disconnect errors: %i\n", stats->disconnect_err);
-        printf("Write synchronization errors: %i\n", stats->write_sync_err);
-        printf("Early EOP/EEP: %i\n", stats->early_ep);
-        printf("Invalid Node Address: %i\n", stats->invalid_address);
-        printf("Packets transmitted: %i\n", stats->packets_sent);
-        printf("Packets received: %i\n", stats->packets_received);
+    rtems_status_code status;
+    spw_stats spacewire_stats_grspw;
+
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
+
+    spacewire_stats.packets_received = spacewire_stats_backup.packets_received
+            + spacewire_stats_grspw.packets_received;
+    spacewire_stats.packets_sent = spacewire_stats_backup.packets_sent
+            + spacewire_stats_grspw.packets_sent;
+    spacewire_stats.parity_err = spacewire_stats_backup.parity_err
+            + spacewire_stats_grspw.parity_err;
+    spacewire_stats.disconnect_err = spacewire_stats_backup.disconnect_err
+            + spacewire_stats_grspw.disconnect_err;
+    spacewire_stats.escape_err = spacewire_stats_backup.escape_err
+            + spacewire_stats_grspw.escape_err;
+    spacewire_stats.credit_err = spacewire_stats_backup.credit_err
+            + spacewire_stats_grspw.credit_err;
+    spacewire_stats.write_sync_err = spacewire_stats_backup.write_sync_err
+            + spacewire_stats_grspw.write_sync_err;
+    spacewire_stats.rx_rmap_header_crc_err = spacewire_stats_backup.rx_rmap_header_crc_err
+            + spacewire_stats_grspw.rx_rmap_header_crc_err;
+    spacewire_stats.rx_rmap_data_crc_err = spacewire_stats_backup.rx_rmap_data_crc_err
+            + spacewire_stats_grspw.rx_rmap_data_crc_err;
+    spacewire_stats.early_ep = spacewire_stats_backup.early_ep
+            + spacewire_stats_grspw.early_ep;
+    spacewire_stats.invalid_address = spacewire_stats_backup.invalid_address
+            + spacewire_stats_grspw.invalid_address;
+    spacewire_stats.rx_eep_err = spacewire_stats_backup.rx_eep_err
+            +  spacewire_stats_grspw.rx_eep_err;
+    spacewire_stats.rx_truncated = spacewire_stats_backup.rx_truncated
+            + spacewire_stats_grspw.rx_truncated;
+    //spacewire_stats.tx_link_err;
+
+    //****************************
+    // DPU_SPACEWIRE_IF_STATISTICS
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0] = (unsigned char) (spacewire_stats.packets_received >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[1] = (unsigned char) (spacewire_stats.packets_received);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0] = (unsigned char) (spacewire_stats.packets_sent >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[1] = (unsigned char) (spacewire_stats.packets_sent);
+    //housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt;
+    //housekeeping_packet.hk_lfr_dpu_spw_last_timc;
+
+    //******************************************
+    // ERROR COUNTERS / SPACEWIRE / LOW SEVERITY
+    housekeeping_packet.hk_lfr_dpu_spw_parity = (unsigned char) spacewire_stats.parity_err;
+    housekeeping_packet.hk_lfr_dpu_spw_disconnect = (unsigned char) spacewire_stats.disconnect_err;
+    housekeeping_packet.hk_lfr_dpu_spw_escape = (unsigned char) spacewire_stats.escape_err;
+    housekeeping_packet.hk_lfr_dpu_spw_credit = (unsigned char) spacewire_stats.credit_err;
+    housekeeping_packet.hk_lfr_dpu_spw_write_sync = (unsigned char) spacewire_stats.write_sync_err;
+    // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb;
+    // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb;
+    housekeeping_packet.hk_lfr_dpu_spw_header_crc = (unsigned char) spacewire_stats.rx_rmap_header_crc_err;
+    housekeeping_packet.hk_lfr_dpu_spw_data_crc = (unsigned char) spacewire_stats.rx_rmap_data_crc_err;
+
+    //*********************************************
+    // ERROR COUNTERS / SPACEWIRE / MEDIUM SEVERITY
+    housekeeping_packet.hk_lfr_dpu_spw_early_eop = (unsigned char) spacewire_stats.early_ep;
+    housekeeping_packet.hk_lfr_dpu_spw_invalid_addr = (unsigned char) spacewire_stats.invalid_address;
+    housekeeping_packet.hk_lfr_dpu_spw_eep = (unsigned char) spacewire_stats.rx_eep_err;
+    housekeeping_packet.hk_lfr_dpu_spw_rx_too_big = (unsigned char) spacewire_stats.rx_truncated;
+
 }
 
 int send_console_outputs_on_serial_port( void ) // Send the console outputs on the serial port
@@ -105,11 +151,11 @@ rtems_task hous_task(rtems_task_argument argument)
     }
 
     housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    housekeeping_packet.protocolIdentifier = 0x02;
+    housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     housekeeping_packet.reserved = 0x00;
     housekeeping_packet.userApplication = 0x00;
-    housekeeping_packet.packetID[0] = 0x0c;
-    housekeeping_packet.packetID[1] = 0xc4;
+    housekeeping_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_HK >> 8);
+    housekeeping_packet.packetID[1] = (unsigned char) (TM_PACKET_ID_HK);
     housekeeping_packet.packetSequenceControl[0] = 0xc0;
     housekeeping_packet.packetSequenceControl[1] = 0x00;
     housekeeping_packet.packetLength[0] = 0x00;
@@ -117,31 +163,34 @@ rtems_task hous_task(rtems_task_argument argument)
     housekeeping_packet.dataFieldHeader[0] = 0x10;
     housekeeping_packet.dataFieldHeader[1] = TM_TYPE_HK;
     housekeeping_packet.dataFieldHeader[2] = TM_SUBTYPE_HK;
-    housekeeping_packet.dataFieldHeader[3] = CCSDS_DESTINATION_ID_GROUND;
+    housekeeping_packet.dataFieldHeader[3] = TM_DESTINATION_ID_GROUND;
 
     status = rtems_rate_monotonic_cancel(HK_id);
-    if( status != RTEMS_SUCCESSFUL )
-    PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status )
-    else
-    PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n")
+    if( status != RTEMS_SUCCESSFUL ) {
+        PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status )
+    }
+    else {
+        PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n")
+    }
 
     while(1){ // launch the rate monotonic task
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
-        if ( status != RTEMS_SUCCESSFUL ){
+        if ( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_period *** code %d\n", status);
         }
-        else
-        {
+        else {
             housekeeping_packet.dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
             housekeeping_packet.dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
             housekeeping_packet.dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
             housekeeping_packet.dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
             housekeeping_packet.dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
-            housekeeping_packet.sid = CCSDS_DESTINATION_ID_DPU;
+            housekeeping_packet.sid = SID_HK;
+
+            update_spacewire_statistics();
+
             result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
-            if (result==-1)
-            {
+            if (result==-1) {
                 PRINTF("ERR *** in HOUS *** HK send\n");
             }
         }

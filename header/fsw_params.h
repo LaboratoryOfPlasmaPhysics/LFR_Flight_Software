@@ -22,6 +22,24 @@
 #define RTEMS_EVENT_MODE_SBM1 RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2 RTEMS_EVENT_4
 
+//****************************
+// LFR DEFAULT MODE PARAMETERS
+// NORM
+#define DEFAULT_SY_LFR_N_SWF_L 2048 // nb sample
+#define DEFAULT_SY_LFR_N_SWF_P 16   // sec
+#define DEFAULT_SY_LFR_N_ASM_P 3600 // sec
+#define DEFAULT_SY_LFR_N_BP_P0 4    // sec
+#define DEFAULT_SY_LFR_N_BP_P1 20   // sec
+// BURST
+#define DEFAULT_SY_LFR_B_BP_P0 1    // sec
+#define DEFAULT_SY_LFR_B_BP_P1 5    // sec
+// SBM1
+#define DEFAULT_SY_LFR_S1_BP_P0 1   // sec
+#define DEFAULT_SY_LFR_S1_BP_P1 1   // sec
+// SBM2
+#define DEFAULT_SY_LFR_S2_BP_P0 1   // sec
+#define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
+
 //*****************************
 // APB REGISTERS BASE ADDRESSES
 #define REGS_ADDR_APBUART 0x80000100
@@ -118,6 +136,13 @@
 #define SEQ_CNT_DST_ID_OBCP 8
 #define SEQ_CNT_DST_ID_SYSTEM_CONTROL 9
 #define SEQ_CNT_DST_ID_AOCS 10
+
+struct param_local_str{
+    unsigned int local_sbm1_nb_cwf_sent;
+    unsigned int local_sbm1_nb_cwf_max;
+    unsigned int local_sbm2_nb_cwf_sent;
+    unsigned int local_sbm2_nb_cwf_max;
+};
 
 struct param_common_str{
     unsigned char sy_lfr_common0;

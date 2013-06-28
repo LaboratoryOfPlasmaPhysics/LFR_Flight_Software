@@ -2,12 +2,12 @@
 
 // GRSPW0 resources
 struct drvmgr_key grlib_grspw_0n1_res[] = {
-    {"txBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
-    {"rxBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
-    {"txDataSize", KEY_TYPE_INT, {(unsigned int)4096}},
-    {"txHdrSize", KEY_TYPE_INT, {(unsigned int)20+6}}, // 6 is for the auxiliary header, when needed
-    {"rxPktSize", KEY_TYPE_INT, {(unsigned int)248+4}},
-    KEY_EMPTY
+	{"txBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
+    	{"rxBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
+    	{"txDataSize", KEY_TYPE_INT, {(unsigned int)4096}},
+    	{"txHdrSize", KEY_TYPE_INT, {(unsigned int)20+12}}, // 12 is for the auxiliary header, when needed
+    	{"rxPktSize", KEY_TYPE_INT, {(unsigned int)248+4}},
+    	KEY_EMPTY
 };
 
 #if 0

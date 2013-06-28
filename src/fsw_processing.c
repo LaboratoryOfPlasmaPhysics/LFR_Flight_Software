@@ -8,7 +8,7 @@
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        printf("in spectral_matrices_isr *** Error sending event to AVF0\n");
+        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_4 );
     }
 }
 
@@ -26,7 +26,9 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
         if (nb_interrupt_f0 == (NB_SM_TO_RECEIVE_BEFORE_AVF0-1) ){
             if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-                printf("in SMIQ *** Error sending event to AVF0\n");
+            {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
             nb_interrupt_f0 = 0;
         }
     }

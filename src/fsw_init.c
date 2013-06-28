@@ -78,7 +78,7 @@ rtems_task Init( rtems_task_argument ignored )
 
     grspw_timecode_callback = &timecode_irq_handler;
 
-    configure_spw_link();
+    spacewire_configure_link();
 
     //****************************
     // Spectral Matrices simulator
@@ -94,7 +94,7 @@ rtems_task Init( rtems_task_argument ignored )
                     IRQ_SPARC_WF, waveforms_simulator_isr );
 #else
     // configure the registers of the waveform picker
-    init_waveform_picker_regs();
+    reset_wfp_regs();
     // configure the waveform picker interrupt service routine
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
@@ -137,11 +137,18 @@ rtems_task spiq_task(rtems_task_argument unused)
 {
     rtems_event_set event_out;
     rtems_status_code status;
+    unsigned char lfrMode;
 
     while(true){
         PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
 
+        lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
+
+        //****************
+        // STOP THE SYSTEM
+        spacewire_compute_stats_offsets();
+        stop_current_mode();
         if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
             PRINTF("in SPIQ *** Error suspending RECV Task\n")
         }
@@ -149,16 +156,24 @@ rtems_task spiq_task(rtems_task_argument unused)
             PRINTF("in SPIQ *** Error suspending HOUS Task\n")
         }
 
-        configure_spw_link();
+        //***************************
+        // RESTART THE SPACEWIRE LINK
+        status = spacewire_try_to_start();
+        if (status != RTEMS_SUCCESSFUL) {
+            spacewire_configure_link();
+        }
 
+        //*******************
+        // RESTART THE SYSTEM
+        //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
         status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
+        if (status != RTEMS_SUCCESSFUL) {
             PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
         }
-
-        if (rtems_task_restart(Task_id[TASKID_RECV], 1)!=RTEMS_SUCCESSFUL) {    // restart RECV task
+        if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
             PRINTF("in SPIQ *** Error restarting RECV Task\n")
         }
+        //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
     }
 }
 
@@ -167,21 +182,37 @@ void init_default_mode_parameters(void)
     // COMMON PARAMETERS
     param_common.sy_lfr_common0 = 0x00;
     param_common.sy_lfr_common1 = 0x10; // default value 0 0 0 1 0 0 0 0
+
     // NORMAL MODE
-    param_norm.sy_lfr_n_swf_l = 2048;   // nb sample
-    param_norm.sy_lfr_n_swf_p = 300;    // sec
-    param_norm.sy_lfr_n_asm_p = 3600;   // sec
-    param_norm.sy_lfr_n_bp_p0 = 4;      // sec
-    param_norm.sy_lfr_n_bp_p1 = 20;     // sec
+    param_norm.sy_lfr_n_swf_l = DEFAULT_SY_LFR_N_SWF_L; // nb sample
+    param_norm.sy_lfr_n_swf_p = DEFAULT_SY_LFR_N_SWF_P; // sec
+    param_norm.sy_lfr_n_asm_p = DEFAULT_SY_LFR_N_ASM_P; // sec
+    param_norm.sy_lfr_n_bp_p0 = DEFAULT_SY_LFR_N_BP_P0; // sec
+    param_norm.sy_lfr_n_bp_p1 = DEFAULT_SY_LFR_N_BP_P1; // sec
+
     // BURST MODE
-    param_burst.sy_lfr_b_bp_p0 = 1;     // sec
-    param_burst.sy_lfr_b_bp_p1 = 5;     // sec
+    param_burst.sy_lfr_b_bp_p0 = DEFAULT_SY_LFR_B_BP_P0;     // sec
+    param_burst.sy_lfr_b_bp_p1 = DEFAULT_SY_LFR_B_BP_P1;     // sec
+
     // SBM1 MODE
-    param_sbm1.sy_lfr_s1_bp_p0 = 1;     // sec
-    param_sbm1.sy_lfr_s1_bp_p1 = 1;     // sec
+    param_sbm1.sy_lfr_s1_bp_p0 = DEFAULT_SY_LFR_S1_BP_P0;     // sec
+    param_sbm1.sy_lfr_s1_bp_p1 = DEFAULT_SY_LFR_B_BP_P1;     // sec
+
     // SBM2 MODE
-    param_sbm2.sy_lfr_s2_bp_p0 = 1;     // sec
-    param_sbm2.sy_lfr_s2_bp_p0 = 5;     // sec
+    param_sbm2.sy_lfr_s2_bp_p0 = DEFAULT_SY_LFR_S2_BP_P0;     // sec
+    param_sbm2.sy_lfr_s2_bp_p1 = DEFAULT_SY_LFR_S2_BP_P1;     // sec
+
+    // LOCAL PARAMETERS
+    // (2 snapshots of 2048 points per seconds) * (period of the NORM snashots)
+    param_local.local_sbm1_nb_cwf_max = 2 * param_norm.sy_lfr_n_swf_p;
+    // (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
+    param_local.local_sbm2_nb_cwf_max = param_norm.sy_lfr_n_swf_p / 8;
+
+    PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
+    PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+
+    param_local.local_sbm1_nb_cwf_sent = 0;
+    param_local.local_sbm2_nb_cwf_sent = 0;
 }
 
 void init_housekeeping_parameters(void)
@@ -249,7 +280,7 @@ int create_all_tasks( void )
     );
     // ACTN
     status = rtems_task_create(
-        Task_name[TASKID_ACTN], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_ACTN], 100, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_ACTN]
     );
@@ -285,7 +316,7 @@ int create_all_tasks( void )
     );
     // WFRM
     status = rtems_task_create(
-        Task_name[TASKID_WFRM], 100, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_WFRM], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
     );
@@ -362,39 +393,47 @@ int start_all_tasks( void )
     return 0;
 }
 
-int configure_spw_link( void )
+int spacewire_configure_link( void )
 {
     rtems_status_code status;
 
     close(fdSPW); // close the device if it is already open
     PRINTF("OK  *** in configure_spw_link *** try to open "GRSPW_DEVICE_NAME"\n")
     fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call reset the hardware
-    if (fdSPW<0) PRINTF("ERR *** in configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
-    while(ioctl(fdSPW, SPACEWIRE_IOCTRL_START, 0) != RTEMS_SUCCESSFUL){
+    if ( fdSPW<0 ) {
+        PRINTF("ERR *** in configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+    }
+
+    while(ioctl(fdSPW, SPACEWIRE_IOCTRL_START, -1) != RTEMS_SUCCESSFUL){
         PRINTF(".")
-        fflush(stdout);
-        close(fdSPW); // close the device
-        fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call reset the hardware
-        if (fdSPW<0) PRINTF("ERR *** In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+        fflush( stdout );
+        close( fdSPW ); // close the device
+        fdSPW = open( GRSPW_DEVICE_NAME, O_RDWR ); // open the device. the open call reset the hardware
+        if (fdSPW<0) {
+            PRINTF("ERR *** In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+        }
         rtems_task_wake_after(100);
     }
 
     PRINTF("OK  *** In configure_spw_link *** "GRSPW_DEVICE_NAME" opened and started successfully\n")
 
-    configure_spacewire_set_NP(1, REGS_ADDR_GRSPW); // No Port force
-    configure_spacewire_set_RE(1, REGS_ADDR_GRSPW); // the dedicated call seems to  break the no port force configuration
+    spacewire_set_NP(1, REGS_ADDR_GRSPW); // No Port force
+    spacewire_set_RE(1, REGS_ADDR_GRSPW); // the dedicated call seems to  break the no port force configuration
 
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
+    //if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 1);          // automatic link-disabling due to link-error interrupts
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    //
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 0);      // transmission blocks on full
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
@@ -407,7 +446,29 @@ int configure_spw_link( void )
     return RTEMS_SUCCESSFUL;
 }
 
-void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr) // [N]o [P]ort force
+int spacewire_try_to_start(void)
+{
+    unsigned int i;
+    int linkStatus;
+    rtems_status_code status = RTEMS_UNSATISFIED;
+
+    for(i = 0; i< 10; i++){
+        PRINTF(".")
+        fflush( stdout );
+        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
+        PRINTF1("in spacewire_try_to_start *** link status is: %s\n", lstates[linkStatus])
+        if ( linkStatus == 5) {
+            PRINTF("in spacewire_try_to_start *** link is running\n")
+            status = RTEMS_SUCCESSFUL;
+            break;
+        }
+        rtems_task_wake_after(100);
+    }
+
+    return status;
+}
+
+void spacewire_set_NP(unsigned char val, unsigned int regAddr) // [N]o [P]ort force
 {
     unsigned int *spwptr = (unsigned int*) regAddr;
 
@@ -419,7 +480,7 @@ void configure_spacewire_set_NP(unsigned char val, unsigned int regAddr) // [N]o
     }
 }
 
-void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]MAP [E]nable
+void spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]MAP [E]nable
 {
     unsigned int *spwptr = (unsigned int*) regAddr;
 
@@ -433,10 +494,48 @@ void configure_spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]M
     }
 }
 
+void spacewire_compute_stats_offsets()
+{
+    spw_stats spacewire_stats_grspw;
+    rtems_status_code status;
+
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
+
+    spacewire_stats_backup.packets_received = spacewire_stats_grspw.packets_received
+            + spacewire_stats.packets_received;
+    spacewire_stats_backup.packets_sent = spacewire_stats_grspw.packets_sent
+            + spacewire_stats.packets_sent;
+    spacewire_stats_backup.parity_err = spacewire_stats_grspw.parity_err
+            + spacewire_stats.parity_err;
+    spacewire_stats_backup.disconnect_err = spacewire_stats_grspw.disconnect_err
+            + spacewire_stats.disconnect_err;
+    spacewire_stats_backup.escape_err = spacewire_stats_grspw.escape_err
+            + spacewire_stats.escape_err;
+    spacewire_stats_backup.credit_err = spacewire_stats_grspw.credit_err
+            + spacewire_stats.credit_err;
+    spacewire_stats_backup.write_sync_err = spacewire_stats_grspw.write_sync_err
+            + spacewire_stats.write_sync_err;
+    spacewire_stats_backup.rx_rmap_header_crc_err = spacewire_stats_grspw.rx_rmap_header_crc_err
+            + spacewire_stats.rx_rmap_header_crc_err;
+    spacewire_stats_backup.rx_rmap_data_crc_err = spacewire_stats_grspw.rx_rmap_data_crc_err
+            + spacewire_stats.rx_rmap_data_crc_err;
+    spacewire_stats_backup.early_ep = spacewire_stats_grspw.early_ep
+            + spacewire_stats.early_ep;
+    spacewire_stats_backup.invalid_address = spacewire_stats_grspw.invalid_address
+            + spacewire_stats.invalid_address;
+    spacewire_stats_backup.rx_eep_err = spacewire_stats_grspw.rx_eep_err
+            + spacewire_stats.rx_eep_err;
+    spacewire_stats_backup.rx_truncated = spacewire_stats_grspw.rx_truncated
+            + spacewire_stats.rx_truncated;
+}
+
 rtems_status_code write_spw(spw_ioctl_pkt_send* spw_ioctl_send)
 {
     rtems_status_code status;
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
+    if (status != RTEMS_SUCCESSFUL){
+        //PRINTF1("ERR *** in write_spw *** write operation failed with code: %d\n", status)
+    }
     return status;
 }
 
@@ -446,4 +545,3 @@ void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc)
         printf("In timecode_irq_handler *** Error sending event to DUMB\n");
     }
 }
-

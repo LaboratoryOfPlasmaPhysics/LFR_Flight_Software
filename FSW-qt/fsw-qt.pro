@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** cpu_usage_report *** gsa
-CONFIG += console verbose gsa
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
