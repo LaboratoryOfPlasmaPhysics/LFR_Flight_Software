@@ -145,7 +145,7 @@ rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
         // NORMAL
         case(LFR_MODE_NORMAL):
             if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                PRINTF("ERR *** in waveforms_isr *** error sending event to WFRM\n");
+                PRINTF("ERR *** in waveforms_isr *** error sending event to WFRM\n")
             }
             break;
 

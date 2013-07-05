@@ -20,7 +20,7 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
 void update_spacewire_statistics();
 
 // SERIAL LINK
-int send_console_outputs_on_serial_port( void );
+int send_console_outputs_on_apbuart_port( void );
 int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
 
 // RTEMS TASKS

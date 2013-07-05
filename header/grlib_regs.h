@@ -11,6 +11,13 @@ struct apbuart_regs_str{
     volatile unsigned int fifoDebug;
 };
 
+struct ahbuart_regs_str{
+    volatile unsigned int unused;
+    volatile unsigned int status;
+    volatile unsigned int ctrl;
+    volatile unsigned int scaler;
+};
+
 struct timer_regs_str
 {
     volatile unsigned int counter;

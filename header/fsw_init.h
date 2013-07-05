@@ -53,7 +53,7 @@ void init_default_mode_parameters( void );
 void init_housekeeping_parameters( void );
 
 int spacewire_configure_link( void );
-int spacewire_try_to_start(void);
+int spacewire_wait_for_link(void);
 void spacewire_set_NP(unsigned char val, unsigned int regAddr); // No Port force
 void spacewire_set_RE(unsigned char val, unsigned int regAddr); // RMAP Enable
 void spacewire_compute_stats_offsets();

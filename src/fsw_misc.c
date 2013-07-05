@@ -91,7 +91,7 @@ void update_spacewire_statistics()
 
 }
 
-int send_console_outputs_on_serial_port( void ) // Send the console outputs on the serial port
+int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on the apbuart port
 {
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
 
@@ -106,7 +106,7 @@ int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) regs;
 
     apbuart_regs->scaler = value;
-    PRINTF1("OK  *** COM port scaler reload register set to %x\n", value)
+    PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
 
     return 0;
 }

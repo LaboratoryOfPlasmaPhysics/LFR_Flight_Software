@@ -63,7 +63,7 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF("***************************\n")
     PRINTF("\n\n")
 
-    //send_console_outputs_on_serial_port();
+    //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
     initLookUpTableForCRC(); // in tc_handler.h
@@ -145,35 +145,37 @@ rtems_task spiq_task(rtems_task_argument unused)
 
         lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
 
-        //****************
-        // STOP THE SYSTEM
-        spacewire_compute_stats_offsets();
-        stop_current_mode();
-        if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
-            PRINTF("in SPIQ *** Error suspending RECV Task\n")
-        }
-        if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
-            PRINTF("in SPIQ *** Error suspending HOUS Task\n")
-        }
+        status = spacewire_wait_for_link();
 
-        //***************************
-        // RESTART THE SPACEWIRE LINK
-        status = spacewire_try_to_start();
-        if (status != RTEMS_SUCCESSFUL) {
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            //****************
+            // STOP THE SYSTEM
+            spacewire_compute_stats_offsets();
+            stop_current_mode();
+            if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
+                PRINTF("in SPIQ *** Error suspending RECV Task\n")
+            }
+            if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
+                PRINTF("in SPIQ *** Error suspending HOUS Task\n")
+            }
+
+            //***************************
+            // RESTART THE SPACEWIRE LINK
             spacewire_configure_link();
-        }
 
-        //*******************
-        // RESTART THE SYSTEM
-        //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
-        status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
-        if (status != RTEMS_SUCCESSFUL) {
-            PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
+            //*******************
+            // RESTART THE SYSTEM
+            //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
+            status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
+            if (status != RTEMS_SUCCESSFUL) {
+                PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
+            }
+            if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
+                PRINTF("in SPIQ *** Error restarting RECV Task\n")
+            }
+            //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
         }
-        if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
-            PRINTF("in SPIQ *** Error restarting RECV Task\n")
-        }
-        //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
     }
 }
 
@@ -446,7 +448,7 @@ int spacewire_configure_link( void )
     return RTEMS_SUCCESSFUL;
 }
 
-int spacewire_try_to_start(void)
+int spacewire_wait_for_link(void)
 {
     unsigned int i;
     int linkStatus;
