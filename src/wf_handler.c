@@ -408,6 +408,12 @@ void send_waveform_SWF( Header_TM_LFR_SCIENCE_SWF_t *header, volatile int *wavef
         header->time[3] = (unsigned char) (time_management_regs->coarse_time);
         header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->time[5] = (unsigned char) (time_management_regs->fine_time);
+        header->acquisitionTime[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+        header->acquisitionTime[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+        header->acquisitionTime[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+        header->acquisitionTime[3] = (unsigned char) (time_management_regs->coarse_time);
+        header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
+        header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
         status = write_spw(spw_ioctl_send);
         if (status != RTEMS_SUCCESSFUL) {
@@ -454,6 +460,19 @@ void send_waveform_CWF( Header_TM_LFR_SCIENCE_CWF_t *header, volatile int *wavef
         // BUILD THE HEADER
         header->packetLength[0] = (unsigned char) (length>>8);
         header->packetLength[1] = (unsigned char) (length);
+        // SET PACKET TIME
+        header->time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+        header->time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+        header->time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+        header->time[3] = (unsigned char) (time_management_regs->coarse_time);
+        header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+        header->time[5] = (unsigned char) (time_management_regs->fine_time);
+        header->acquisitionTime[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+        header->acquisitionTime[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+        header->acquisitionTime[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+        header->acquisitionTime[3] = (unsigned char) (time_management_regs->coarse_time);
+        header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
+        header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
         status = write_spw(spw_ioctl_send);
         if (status != RTEMS_SUCCESSFUL) {
