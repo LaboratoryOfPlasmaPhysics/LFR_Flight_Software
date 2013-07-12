@@ -67,7 +67,8 @@ rtems_task Init( rtems_task_argument ignored )
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
     initLookUpTableForCRC(); // in tc_handler.h
-    init_default_mode_parameters();
+    init_parameter_dump();
+    init_local_mode_parameters();
     init_housekeeping_parameters();
     create_message_queue();
 
@@ -179,36 +180,76 @@ rtems_task spiq_task(rtems_task_argument unused)
     }
 }
 
-void init_default_mode_parameters(void)
+void init_parameter_dump(void)
 {
+    parameter_dump_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    parameter_dump_packet.reserved = CCSDS_RESERVED;
+    parameter_dump_packet.userApplication = CCSDS_USER_APP;
+    parameter_dump_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_PARAMETER_DUMP >> 8);
+    parameter_dump_packet.packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
+    parameter_dump_packet.packetSequenceControl[0] = (unsigned char) (TM_PACKET_SEQ_CTRL_STANDALONE << 6);
+    parameter_dump_packet.packetSequenceControl[1] = 0x00;
+    parameter_dump_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_PARAMETER_DUMP >> 8);
+    parameter_dump_packet.packetLength[1] = (unsigned char) PACKET_LENGTH_PARAMETER_DUMP;
+    // DATA FIELD HEADER
+    parameter_dump_packet.spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
+    parameter_dump_packet.serviceType = TM_TYPE_PARAMETER_DUMP;
+    parameter_dump_packet.serviceSubType = TM_SUBTYPE_PARAMETER_DUMP;
+    parameter_dump_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    parameter_dump_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    parameter_dump_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    parameter_dump_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    parameter_dump_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+    parameter_dump_packet.sid = SID_PARAMETER_DUMP;
+
+    //******************
     // COMMON PARAMETERS
-    param_common.sy_lfr_common0 = 0x00;
-    param_common.sy_lfr_common1 = 0x10; // default value 0 0 0 1 0 0 0 0
+    parameter_dump_packet.unused0 = DEFAULT_SY_LFR_COMMON0;
+    parameter_dump_packet.bw_sp0_sp1_r0_r1 = DEFAULT_SY_LFR_COMMON1;
 
-    // NORMAL MODE
-    param_norm.sy_lfr_n_swf_l = DEFAULT_SY_LFR_N_SWF_L; // nb sample
-    param_norm.sy_lfr_n_swf_p = DEFAULT_SY_LFR_N_SWF_P; // sec
-    param_norm.sy_lfr_n_asm_p = DEFAULT_SY_LFR_N_ASM_P; // sec
-    param_norm.sy_lfr_n_bp_p0 = DEFAULT_SY_LFR_N_BP_P0; // sec
-    param_norm.sy_lfr_n_bp_p1 = DEFAULT_SY_LFR_N_BP_P1; // sec
+    //******************
+    // NORMAL PARAMETERS
+    parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_L >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) DEFAULT_SY_LFR_N_SWF_L;
+    parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_P >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) DEFAULT_SY_LFR_N_SWF_P;
+    parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_ASM_P >> 8);
+    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) DEFAULT_SY_LFR_N_ASM_P;
+    parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) DEFAULT_SY_LFR_N_BP_P0;
+    parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) DEFAULT_SY_LFR_N_BP_P1;
 
-    // BURST MODE
-    param_burst.sy_lfr_b_bp_p0 = DEFAULT_SY_LFR_B_BP_P0;     // sec
-    param_burst.sy_lfr_b_bp_p1 = DEFAULT_SY_LFR_B_BP_P1;     // sec
+    //*****************
+    // BURST PARAMETERS
+    parameter_dump_packet.sy_lfr_b_bp_p0 = (unsigned char) DEFAULT_SY_LFR_B_BP_P0;
+    parameter_dump_packet.sy_lfr_b_bp_p1 = (unsigned char) DEFAULT_SY_LFR_B_BP_P1;
 
-    // SBM1 MODE
-    param_sbm1.sy_lfr_s1_bp_p0 = DEFAULT_SY_LFR_S1_BP_P0;     // sec
-    param_sbm1.sy_lfr_s1_bp_p1 = DEFAULT_SY_LFR_B_BP_P1;     // sec
+    //****************
+    // SBM1 PARAMETERS
+    parameter_dump_packet.sy_lfr_s1_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0;
+    parameter_dump_packet.sy_lfr_s1_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0;
 
-    // SBM2 MODE
-    param_sbm2.sy_lfr_s2_bp_p0 = DEFAULT_SY_LFR_S2_BP_P0;     // sec
-    param_sbm2.sy_lfr_s2_bp_p1 = DEFAULT_SY_LFR_S2_BP_P1;     // sec
+    //****************
+    // SBM2 PARAMETERS
+    parameter_dump_packet.sy_lfr_s2_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
+    parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
+}
 
+void init_local_mode_parameters(void)
+{
     // LOCAL PARAMETERS
     // (2 snapshots of 2048 points per seconds) * (period of the NORM snashots)
-    param_local.local_sbm1_nb_cwf_max = 2 * param_norm.sy_lfr_n_swf_p;
+    param_local.local_sbm1_nb_cwf_max = 2 * (
+                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+             );
     // (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
-    param_local.local_sbm2_nb_cwf_max = param_norm.sy_lfr_n_swf_p / 8;
+    param_local.local_sbm2_nb_cwf_max = (
+                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+             )/ 8;
 
     PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)

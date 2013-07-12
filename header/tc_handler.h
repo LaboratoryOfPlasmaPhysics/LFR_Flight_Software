@@ -15,10 +15,9 @@ extern rtems_name misc_name[ ];
 extern rtems_name misc_id[ ];
 extern rtems_id Task_id[ ];         // array of task ids
 // MODE PARAMETERS
-extern struct param_common_str param_common;
-extern struct param_norm_str param_norm;
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
+extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern time_management_regs_t *time_management_regs;
 extern waveform_picker_regs_t *waveform_picker_regs;
@@ -73,6 +72,7 @@ int action_load_norm(ccsdsTelecommandPacket_t *TC);
 int action_load_burst(ccsdsTelecommandPacket_t *TC);
 int action_load_sbm1(ccsdsTelecommandPacket_t *TC);
 int action_load_sbm2(ccsdsTelecommandPacket_t *TC);
+int action_dump(ccsdsTelecommandPacket_t *TC);
 // other functions
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
@@ -80,6 +80,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result);
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC);
 int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC);
 int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC);
+int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC);
 
 #endif // TC_HANDLER_H_INCLUDED
 

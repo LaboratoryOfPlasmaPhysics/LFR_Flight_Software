@@ -29,11 +29,7 @@ void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc);
 
 // MODE PARAMETERS
 extern struct param_local_str param_local;
-extern struct param_common_str param_common;
-extern struct param_norm_str param_norm;
-extern struct param_burst_str param_burst;
-extern struct param_sbm1_str param_sbm1;
-extern struct param_sbm2_str param_sbm2;
+extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
 
@@ -49,7 +45,8 @@ int start_all_tasks( void );
 int create_message_queue( void );
 
 // OTHER functions
-void init_default_mode_parameters( void );
+void init_parameter_dump( void );
+void init_local_mode_parameters( void );
 void init_housekeeping_parameters( void );
 
 int spacewire_configure_link( void );

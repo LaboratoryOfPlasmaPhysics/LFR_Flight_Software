@@ -555,12 +555,18 @@ void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send 
     if (lfrMode == LFR_MODE_SBM1) {
         param_local.local_sbm1_nb_cwf_sent = 0;
         // after the first transmission of the swf at F1, the period is set to local_sbm1_nb_cwf_max
-        param_local.local_sbm1_nb_cwf_max = 2 * param_norm.sy_lfr_n_swf_p;
+        param_local.local_sbm1_nb_cwf_max = 2 * (
+                    ( parameter_dump_packet.sy_lfr_n_swf_p[0] * 256 )
+                    + parameter_dump_packet.sy_lfr_n_swf_p[1]
+                    );
     }
     else if (lfrMode == LFR_MODE_SBM2) {
         param_local.local_sbm2_nb_cwf_sent = 0;
         // after the first transmission of the swf at F2, the period is set to local_sbm2_nb_cwf_max
-        param_local.local_sbm2_nb_cwf_max = param_norm.sy_lfr_n_swf_p  / 8;
+        param_local.local_sbm2_nb_cwf_max = (
+                    ( parameter_dump_packet.sy_lfr_n_swf_p[0] * 256 )
+                    + parameter_dump_packet.sy_lfr_n_swf_p[1]
+                    )/ 8;
     }
     else {
         waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
@@ -663,14 +669,16 @@ void reset_wfp_burst_enable()
 
 void reset_wfp_regs()
 {
-    set_wfp_data_shaping(param_common.sy_lfr_common1);
+    set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
     reset_wfp_burst_enable();
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    //
     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    //
     waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    //
     waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    //
     waveform_picker_regs->status = 0x00;                    //
-    set_wfp_delta_snapshot( param_norm.sy_lfr_n_swf_p );    // time in seconds between two snapshots
+    set_wfp_delta_snapshot(
+                ( parameter_dump_packet.sy_lfr_n_swf_p[0]*256)
+                + parameter_dump_packet.sy_lfr_n_swf_p[1] );    // time in seconds between two snapshots
     waveform_picker_regs->delta_f2_f1 = 0xffff;             // max 4 bytes
     waveform_picker_regs->delta_f2_f0 = 0x17c00;            // max 5 bytes
     waveform_picker_regs->nb_burst_available = 0x180;       // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)

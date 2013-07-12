@@ -1,3 +1,4 @@
+
 #ifndef CCSDS_H_INCLUDED
 #define CCSDS_H_INCLUDED
 
@@ -11,19 +12,25 @@
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_NODE_ADDRESS 0xfe
 
-// PACKET IDs
+// PACKET ID
 #define TM_PACKET_ID_TC_EXE                  0x0cc1 // PID 76 CAT 1
 #define TM_PACKET_ID_HK                      0x0cc4 // PID 76 CAT 4
 #define TM_PACKET_ID_PARAMETER_DUMP          0x0cc9 // PID 76 CAT 9
 #define TM_PACKET_ID_SCIENCE_NORMAL          0x0ccc // PID 76 CAT 12
 #define TM_PACKET_ID_SCIENCE_BURST_SBM1_SBM2 0x0cfc // PID 79 CAT 12
 
+// PACKET SEQUENCE CONTROL
+#define TM_PACKET_SEQ_CTRL_CONTINUATION 0
+#define TM_PACKET_SEQ_CTRL_FIRST 1
+#define TM_PACKET_SEQ_CTRL_LAST 2
+#define TM_PACKET_SEQ_CTRL_STANDALONE 3
+
 // FAILURE CODES
 #define FAILURE_CODE_INCONSISTENT       5       // 0x00 0x05
-#define FAILURE_CODE_NOT_EXECUTABLE     40000   // 0x9c 0x40
-#define FAILURE_CODE_NOT_IMPLEMENTED    40002   // 0x9c 0x42
-#define FAILURE_CODE_ERROR              40003   // 0x9c 0x43
-#define FAILURE_CODE_CORRUPTED          40005   // 0x9c 0x45
+#define FAILURE_CODE_NOT_EXECUTABLE     42000   // 0xa4 0x10
+#define FAILURE_CODE_NOT_IMPLEMENTED    42002   // 0xa4 0x12
+#define FAILURE_CODE_ERROR              42003   // 0xa4 0x13
+#define FAILURE_CODE_CORRUPTED          42005   // 0xa4 0x15
 //
 #define TM_DESTINATION_ID_GROUND 0
 #define TM_DESTINATION_ID_MISSION_TIMELINE 110
@@ -39,6 +46,7 @@
 
 #define CCSDS_DESTINATION_ID 0x01
 #define CCSDS_PROTOCOLE_ID 0x02
+#define CCSDS_RESERVED 0x00
 #define CCSDS_USER_APP 0x00
 
 #define SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED 24
@@ -89,23 +97,26 @@
 // TM TYPES
 #define TM_TYPE_TC_EXE 1
 #define TM_TYPE_HK 3
+#define TM_TYPE_PARAMETER_DUMP 3
 #define TM_TYPE_LFR_SCIENCE 21
 
 // TM SUBTYPES
 #define TM_SUBTYPE_EXE_OK 7
 #define TM_SUBTYPE_EXE_NOK 8
 #define TM_SUBTYPE_HK 25
+#define TM_SUBTYPE_PARAMETER_DUMP 25
 #define TM_SUBTYPE_SCIENCE 3
 #define TM_SUBTYPE_LFR_SCIENCE 3
 
 // TM SID
 #define SID_DEFAULT 0
-#define SID_HK 1
 #define SID_EXE_INC 5
-#define SID_NOT_EXE 40000
-#define SID_NOT_IMP 40002
-#define SID_EXE_ERR 40003
-#define SID_EXE_CORR 40005
+#define SID_NOT_EXE 42000       // 0xa4 0x10
+#define SID_NOT_IMP 42002       // 0xa4 0x12
+#define SID_EXE_ERR 42003       // 0xa4 0x13
+#define SID_EXE_CORR 42005      // 0xa4 0x15
+#define SID_HK 1
+#define SID_PARAMETER_DUMP 10
 
 #define SID_NORM_SWF_F0 3
 #define SID_NORM_SWF_F1 4
@@ -137,16 +148,19 @@
 // LENGTH (BYTES)
 #define LENGTH_TM_LFR_TC_EXE_MAX 32
 #define LENGTH_TM_LFR_HK 126
+
 // PACKET_LENGTH
-#define PACKET_LENGTH_TC_EXE_SUCCESS            20 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_TC_EXE_INCONSISTENT       26 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     26 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED    24 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_TC_EXE_ERROR              24 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_TC_EXE_CORRUPTED          32 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_HK                        126 - CCSDS_TC_TM_PACKET_OFFSET
-#define PACKET_LENGTH_PARAMETER_DUMP            28 - CCSDS_TC_TM_PACKET_OFFSET
+#define PACKET_LENGTH_TC_EXE_SUCCESS            (20 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_INCONSISTENT       (26 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     (26 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED    (24 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_ERROR              (24 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_CORRUPTED          (32 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_HK                        (126 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP            (34 - CCSDS_TC_TM_PACKET_OFFSET)
 #define TM_HEADER_LEN 16
+
+#define SPARE1_PUSVERSION_SPARE2 0x10
 
 #define LEN_TM_LFR_HK 126 + 4
 #define LEN_TM_LFR_TC_EXE_NOT_IMP 24 +4
@@ -365,5 +379,53 @@ struct Packet_TM_LFR_HK_str
     unsigned char hk_lfr_cpu_arith_overflow;
 };
 typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
+
+struct Packet_TM_LFR_PARAMETER_DUMP_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    volatile unsigned char sid;
+
+    //******************
+    // COMMON PARAMETERS
+    volatile unsigned char unused0;
+    volatile unsigned char bw_sp0_sp1_r0_r1;
+
+    //******************
+    // NORMAL PARAMETERS
+    volatile unsigned char sy_lfr_n_swf_l[2];
+    volatile unsigned char sy_lfr_n_swf_p[2];
+    volatile unsigned char sy_lfr_n_asm_p[2];
+    volatile unsigned char sy_lfr_n_bp_p0;
+    volatile unsigned char sy_lfr_n_bp_p1;
+
+    //*****************
+    // BURST PARAMETERS
+    volatile unsigned char sy_lfr_b_bp_p0;
+    volatile unsigned char sy_lfr_b_bp_p1;
+
+    //****************
+    // SBM1 PARAMETERS
+    volatile unsigned char sy_lfr_s1_bp_p0;
+    volatile unsigned char sy_lfr_s1_bp_p1;
+
+    //****************
+    // SBM2 PARAMETERS
+    volatile unsigned char sy_lfr_s2_bp_p0;
+    volatile unsigned char sy_lfr_s2_bp_p1;
+};
+typedef struct Packet_TM_LFR_PARAMETER_DUMP_str Packet_TM_LFR_PARAMETER_DUMP_t;
+
 
 #endif // CCSDS_H_INCLUDED

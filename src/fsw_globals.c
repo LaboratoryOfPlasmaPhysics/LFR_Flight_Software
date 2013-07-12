@@ -40,12 +40,8 @@ float averaged_spec_mat_f0[ TOTAL_SIZE_SPEC_MAT ];
 float compressed_spec_mat_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 
 // MODE PARAMETERS
+Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 struct param_local_str param_local;
-struct param_common_str param_common;
-struct param_norm_str param_norm;
-struct param_burst_str param_burst;
-struct param_sbm1_str param_sbm1;
-struct param_sbm2_str param_sbm2;
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;

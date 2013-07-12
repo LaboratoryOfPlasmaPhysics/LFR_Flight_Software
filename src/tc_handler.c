@@ -480,7 +480,7 @@ rtems_task actn_task( rtems_task_argument unused )
                     break;
                     //
                 case TC_SUBTYPE_DUMP:
-                    result = action_default( &TC );
+                    result = action_dump( &TC );
                     close_action( &TC, result );
                     break;
                     //
@@ -613,10 +613,10 @@ int action_enter(ccsdsTelecommandPacket_t *TC)
 
 int action_load_comm(ccsdsTelecommandPacket_t *TC)
 {
-    param_common.sy_lfr_common0 = TC->dataAndCRC[0];
-    param_common.sy_lfr_common1 = TC->dataAndCRC[1];
+    parameter_dump_packet.unused0 =  TC->dataAndCRC[0];
+    parameter_dump_packet.bw_sp0_sp1_r0_r1 = TC->dataAndCRC[1];
 
-    set_wfp_data_shaping(param_common.sy_lfr_common1);
+    set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
 
     return LFR_SUCCESSFUL;
 }
@@ -633,11 +633,18 @@ int action_load_norm(ccsdsTelecommandPacket_t *TC)
         result = LFR_DEFAULT;
     }
     else {
-        param_norm.sy_lfr_n_swf_l = (TC->dataAndCRC[0] * 256) + TC->dataAndCRC[1];
-        param_norm.sy_lfr_n_swf_p = (TC->dataAndCRC[2] * 256) + TC->dataAndCRC[3];
-        param_norm.sy_lfr_n_asm_p = (TC->dataAndCRC[4] * 256) + TC->dataAndCRC[5];
-        param_norm.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
-        param_norm.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
+        parameter_dump_packet.sy_lfr_n_swf_l[0] = TC->dataAndCRC[0];
+        parameter_dump_packet.sy_lfr_n_swf_l[1] = TC->dataAndCRC[1];
+
+        parameter_dump_packet.sy_lfr_n_swf_p[0] = TC->dataAndCRC[2];
+        parameter_dump_packet.sy_lfr_n_swf_p[1] = TC->dataAndCRC[3];
+
+        parameter_dump_packet.sy_lfr_n_asm_p[0] = TC->dataAndCRC[4];
+        parameter_dump_packet.sy_lfr_n_asm_p[1] = TC->dataAndCRC[5];
+
+        parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
+        parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
+
         result = LFR_SUCCESSFUL;
     }
 
@@ -702,6 +709,25 @@ int action_load_sbm2(ccsdsTelecommandPacket_t *TC)
     }
 
     return result;
+}
+
+int action_dump(ccsdsTelecommandPacket_t *TC)
+{
+    int status;
+    // send parameter dump packet
+    status = write(fdSPW, (char *) &parameter_dump_packet,
+                   PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + 4);
+    if (status == -1)
+    {
+        PRINTF1("in action_dump *** ERR sending packet, code %d", status)
+        status = RTEMS_UNSATISFIED;
+    }
+    else
+    {
+        status = RTEMS_SUCCESSFUL;
+    }
+
+    return status;
 }
 
 int action_updt_info(ccsdsTelecommandPacket_t *TC) {
@@ -994,7 +1020,10 @@ int enter_sbm1_mode(ccsdsTelecommandPacket_t *TC)
     }
 
     // at the beginning of the mode, the parameter local_sbm1_nb_cwf_max has a specific value
-    param_local.local_sbm1_nb_cwf_max = 2 * param_norm.sy_lfr_n_swf_p / 4;
+    param_local.local_sbm1_nb_cwf_max = 2 * (
+                (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256)
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+                )/ 4;
 
 #ifdef GSA
 #else
@@ -1024,7 +1053,10 @@ int enter_sbm2_mode(ccsdsTelecommandPacket_t *TC)
     }
 
     // at the beginning of the mode, the parameter local_sbm2_nb_cwf_max has a specific value
-    param_local.local_sbm1_nb_cwf_max = param_norm.sy_lfr_n_swf_p / 16;
+    param_local.local_sbm1_nb_cwf_max = (
+                (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256)
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+                ) / 16;
 
 #ifdef GSA
 #else
@@ -1121,6 +1153,39 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
 
     data[0] = (char) (FAILURE_CODE_NOT_IMPLEMENTED >> 8);
     data[1] = (char) FAILURE_CODE_NOT_IMPLEMENTED;
+    data[2] = TC->packetID[0];
+    data[3] = TC->packetID[1];
+    data[4] = TC->packetSequenceControl[0];
+    data[5] = TC->packetSequenceControl[1];
+    data[6] = TC->serviceType;      // type of the rejected TC
+    data[7] = TC->serviceSubType;   // subtype of the rejected TC
+
+    // filling the structure for the spacewire transmission
+    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
+    spw_ioctl_send.hdr = (char*) &TM_header;
+    spw_ioctl_send.dlen = 8;
+    spw_ioctl_send.data = data;
+    spw_ioctl_send.options = 0;
+
+    // SEND DATA
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+
+    return LFR_SUCCESSFUL;
+}
+
+int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC)
+{
+    rtems_status_code status;
+    TMHeader_t TM_header;
+    char data[8];
+    spw_ioctl_pkt_send spw_ioctl_send;
+
+    TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_ERROR,
+                     &TM_header,
+                     TC->sourceID);   // TC source ID
+
+    data[0] = (char) (FAILURE_CODE_ERROR >> 8);
+    data[1] = (char) FAILURE_CODE_ERROR;
     data[2] = TC->packetID[0];
     data[3] = TC->packetID[1];
     data[4] = TC->packetSequenceControl[0];

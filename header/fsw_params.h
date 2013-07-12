@@ -24,6 +24,9 @@
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
+// COMMON
+#define DEFAULT_SY_LFR_COMMON0 0x00
+#define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
 // NORM
 #define DEFAULT_SY_LFR_N_SWF_L 2048 // nb sample
 #define DEFAULT_SY_LFR_N_SWF_P 16   // sec
@@ -142,34 +145,6 @@ struct param_local_str{
     unsigned int local_sbm1_nb_cwf_max;
     unsigned int local_sbm2_nb_cwf_sent;
     unsigned int local_sbm2_nb_cwf_max;
-};
-
-struct param_common_str{
-    unsigned char sy_lfr_common0;
-    unsigned char sy_lfr_common1;
-};
-
-struct param_norm_str{
-    unsigned int sy_lfr_n_swf_l; // length of the snapshots
-    unsigned int sy_lfr_n_swf_p; // time between two snapshots
-    unsigned int sy_lfr_n_asm_p; // time between two asm
-    unsigned char sy_lfr_n_bp_p0; // timebetween two products BP1 set
-    unsigned char sy_lfr_n_bp_p1; // time between two products BP2 set
-};
-
-struct param_burst_str{
-    unsigned char sy_lfr_b_bp_p0; // timebetween two products BP1 set
-    unsigned char sy_lfr_b_bp_p1; // time between two products BP2 set
-};
-
-struct param_sbm1_str{
-    unsigned char sy_lfr_s1_bp_p0; // timebetween two products BP1 set
-    unsigned char sy_lfr_s1_bp_p1; // time between two products BP2 set
-};
-
-struct param_sbm2_str{
-    unsigned char sy_lfr_s2_bp_p0; // timebetween two products BP1 set
-    unsigned char sy_lfr_s2_bp_p1; // time between two products BP2 set
 };
 
 #endif // FSW_RTEMS_CONFIG_H_INCLUDED
