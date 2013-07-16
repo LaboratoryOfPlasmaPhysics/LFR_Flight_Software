@@ -472,7 +472,7 @@ int spacewire_configure_link( void )
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 0);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks
@@ -499,9 +499,9 @@ int spacewire_wait_for_link(void)
         PRINTF(".")
         fflush( stdout );
         ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
-        PRINTF1("in spacewire_try_to_start *** link status is: %s\n", lstates[linkStatus])
+        PRINTF1("in spacewire_wait_for_link *** link status is: %s\n", lstates[linkStatus])
         if ( linkStatus == 5) {
-            PRINTF("in spacewire_try_to_start *** link is running\n")
+            PRINTF("in spacewire_wait_for_link *** link is running\n")
             status = RTEMS_SUCCESSFUL;
             break;
         }

@@ -334,8 +334,8 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
         case (SID_NOT_EXE):
             break;
         case (SID_NOT_IMP):
-            data[0] = 0x9c;
-            data[1] = 0x42;
+            data[0] = (unsigned char) (SID_NOT_IMP >> 8);
+            data[1] = (unsigned char) SID_NOT_IMP;
             data[2] = TC->packetID[0];
             data[3] = TC->packetID[1];
             data[4] = TC->packetSequenceControl[0];
@@ -346,8 +346,8 @@ unsigned char TM_build_data(ccsdsTelecommandPacket_t *TC, char* data, unsigned i
         case (SID_EXE_ERR):
             break;
         case (SID_EXE_CORR):
-            data[0] = 0x9c;
-            data[1] = 0x45;
+            data[0] = (unsigned char) (SID_EXE_CORR >> 8);
+            data[1] = (unsigned char) SID_EXE_CORR;
             data[2] = TC->packetID[0];
             data[3] = TC->packetID[1];
             data[4] = TC->packetSequenceControl[0];
