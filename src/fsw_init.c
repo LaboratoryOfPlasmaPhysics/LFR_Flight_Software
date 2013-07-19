@@ -88,9 +88,10 @@ rtems_task Init( rtems_task_argument ignored )
 
     //**********
     // WAVEFORMS
-    // simulator
 
 #ifdef GSA
+    // simulator
+    PRINTF("GSA is defined *** fsw-gsa is running \n")
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
 #else
@@ -125,59 +126,15 @@ rtems_task Init( rtems_task_argument ignored )
     LEON_Unmask_interrupt( IRQ_TIME2 );
 
 #ifdef GSA
-    //if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-    //    printf("in INIT *** Error sending event to WFRM\n");
-    //}
+    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+        PRINTF("in INIT *** Error sending event to WFRM\n")
+    }
 #endif
+
+    LEON_Force_interrupt(IRQ_WF);
 
     status = rtems_task_delete(RTEMS_SELF);
 
-}
-
-rtems_task spiq_task(rtems_task_argument unused)
-{
-    rtems_event_set event_out;
-    rtems_status_code status;
-    unsigned char lfrMode;
-
-    while(true){
-        PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
-        rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
-
-        lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
-
-        status = spacewire_wait_for_link();
-
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            //****************
-            // STOP THE SYSTEM
-            spacewire_compute_stats_offsets();
-            stop_current_mode();
-            if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
-                PRINTF("in SPIQ *** Error suspending RECV Task\n")
-            }
-            if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
-                PRINTF("in SPIQ *** Error suspending HOUS Task\n")
-            }
-
-            //***************************
-            // RESTART THE SPACEWIRE LINK
-            spacewire_configure_link();
-
-            //*******************
-            // RESTART THE SYSTEM
-            //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
-            status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
-            if (status != RTEMS_SUCCESSFUL) {
-                PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
-            }
-            if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
-                PRINTF("in SPIQ *** Error restarting RECV Task\n")
-            }
-            //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
-        }
-    }
 }
 
 void init_parameter_dump(void)
@@ -436,6 +393,54 @@ int start_all_tasks( void )
     return 0;
 }
 
+// SPACEWIRE
+
+rtems_task spiq_task(rtems_task_argument unused)
+{
+    rtems_event_set event_out;
+    rtems_status_code status;
+    unsigned char lfrMode;
+
+    while(true){
+        PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
+        rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
+
+        lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
+
+        status = spacewire_wait_for_link();
+
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            //****************
+            // STOP THE SYSTEM
+            spacewire_compute_stats_offsets();
+            stop_current_mode();
+            if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
+                PRINTF("in SPIQ *** Error suspending RECV Task\n")
+            }
+            if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
+                PRINTF("in SPIQ *** Error suspending HOUS Task\n")
+            }
+
+            //***************************
+            // RESTART THE SPACEWIRE LINK
+            spacewire_configure_link();
+
+            //*******************
+            // RESTART THE SYSTEM
+            //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
+            status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
+            if (status != RTEMS_SUCCESSFUL) {
+                PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
+            }
+            if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
+                PRINTF("in SPIQ *** Error restarting RECV Task\n")
+            }
+            //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
+        }
+    }
+}
+
 int spacewire_configure_link( void )
 {
     rtems_status_code status;
@@ -466,13 +471,13 @@ int spacewire_configure_link( void )
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
     //
-    //status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    //if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
     //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 0);         // sets the link-error interrupt bit
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
     //
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks

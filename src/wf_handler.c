@@ -139,13 +139,15 @@ rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
         //********
         // STANDBY
         case(LFR_MODE_STANDBY):
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
             break;
 
         //******
         // NORMAL
         case(LFR_MODE_NORMAL):
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
             if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                PRINTF("ERR *** in waveforms_isr *** error sending event to WFRM\n")
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
             }
             break;
 
@@ -549,7 +551,9 @@ void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send 
     send_waveform_SWF( header, wf_snap_f2, SID_NORM_SWF_F2, spw_ioctl_send);
 #ifdef GSA
     // irq processed, reset the related register of the timer unit
-    gptimer_regs->timer[2].ctrl = gptimer_regs->timer[2].ctrl | 0x00000010;
+    gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl = gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl | 0x00000010;
+    // clear the interruption
+    LEON_Clear_interrupt(IRQ_WF);
 #else
     // irq processed, reset the related register of the waveform picker
     if (lfrMode == LFR_MODE_SBM1) {

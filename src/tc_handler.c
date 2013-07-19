@@ -1,11 +1,12 @@
 #include <tc_handler.h>
 #include <fsw_params.h>
 
-char *DumbMessages[5] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+char *DumbMessages[6] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
                     "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                     "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
                     "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
-                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ"     // RTEMS_EVENT_4
+                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
+                    "in DUMB *** waveforms_simulator_isr"                                   // RTEMS_EVENT_5
 };
 
 unsigned char currentTC_LEN_RCV[2]; //  SHALL be equal to the current TC packet estimated packet length field
@@ -526,10 +527,9 @@ rtems_task dumb_task( rtems_task_argument unused )
     PRINTF("in DUMB *** \n")
 
     while(1){
-        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4,
+        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4 | RTEMS_EVENT_5,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
-        PRINTF1("in DUMB *** event_out %x\n", (int) event_out)
         for ( i=0; i<32; i++)
         {
             if ( ((intEventOut >> i) & 0x0001) != 0)
@@ -823,7 +823,7 @@ int transition_validation(unsigned char requestedMode)
     switch (requestedMode)
     {
     case LFR_MODE_STANDBY:
-        if ( (lfrMode == LFR_MODE_STANDBY) ) {
+        if ( lfrMode == LFR_MODE_STANDBY ) {
             status = LFR_DEFAULT;
         }
         else
@@ -832,7 +832,7 @@ int transition_validation(unsigned char requestedMode)
         }
         break;
     case LFR_MODE_NORMAL:
-        if ( (lfrMode == LFR_MODE_NORMAL) ) {
+        if ( lfrMode == LFR_MODE_NORMAL ) {
             status = LFR_DEFAULT;
         }
         else {
@@ -840,8 +840,7 @@ int transition_validation(unsigned char requestedMode)
         }
         break;
     case LFR_MODE_BURST:
-        if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_BURST)
-             | (lfrMode == LFR_MODE_SBM2) ) {
+        if ( lfrMode == LFR_MODE_STANDBY ) {
             status = LFR_DEFAULT;
         }
         else {
@@ -849,7 +848,7 @@ int transition_validation(unsigned char requestedMode)
         }
         break;
     case LFR_MODE_SBM1:
-        if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_SBM1) ) {
+        if ( lfrMode == LFR_MODE_SBM1 ) {
             status = LFR_DEFAULT;
         }
         else {
@@ -857,8 +856,7 @@ int transition_validation(unsigned char requestedMode)
         }
         break;
     case LFR_MODE_SBM2:
-        if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_NORMAL)
-             | (lfrMode == LFR_MODE_BURST) | (lfrMode == LFR_MODE_SBM2) ) {
+        if ( lfrMode == LFR_MODE_SBM2 ) {
             status = LFR_DEFAULT;
         }
         else {
@@ -964,15 +962,16 @@ int enter_normal_mode( ccsdsTelecommandPacket_t *TC )
     }
 
 #ifdef GSA
-        LEON_Unmask_interrupt( IRQ_WF );
+    LEON_Clear_interrupt( IRQ_WF );
+    LEON_Unmask_interrupt( IRQ_WF );
 #else
-        LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-        LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-        waveform_picker_regs->burst_enable = 0x07;
-        waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
-        waveform_picker_regs->status = 0x00;
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+    waveform_picker_regs->burst_enable = 0x07;
+    waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
+    waveform_picker_regs->status = 0x00;
 #endif
-        LEON_Unmask_interrupt( IRQ_SM );
+    LEON_Unmask_interrupt( IRQ_SM );
 
     return status;
 }
