@@ -134,42 +134,20 @@ rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
     unsigned char lfrMode;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    switch(lfrMode)
-    {
-        //********
-        // STANDBY
-        case(LFR_MODE_STANDBY):
+    switch(lfrMode) {
+    case (LFR_MODE_STANDBY):
+        break;
+    case (LFR_MODE_NORMAL):
+        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
             rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
-            break;
-
-        //******
-        // NORMAL
-        case(LFR_MODE_NORMAL):
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_5 );
-            }
-            break;
-
-        //******
-        // BURST
-        case(LFR_MODE_BURST):
-            break;
-
-        //*****
-        // SBM1
-        case(LFR_MODE_SBM1):
-            break;
-
-        //*****
-        // SBM2
-        case(LFR_MODE_SBM2):
-            break;
-
-        //********
-        // DEFAULT
-        default:
-            break;
+        }
+        break;
+    case (LFR_MODE_BURST):
+        break;
+    case (LFR_MODE_SBM1):
+        break;
+    case (LFR_MODE_SBM2):
+        break;
     }
 }
 
@@ -215,6 +193,8 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                     break;
                 case(LFR_MODE_SBM1):
                     send_waveform_sbm1( &headerCWF, &spw_ioctl_send_CWF);
+#ifdef GSA
+#else
                     param_local.local_sbm1_nb_cwf_sent ++;
                     if ( param_local.local_sbm1_nb_cwf_sent == (param_local.local_sbm1_nb_cwf_max-1) ) {
                         // send the f1 buffer as a NORM snapshot
@@ -225,9 +205,12 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             send_waveform_SWF( &headerSWF, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send_SWF );
                         }
                     }
+#endif
                     break;
                 case(LFR_MODE_SBM2):
                     send_waveform_sbm2( &headerCWF, &spw_ioctl_send_CWF);
+#ifdef GSA
+#else
                     param_local.local_sbm2_nb_cwf_sent ++;
                     if ( param_local.local_sbm2_nb_cwf_sent == (param_local.local_sbm2_nb_cwf_max-1) ) {
                         // send the f2 buffer as a NORM snapshot
@@ -238,6 +221,7 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             send_waveform_SWF( &headerSWF, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send_SWF );
                         }
                     }
+#endif
                     break;
                 default:
                     break;
@@ -553,7 +537,7 @@ void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send 
     // irq processed, reset the related register of the timer unit
     gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl = gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl | 0x00000010;
     // clear the interruption
-    LEON_Clear_interrupt(IRQ_WF);
+    LEON_Unmask_interrupt( IRQ_WF );
 #else
     // irq processed, reset the related register of the waveform picker
     if (lfrMode == LFR_MODE_SBM1) {
@@ -576,8 +560,8 @@ void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send 
         waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
         waveform_picker_regs->burst_enable = 0x07; // [0111] enable f2 f1 f0
     }
-
 #endif
+
 }
 
 void send_waveform_burst(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
@@ -594,12 +578,15 @@ void send_waveform_burst(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send
     // ACQUISITION TIME
 
     // F2
+#ifdef GSA
+#else
     if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
        send_waveform_CWF( header, wf_snap_f2_bis, SID_BURST_CWF_F2, spw_ioctl_send);
     }
     else {
         send_waveform_CWF( header, wf_snap_f2, SID_BURST_CWF_F2, spw_ioctl_send);
     }
+#endif
 }
 
 void send_waveform_sbm1(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
@@ -615,12 +602,15 @@ void send_waveform_sbm1(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send 
     header->time[5] = (unsigned char) (time_management_regs->fine_time);
 
     // F1
+#ifdef GSA
+#else
     if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
        send_waveform_CWF( header, wf_snap_f1_bis, SID_SBM1_CWF_F1, spw_ioctl_send );
     }
     else {
         send_waveform_CWF( header, wf_snap_f1, SID_SBM1_CWF_F1, spw_ioctl_send );
     }
+#endif
 }
 
 void send_waveform_sbm2(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
@@ -636,12 +626,15 @@ void send_waveform_sbm2(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send 
     header->time[5] = (unsigned char) (time_management_regs->fine_time);
 
     // F2
+#ifdef GSA
+#else
     if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
         send_waveform_CWF( header, wf_snap_f2_bis, SID_SBM2_CWF_F2, spw_ioctl_send);
     }
     else {
         send_waveform_CWF( header, wf_snap_f2, SID_SBM2_CWF_F2, spw_ioctl_send);
     }
+#endif
 }
 
 //**************
@@ -650,29 +643,39 @@ void set_wfp_data_shaping(unsigned char data_shaping)
 {
     // get the parameters for the data shaping [BW SP0 SP1 R0 R1] in sy_lfr_common1 and configure the register
     // waveform picker : [R1 R0 SP1 SP0 BW]
+#ifdef GSA
+#else
     waveform_picker_regs->data_shaping =
               ( (data_shaping & 0x10) >> 4 )     // BW
             + ( (data_shaping & 0x08) >> 2 )     // SP0
             + ( (data_shaping & 0x04)      )     // SP1
             + ( (data_shaping & 0x02) << 2 )     // R0
             + ( (data_shaping & 0x01) << 4 );    // R1
+#endif
 }
 
 void set_wfp_delta_snapshot(unsigned int delta_snapshot)
 {
+#ifdef GSA
+#else
     unsigned char aux = 0;
     aux = delta_snapshot / 2 ;
     waveform_picker_regs->delta_snapshot = aux;             // max 2 bytes
-    //waveform_picker_regs->delta_snapshot = 0x5;             // max 2 bytes
+#endif
 }
 
 void reset_wfp_burst_enable()
 {
+#ifdef GSA
+#else
     waveform_picker_regs->burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
+#endif
 }
 
-void reset_wfp_regs()
+void reset_waveform_picker_regs()
 {
+#ifdef GSA
+#else
     set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
     reset_wfp_burst_enable();
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    //
@@ -687,9 +690,5 @@ void reset_wfp_regs()
     waveform_picker_regs->delta_f2_f0 = 0x17c00;            // max 5 bytes
     waveform_picker_regs->nb_burst_available = 0x180;       // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
     waveform_picker_regs->nb_snapshot_param = 0x7ff;        // max 3 octets, 2048 - 1
-    //waveform_picker_regs->delta_snapshot = 0x2;         // max 2 bytes, = period / 2
-    //waveform_picker_regs->delta_f2_f1 = 0x2d00;         // max 4 bytes
-    //waveform_picker_regs->delta_f2_f0 = 0x2f80;         // max 5 bytes
-    //waveform_picker_regs->nb_burst_available = 0x30;    // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
-    //waveform_picker_regs->nb_snapshot_param = 0xff;     // max 3 octets, 256 - 1
+#endif
 }

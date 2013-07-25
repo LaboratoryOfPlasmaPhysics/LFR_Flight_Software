@@ -55,7 +55,7 @@ char *lstates[6] = {"Error-reset",
 rtems_task Init( rtems_task_argument ignored )
 {
     rtems_status_code status;
-    rtems_isr_entry old_isr_handler;
+    rtems_isr_entry  old_isr_handler;
 
     PRINTF("\n\n\n\n\n")
     PRINTF("***************************\n")
@@ -91,47 +91,25 @@ rtems_task Init( rtems_task_argument ignored )
 
 #ifdef GSA
     // simulator
-    PRINTF("GSA is defined *** fsw-gsa is running \n")
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
+    LEON_Mask_interrupt( IRQ_WF );
 #else
-    // configure the registers of the waveform picker
-    reset_wfp_regs();
-    // configure the waveform picker interrupt service routine
+    // configure the waveform picker
+    reset_waveform_picker_regs();
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
+    // configure the spectral matrix
+    reset_spectral_matrix_regs();
+    status = rtems_interrupt_catch( waveforms_isr,
+                                   IRQ_SPARC_SPECTRAL_MATRIX,
+                                   &old_isr_handler) ;
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
 #endif
 
     //**********
-
-    //*****************************************
-    // irq handling of the time management unit
-    status = rtems_interrupt_catch( commutation_isr1,
-                                   IRQ_SPARC_TIME1,
-                                   &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    if (status==RTEMS_SUCCESSFUL) {
-        PRINTF("OK  *** commutation_isr1 *** rtems_interrupt_catch successfullly configured\n")
-    }
-
-    status = rtems_interrupt_catch( commutation_isr2,
-                                   IRQ_SPARC_TIME2,
-                                   &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    if (status==RTEMS_SUCCESSFUL) {
-        PRINTF("OK  *** commutation_isr2 *** rtems_interrupt_catch successfullly configured\n")
-    }
-
-    LEON_Unmask_interrupt( IRQ_TIME1 );
-    LEON_Unmask_interrupt( IRQ_TIME2 );
-
-#ifdef GSA
-    if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error sending event to WFRM\n")
-    }
-#endif
-
-    LEON_Force_interrupt(IRQ_WF);
 
     status = rtems_task_delete(RTEMS_SELF);
 
@@ -261,6 +239,7 @@ int create_names( void )
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
+    Task_name[TASKID_MATR] = rtems_build_name( 'M', 'A', 'T', 'R' );
 
     // rate monotonic period name
     HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -332,6 +311,12 @@ int create_all_tasks( void )
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
     );
+    // MATR
+    status = rtems_task_create(
+        Task_name[TASKID_MATR], 250, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
+    );
 
     return 0;
 }
@@ -388,6 +373,11 @@ int start_all_tasks( void )
     status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
         PRINTF("In INIT *** Error starting TASK_HOUS\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_MATR], matr_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("In INIT *** Error starting TASK_MATR\n")
     }
 
     return 0;

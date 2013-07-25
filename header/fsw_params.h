@@ -1,6 +1,8 @@
 #ifndef FSW_RTEMS_CONFIG_H_INCLUDED
 #define FSW_RTEMS_CONFIG_H_INCLUDED
 
+#include <fsw_params_processing.h>
+
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
@@ -30,7 +32,7 @@
 // NORM
 #define DEFAULT_SY_LFR_N_SWF_L 2048 // nb sample
 #define DEFAULT_SY_LFR_N_SWF_P 16   // sec
-#define DEFAULT_SY_LFR_N_ASM_P 3600 // sec
+#define DEFAULT_SY_LFR_N_ASM_P 16 // sec
 #define DEFAULT_SY_LFR_N_BP_P0 4    // sec
 #define DEFAULT_SY_LFR_N_BP_P1 20   // sec
 // BURST
@@ -49,8 +51,12 @@
 #define REGS_ADDR_GPTIMER 0x80000300
 #define REGS_ADDR_GRSPW 0x80000500
 #define REGS_ADDR_TIME_MANAGEMENT 0x80000600
-#define REGS_ADDR_SPECTRAL_MATRICES 0x80000700
-#define REGS_ADDR_WAVEFORM_PICKER 0x80000f20
+#define REGS_ADDR_SPECTRAL_MATRIX 0x80000f00
+
+#ifdef GSA
+#else
+    #define REGS_ADDR_WAVEFORM_PICKER 0x80000f20
+#endif
 
 #define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
 #define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400 (0x50)
@@ -67,11 +73,13 @@
 #define IRQ_SPARC_TIME2 0x1d            // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WAVEFORM_PICKER 14
 #define IRQ_SPARC_WAVEFORM_PICKER 0x1e  // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SPECTRAL_MATRIX 6
+#define IRQ_SPARC_SPECTRAL_MATRIX 0x16  // see sparcv8.pdf p.76 for interrupt levels
 
 //*****
 // TIME
-#define CLKDIV_SM_SIMULATOR 9999
-#define CLKDIV_WF_SIMULATOR 9999999
+#define CLKDIV_SM_SIMULATOR (10000 - 1)     // 10 ms
+#define CLKDIV_WF_SIMULATOR (10000000 - 1)  // 10 000 000 * 1 us = 10 s
 #define TIMER_SM_SIMULATOR 1
 #define TIMER_WF_SIMULATOR 2
 #define HK_PERIOD 100 // 100 * 10ms => 1sec
@@ -93,6 +101,7 @@
 #define TASKID_WFRM 8
 #define TASKID_DUMB 9
 #define TASKID_HOUS 10
+#define TASKID_MATR 11
 
 #define ACTION_MSG_QUEUE_COUNT 10
 

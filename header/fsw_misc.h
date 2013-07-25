@@ -17,6 +17,9 @@ extern spw_stats spacewire_stats_backup;
 
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
+int timer_start( gptimer_regs_t *gptimer_regs, unsigned char timer );
+int timer_stop( gptimer_regs_t *gptimer_regs, unsigned char timer );
+int timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider);
 void update_spacewire_statistics();
 
 // SERIAL LINK

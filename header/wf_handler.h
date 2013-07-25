@@ -48,7 +48,7 @@ void send_waveform_CWF( Header_TM_LFR_SCIENCE_CWF_t *header, volatile int *wavef
 void set_wfp_data_shaping(unsigned char data_shaping);
 void set_wfp_delta_snapshot(unsigned int delta_snapshot);
 void reset_wfp_burst_enable();
-void reset_wfp_regs();
+void reset_waveform_picker_regs();
 //
 int build_value(int value1, int value0);
 

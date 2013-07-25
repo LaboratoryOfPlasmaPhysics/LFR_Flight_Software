@@ -14,15 +14,40 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
     rtems_isr_entry old_isr_handler;
 
     status = rtems_interrupt_catch( timer_isr, interrupt_level, &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    //if (status==RTEMS_SUCCESSFUL) PRINTF("In configure_timer_for_wf_simulation *** rtems_interrupt_catch successfullly configured\n")
+    if (status==RTEMS_SUCCESSFUL)
+    {
+        PRINTF("In configure_timer *** rtems_interrupt_catch successfullly configured\n")
+    }
 
-    gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
+    timer_set_clock_divider( gptimer_regs, timer, clock_divider);
+
+    return 1;
+}
+
+int timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
+{
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000004;  // LD load value from the reload register
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000001;  // EN enable the timer
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000002;  // RS restart
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000008;  // IE interrupt enable
 
+    return 1;
+}
+
+int timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
+{
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xfffffffe;  // EN enable the timer
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xffffffef;  // IE interrupt enable
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
+
+    return 1;
+}
+
+int timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider)
+{
+    gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
+    
     return 1;
 }
 
@@ -189,9 +214,20 @@ rtems_task hous_task(rtems_task_argument argument)
 
             update_spacewire_statistics();
 
+            // SEND PACKET
             result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
-            if (result==-1) {
-                PRINTF("ERR *** in HOUS *** HK send\n");
+            if (status == -1) {
+                while (true) {
+                    if (status != RTEMS_SUCCESSFUL) {
+                        result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
+                        PRINTF("x")
+                        sched_yield();
+                    }
+                    else {
+                        PRINTF("\n")
+                        break;
+                    }
+                }
             }
         }
     }

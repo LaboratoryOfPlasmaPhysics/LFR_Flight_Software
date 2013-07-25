@@ -1,7 +1,7 @@
-
 #ifndef CCSDS_H_INCLUDED
 #define CCSDS_H_INCLUDED
 
+#define CCSDS_PROTOCOLE_EXTRA_BYTES 4
 #define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH 10+4
@@ -25,12 +25,6 @@
 #define TM_PACKET_SEQ_CTRL_LAST 2
 #define TM_PACKET_SEQ_CTRL_STANDALONE 3
 
-// FAILURE CODES
-#define FAILURE_CODE_INCONSISTENT       5       // 0x00 0x05
-#define FAILURE_CODE_NOT_EXECUTABLE     42000   // 0xa4 0x10
-#define FAILURE_CODE_NOT_IMPLEMENTED    42002   // 0xa4 0x12
-#define FAILURE_CODE_ERROR              42003   // 0xa4 0x13
-#define FAILURE_CODE_CORRUPTED          42005   // 0xa4 0x15
 //
 #define TM_DESTINATION_ID_GROUND 0
 #define TM_DESTINATION_ID_MISSION_TIMELINE 110
@@ -108,6 +102,12 @@
 #define TM_SUBTYPE_SCIENCE 3
 #define TM_SUBTYPE_LFR_SCIENCE 3
 
+// FAILURE CODES
+#define FAILURE_CODE_INCONSISTENT       5       // 0x00 0x05
+#define FAILURE_CODE_NOT_EXECUTABLE     42000   // 0xa4 0x10
+#define FAILURE_CODE_NOT_IMPLEMENTED    42002   // 0xa4 0x12
+#define FAILURE_CODE_ERROR              42003   // 0xa4 0x13
+#define FAILURE_CODE_CORRUPTED          42005   // 0xa4 0x15
 // TM SID
 #define SID_DEFAULT 0
 #define SID_EXE_INC 5
@@ -149,6 +149,9 @@
 #define LENGTH_TM_LFR_TC_EXE_MAX 32
 #define LENGTH_TM_LFR_HK 126
 
+// HEADER_LENGTH
+#define TM_HEADER_LEN 16
+#define HEADER_LENGTH_TM_LFR_SCIENCE_ASM 28
 // PACKET_LENGTH
 #define PACKET_LENGTH_TC_EXE_SUCCESS            (20 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_INCONSISTENT       (26 - CCSDS_TC_TM_PACKET_OFFSET)
@@ -158,7 +161,7 @@
 #define PACKET_LENGTH_TC_EXE_CORRUPTED          (32 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_HK                        (126 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_PARAMETER_DUMP            (34 - CCSDS_TC_TM_PACKET_OFFSET)
-#define TM_HEADER_LEN 16
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM        (TOTAL_SIZE_SM + HEADER_LENGTH_TM_LFR_SCIENCE_ASM - CCSDS_TC_TM_PACKET_OFFSET)
 
 #define SPARE1_PUSVERSION_SPARE2 0x10
 
@@ -263,6 +266,31 @@ struct Header_TM_LFR_SCIENCE_CWF_str
     volatile unsigned char blkNr[2];
 };
 typedef struct Header_TM_LFR_SCIENCE_CWF_str Header_TM_LFR_SCIENCE_CWF_t;
+
+struct Header_TM_LFR_SCIENCE_ASM_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    // AUXILIARY HEADER
+    volatile unsigned char sid;
+    volatile unsigned char biaStatusInfo;
+    volatile unsigned char cntASM;
+    volatile unsigned char nrASM;
+    volatile unsigned char acquisitionTime[6];
+    volatile unsigned char blkNr[2];
+};
+typedef struct Header_TM_LFR_SCIENCE_ASM_str Header_TM_LFR_SCIENCE_ASM_t;
 
 struct ccsdsTelecommandPacket_str
 {

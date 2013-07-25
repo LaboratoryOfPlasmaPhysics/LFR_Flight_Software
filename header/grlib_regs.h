@@ -37,13 +37,6 @@ struct gptimer_regs_str
 };
 typedef struct gptimer_regs_str gptimer_regs_t;
 
-struct spectral_matrices_regs_str{
-    volatile int ctrl;
-    volatile int address0;
-    volatile int address1;
-};
-typedef struct spectral_matrices_regs_str spectral_matrices_regs_t;
-
 struct time_management_regs_str{
     volatile int ctrl; // bit 0 forces the load of the coarse_time_load value and resets the fine_time
     volatile int coarse_time_load;
@@ -67,5 +60,15 @@ struct waveform_picker_regs_str{
     volatile int nb_snapshot_param; // 0x2c 0011    ***
 };
 typedef struct waveform_picker_regs_str waveform_picker_regs_t;
+
+struct spectral_matrix_regs_str{
+    volatile int config;
+    volatile int status;
+    volatile int matrixF0_Address0;
+    volatile int matrixFO_Address1;
+    volatile int matrixF1_Address;
+    volatile int matrixF2_Address;
+};
+typedef struct spectral_matrix_regs_str spectral_matrix_regs_t;
 
 #endif // GRLIBREGS_H_INCLUDED

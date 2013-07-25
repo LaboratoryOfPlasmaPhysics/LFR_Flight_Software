@@ -1,17 +1,17 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** cpu_usage_report *** gsa
-CONFIG += console verbose
+CONFIG += console verbose gsa
 CONFIG -= qt
 
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-9
+SWVERSION=-0-11
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=9
+DEFINES += SW_VERSION_N4=11
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
@@ -47,5 +47,6 @@ HEADERS += \
     ../header/fsw_params.h \
     ../header/fsw_misc.h \
     ../header/fsw_init.h \
-    ../header/ccsds_types.h
+    ../header/ccsds_types.h \
+    ../header/fsw_params_processing.h
 

@@ -281,7 +281,7 @@ unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
     TMHeader->packetLength[0] = (unsigned char) (packetLength>>8);
     TMHeader->packetLength[1] = (unsigned char) packetLength;
     TMHeader->spare1_pusVersion_spare2 = 0x10;
-    TMHeader->destinationID = CCSDS_DESTINATION_ID;    // default destination id
+    TMHeader->destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
     switch (tm_type){
         case(TM_LFR_TC_EXE_OK):
             TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_TC_EXE;
@@ -293,6 +293,7 @@ unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
             TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_TC_EXE;
             TMHeader->serviceType = TM_TYPE_TC_EXE;      // type
             TMHeader->serviceSubType = TM_SUBTYPE_EXE_NOK;  // subtype
+            TMHeader->destinationID = tc_sid;
             break;
         case(TM_LFR_HK):
             TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_HK;
@@ -880,15 +881,17 @@ int stop_current_mode()
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
 
     // mask all IRQ lines related to signal processing
-    LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
     LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrices interrupt (coming from the timer VHDL IP)
-    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-
-    // clear all pending interruptions related to signal processing
-    LEON_Clear_interrupt( IRQ_WF );                  // clear waveform interrupt (coming from the timer VHDL IP)
     LEON_Clear_interrupt( IRQ_SM );                  // clear spectral matrices interrupt (coming from the timer VHDL IP)
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
 
+#ifdef GSA
+    LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
+    LEON_Clear_interrupt( IRQ_WF );                  // clear waveform interrupt (coming from the timer VHDL IP)
+    timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
+#else
+    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
+#endif
     // suspend several tasks
 
     if (lfrMode != LFR_MODE_STANDBY) {
@@ -907,7 +910,10 @@ int stop_current_mode()
     }
 
     // initialize the registers
+#ifdef GSA
+#else
     waveform_picker_regs->burst_enable = 0x00;      // initialize
+#endif
 
     return status;
 }
@@ -962,16 +968,21 @@ int enter_normal_mode( ccsdsTelecommandPacket_t *TC )
     }
 
 #ifdef GSA
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
     LEON_Clear_interrupt( IRQ_WF );
     LEON_Unmask_interrupt( IRQ_WF );
+    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
+    LEON_Unmask_interrupt( IRQ_SM );
 #else
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     waveform_picker_regs->burst_enable = 0x07;
     waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
     waveform_picker_regs->status = 0x00;
-#endif
+    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
     LEON_Unmask_interrupt( IRQ_SM );
+#endif
 
     return status;
 }
