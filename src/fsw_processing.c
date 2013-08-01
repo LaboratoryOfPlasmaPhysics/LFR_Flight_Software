@@ -13,6 +13,69 @@ float compressed_spec_mat_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 // Interrupt Service Routine for spectral matrices processing
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
+    unsigned char status;
+    unsigned char i;
+
+    status = spectral_matrix_regs->status; //[f2 f1 f0_1 f0_0]
+    for (i=0; i<4; i++)
+    {
+        if ( ( (status >> i) & 0x01) == 1)  // (1) buffer rotation
+        {
+            switch(i)
+            {
+            case 0:
+                if (spectral_matrix_regs->matrixF0_Address0 == (int) spec_mat_f0_0)
+                {
+                    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0_bis;
+                }
+                else
+                {
+                    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0;
+                }
+                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
+                break;
+            case 1:
+                if (spectral_matrix_regs->matrixFO_Address1 == (int) spec_mat_f0_1)
+                {
+                    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1_bis;
+                }
+                else
+                {
+                    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1;
+                }
+                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;
+                break;
+            case 2:
+                if (spectral_matrix_regs->matrixF1_Address == (int) spec_mat_f1)
+                {
+                    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1_bis;
+                }
+                else
+                {
+                    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1;
+                }
+                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffb;
+                break;
+            case 3:
+                if (spectral_matrix_regs->matrixF2_Address == (int) spec_mat_f2)
+                {
+                    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2_bis;
+                }
+                else
+                {
+                    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2;
+                }
+                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff7;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    // reset error codes to 0
+    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf; // [1100 1111]
+
     if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
         rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_4 );
     }
@@ -24,17 +87,13 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
 {
     rtems_event_set event_out;
     unsigned int nb_interrupt_f0 = 0;
-    unsigned int nb_interrupt_f0_MAX = 0;
-
-    nb_interrupt_f0_MAX = ( (parameter_dump_packet.sy_lfr_n_asm_p[0]) * 256
-            + parameter_dump_packet.sy_lfr_n_asm_p[1] ) * 100;
 
     PRINTF("in SMIQ *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
-        if (nb_interrupt_f0 == nb_interrupt_f0_MAX ){
+        if (nb_interrupt_f0 == param_local.local_nb_interrupt_f0_MAX ){
             if (rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -58,13 +117,13 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
         status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
         if (status == RTEMS_SUCCESSFUL) {
             if ((spectral_matrix_regs->status & 0x00000001)==1) {
-                matrix_average(spec_mat_f0_a, averaged_spec_mat_f0);
+                matrix_average(spec_mat_f0_0, averaged_spec_mat_f0);
                 spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
                 //printf("f0_a\n");
                 Nb_average_f0++;
             }
             if (((spectral_matrix_regs->status>>1) & 0x00000001)==1) {
-                matrix_average(spec_mat_f0_b, compressed_spec_mat_f0);
+                matrix_average(spec_mat_f0_1, compressed_spec_mat_f0);
                 spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;
                 //printf("f0_b\n");
                 Nb_average_f0++;
@@ -137,11 +196,15 @@ rtems_task matr_task(rtems_task_argument argument)
 
     PRINTF("in MATR *** \n")
 
-    init_averaged_spectral_matrix( );
+    fill_averaged_spectral_matrix( );
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
 
+#ifdef GSA
+#else
+        fill_averaged_spectral_matrix( );
+#endif
         convert_averaged_spectral_matrix( averaged_spec_mat_f0, averaged_spec_mat_f0_char);
 
         send_spectral_matrix( &headerASM, averaged_spec_mat_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM);
@@ -154,8 +217,8 @@ void matrix_average(volatile int *spec_mat, volatile float *averaged_spec_mat)
 {
     int i;
     for(i=0; i<TOTAL_SIZE_SM; i++){
-        averaged_spec_mat[i] = averaged_spec_mat[i] + spec_mat_f0_a[i]
-                                        + spec_mat_f0_b[i]
+        averaged_spec_mat[i] = averaged_spec_mat[i] + spec_mat_f0_0[i]
+                                        + spec_mat_f0_1[i]
                                         + spec_mat_f0_c[i]
                                         + spec_mat_f0_d[i]
                                         + spec_mat_f0_e[i]
@@ -497,10 +560,13 @@ void convert_averaged_spectral_matrix( volatile float *input_matrix, char *outpu
     }
 }
 
-void init_averaged_spectral_matrix( )
+void fill_averaged_spectral_matrix( )
 {
+
+#ifdef GSA
     float offset = 10.;
     float coeff = 100000.;
+
     averaged_spec_mat_f0[ 0 + 25 * 0  ] = 0. + offset;
     averaged_spec_mat_f0[ 0 + 25 * 1  ] = 1. + offset;
     averaged_spec_mat_f0[ 0 + 25 * 2  ] = 2. + offset;
@@ -564,12 +630,33 @@ void init_averaged_spectral_matrix( )
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 13 ] = averaged_spec_mat_f0[ 13 ];
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 14 ] = averaged_spec_mat_f0[ 14 ];
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 15 ] = averaged_spec_mat_f0[ 15 ];
+#else
+    unsigned int i;
+
+    for(i=0; i<TOTAL_SIZE_SM; i++)
+    {
+        if (spectral_matrix_regs->matrixF0_Address0 == (int) spec_mat_f0_0)
+            averaged_spec_mat_f0[i] = (float) spec_mat_f0_0_bis[ SM_HEADER + i ];
+        else
+            averaged_spec_mat_f0[i] = (float) spec_mat_f0_0[ SM_HEADER + i ];
+    }
+#endif
 }
 
 void reset_spectral_matrix_regs()
 {
 #ifdef GSA
 #else
-
+    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0;
+    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1;
+    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1;
+    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2;
 #endif
 }
+
+//******************
+// general functions
+
+
+
+

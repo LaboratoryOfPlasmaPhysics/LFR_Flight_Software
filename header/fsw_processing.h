@@ -13,8 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern volatile int spec_mat_f0_a[ ];
-extern volatile int spec_mat_f0_b[ ];
+extern volatile int spec_mat_f0_0[ ];
+extern volatile int spec_mat_f0_1[ ];
 extern volatile int spec_mat_f0_c[ ];
 extern volatile int spec_mat_f0_d[ ];
 extern volatile int spec_mat_f0_e[ ];
@@ -22,8 +22,20 @@ extern volatile int spec_mat_f0_f[ ];
 extern volatile int spec_mat_f0_g[ ];
 extern volatile int spec_mat_f0_h[ ];
 
+extern volatile int spec_mat_f1[ ];
+extern volatile int spec_mat_f2[ ];
+
+extern volatile int spec_mat_f1_bis[ ];
+extern volatile int spec_mat_f2_bis[ ];
+extern volatile int spec_mat_f0_0_bis[ ];
+extern volatile int spec_mat_f0_1_bis[ ];
+
 extern rtems_id Task_id[ ];         /* array of task ids */
 
+// parameters
+extern struct param_local_str param_local;
+
+// registers
 extern time_management_regs_t *time_management_regs;
 extern spectral_matrix_regs_t *spectral_matrix_regs;
 
@@ -49,7 +61,7 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
                     unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
 void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output_matrix);
-void init_averaged_spectral_matrix();
+void fill_averaged_spectral_matrix();
 void reset_spectral_matrix_regs();
 
 #endif // FSW_RTEMS_PROCESSING_H_INCLUDED

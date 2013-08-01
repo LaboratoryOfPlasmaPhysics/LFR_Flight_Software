@@ -29,23 +29,25 @@ volatile int wf_snap_f1_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_O
 volatile int wf_snap_f2[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 volatile int wf_snap_f2_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 volatile int wf_cont_f3[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+volatile int wf_cont_f3_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
-volatile int spec_mat_f0_a[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_b[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_c[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_d[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_e[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_f[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_g[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_h[ TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_1[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_c[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_d[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_e[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_f[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_g[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_h[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_0_bis[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_1_bis[ SM_HEADER + TOTAL_SIZE_SM ];
 //
-volatile int spec_mat_f1_a[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f2_a[ TOTAL_SIZE_SM ];
+volatile int spec_mat_f1[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f1_bis[ SM_HEADER + TOTAL_SIZE_SM ];
 //
-volatile int spec_mat_f0_a_bis[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f1_a_bis[ TOTAL_SIZE_SM ];
-volatile int spec_mat_f2_a_bis[ TOTAL_SIZE_SM ];
+volatile int spec_mat_f2[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f2_bis[ SM_HEADER + TOTAL_SIZE_SM ];
 
 // MODE PARAMETERS
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;

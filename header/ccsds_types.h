@@ -11,6 +11,7 @@
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_NODE_ADDRESS 0xfe
+#define CCSDS_USER_APP 0x00
 
 // PACKET ID
 #define TM_PACKET_ID_TC_EXE                  0x0cc1 // PID 76 CAT 1

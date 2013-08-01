@@ -467,17 +467,17 @@ rtems_task actn_task( rtems_task_argument unused )
                     break;
                     //
                 case TC_SUBTYPE_LOAD_BURST:
-                    result = action_default( &TC );
+                    result = action_load_burst( &TC );
                     close_action( &TC, result );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM1:
-                    result = action_default( &TC );
+                    result = action_load_sbm1( &TC );
                     close_action( &TC, result );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM2:
-                    result = action_default( &TC );
+                    result = action_load_sbm2( &TC );
                     close_action( &TC, result );
                     break;
                     //
@@ -665,8 +665,10 @@ int action_load_burst(ccsdsTelecommandPacket_t *TC)
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC );
-        result = LFR_DEFAULT;
+        parameter_dump_packet.sy_lfr_b_bp_p0 = TC->dataAndCRC[0];
+        parameter_dump_packet.sy_lfr_b_bp_p1 = TC->dataAndCRC[1];
+
+        result = LFR_SUCCESSFUL;
     }
 
     return result;
@@ -680,13 +682,15 @@ int action_load_sbm1(ccsdsTelecommandPacket_t *TC)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_SBM1) | (lfrMode == LFR_MODE_SBM2) ) {
+    if ( lfrMode == LFR_MODE_SBM1 ) {
         send_tm_lfr_tc_exe_not_executable( TC );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC );
-        result = LFR_DEFAULT;
+        parameter_dump_packet.sy_lfr_s1_bp_p0 = TC->dataAndCRC[0];
+        parameter_dump_packet.sy_lfr_s1_bp_p1 = TC->dataAndCRC[1];
+
+        result = LFR_SUCCESSFUL;
     }
 
     return result;
@@ -700,13 +704,15 @@ int action_load_sbm2(ccsdsTelecommandPacket_t *TC)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_SBM1) | (lfrMode == LFR_MODE_SBM2) ) {
+    if ( lfrMode == LFR_MODE_SBM2 ) {
         send_tm_lfr_tc_exe_not_executable( TC );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC );
-        result = LFR_DEFAULT;
+        parameter_dump_packet.sy_lfr_s2_bp_p0 = TC->dataAndCRC[0];
+        parameter_dump_packet.sy_lfr_s2_bp_p1 = TC->dataAndCRC[1];
+
+        result = LFR_SUCCESSFUL;
     }
 
     return result;
@@ -841,7 +847,7 @@ int transition_validation(unsigned char requestedMode)
         }
         break;
     case LFR_MODE_BURST:
-        if ( lfrMode == LFR_MODE_STANDBY ) {
+        if ( lfrMode == LFR_MODE_BURST ) {
             status = LFR_DEFAULT;
         }
         else {
@@ -895,13 +901,7 @@ int stop_current_mode()
     // suspend several tasks
 
     if (lfrMode != LFR_MODE_STANDBY) {
-         status = rtems_task_suspend( Task_id[TASKID_AVF0] );
-         if (status == RTEMS_SUCCESSFUL) {
-             status = rtems_task_suspend( Task_id[TASKID_BPF0] );
-             if (status == RTEMS_SUCCESSFUL) {
-                 status = rtems_task_suspend( Task_id[TASKID_WFRM] );
-             }
-         }
+        suspend_science_tasks();
     }
 
     if (status != RTEMS_SUCCESSFUL)
@@ -959,29 +959,30 @@ int enter_normal_mode( ccsdsTelecommandPacket_t *TC )
 {
     rtems_status_code status;
 
-    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
-    if (status == RTEMS_SUCCESSFUL) {
-        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
-        if (status == RTEMS_SUCCESSFUL) {
-            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
-        }
-    }
+    status = restart_science_tasks();
 
 #ifdef GSA
     timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
     timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
     LEON_Clear_interrupt( IRQ_WF );
     LEON_Unmask_interrupt( IRQ_WF );
+    //
+    set_local_nb_interrupt_f0_MAX();
     LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
     LEON_Unmask_interrupt( IRQ_SM );
 #else
+    // waveform picker
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    waveform_picker_regs->burst_enable = 0x07;
-    waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
-    waveform_picker_regs->status = 0x00;
-    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-    LEON_Unmask_interrupt( IRQ_SM );
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register(LFR_MODE_NORMAL);
+    // spectral matrix
+    //
+    set_local_nb_interrupt_f0_MAX();
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
+    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
+    spectral_matrix_regs->config = 0x01;
+    spectral_matrix_regs->status = 0x00;
 #endif
 
     return status;
@@ -994,19 +995,14 @@ int enter_burst_mode(ccsdsTelecommandPacket_t *TC)
 
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
-    if (status == RTEMS_SUCCESSFUL) {
-        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
-        if (status == RTEMS_SUCCESSFUL) {
-            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
-        }
-    }
+    status = restart_science_tasks();
 
 #ifdef GSA
 #else
         LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
         LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-        waveform_picker_regs->addr_data_f2 = (int) wf_snap_f2;
+        reset_waveform_picker_regs();
+        set_wfp_burst_enable_register(LFR_MODE_BURST);
         waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] burst f2, f1, f0 enable f3 f2 f1 f0
         waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04;
         waveform_picker_regs->status = 0x00;
@@ -1021,27 +1017,18 @@ int enter_sbm1_mode(ccsdsTelecommandPacket_t *TC)
 {
     rtems_status_code status;
 
-    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
-    if (status == RTEMS_SUCCESSFUL) {
-        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
-        if (status == RTEMS_SUCCESSFUL) {
-            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
-        }
-    }
+    status = restart_science_tasks();
 
-    // at the beginning of the mode, the parameter local_sbm1_nb_cwf_max has a specific value
-    param_local.local_sbm1_nb_cwf_max = 2 * (
-                (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256)
-                + parameter_dump_packet.sy_lfr_n_swf_p[1]
-                )/ 4;
+    set_local_sbm1_nb_cwf_max();
+
+    reset_local_sbm1_nb_cwf_sent();
 
 #ifdef GSA
 #else
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    waveform_picker_regs->addr_data_f1 = (int) wf_snap_f1;
-    waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] burst f2, f1, f0 enable f3 f2 f1 f0
-    waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x07; // [0111] enable f3 f2 f1 f0
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register(LFR_MODE_SBM1);
     waveform_picker_regs->status = 0x00;
  #endif
 
@@ -1054,31 +1041,59 @@ int enter_sbm2_mode(ccsdsTelecommandPacket_t *TC)
 {
     rtems_status_code status;
 
-    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
-    if (status == RTEMS_SUCCESSFUL) {
-        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
-        if (status == RTEMS_SUCCESSFUL) {
-            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
-        }
-    }
+    status = restart_science_tasks();
 
-    // at the beginning of the mode, the parameter local_sbm2_nb_cwf_max has a specific value
-    param_local.local_sbm1_nb_cwf_max = (
-                (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256)
-                + parameter_dump_packet.sy_lfr_n_swf_p[1]
-                ) / 16;
+    set_local_sbm2_nb_cwf_max();
+
+    reset_local_sbm2_nb_cwf_sent();
 
 #ifdef GSA
 #else
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    waveform_picker_regs->addr_data_f2 = (int) wf_snap_f2;
-    waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] burst f2, f1, f0 enable f3 f2 f1 f0
-    waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04;
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register(LFR_MODE_SBM2);
     waveform_picker_regs->status = 0x00;
 #endif
 
     LEON_Unmask_interrupt( IRQ_SM );
+
+    return status;
+}
+
+int restart_science_tasks()
+{
+    rtems_status_code status;
+
+    status = rtems_task_restart( Task_id[TASKID_AVF0], 0 );
+
+    if (status == RTEMS_SUCCESSFUL) {
+        status = rtems_task_restart( Task_id[TASKID_BPF0], 0 );
+        if (status == RTEMS_SUCCESSFUL) {
+            status = rtems_task_restart( Task_id[TASKID_WFRM], 0 );
+            if (status == RTEMS_SUCCESSFUL) {
+                status = rtems_task_restart( Task_id[TASKID_CWF3], 0 );
+            }
+        }
+    }
+
+    return status;
+}
+
+int suspend_science_tasks()
+{
+    rtems_status_code status;
+
+    status = rtems_task_suspend( Task_id[TASKID_AVF0] );
+    if (status == RTEMS_SUCCESSFUL) {
+        status = rtems_task_suspend( Task_id[TASKID_BPF0] );
+        if (status == RTEMS_SUCCESSFUL) {
+            status = rtems_task_suspend( Task_id[TASKID_WFRM] );
+            if (status == RTEMS_SUCCESSFUL) {
+                status = rtems_task_suspend( Task_id[TASKID_CWF3] );
+            }
+        }
+    }
 
     return status;
 }

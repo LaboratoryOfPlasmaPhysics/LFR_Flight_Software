@@ -1,17 +1,17 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** cpu_usage_report *** gsa
-CONFIG += console verbose gsa
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-11
+SWVERSION=-0-12
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=11
+DEFINES += SW_VERSION_N4=12
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE

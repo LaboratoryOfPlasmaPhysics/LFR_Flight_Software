@@ -5,6 +5,27 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
     unsigned char lfrMode;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
+#ifdef GSA
+#else
+    if ( (lfrMode != LFR_MODE_STANDBY) & (lfrMode != LFR_MODE_BURST) )
+    { // in modes other than STANDBY and BURST, send the CWF_F3 data
+        if ((waveform_picker_regs->status & 0x08) == 0x08){     // f3 is full
+            // (1) change the receiving buffer for the waveform picker
+            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3) {
+                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_bis);
+            }
+            else {
+                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);
+            }
+            // (2) send an event for the waveforms transmission
+            if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_MODE_NORMAL_CWF_F3 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0x0007; // reset the f3 full bit to 0
+        }
+    }
+#endif
+
     switch(lfrMode)
     {
         //********
@@ -18,18 +39,14 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 #ifdef GSA
             PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
 #else
-            if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){// if no channel is enable
-                if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
-                    PRINTF("in waveform_isr *** Error sending event to DUMB\n");
-                }
+            if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){   // if no channel is enable
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
             else {
-                if ( (waveform_picker_regs->status & 0x7) == 0x7 ){         // f2 f1 and f0 are full
-                    waveform_picker_regs->burst_enable = 0x00;
+                if ( (waveform_picker_regs->status & 0x7) == 0x7 ){     // f2 f1 and f0 are full
+                    waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable & 0x08;
                     if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                        if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 ) != RTEMS_SUCCESSFUL) {
-                            PRINTF("in waveform_isr *** Error sending event to DUMB\n");
-                        }
+                        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
                     }
                 }
             }
@@ -64,7 +81,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 #ifdef GSA
             PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
 #else
-            if ((waveform_picker_regs->status & 0x02) == 0x02){ // check the f1 full bit
+            if ((waveform_picker_regs->status & 0x02) == 0x02){ // [0010] check the f1 full bit
                 // (1) change the receiving buffer for the waveform picker
                 if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
                     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_bis);
@@ -79,7 +96,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
                 }
                 waveform_picker_regs->status = waveform_picker_regs->status & 0x000d; // reset the f1 full bit to 0
             }
-            if ( ( (waveform_picker_regs->status & 0x05) == 0x05 ) ) { // [0101] f3 f2 f1 f0, check the f2 and f0 full bit
+            if ( ( (waveform_picker_regs->status & 0x05) == 0x05 ) ) { // [0101] check the f2 and f0 full bit
                 if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                     PRINTF("in waveforms_isr *** Error sending event to WFRM\n")
                     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
@@ -87,6 +104,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
                 waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable | 0x05; // [0101] // enable f2 and f0
                 waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffaaa; // set to 0 the bits related to f2 and f0
             }
+
 #endif
             break;
 
@@ -184,18 +202,21 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         intEventOut =  (unsigned int) event_out;
         for (i = 0; i< 5; i++) {
             if ( ( (intEventOut >> i) & 0x0001) != 0 ) {
+
                 switch(i) {
+
                 case(LFR_MODE_NORMAL):
-                    send_waveform_norm( &headerSWF, &spw_ioctl_send_SWF);
+                    send_waveform_norm( &headerSWF, &spw_ioctl_send_SWF );
                     break;
+
                 case(LFR_MODE_BURST):
-                    send_waveform_burst( &headerCWF, &spw_ioctl_send_CWF);
+                    send_waveform_burst( &headerCWF, &spw_ioctl_send_CWF );
                     break;
+
                 case(LFR_MODE_SBM1):
-                    send_waveform_sbm1( &headerCWF, &spw_ioctl_send_CWF);
+                    send_waveform_sbm1( &headerCWF, &spw_ioctl_send_CWF );
 #ifdef GSA
 #else
-                    param_local.local_sbm1_nb_cwf_sent ++;
                     if ( param_local.local_sbm1_nb_cwf_sent == (param_local.local_sbm1_nb_cwf_max-1) ) {
                         // send the f1 buffer as a NORM snapshot
                         if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
@@ -204,14 +225,18 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                         else {
                             send_waveform_SWF( &headerSWF, wf_snap_f1, SID_NORM_SWF_F1, &spw_ioctl_send_SWF );
                         }
+                        reset_local_sbm1_nb_cwf_sent();
+                    }
+                    else {
+                        param_local.local_sbm1_nb_cwf_sent ++;
                     }
 #endif
                     break;
+
                 case(LFR_MODE_SBM2):
-                    send_waveform_sbm2( &headerCWF, &spw_ioctl_send_CWF);
+                    send_waveform_sbm2( &headerCWF, &spw_ioctl_send_CWF );
 #ifdef GSA
 #else
-                    param_local.local_sbm2_nb_cwf_sent ++;
                     if ( param_local.local_sbm2_nb_cwf_sent == (param_local.local_sbm2_nb_cwf_max-1) ) {
                         // send the f2 buffer as a NORM snapshot
                         if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
@@ -220,14 +245,43 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                         else {
                             send_waveform_SWF( &headerSWF, wf_snap_f2, SID_NORM_SWF_F2, &spw_ioctl_send_SWF );
                         }
+                        reset_local_sbm2_nb_cwf_sent();
+                    }
+                    else {
+                        param_local.local_sbm2_nb_cwf_sent ++;
                     }
 #endif
                     break;
+
                 default:
                     break;
                 }
             }
         }
+    }
+}
+
+rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform picker VHDL IP
+{
+    spw_ioctl_pkt_send spw_ioctl_send_CWF;
+    rtems_event_set event_out;
+    Header_TM_LFR_SCIENCE_CWF_t headerCWF;
+
+    init_header_continuous_wf( &headerCWF );
+
+    // BUILD THE PACKET HEADER
+    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
+    spw_ioctl_send_CWF.hdr = (char*) &headerCWF;
+    spw_ioctl_send_CWF.options = 0;
+
+    PRINTF("in CWF3 ***\n")
+
+    while(1){
+        // wait for an RTEMS_EVENT
+        rtems_event_receive( RTEMS_EVENT_5,
+                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        PRINTF("send CWF F3 \n")
+        send_waveform_norm_cwf_f3( &headerCWF, &spw_ioctl_send_CWF );
     }
 }
 
@@ -477,36 +531,6 @@ void send_waveform_CWF( Header_TM_LFR_SCIENCE_CWF_t *header, volatile int *wavef
     }
 }
 
-int build_value(int value1, int value0)
-{
-    int aux  = 0;
-    int aux1 = 0;
-    int aux0 = 0;
-    int value1_aux = 0;
-    int value0_aux = 0;
-
-    value1_aux = value1;
-    value0_aux = value0;
-
-    //******
-    // B3 B2
-    if (value1_aux > 8191) value1_aux = 8191;
-    if (value1_aux < -8192) value1_aux = -8192;
-    aux1 = ( (int) ( ( (unsigned char) (value1_aux / 256 ) ) << 8 ) )
-         + ( (int) (   (unsigned char) (value1_aux       ) )      );
-
-    //******
-    // B1 B0
-    if (value0_aux > 8191) value0_aux = 8191;
-    if (value0_aux < -8192) value0_aux = -8192;
-    aux0 = ( (int) ( ( (unsigned char) (value0_aux / 256) ) << 8 ) )
-         + ( (int) (   (unsigned char) (value0_aux      ) )      );
-
-    aux = (aux1 << 16) + aux0;
-
-    return aux;
-}
-
 void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
 {
     unsigned char lfrMode;
@@ -522,46 +546,68 @@ void send_waveform_norm(Header_TM_LFR_SCIENCE_SWF_t *header, spw_ioctl_pkt_send 
     header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
     header->time[5] = (unsigned char) (time_management_regs->fine_time);
 
-    //***************
-    // send snapshots
-    // F0
-    send_waveform_SWF( header, wf_snap_f0, SID_NORM_SWF_F0, spw_ioctl_send);
-    // F1
-    if (lfrMode == LFR_MODE_NORMAL) // in SBM1 mode, the snapshot is sent by the send_waveform_sbm1 function
-    {
+    switch(lfrMode) {
+
+    case LFR_MODE_NORMAL:
+        send_waveform_SWF( header, wf_snap_f0, SID_NORM_SWF_F0, spw_ioctl_send);
         send_waveform_SWF( header, wf_snap_f1, SID_NORM_SWF_F1, spw_ioctl_send);
+        send_waveform_SWF( header, wf_snap_f2, SID_NORM_SWF_F2, spw_ioctl_send);
+#ifdef GSA
+#else
+        waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
+        waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable | 0x07; // [0111] enable f2 f1 f0
+#endif
+        break;
+
+    case LFR_MODE_SBM1:
+        send_waveform_SWF( header, wf_snap_f0, SID_NORM_SWF_F0, spw_ioctl_send);
+        // F1 data are sent by the send_waveform_sbm1 function
+        send_waveform_SWF( header, wf_snap_f2, SID_NORM_SWF_F2, spw_ioctl_send);
+        break;
+
+    case LFR_MODE_SBM2:
+        send_waveform_SWF( header, wf_snap_f0, SID_NORM_SWF_F0, spw_ioctl_send);
+        send_waveform_SWF( header, wf_snap_f1, SID_NORM_SWF_F1, spw_ioctl_send);
+        // F2 data are sent by the send_waveform_sbm2 function
+        break;
+
+    default:
+        break;
     }
-    // F2
-    send_waveform_SWF( header, wf_snap_f2, SID_NORM_SWF_F2, spw_ioctl_send);
+
 #ifdef GSA
     // irq processed, reset the related register of the timer unit
     gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl = gptimer_regs->timer[TIMER_WF_SIMULATOR].ctrl | 0x00000010;
     // clear the interruption
     LEON_Unmask_interrupt( IRQ_WF );
-#else
-    // irq processed, reset the related register of the waveform picker
-    if (lfrMode == LFR_MODE_SBM1) {
-        param_local.local_sbm1_nb_cwf_sent = 0;
-        // after the first transmission of the swf at F1, the period is set to local_sbm1_nb_cwf_max
-        param_local.local_sbm1_nb_cwf_max = 2 * (
-                    ( parameter_dump_packet.sy_lfr_n_swf_p[0] * 256 )
-                    + parameter_dump_packet.sy_lfr_n_swf_p[1]
-                    );
-    }
-    else if (lfrMode == LFR_MODE_SBM2) {
-        param_local.local_sbm2_nb_cwf_sent = 0;
-        // after the first transmission of the swf at F2, the period is set to local_sbm2_nb_cwf_max
-        param_local.local_sbm2_nb_cwf_max = (
-                    ( parameter_dump_packet.sy_lfr_n_swf_p[0] * 256 )
-                    + parameter_dump_packet.sy_lfr_n_swf_p[1]
-                    )/ 8;
-    }
-    else {
-        waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
-        waveform_picker_regs->burst_enable = 0x07; // [0111] enable f2 f1 f0
-    }
 #endif
 
+}
+
+void send_waveform_norm_cwf_f3(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
+{
+    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL >> 8);
+    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL);
+    // TIME
+    header->time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    header->time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    header->time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    header->time[3] = (unsigned char) (time_management_regs->coarse_time);
+    header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    header->time[5] = (unsigned char) (time_management_regs->fine_time);
+
+    //*******************************
+    // send continuous waveform at f3
+    // F3
+#ifdef GSA
+#else
+    if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3) {
+       send_waveform_CWF( header, wf_cont_f3_bis, SID_NORM_CWF_F3, spw_ioctl_send);
+    }
+    else {
+        send_waveform_CWF( header, wf_cont_f3, SID_NORM_CWF_F3, spw_ioctl_send);
+    }
+#endif
 }
 
 void send_waveform_burst(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send *spw_ioctl_send)
@@ -639,10 +685,15 @@ void send_waveform_sbm2(Header_TM_LFR_SCIENCE_CWF_t *header, spw_ioctl_pkt_send 
 
 //**************
 // wfp registers
-void set_wfp_data_shaping(unsigned char data_shaping)
+void set_wfp_data_shaping()
 {
+    unsigned char data_shaping;
+
     // get the parameters for the data shaping [BW SP0 SP1 R0 R1] in sy_lfr_common1 and configure the register
     // waveform picker : [R1 R0 SP1 SP0 BW]
+
+    data_shaping = parameter_dump_packet.bw_sp0_sp1_r0_r1;
+
 #ifdef GSA
 #else
     waveform_picker_regs->data_shaping =
@@ -654,13 +705,60 @@ void set_wfp_data_shaping(unsigned char data_shaping)
 #endif
 }
 
-void set_wfp_delta_snapshot(unsigned int delta_snapshot)
+char set_wfp_delta_snapshot()
 {
+    char ret;
+    unsigned int delta_snapshot;
+    ret = LFR_DEFAULT;
+
+    delta_snapshot = parameter_dump_packet.sy_lfr_n_swf_p[0]*256
+            + parameter_dump_packet.sy_lfr_n_swf_p[1];
+
 #ifdef GSA
 #else
     unsigned char aux = 0;
-    aux = delta_snapshot / 2 ;
+    if ( delta_snapshot < MIN_DELTA_SNAPSHOT )
+    {
+        aux = MIN_DELTA_SNAPSHOT;
+        ret = LFR_DEFAULT;
+    }
+    else
+    {
+        aux = delta_snapshot ;
+        ret = LFR_SUCCESSFUL;
+    }
     waveform_picker_regs->delta_snapshot = aux;             // max 2 bytes
+#endif
+
+    return ret;
+}
+
+void set_wfp_burst_enable_register( unsigned char mode)
+{
+#ifdef GSA
+#else
+    // [0000 0000] burst f2, f1, f0 enable f3 f2 f1 f0
+    // the burst bits shall be set first, before the enable bits
+    switch(mode) {
+    case(LFR_MODE_NORMAL):
+        waveform_picker_regs->burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
+        break;
+    case(LFR_MODE_BURST):
+        waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] f2 burst enabled
+        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04; // [0100] enable f2
+        break;
+    case(LFR_MODE_SBM1):
+        waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] f1 burst enabled
+        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
+        break;
+    case(LFR_MODE_SBM2):
+        waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] f2 burst enabled
+        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
+        break;
+    default:
+        waveform_picker_regs->burst_enable = 0x00;  // [0000 0000] no burst enabled, no waveform enabled
+        break;
+    }
 #endif
 }
 
@@ -676,19 +774,53 @@ void reset_waveform_picker_regs()
 {
 #ifdef GSA
 #else
-    set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
+    set_wfp_data_shaping();
     reset_wfp_burst_enable();
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    //
     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    //
     waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    //
     waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    //
-    waveform_picker_regs->status = 0x00;                    //
-    set_wfp_delta_snapshot(
-                ( parameter_dump_packet.sy_lfr_n_swf_p[0]*256)
-                + parameter_dump_packet.sy_lfr_n_swf_p[1] );    // time in seconds between two snapshots
-    waveform_picker_regs->delta_f2_f1 = 0xffff;             // max 4 bytes
-    waveform_picker_regs->delta_f2_f0 = 0x17c00;            // max 5 bytes
-    waveform_picker_regs->nb_burst_available = 0x180;       // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
-    waveform_picker_regs->nb_snapshot_param = 0x7ff;        // max 3 octets, 2048 - 1
+    set_wfp_delta_snapshot();                           // time in seconds between two snapshots
+    waveform_picker_regs->delta_f2_f1 = 0xffff;         // max 4 bytes
+    waveform_picker_regs->delta_f2_f0 = 0x17c00;        // max 5 bytes
+    waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
+    waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
+    waveform_picker_regs->status = 0x00;                //
 #endif
+}
+
+//*****************
+// local parameters
+void set_local_sbm1_nb_cwf_max()
+{
+    // (2 snapshots of 2048 points per seconds) * (period of the NORM snashots)
+    param_local.local_sbm1_nb_cwf_max = 2 * (
+                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+             );
+}
+
+void set_local_sbm2_nb_cwf_max()
+{
+    // (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
+    param_local.local_sbm2_nb_cwf_max = (
+                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
+                + parameter_dump_packet.sy_lfr_n_swf_p[1]
+             )/ 8;
+}
+
+void set_local_nb_interrupt_f0_MAX()
+{
+    param_local.local_nb_interrupt_f0_MAX = ( (parameter_dump_packet.sy_lfr_n_asm_p[0]) * 256
+            + parameter_dump_packet.sy_lfr_n_asm_p[1] ) * 100;
+}
+
+void reset_local_sbm1_nb_cwf_sent()
+{
+    param_local.local_sbm1_nb_cwf_sent = 0;
+}
+
+void reset_local_sbm2_nb_cwf_sent()
+{
+    param_local.local_sbm2_nb_cwf_sent = 0;
 }

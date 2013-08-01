@@ -81,31 +81,30 @@ rtems_task Init( rtems_task_argument ignored )
 
     spacewire_configure_link();
 
-    //****************************
+#ifdef GSA
     // Spectral Matrices simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
-
     //**********
     // WAVEFORMS
-
-#ifdef GSA
-    // simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
+    LEON_Mask_interrupt( IRQ_SM );
     LEON_Mask_interrupt( IRQ_WF );
 #else
-    // configure the waveform picker
+    // reset configuration registers
     reset_waveform_picker_regs();
+    reset_spectral_matrix_regs();
+    // configure IRQ handling for the waveform picker unit
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
-    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
-    // configure the spectral matrix
-    reset_spectral_matrix_regs();
-    status = rtems_interrupt_catch( waveforms_isr,
+    // configure IRQ handling for the spectral matrix unit
+    status = rtems_interrupt_catch( spectral_matrices_isr,
                                    IRQ_SPARC_SPECTRAL_MATRIX,
                                    &old_isr_handler) ;
+    // mask IRQ lines
+    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
 #endif
 
@@ -163,34 +162,28 @@ void init_parameter_dump(void)
 
     //****************
     // SBM1 PARAMETERS
-    parameter_dump_packet.sy_lfr_s1_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0;
-    parameter_dump_packet.sy_lfr_s1_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0;
+    parameter_dump_packet.sy_lfr_s1_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0; // min value is 0.25 s for the period
+    parameter_dump_packet.sy_lfr_s1_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P1;
 
     //****************
     // SBM2 PARAMETERS
     parameter_dump_packet.sy_lfr_s2_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
-    parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
+    parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P1;
 }
 
 void init_local_mode_parameters(void)
 {
     // LOCAL PARAMETERS
-    // (2 snapshots of 2048 points per seconds) * (period of the NORM snashots)
-    param_local.local_sbm1_nb_cwf_max = 2 * (
-                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
-                + parameter_dump_packet.sy_lfr_n_swf_p[1]
-             );
-    // (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
-    param_local.local_sbm2_nb_cwf_max = (
-                parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
-                + parameter_dump_packet.sy_lfr_n_swf_p[1]
-             )/ 8;
+    set_local_sbm1_nb_cwf_max();
+    set_local_sbm2_nb_cwf_max();
+    set_local_nb_interrupt_f0_MAX();
 
     PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+    PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
 
-    param_local.local_sbm1_nb_cwf_sent = 0;
-    param_local.local_sbm2_nb_cwf_sent = 0;
+    reset_local_sbm1_nb_cwf_sent();
+    reset_local_sbm2_nb_cwf_sent();
 }
 
 void init_housekeeping_parameters(void)
@@ -240,6 +233,7 @@ int create_names( void )
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
     Task_name[TASKID_MATR] = rtems_build_name( 'M', 'A', 'T', 'R' );
+    Task_name[TASKID_CWF3] = rtems_build_name( 'C', 'W', 'F', '3' );
 
     // rate monotonic period name
     HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -277,7 +271,7 @@ int create_all_tasks( void )
     );
     // STAT
     status = rtems_task_create(
-        Task_name[TASKID_STAT], 150, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_STAT], 251, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
     );
@@ -317,6 +311,12 @@ int create_all_tasks( void )
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
     );
+    // CWF3
+    status = rtems_task_create(
+        Task_name[TASKID_CWF3], 250, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF3]
+    );
 
     return 0;
 }
@@ -327,57 +327,62 @@ int start_all_tasks( void )
 
     status = rtems_task_start( Task_id[TASKID_SPIQ], spiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_SPIQ\n")
+        PRINTF("in INIT *** Error starting TASK_SPIQ\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_RECV\n")
+        PRINTF("in INIT *** Error starting TASK_RECV\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_ACTN\n")
+        PRINTF("in INIT *** Error starting TASK_ACTN\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_BPPR\n")
+        PRINTF("in INIT *** Error starting TASK_BPPR\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_STAT\n")
+        PRINTF("in INIT *** Error starting TASK_STAT\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_AVF0\n")
+        PRINTF("in INIT *** Error starting TASK_AVF0\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_BPF0], bpf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_BPF0\n")
+        PRINTF("in INIT *** Error starting TASK_BPF0\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_WFRM\n")
+        PRINTF("in INIT *** Error starting TASK_WFRM\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_DUMB\n")
+        PRINTF("in INIT *** Error starting TASK_DUMB\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_HOUS\n")
+        PRINTF("in INIT *** Error starting TASK_HOUS\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_MATR], matr_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("In INIT *** Error starting TASK_MATR\n")
+        PRINTF("in INIT *** Error starting TASK_MATR\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_CWF3], cwf3_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in INIT *** Error starting TASK_CWF3\n")
     }
 
     return 0;

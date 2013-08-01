@@ -66,6 +66,8 @@ int enter_normal_mode(ccsdsTelecommandPacket_t *TC);
 int enter_burst_mode(ccsdsTelecommandPacket_t *TC);
 int enter_sbm1_mode(ccsdsTelecommandPacket_t *TC);
 int enter_sbm2_mode(ccsdsTelecommandPacket_t *TC);
+int restart_science_tasks();
+int suspend_science_tasks();
 // parameters loading
 int action_load_comm(ccsdsTelecommandPacket_t *TC);
 int action_load_norm(ccsdsTelecommandPacket_t *TC);

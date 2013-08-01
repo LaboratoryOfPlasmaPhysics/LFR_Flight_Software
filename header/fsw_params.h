@@ -17,12 +17,14 @@
 #define LFR_MODE_BURST 2
 #define LFR_MODE_SBM1 3
 #define LFR_MODE_SBM2 4
+#define LFR_MODE_NORMAL_CWF_F3 5
 
 #define RTEMS_EVENT_MODE_STANDBY RTEMS_EVENT_0
 #define RTEMS_EVENT_MODE_NORMAL RTEMS_EVENT_1
 #define RTEMS_EVENT_MODE_BURST RTEMS_EVENT_2
 #define RTEMS_EVENT_MODE_SBM1 RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2 RTEMS_EVENT_4
+#define RTEMS_EVENT_MODE_NORMAL_CWF_F3 RTEMS_EVENT_5
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -32,9 +34,10 @@
 // NORM
 #define DEFAULT_SY_LFR_N_SWF_L 2048 // nb sample
 #define DEFAULT_SY_LFR_N_SWF_P 16   // sec
-#define DEFAULT_SY_LFR_N_ASM_P 16 // sec
+#define DEFAULT_SY_LFR_N_ASM_P 16   // sec
 #define DEFAULT_SY_LFR_N_BP_P0 4    // sec
 #define DEFAULT_SY_LFR_N_BP_P1 20   // sec
+#define MIN_DELTA_SNAPSHOT 16       // sec
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
 #define DEFAULT_SY_LFR_B_BP_P1 5    // sec
@@ -102,6 +105,7 @@
 #define TASKID_DUMB 9
 #define TASKID_HOUS 10
 #define TASKID_MATR 11
+#define TASKID_CWF3 12
 
 #define ACTION_MSG_QUEUE_COUNT 10
 
@@ -154,6 +158,7 @@ struct param_local_str{
     unsigned int local_sbm1_nb_cwf_max;
     unsigned int local_sbm2_nb_cwf_sent;
     unsigned int local_sbm2_nb_cwf_max;
+    unsigned int local_nb_interrupt_f0_MAX;
 };
 
 #endif // FSW_RTEMS_CONFIG_H_INCLUDED
