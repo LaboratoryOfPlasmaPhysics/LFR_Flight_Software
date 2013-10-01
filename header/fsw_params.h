@@ -24,7 +24,6 @@
 #define RTEMS_EVENT_MODE_BURST RTEMS_EVENT_2
 #define RTEMS_EVENT_MODE_SBM1 RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2 RTEMS_EVENT_4
-#define RTEMS_EVENT_MODE_NORMAL_CWF_F3 RTEMS_EVENT_5
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -47,6 +46,11 @@
 // SBM2
 #define DEFAULT_SY_LFR_S2_BP_P0 1   // sec
 #define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
+// ADDITIONAL PARAMETERS
+#define TIME_BETWEEN_TWO_SWF_PACKETS 30     // nb x 10 ms => 300 ms
+#define TIME_BETWEEN_TWO_CWF3_PACKETS 1000 // nb x 10 ms => 10 s
+//
+//****************************
 
 //*****************************
 // APB REGISTERS BASE ADDRESSES
@@ -106,8 +110,32 @@
 #define TASKID_HOUS 10
 #define TASKID_MATR 11
 #define TASKID_CWF3 12
+#define TASKID_CWF2 13
+#define TASKID_CWF1 14
+#define TASKID_SEND 15
+
+//*********************************************************************
+// ALL TASKS THAT USE THE SPACEWIRE DIRVER SHALL HAVE THE SAME PRIORITY
+// OR CHANGE THE SEMAPHORE CREATION IN THE DRIVER...
+#define TASK_PRIORITY_SPIQ 5
+#define TASK_PRIORITY_SMIQ 10
+#define TASK_PRIORITY_SEND 11
+#define TASK_PRIORITY_RECV 12
+#define TASK_PRIORITY_ACTN 12
+#define TASK_PRIORITY_CWF1 14
+#define TASK_PRIORITY_HOUS 15
+#define TASK_PRIORITY_CWF2 15
+#define TASK_PRIORITY_WFRM 15
+#define TASK_PRIORITY_CWF3 15
+#define TASK_PRIORITY_AVF0 50
+#define TASK_PRIORITY_BPF0 50
+#define TASK_PRIORITY_MATR 250
+#define TASK_PRIORITY_STAT 251
+#define TASK_PRIORITY_DUMB 251
 
 #define ACTION_MSG_QUEUE_COUNT 10
+#define ACTION_MSG_PKTS_COUNT 50
+#define ACTION_MSG_PKTS_SIZE
 
 //*******
 // MACROS
@@ -120,6 +148,8 @@
 #define PRINTF1(x,y) ;
 #define PRINTF2(x,y,z) ;
 #endif
+
+#define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 
 #define NB_SAMPLES_PER_SNAPSHOT 2048
 #define TIME_OFFSET 2

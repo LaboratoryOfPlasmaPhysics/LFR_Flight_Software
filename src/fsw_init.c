@@ -15,14 +15,14 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS 15
+#define CONFIGURE_MAXIMUM_TASKS 20
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
-#define CONFIGURE_INIT_TASK_PRIORITY 100
+#define CONFIGURE_INIT_TASK_PRIORITY 5 // instead of 100
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 1
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 2
 
 #include <rtems/confdefs.h>
 
@@ -44,14 +44,6 @@
 #include <fsw_init.h>
 #include <fsw_config.c>
 
-char *lstates[6] = {"Error-reset",
-                    "Error-wait",
-                    "Ready",
-                    "Started",
-                    "Connecting",
-                    "Run"
-};
-
 rtems_task Init( rtems_task_argument ignored )
 {
     rtems_status_code status;
@@ -70,10 +62,11 @@ rtems_task Init( rtems_task_argument ignored )
     init_parameter_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
-    create_message_queue();
+    create_message_queues();
 
     create_names();         // create all names
     create_all_tasks();     // create all tasks
+
     start_all_tasks();      // start all tasks
     stop_current_mode();    // go in STANDBY mode
 
@@ -85,8 +78,7 @@ rtems_task Init( rtems_task_argument ignored )
     // Spectral Matrices simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
-    //**********
-    // WAVEFORMS
+    // WaveForms
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
     LEON_Mask_interrupt( IRQ_SM );
@@ -108,8 +100,6 @@ rtems_task Init( rtems_task_argument ignored )
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
 #endif
 
-    //**********
-
     status = rtems_task_delete(RTEMS_SELF);
 
 }
@@ -122,8 +112,8 @@ void init_parameter_dump(void)
     parameter_dump_packet.userApplication = CCSDS_USER_APP;
     parameter_dump_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_PARAMETER_DUMP >> 8);
     parameter_dump_packet.packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
-    parameter_dump_packet.packetSequenceControl[0] = (unsigned char) (TM_PACKET_SEQ_CTRL_STANDALONE << 6);
-    parameter_dump_packet.packetSequenceControl[1] = 0x00;
+    parameter_dump_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    parameter_dump_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     parameter_dump_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_PARAMETER_DUMP >> 8);
     parameter_dump_packet.packetLength[1] = (unsigned char) PACKET_LENGTH_PARAMETER_DUMP;
     // DATA FIELD HEADER
@@ -147,11 +137,11 @@ void init_parameter_dump(void)
     //******************
     // NORMAL PARAMETERS
     parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_L >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) DEFAULT_SY_LFR_N_SWF_L;
+    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_L     );
     parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_P >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) DEFAULT_SY_LFR_N_SWF_P;
+    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_P     );
     parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_ASM_P >> 8);
-    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) DEFAULT_SY_LFR_N_ASM_P;
+    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (DEFAULT_SY_LFR_N_ASM_P     );
     parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) DEFAULT_SY_LFR_N_BP_P0;
     parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) DEFAULT_SY_LFR_N_BP_P1;
 
@@ -217,6 +207,7 @@ void init_housekeeping_parameters(void)
             }
         }
     }
+    updateLFRCurrentMode();
 }
 
 int create_names( void )
@@ -234,6 +225,9 @@ int create_names( void )
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
     Task_name[TASKID_MATR] = rtems_build_name( 'M', 'A', 'T', 'R' );
     Task_name[TASKID_CWF3] = rtems_build_name( 'C', 'W', 'F', '3' );
+    Task_name[TASKID_CWF2] = rtems_build_name( 'C', 'W', 'F', '2' );
+    Task_name[TASKID_CWF1] = rtems_build_name( 'C', 'W', 'F', '1' );
+    Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
 
     // rate monotonic period name
     HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -247,75 +241,93 @@ int create_all_tasks( void )
 
     // RECV
     status = rtems_task_create(
-        Task_name[TASKID_RECV], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_RECV], TASK_PRIORITY_RECV, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_RECV]
     );
     // ACTN
     status = rtems_task_create(
-        Task_name[TASKID_ACTN], 100, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_ACTN]
     );
     // SPIQ
     status = rtems_task_create(
-        Task_name[TASKID_SPIQ], 5, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SPIQ], TASK_PRIORITY_SPIQ, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]
     );
     // SMIQ
     status = rtems_task_create(
-        Task_name[TASKID_SMIQ], 10, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SMIQ], TASK_PRIORITY_SMIQ, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SMIQ]
     );
     // STAT
     status = rtems_task_create(
-        Task_name[TASKID_STAT], 251, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
     );
     // AVF0
     status = rtems_task_create(
-        Task_name[TASKID_AVF0], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
     );
     // BPF0
     status = rtems_task_create(
-        Task_name[TASKID_BPF0], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_BPF0], TASK_PRIORITY_BPF0, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_BPF0]
     );
     // WFRM
     status = rtems_task_create(
-        Task_name[TASKID_WFRM], 50, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
     );
     // DUMB
     status = rtems_task_create(
-        Task_name[TASKID_DUMB], 200, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
     );
     // HOUS
     status = rtems_task_create(
-        Task_name[TASKID_HOUS], 199, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
     );
     // MATR
     status = rtems_task_create(
-        Task_name[TASKID_MATR], 250, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
     );
     // CWF3
     status = rtems_task_create(
-        Task_name[TASKID_CWF3], 250, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_CWF3], TASK_PRIORITY_CWF3, RTEMS_MINIMUM_STACK_SIZE * 2,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF3]
+    );
+    // CWF2
+    status = rtems_task_create(
+        Task_name[TASKID_CWF2], TASK_PRIORITY_CWF2, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF2]
+    );
+    // CWF1
+    status = rtems_task_create(
+        Task_name[TASKID_CWF1], TASK_PRIORITY_CWF1, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF1]
+    );
+    // SEND
+    status = rtems_task_create(
+        Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE * 2,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
     );
 
     return 0;
@@ -385,206 +397,41 @@ int start_all_tasks( void )
         PRINTF("in INIT *** Error starting TASK_CWF3\n")
     }
 
+    status = rtems_task_start( Task_id[TASKID_CWF2], cwf2_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in INIT *** Error starting TASK_CWF2\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_CWF1], cwf1_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in INIT *** Error starting TASK_CWF1\n")
+    }
+    status = rtems_task_start( Task_id[TASKID_SEND], send_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in INIT *** Error starting TASK_SEND\n")
+    }
+
     return 0;
 }
 
-// SPACEWIRE
-
-rtems_task spiq_task(rtems_task_argument unused)
-{
-    rtems_event_set event_out;
-    rtems_status_code status;
-    unsigned char lfrMode;
-
-    while(true){
-        PRINTF("in SPIQ *** Waiting for SPW_LINKERR_EVENT\n")
-        rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
-
-        lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
-
-        status = spacewire_wait_for_link();
-
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            //****************
-            // STOP THE SYSTEM
-            spacewire_compute_stats_offsets();
-            stop_current_mode();
-            if (rtems_task_suspend(Task_id[TASKID_RECV])!=RTEMS_SUCCESSFUL) {   // suspend RECV task
-                PRINTF("in SPIQ *** Error suspending RECV Task\n")
-            }
-            if (rtems_task_suspend(Task_id[TASKID_HOUS])!=RTEMS_SUCCESSFUL) {   // suspend HOUS task
-                PRINTF("in SPIQ *** Error suspending HOUS Task\n")
-            }
-
-            //***************************
-            // RESTART THE SPACEWIRE LINK
-            spacewire_configure_link();
-
-            //*******************
-            // RESTART THE SYSTEM
-            //ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);   // clear statistics
-            status = rtems_task_restart( Task_id[TASKID_HOUS], 1 );
-            if (status != RTEMS_SUCCESSFUL) {
-                PRINTF1("in SPIQ *** Error restarting HOUS Task *** code %d\n", status)
-            }
-            if (rtems_task_restart(Task_id[TASKID_RECV], 1) != RTEMS_SUCCESSFUL) {    // restart RECV task
-                PRINTF("in SPIQ *** Error restarting RECV Task\n")
-            }
-            //enter_mode(lfrMode, NULL); // enter the mode that was running before the SpaceWire interruption
-        }
-    }
-}
-
-int spacewire_configure_link( void )
+int create_message_queues( void )
 {
     rtems_status_code status;
 
-    close(fdSPW); // close the device if it is already open
-    PRINTF("OK  *** in configure_spw_link *** try to open "GRSPW_DEVICE_NAME"\n")
-    fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call reset the hardware
-    if ( fdSPW<0 ) {
-        PRINTF("ERR *** in configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
+    misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
+    misc_name[1] = rtems_build_name( 'P', 'K', 'T', 'S' );
+
+    status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in create_message_queues *** error creating QUEU\n")
     }
 
-    while(ioctl(fdSPW, SPACEWIRE_IOCTRL_START, -1) != RTEMS_SUCCESSFUL){
-        PRINTF(".")
-        fflush( stdout );
-        close( fdSPW ); // close the device
-        fdSPW = open( GRSPW_DEVICE_NAME, O_RDWR ); // open the device. the open call reset the hardware
-        if (fdSPW<0) {
-            PRINTF("ERR *** In configure_spw_link *** Error opening"GRSPW_DEVICE_NAME"\n")
-        }
-        rtems_task_wake_after(100);
+    status = rtems_message_queue_create( misc_name[1], ACTION_MSG_PKTS_COUNT, sizeof(spw_ioctl_pkt_send),
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[1] );
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in create_message_queues *** error creating PKTS\n")
     }
 
-    PRINTF("OK  *** In configure_spw_link *** "GRSPW_DEVICE_NAME" opened and started successfully\n")
-
-    spacewire_set_NP(1, REGS_ADDR_GRSPW); // No Port force
-    spacewire_set_RE(1, REGS_ADDR_GRSPW); // the dedicated call seems to  break the no port force configuration
-
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 0);      // transmission blocks on full
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
-    //
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909);
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
-
-    PRINTF("OK  *** in configure_spw_link *** "GRSPW_DEVICE_NAME" configured successfully\n")
-
-    return RTEMS_SUCCESSFUL;
-}
-
-int spacewire_wait_for_link(void)
-{
-    unsigned int i;
-    int linkStatus;
-    rtems_status_code status = RTEMS_UNSATISFIED;
-
-    for(i = 0; i< 10; i++){
-        PRINTF(".")
-        fflush( stdout );
-        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
-        PRINTF1("in spacewire_wait_for_link *** link status is: %s\n", lstates[linkStatus])
-        if ( linkStatus == 5) {
-            PRINTF("in spacewire_wait_for_link *** link is running\n")
-            status = RTEMS_SUCCESSFUL;
-            break;
-        }
-        rtems_task_wake_after(100);
-    }
-
-    return status;
-}
-
-void spacewire_set_NP(unsigned char val, unsigned int regAddr) // [N]o [P]ort force
-{
-    unsigned int *spwptr = (unsigned int*) regAddr;
-
-    if (val == 1) {
-        *spwptr = *spwptr | 0x00100000; // [NP] set the No port force bit
-    }
-    if (val== 0) {
-        *spwptr = *spwptr & 0xffdfffff;
-    }
-}
-
-void spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]MAP [E]nable
-{
-    unsigned int *spwptr = (unsigned int*) regAddr;
-
-    if (val == 1)
-    {
-        *spwptr = *spwptr | 0x00010000; // [RE] set the RMAP Enable bit
-    }
-    if (val== 0)
-    {
-        *spwptr = *spwptr & 0xfffdffff;
-    }
-}
-
-void spacewire_compute_stats_offsets()
-{
-    spw_stats spacewire_stats_grspw;
-    rtems_status_code status;
-
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
-
-    spacewire_stats_backup.packets_received = spacewire_stats_grspw.packets_received
-            + spacewire_stats.packets_received;
-    spacewire_stats_backup.packets_sent = spacewire_stats_grspw.packets_sent
-            + spacewire_stats.packets_sent;
-    spacewire_stats_backup.parity_err = spacewire_stats_grspw.parity_err
-            + spacewire_stats.parity_err;
-    spacewire_stats_backup.disconnect_err = spacewire_stats_grspw.disconnect_err
-            + spacewire_stats.disconnect_err;
-    spacewire_stats_backup.escape_err = spacewire_stats_grspw.escape_err
-            + spacewire_stats.escape_err;
-    spacewire_stats_backup.credit_err = spacewire_stats_grspw.credit_err
-            + spacewire_stats.credit_err;
-    spacewire_stats_backup.write_sync_err = spacewire_stats_grspw.write_sync_err
-            + spacewire_stats.write_sync_err;
-    spacewire_stats_backup.rx_rmap_header_crc_err = spacewire_stats_grspw.rx_rmap_header_crc_err
-            + spacewire_stats.rx_rmap_header_crc_err;
-    spacewire_stats_backup.rx_rmap_data_crc_err = spacewire_stats_grspw.rx_rmap_data_crc_err
-            + spacewire_stats.rx_rmap_data_crc_err;
-    spacewire_stats_backup.early_ep = spacewire_stats_grspw.early_ep
-            + spacewire_stats.early_ep;
-    spacewire_stats_backup.invalid_address = spacewire_stats_grspw.invalid_address
-            + spacewire_stats.invalid_address;
-    spacewire_stats_backup.rx_eep_err = spacewire_stats_grspw.rx_eep_err
-            + spacewire_stats.rx_eep_err;
-    spacewire_stats_backup.rx_truncated = spacewire_stats_grspw.rx_truncated
-            + spacewire_stats.rx_truncated;
-}
-
-rtems_status_code write_spw(spw_ioctl_pkt_send* spw_ioctl_send)
-{
-    rtems_status_code status;
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-    if (status != RTEMS_SUCCESSFUL){
-        //PRINTF1("ERR *** in write_spw *** write operation failed with code: %d\n", status)
-    }
-    return status;
-}
-
-void timecode_irq_handler(void *pDev, void *regs, int minor, unsigned int tc)
-{
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_1 ) != RTEMS_SUCCESSFUL) {
-        printf("In timecode_irq_handler *** Error sending event to DUMB\n");
-    }
+    return 0;
 }

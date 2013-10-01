@@ -2,7 +2,7 @@
 
 // GRSPW0 resources
 struct drvmgr_key grlib_grspw_0n1_res[] = {
-	{"txBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
+    {"txBdCnt", KEY_TYPE_INT, {(unsigned int)50}}, // 7 SWF_F0, 7 SWF_F1, 7 SWF_F2, 7 CWF_F3, 7 CWF_F1 ou 7 CWF_F2
     	{"rxBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
     	{"txDataSize", KEY_TYPE_INT, {(unsigned int)4096}},
     	{"txHdrSize", KEY_TYPE_INT, {(unsigned int)20+12}}, // 12 is for the auxiliary header, when needed

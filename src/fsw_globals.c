@@ -8,10 +8,11 @@
 // RTEMS GLOBAL VARIABLES
 rtems_name misc_name[5];
 rtems_name misc_id[5];
-rtems_id   Task_id[15];         /* array of task ids */
-rtems_name Task_name[15];       /* array of task names */
+rtems_id   Task_id[20];         /* array of task ids */
+rtems_name Task_name[20];       /* array of task names */
 int fdSPW = 0;
 int fdUART = 0;
+unsigned char lfrCurrentMode;
 
 // APB CONFIGURATION REGISTERS
 time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_ADDR_TIME_MANAGEMENT;
@@ -24,10 +25,15 @@ spectral_matrix_regs_t *spectral_matrix_regs = (spectral_matrix_regs_t*) REGS_AD
 
 // WAVEFORMS GLOBAL VARIABLES // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
 volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+//
 volatile int wf_snap_f1[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 volatile int wf_snap_f1_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+volatile int wf_snap_f1_norm[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+//
 volatile int wf_snap_f2[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 volatile int wf_snap_f2_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+volatile int wf_snap_f2_norm[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
+//
 volatile int wf_cont_f3[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 volatile int wf_cont_f3_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET];
 

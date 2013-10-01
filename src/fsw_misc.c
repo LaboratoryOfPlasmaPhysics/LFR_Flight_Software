@@ -1,12 +1,6 @@
 #include <fsw_misc.h>
 #include <fsw_params.h>
 
-extern rtems_id Task_id[];         /* array of task ids */
-extern int fdSPW;
-extern TMHeader_t housekeeping_header;
-extern char housekeeping_data[];
-extern Packet_TM_LFR_HK_t housekeeping_packet;
-
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
 { // configure the timer for the waveforms simulation
@@ -149,11 +143,11 @@ rtems_task stat_task(rtems_task_argument argument)
     while(1){
         rtems_task_wake_after(1000);
         PRINTF1("%d\n", j)
-        if (i == 2) {
-            #ifdef PRINT_TASK_STATISTICS
-            rtems_cpu_usage_report();
-            rtems_cpu_usage_reset();
-            #endif
+        if (i == CPU_USAGE_REPORT_PERIOD) {
+//            #ifdef PRINT_TASK_STATISTICS
+//            rtems_cpu_usage_report();
+//            rtems_cpu_usage_reset();
+//            #endif
             i = 0;
         }
         else i++;
@@ -163,8 +157,14 @@ rtems_task stat_task(rtems_task_argument argument)
 
 rtems_task hous_task(rtems_task_argument argument)
 {
-    int result;
     rtems_status_code status;
+    spw_ioctl_pkt_send spw_ioctl_send;
+
+    spw_ioctl_send.hlen = 0;
+    spw_ioctl_send.hdr = NULL;
+    spw_ioctl_send.dlen = sizeof(spw_ioctl_send);
+    spw_ioctl_send.data = (char*) &housekeeping_packet;
+    spw_ioctl_send.options = 0;
 
     PRINTF("in HOUS ***\n")
 
@@ -177,18 +177,18 @@ rtems_task hous_task(rtems_task_argument argument)
 
     housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
     housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    housekeeping_packet.reserved = 0x00;
-    housekeeping_packet.userApplication = 0x00;
+    housekeeping_packet.reserved = DEFAULT_RESERVED;
+    housekeeping_packet.userApplication = CCSDS_USER_APP;
     housekeeping_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_HK >> 8);
     housekeeping_packet.packetID[1] = (unsigned char) (TM_PACKET_ID_HK);
-    housekeeping_packet.packetSequenceControl[0] = 0xc0;
-    housekeeping_packet.packetSequenceControl[1] = 0x00;
-    housekeeping_packet.packetLength[0] = 0x00;
-    housekeeping_packet.packetLength[1] = 0x77;
-    housekeeping_packet.dataFieldHeader[0] = 0x10;
-    housekeeping_packet.dataFieldHeader[1] = TM_TYPE_HK;
-    housekeeping_packet.dataFieldHeader[2] = TM_SUBTYPE_HK;
-    housekeeping_packet.dataFieldHeader[3] = TM_DESTINATION_ID_GROUND;
+    housekeeping_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    housekeeping_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
+    housekeeping_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
+    housekeeping_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    housekeeping_packet.serviceType = TM_TYPE_HK;
+    housekeeping_packet.serviceSubType = TM_SUBTYPE_HK;
+    housekeeping_packet.destinationID = TM_DESTINATION_ID_GROUND;
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL ) {
@@ -204,30 +204,21 @@ rtems_task hous_task(rtems_task_argument argument)
             PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_period *** code %d\n", status);
         }
         else {
-            housekeeping_packet.dataFieldHeader[4] = (unsigned char) (time_management_regs->coarse_time>>24);
-            housekeeping_packet.dataFieldHeader[5] = (unsigned char) (time_management_regs->coarse_time>>16);
-            housekeeping_packet.dataFieldHeader[6] = (unsigned char) (time_management_regs->coarse_time>>8);
-            housekeeping_packet.dataFieldHeader[7] = (unsigned char) (time_management_regs->coarse_time);
-            housekeeping_packet.dataFieldHeader[8] = (unsigned char) (time_management_regs->fine_time>>8);
-            housekeeping_packet.dataFieldHeader[9] = (unsigned char) (time_management_regs->fine_time);
+            housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+            housekeeping_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+            housekeeping_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+            housekeeping_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
+            housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+            housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
             housekeeping_packet.sid = SID_HK;
 
             update_spacewire_statistics();
 
             // SEND PACKET
-            result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
-            if (status == -1) {
-                while (true) {
-                    if (status != RTEMS_SUCCESSFUL) {
-                        result = write ( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
-                        PRINTF("x")
-                        sched_yield();
-                    }
-                    else {
-                        PRINTF("\n")
-                        break;
-                    }
-                }
+            //result = write( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
+            status =  rtems_message_queue_send( misc_id[1], &spw_ioctl_send, sizeof(spw_ioctl_send));
+            if (status != RTEMS_SUCCESSFUL) {
+                PRINTF1("in HOUS *** ERR %d\n", (int) status)
             }
         }
     }
@@ -239,3 +230,25 @@ rtems_task hous_task(rtems_task_argument argument)
     exit( 1 );
 }
 
+rtems_task send_task( rtems_task_argument argument)
+{
+    rtems_status_code status;       // RTEMS status code
+    spw_ioctl_pkt_send spw_ioctl_send_CWF;  // incoming spw_ioctl_pkt_send structure
+    size_t size;                            // size of the incoming TC packet
+
+    PRINTF("in SEND *** \n")
+
+    while(1)
+    {
+        status = rtems_message_queue_receive(misc_id[1], (char*) &spw_ioctl_send_CWF, &size,
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        else
+        {
+            status = write_spw(&spw_ioctl_send_CWF);
+            if (status != RTEMS_SUCCESSFUL) {
+                PRINTF("in SEND *** TRAFFIC JAM\n")
+            }
+        }
+    }
+}
