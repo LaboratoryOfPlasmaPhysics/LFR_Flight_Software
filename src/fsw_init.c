@@ -19,10 +19,15 @@
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
-#define CONFIGURE_INIT_TASK_PRIORITY 5 // instead of 100
+#define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
+#define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
+#define CONFIGURE_MAXIMUM_TIMERS 5
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 2
+#ifdef PRINT_STACK_REPORT
+    #define CONFIGURE_STACK_CHECKER_ENABLED
+#endif
 
 #include <rtems/confdefs.h>
 
@@ -62,12 +67,15 @@ rtems_task Init( rtems_task_argument ignored )
     init_parameter_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
-    create_message_queues();
 
     create_names();         // create all names
+
+    create_message_queues();
+
     create_all_tasks();     // create all tasks
 
     start_all_tasks();      // start all tasks
+
     stop_current_mode();    // go in STANDBY mode
 
     grspw_timecode_callback = &timecode_irq_handler;
@@ -75,15 +83,19 @@ rtems_task Init( rtems_task_argument ignored )
     spacewire_configure_link();
 
 #ifdef GSA
+    // mask IRQ lines
+    LEON_Mask_interrupt( IRQ_SM );
+    LEON_Mask_interrupt( IRQ_WF );
     // Spectral Matrices simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
                     IRQ_SPARC_SM, spectral_matrices_isr );
     // WaveForms
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
-    LEON_Mask_interrupt( IRQ_SM );
-    LEON_Mask_interrupt( IRQ_WF );
 #else
+    // mask IRQ lines
+    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
     // reset configuration registers
     reset_waveform_picker_regs();
     reset_spectral_matrix_regs();
@@ -92,19 +104,21 @@ rtems_task Init( rtems_task_argument ignored )
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
     // configure IRQ handling for the spectral matrix unit
-    status = rtems_interrupt_catch( spectral_matrices_isr,
-                                   IRQ_SPARC_SPECTRAL_MATRIX,
-                                   &old_isr_handler) ;
-    // mask IRQ lines
-    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
+//    status = rtems_interrupt_catch( spectral_matrices_isr,
+//                                   IRQ_SPARC_SPECTRAL_MATRIX,
+//                                   &old_isr_handler) ;
+    // Spectral Matrices simulator
+    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
+                    IRQ_SPARC_SM, spectral_matrices_isr_simu );
 #endif
+
+    PRINTF("delete INIT\n")
 
     status = rtems_task_delete(RTEMS_SELF);
 
 }
 
-void init_parameter_dump(void)
+void init_parameter_dump( void )
 {
     parameter_dump_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
     parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -161,7 +175,7 @@ void init_parameter_dump(void)
     parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P1;
 }
 
-void init_local_mode_parameters(void)
+void init_local_mode_parameters( void )
 {
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
@@ -176,7 +190,7 @@ void init_local_mode_parameters(void)
     reset_local_sbm2_nb_cwf_sent();
 }
 
-void init_housekeeping_parameters(void)
+void init_housekeeping_parameters( void )
 {
     unsigned int i = 0;
     unsigned int j = 0;
@@ -232,6 +246,9 @@ int create_names( void )
     // rate monotonic period name
     HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
 
+    misc_name[QUEUE_QUEU] = rtems_build_name( 'Q', 'U', 'E', 'U' );
+    misc_name[QUEUE_PKTS] = rtems_build_name( 'P', 'K', 'T', 'S' );
+
     return 0;
 }
 
@@ -241,91 +258,91 @@ int create_all_tasks( void )
 
     // RECV
     status = rtems_task_create(
-        Task_name[TASKID_RECV], TASK_PRIORITY_RECV, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_RECV], TASK_PRIORITY_RECV, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_RECV]
     );
     // ACTN
     status = rtems_task_create(
-        Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
-        RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_ACTN]
+        RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_ACTN]
     );
     // SPIQ
     status = rtems_task_create(
-        Task_name[TASKID_SPIQ], TASK_PRIORITY_SPIQ, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SPIQ], TASK_PRIORITY_SPIQ, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]
     );
     // SMIQ
     status = rtems_task_create(
-        Task_name[TASKID_SMIQ], TASK_PRIORITY_SMIQ, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SMIQ], TASK_PRIORITY_SMIQ, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SMIQ]
     );
     // STAT
     status = rtems_task_create(
-        Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
     );
     // AVF0
     status = rtems_task_create(
-        Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
     );
     // BPF0
     status = rtems_task_create(
-        Task_name[TASKID_BPF0], TASK_PRIORITY_BPF0, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_BPF0], TASK_PRIORITY_BPF0, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_BPF0]
     );
     // WFRM
     status = rtems_task_create(
-        Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
     );
     // DUMB
     status = rtems_task_create(
-        Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
     );
     // HOUS
     status = rtems_task_create(
-        Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
     );
     // MATR
     status = rtems_task_create(
-        Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
     );
     // CWF3
     status = rtems_task_create(
-        Task_name[TASKID_CWF3], TASK_PRIORITY_CWF3, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_CWF3], TASK_PRIORITY_CWF3, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF3]
     );
     // CWF2
     status = rtems_task_create(
-        Task_name[TASKID_CWF2], TASK_PRIORITY_CWF2, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_CWF2], TASK_PRIORITY_CWF2, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF2]
     );
     // CWF1
     status = rtems_task_create(
-        Task_name[TASKID_CWF1], TASK_PRIORITY_CWF1, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_CWF1], TASK_PRIORITY_CWF1, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF1]
     );
     // SEND
     status = rtems_task_create(
-        Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE * 2,
+        Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
     );
@@ -418,19 +435,16 @@ int create_message_queues( void )
 {
     rtems_status_code status;
 
-    misc_name[0] = rtems_build_name( 'Q', 'U', 'E', 'U' );
-    misc_name[1] = rtems_build_name( 'P', 'K', 'T', 'S' );
-
-    status = rtems_message_queue_create( misc_name[0], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[0] );
+    status = rtems_message_queue_create( misc_name[QUEUE_QUEU], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[QUEUE_QUEU] );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in create_message_queues *** error creating QUEU\n")
+        PRINTF("in create_message_queues *** ERR creating QUEU\n")
     }
 
-    status = rtems_message_queue_create( misc_name[1], ACTION_MSG_PKTS_COUNT, sizeof(spw_ioctl_pkt_send),
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[1] );
+    status = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[QUEUE_PKTS] );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in create_message_queues *** error creating PKTS\n")
+        PRINTF("in create_message_queues *** ERR creating PKTS\n")
     }
 
     return 0;

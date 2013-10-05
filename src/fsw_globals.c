@@ -10,6 +10,7 @@ rtems_name misc_name[5];
 rtems_name misc_id[5];
 rtems_id   Task_id[20];         /* array of task ids */
 rtems_name Task_name[20];       /* array of task names */
+unsigned int maxCount;
 int fdSPW = 0;
 int fdUART = 0;
 unsigned char lfrCurrentMode;
@@ -40,6 +41,8 @@ volatile int wf_cont_f3_bis[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_O
 // SPECTRAL MATRICES GLOBAL VARIABLES
 volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];
 volatile int spec_mat_f0_1[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_a[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int spec_mat_f0_b[ SM_HEADER + TOTAL_SIZE_SM ];
 volatile int spec_mat_f0_c[ SM_HEADER + TOTAL_SIZE_SM ];
 volatile int spec_mat_f0_d[ SM_HEADER + TOTAL_SIZE_SM ];
 volatile int spec_mat_f0_e[ SM_HEADER + TOTAL_SIZE_SM ];

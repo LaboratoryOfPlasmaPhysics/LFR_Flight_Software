@@ -81,8 +81,16 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     }
 }
 
+rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
+{
+    if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_4 );
+    }
+}
+
 //************
 // RTEMS TASKS
+
 rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
 {
     rtems_event_set event_out;
@@ -93,8 +101,8 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         nb_interrupt_f0 = nb_interrupt_f0 + 1;
-        if (nb_interrupt_f0 == param_local.local_nb_interrupt_f0_MAX ){
-            if (rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 ){
+            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
             }
@@ -102,6 +110,26 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
         }
     }
 }
+
+//rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
+//{
+//    rtems_event_set event_out;
+//    unsigned int nb_interrupt_f0 = 0;
+
+//    PRINTF("in SMIQ *** \n")
+
+//    while(1){
+//        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+//        nb_interrupt_f0 = nb_interrupt_f0 + 1;
+//        if (nb_interrupt_f0 == param_local.local_nb_interrupt_f0_MAX ){
+//            if (rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//            {
+//                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//            }
+//            nb_interrupt_f0 = 0;
+//        }
+//    }
+//}
 
 rtems_task spw_bppr_task(rtems_task_argument argument)
 {
@@ -140,7 +168,7 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
 
 rtems_task avf0_task(rtems_task_argument argument)
 {
-    //int i;
+    int i;
     static int nb_average;
     rtems_event_set event_out;
     rtems_status_code status;
@@ -151,7 +179,7 @@ rtems_task avf0_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        /*for(i=0; i<TOTAL_SIZE_SM; i++){
+        for(i=0; i<TOTAL_SIZE_SM; i++){
             averaged_spec_mat_f0[i] = averaged_spec_mat_f0[i] + spec_mat_f0_a[i]
                                             + spec_mat_f0_b[i]
                                             + spec_mat_f0_c[i]
@@ -160,7 +188,7 @@ rtems_task avf0_task(rtems_task_argument argument)
                                             + spec_mat_f0_f[i]
                                             + spec_mat_f0_g[i]
                                             + spec_mat_f0_h[i];
-        }*/
+        }
         nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
         if (nb_average == NB_AVERAGE_NORMAL_f0) {
             nb_average = 0;
@@ -454,8 +482,8 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->protocolIdentifier = CCSDS_PROTOCOLE_ID;
     header->reserved = 0x00;
     header->userApplication = CCSDS_USER_APP;
-    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL >> 8);
-    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL);
+    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
+    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
     header->packetSequenceControl[0] = 0xc0;
     header->packetSequenceControl[1] = 0x00;
     header->packetLength[0] = 0x00;

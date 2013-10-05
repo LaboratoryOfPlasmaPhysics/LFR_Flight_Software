@@ -15,14 +15,14 @@
 
 #define DEFAULT_SPARE1_PUSVERSION_SPARE2 0x10
 #define DEFAULT_RESERVED 0x00
-#define DEFAULT_HKBIA 0x1f
+#define DEFAULT_HKBIA 0x1e  // 0001 1110
 
 // PACKET ID
 #define TM_PACKET_ID_TC_EXE                     0x0cc1 // PID 76 CAT 1
 #define TM_PACKET_ID_HK                         0x0cc4 // PID 76 CAT 4
 #define TM_PACKET_ID_PARAMETER_DUMP             0x0cc9 // PID 76 CAT 9
-#define TM_PACKET_ID_SCIENCE_NORMAL             0x0ccc // PID 76 CAT 12
-#define TM_PACKET_ID_SCIENCE_BURST_SBM1_SBM2    0x0cfc // PID 79 CAT 12
+#define TM_PACKET_ID_SCIENCE_NORMAL_BURST       0x0ccc // PID 76 CAT 12
+#define TM_PACKET_ID_SCIENCE_SBM1_SBM2          0x0cfc // PID 79 CAT 12
 #define TM_PACKET_PID_DEFAULT                   76
 #define TM_PACKET_PID_BURST_SBM1_SBM2           79
 #define TM_PACKET_CAT_TC_EXE                    1

@@ -23,7 +23,9 @@ extern int sched_yield( void );
 extern int errno;
 extern rtems_id   Task_id[ ];       /* array of task ids */
 extern rtems_name Task_name[ ];     /* array of task names */
-extern rtems_name misc_name[ ];    /* arry of miscellaneous names for rtems objects */
+extern rtems_name misc_id[ ];
+extern rtems_name misc_name[ ];    /* array of miscellaneous names for rtems objects */
+extern unsigned int maxCount;
 extern int fdSPW;   // grspw file descriptor
 extern int fdUART;  // uart file descriptor
 extern unsigned char lfrCurrentMode;
@@ -38,18 +40,20 @@ rtems_task Init( rtems_task_argument argument);	/* forward declaration needed */
 rtems_task recv_task(rtems_task_argument argument);
 rtems_task stat_task(rtems_task_argument argument);
 rtems_task wfrm_task(rtems_task_argument argument);
+
+// OTHER functions
 int create_names( void );
 int create_all_tasks( void );
 int start_all_tasks( void );
-int create_message_queue( void );
+//
 int create_message_queues( void );
-
-// OTHER functions
+//
 void init_parameter_dump( void );
 void init_local_mode_parameters( void );
 void init_housekeeping_parameters( void );
 
 extern int rtems_cpu_usage_report( void );
 extern int rtems_cpu_usage_reset( void );
+extern void rtems_stack_checker_report_usage( void );
 
 #endif // FSW_RTEMS_CONFIG_H_INCLUDED

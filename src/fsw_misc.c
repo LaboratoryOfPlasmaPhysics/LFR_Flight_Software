@@ -162,7 +162,7 @@ rtems_task hous_task(rtems_task_argument argument)
 
     spw_ioctl_send.hlen = 0;
     spw_ioctl_send.hdr = NULL;
-    spw_ioctl_send.dlen = sizeof(spw_ioctl_send);
+    spw_ioctl_send.dlen = PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
     spw_ioctl_send.data = (char*) &housekeeping_packet;
     spw_ioctl_send.options = 0;
 
@@ -215,8 +215,7 @@ rtems_task hous_task(rtems_task_argument argument)
             update_spacewire_statistics();
 
             // SEND PACKET
-            //result = write( fdSPW, &housekeeping_packet, LEN_TM_LFR_HK);
-            status =  rtems_message_queue_send( misc_id[1], &spw_ioctl_send, sizeof(spw_ioctl_send));
+            status =  rtems_message_queue_send( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR %d\n", (int) status)
             }
@@ -233,22 +232,45 @@ rtems_task hous_task(rtems_task_argument argument)
 rtems_task send_task( rtems_task_argument argument)
 {
     rtems_status_code status;       // RTEMS status code
-    spw_ioctl_pkt_send spw_ioctl_send_CWF;  // incoming spw_ioctl_pkt_send structure
+    spw_ioctl_pkt_send spw_ioctl_send;  // incoming spw_ioctl_pkt_send structure
     size_t size;                            // size of the incoming TC packet
+    u_int32_t count;
 
     PRINTF("in SEND *** \n")
 
     while(1)
     {
-        status = rtems_message_queue_receive(misc_id[1], (char*) &spw_ioctl_send_CWF, &size,
+        status = rtems_message_queue_receive(misc_id[QUEUE_PKTS], (char*) &spw_ioctl_send, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-        if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        if (status!=RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in SEND *** (1) ERR = %d \n", status)
+        }
         else
         {
-            status = write_spw(&spw_ioctl_send_CWF);
+            status = write_spw(&spw_ioctl_send);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF("in SEND *** TRAFFIC JAM\n")
             }
         }
+
+        status = rtems_message_queue_get_number_pending( misc_id[QUEUE_PKTS], &count );
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in SEND *** (2) ERR = %d \n", status)
+        }
+        else
+        {
+            if (count > maxCount)
+            {
+                maxCount = count;
+            }
+        }
     }
 }
+
+
+
+
+
+

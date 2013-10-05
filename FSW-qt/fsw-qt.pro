@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
-# CONFIG options = verbose *** cpu_usage_report *** gsa
-CONFIG += console verbose
+# CONFIG options = verbose *** cpu_usage_report *** gsa *** stack_report
+CONFIG += console verbose stack_report cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -19,6 +19,10 @@ contains( CONFIG, verbose ) {
 
 contains( CONFIG, cpu_usage_report ) {
     DEFINES += PRINT_TASK_STATISTICS
+}
+
+contains( CONFIG, stack_report ) {
+    DEFINES += PRINT_STACK_REPORT
 }
 
 TARGET = fsw

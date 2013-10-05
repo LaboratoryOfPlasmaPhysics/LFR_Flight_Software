@@ -12,15 +12,9 @@
 #include "fsw_init.h"
 #include "fsw_misc.h"
 
-extern int fdSPW;
-extern unsigned char lfrCurrentMode;
-extern rtems_name misc_name[ ];
-extern rtems_name misc_id[ ];
-extern rtems_id Task_id[ ];         // array of task ids
 // MODE PARAMETERS
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
-extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern time_management_regs_t *time_management_regs;
 extern waveform_picker_regs_t *waveform_picker_regs;
 extern gptimer_regs_t         *gptimer_regs;

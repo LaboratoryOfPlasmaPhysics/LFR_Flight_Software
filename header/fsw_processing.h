@@ -15,6 +15,8 @@
 
 extern volatile int spec_mat_f0_0[ ];
 extern volatile int spec_mat_f0_1[ ];
+extern volatile int spec_mat_f0_a[ ];
+extern volatile int spec_mat_f0_b[ ];
 extern volatile int spec_mat_f0_c[ ];
 extern volatile int spec_mat_f0_d[ ];
 extern volatile int spec_mat_f0_e[ ];
@@ -41,6 +43,7 @@ extern spectral_matrix_regs_t *spectral_matrix_regs;
 
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
+rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
 // RTEMS TASKS
 rtems_task spw_bppr_task(rtems_task_argument argument);

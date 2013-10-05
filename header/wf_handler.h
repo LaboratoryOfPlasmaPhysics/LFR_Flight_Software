@@ -31,7 +31,6 @@ extern volatile int wf_snap_f2_norm[ ];
 extern volatile int wf_cont_f3[ ];
 extern volatile int wf_cont_f3_bis[ ];
 extern waveform_picker_regs_t *waveform_picker_regs;
-extern unsigned char lfrCurrentMode;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector );
@@ -44,12 +43,12 @@ rtems_task cwf1_task(rtems_task_argument argument);
 // general functions
 void init_waveforms( void );
 //
-int init_header_snapshot_wf_table( unsigned int sid );
+int init_header_snapshot_wf_table(unsigned int sid , Header_TM_LFR_SCIENCE_SWF_t *headerSWF);
 int init_header_continuous_wf_table(unsigned int sid , Header_TM_LFR_SCIENCE_CWF_t *headerCWF);
 //
 void reset_waveforms( void );
 
-int send_waveform_SWF(volatile int *waveform, unsigned int sid);
+int send_waveform_SWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF);
 int send_waveform_CWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF);
 
 //**************

@@ -137,7 +137,7 @@ int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
         status = write( fdSPW, (char *) &packet, PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + 4);
     }
     else { // send valid TC to the action launcher
-        status =  rtems_message_queue_send( misc_id[0], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
+        status =  rtems_message_queue_send( misc_id[QUEUE_QUEU], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
         ret = -1;
     }
     return ret;
@@ -335,12 +335,12 @@ unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
             TMHeader->serviceSubType = TM_SUBTYPE_HK;   // subtype
             break;
         case(TM_LFR_SCI):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_NORMAL;
+            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_NORMAL_BURST;
             TMHeader->serviceType = TM_TYPE_LFR_SCIENCE; // type
             TMHeader->serviceSubType = TM_SUBTYPE_SCIENCE;  // subtype
             break;
         case(TM_LFR_SCI_SBM):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_BURST_SBM1_SBM2;
+            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_SBM1_SBM2;
             TMHeader->serviceType = TM_TYPE_LFR_SCIENCE;  // type
             TMHeader->serviceSubType = TM_SUBTYPE_SCIENCE; // subtype
             break;
@@ -389,7 +389,6 @@ rtems_task recv_task( rtems_task_argument unused )
             //}
         }
         else {
-            PRINTF1("Got pck of length %d\n", len+1)
             if ( (len+1) < CCSDS_TC_PKT_MIN_SIZE ) {
                 PRINTF("In RECV *** packet lenght too short\n")
             }
@@ -422,7 +421,7 @@ rtems_task actn_task( rtems_task_argument unused )
 
     while(1)
     {
-        status = rtems_message_queue_receive(misc_id[0], (char*) &TC, &size,
+        status = rtems_message_queue_receive(misc_id[QUEUE_QUEU], (char*) &TC, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
         else
@@ -545,28 +544,43 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC)
 {
     int result;
-    unsigned char lfrMode;
+    unsigned int tmp;
 
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
+    result = LFR_SUCCESSFUL;
 
-    if ( lfrMode == LFR_MODE_NORMAL ) {
+    if ( lfrCurrentMode == LFR_MODE_NORMAL ) {
         send_tm_lfr_tc_exe_not_executable( TC );
         result = LFR_DEFAULT;
     }
     else {
+        // sy_lfr_n_swf_l
         parameter_dump_packet.sy_lfr_n_swf_l[0] = TC->dataAndCRC[0];
         parameter_dump_packet.sy_lfr_n_swf_l[1] = TC->dataAndCRC[1];
 
-        parameter_dump_packet.sy_lfr_n_swf_p[0] = TC->dataAndCRC[2];
-        parameter_dump_packet.sy_lfr_n_swf_p[1] = TC->dataAndCRC[3];
+        // sy_lfr_n_swf_p
+        tmp = (unsigned int ) floor(
+                    (TC->dataAndCRC[2] * 256
+                    + TC->dataAndCRC[3])/8
+                ) * 8;
+        if ( (tmp < 16) || (tmp>65528) )
+        {
+            result = LFR_DEFAULT;
+        }
+        else
+        {
+            parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (tmp >> 8);
+            parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (tmp     );
+        }
 
+        // sy_lfr_n_asm_p
         parameter_dump_packet.sy_lfr_n_asm_p[0] = TC->dataAndCRC[4];
         parameter_dump_packet.sy_lfr_n_asm_p[1] = TC->dataAndCRC[5];
 
+        // sy_lfr_n_bp_p0
         parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[6];
-        parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
 
-        result = LFR_SUCCESSFUL;
+        // sy_lfr_n_bp_p1
+        parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[7];
     }
 
     return result;
@@ -670,6 +684,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC)
     if (requestedMode != LFR_MODE_STANDBY)
     {
         rtems_cpu_usage_reset();
+        maxCount = 0;
     }
 #endif
 
@@ -854,6 +869,7 @@ int stop_current_mode()
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );     // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SM );
 #endif
     //**********************
     // suspend several tasks
@@ -918,9 +934,17 @@ int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
 int enter_standby_mode()
 {
     reset_waveform_picker_regs();
+
+    PRINTF1("maxCount = %d\n", maxCount)
+
 #ifdef PRINT_TASK_STATISTICS
     rtems_cpu_usage_report();
 #endif
+
+#ifdef PRINT_STACK_REPORT
+    rtems_stack_checker_report_usage();
+#endif
+
     return LFR_SUCCESSFUL;
 }
 
@@ -996,6 +1020,10 @@ int enter_sbm1_mode()
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
+    // SM simulation
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
+    LEON_Unmask_interrupt( IRQ_SM );
  #endif
 
     return status;
@@ -1082,6 +1110,8 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
     char data[4];
     spw_ioctl_pkt_send spw_ioctl_send;
 
+    ret = LFR_SUCCESSFUL;
+
     TM_build_header( TM_LFR_TC_EXE_OK, PACKET_LENGTH_TC_EXE_SUCCESS,
                      &TM_header,
                      TC->sourceID);   // TC source ID
@@ -1100,7 +1130,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 
     // SEND DATA
     //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-    status =  rtems_message_queue_send( misc_id[1], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1111,10 +1141,13 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 
 int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC)
 {
+    int ret;
     rtems_status_code status;
     TMHeader_t TM_header;
     char data[10];
     spw_ioctl_pkt_send spw_ioctl_send;
+
+    ret = LFR_SUCCESSFUL;
 
     TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE,
                      &TM_header,
@@ -1139,17 +1172,25 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC)
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
+        ret = LFR_DEFAULT;
+    }
 
     return LFR_SUCCESSFUL;
 }
 
 int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
 {
+    int ret;
     rtems_status_code status;
     TMHeader_t TM_header;
     char data[8];
     spw_ioctl_pkt_send spw_ioctl_send;
+
+    ret = LFR_SUCCESSFUL;
 
     TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED,
                      &TM_header,
@@ -1172,13 +1213,19 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
+        ret = LFR_DEFAULT;
+    }
 
     return LFR_SUCCESSFUL;
 }
 
 int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC)
 {
+    int ret;
     rtems_status_code status;
     TMHeader_t TM_header;
     char data[8];
@@ -1205,7 +1252,12 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC)
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
+    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
+        ret = LFR_DEFAULT;
+    }
 
     return LFR_SUCCESSFUL;
 }
