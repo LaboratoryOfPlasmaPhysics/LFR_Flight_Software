@@ -16,7 +16,6 @@
 
 //#include <sys/ioctl.h>
 
-extern rtems_id Task_id[];         /* array of task ids */
 extern int fdSPW;
 extern volatile int wf_snap_f0[ ];
 //
@@ -48,8 +47,8 @@ int init_header_continuous_wf_table(unsigned int sid , Header_TM_LFR_SCIENCE_CWF
 //
 void reset_waveforms( void );
 
-int send_waveform_SWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF);
-int send_waveform_CWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF);
+int send_waveform_SWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id);
+int send_waveform_CWF(volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id);
 
 //**************
 // wfp registers

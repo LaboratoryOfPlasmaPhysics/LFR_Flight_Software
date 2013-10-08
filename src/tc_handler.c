@@ -79,7 +79,7 @@ void updateLFRCurrentMode()
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
+int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_id queue_id)
 {
     int ret = 0;
     rtems_status_code status;
@@ -137,7 +137,7 @@ int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv)
         status = write( fdSPW, (char *) &packet, PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + 4);
     }
     else { // send valid TC to the action launcher
-        status =  rtems_message_queue_send( misc_id[QUEUE_QUEU], TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
+        status =  rtems_message_queue_send( queue_id, TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
         ret = -1;
     }
     return ret;
@@ -371,10 +371,18 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned int data_length = 0;
     ccsdsTelecommandPacket_t currentTC;
     char data[100];
+    rtems_status_code status;
+    rtems_id queue_id;
 
     for(i=0; i<100; i++) data[i] = 0;
 
-    PRINTF("in RECV *** \n")
+    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in RECV *** ERR getting queue id, %d\n", status)
+    }
+
+    BOOT_PRINTF("in RECV *** \n")
 
     while(1)
     {
@@ -397,7 +405,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
                 currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
                 // CHECK THE TC AND BUILD THE APPROPRIATE TM
-                data_length = TC_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt);
+                data_length = TC_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt, queue_id);
                 if (data_length!=-1)
                 {
                 }
@@ -413,15 +421,29 @@ rtems_task actn_task( rtems_task_argument unused )
     ccsdsTelecommandPacket_t TC;    // TC sent to the ACTN task
     size_t size;                    // size of the incoming TC packet
     unsigned char subtype;          // subtype of the current TC packet
+    rtems_id queue_rcv_id;
+    rtems_id queue_snd_id;
+
+    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_rcv_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in ACTN *** ERR getting queue_rcv_id %d\n", status)
+    }
+
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_snd_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in ACTN *** ERR getting queue_snd_id %d\n", status)
+    }
 
     result = LFR_SUCCESSFUL;
     subtype = 0;          // subtype of the current TC packet
 
-    PRINTF("in ACTN *** \n")
+    BOOT_PRINTF("in ACTN *** \n")
 
     while(1)
     {
-        status = rtems_message_queue_receive(misc_id[QUEUE_QUEU], (char*) &TC, &size,
+        status = rtems_message_queue_receive( queue_rcv_id, (char*) &TC, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
         else
@@ -430,63 +452,63 @@ rtems_task actn_task( rtems_task_argument unused )
             switch(subtype)
             {
                 case TC_SUBTYPE_RESET:
-                    result = action_reset( &TC );
-                    close_action( &TC, result );
+                    result = action_reset( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_COMM:
                     result = action_load_common_par( &TC );
-                    close_action( &TC, result );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_NORM:
-                    result = action_load_normal_par( &TC );
-                    close_action( &TC, result );
+                    result = action_load_normal_par( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_BURST:
-                    result = action_load_burst_par( &TC );
-                    close_action( &TC, result );
+                    result = action_load_burst_par( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM1:
-                    result = action_load_sbm1_par( &TC );
-                    close_action( &TC, result );
+                    result = action_load_sbm1_par( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM2:
-                    result = action_load_sbm2_par( &TC );
-                    close_action( &TC, result );
+                    result = action_load_sbm2_par( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DUMP:
                     result = action_dump_par( &TC );
-                    close_action( &TC, result );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_ENTER:
-                    result = action_enter_mode( &TC );
-                    close_action( &TC, result );
+                    result = action_enter_mode( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_INFO:
-                    result = action_update_info( &TC );
-                    close_action( &TC, result );
+                    result = action_update_info( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_EN_CAL:
-                    result = action_enable_calibration( &TC );
-                    close_action( &TC, result );
+                    result = action_enable_calibration( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DIS_CAL:
-                    result = action_disable_calibration( &TC );
-                    close_action( &TC, result );
+                    result = action_disable_calibration( &TC, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_TIME:
                     result = action_update_time( &TC );
-                    close_action( &TC, result );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 default:
@@ -504,7 +526,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    PRINTF("in DUMB *** \n")
+    BOOT_PRINTF("in DUMB *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4 | RTEMS_EVENT_5,
@@ -525,9 +547,9 @@ rtems_task dumb_task( rtems_task_argument unused )
 //***********
 // TC ACTIONS
 
-int action_reset(ccsdsTelecommandPacket_t *TC)
+int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
-    send_tm_lfr_tc_exe_not_implemented( TC );
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
     return LFR_DEFAULT;
 }
 
@@ -541,7 +563,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
     return LFR_SUCCESSFUL;
 }
 
-int action_load_normal_par(ccsdsTelecommandPacket_t *TC)
+int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned int tmp;
@@ -549,7 +571,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC)
     result = LFR_SUCCESSFUL;
 
     if ( lfrCurrentMode == LFR_MODE_NORMAL ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -586,7 +608,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC)
     return result;
 }
 
-int action_load_burst_par(ccsdsTelecommandPacket_t *TC)
+int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned char lfrMode;
@@ -595,7 +617,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( lfrMode == LFR_MODE_BURST ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -608,7 +630,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC)
     return result;
 }
 
-int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC)
+int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned char lfrMode;
@@ -617,7 +639,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( lfrMode == LFR_MODE_SBM1 ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -630,7 +652,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC)
     return result;
 }
 
-int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC)
+int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned char lfrMode;
@@ -639,7 +661,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( lfrMode == LFR_MODE_SBM2 ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -671,7 +693,7 @@ int action_dump_par(ccsdsTelecommandPacket_t *TC)
     return status;
 }
 
-int action_enter_mode(ccsdsTelecommandPacket_t *TC)
+int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     rtems_status_code status;
     unsigned char requestedMode;
@@ -704,13 +726,13 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC)
     else
     {
         PRINTF("ERR *** in action_enter *** transition rejected\n")
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
     }
 
     return status;
 }
 
-int action_update_info(ccsdsTelecommandPacket_t *TC) {
+int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id) {
     unsigned int val;
     int result;
     unsigned char lfrMode;
@@ -719,7 +741,7 @@ int action_update_info(ccsdsTelecommandPacket_t *TC) {
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_STANDBY) ) {
-        send_tm_lfr_tc_exe_not_implemented( TC );
+        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -734,7 +756,7 @@ int action_update_info(ccsdsTelecommandPacket_t *TC) {
     return result;
 }
 
-int action_enable_calibration(ccsdsTelecommandPacket_t *TC)
+int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned char lfrMode;
@@ -743,17 +765,17 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_BURST) | (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC );
+        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
         result = LFR_DEFAULT;
     }
     return result;
 }
 
-int action_disable_calibration(ccsdsTelecommandPacket_t *TC)
+int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int result;
     unsigned char lfrMode;
@@ -762,11 +784,11 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_BURST) | (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC );
+        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
         result = LFR_DEFAULT;
     }
     return result;
@@ -851,14 +873,12 @@ int transition_validation(unsigned char requestedMode)
 int stop_current_mode()
 {
     rtems_status_code status;
-    unsigned char lfrMode;
 
     status = RTEMS_SUCCESSFUL;
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4; // get the current mode
 
     // mask all IRQ lines related to signal processing
     LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrices interrupt (coming from the timer VHDL IP)
-    LEON_Clear_interrupt( IRQ_SM );                  // clear spectral matrices interrupt (coming from the timer VHDL IP)
+    LEON_Clear_interrupt( IRQ_SM );                 // clear spectral matrices interrupt (coming from the timer VHDL IP)
 
 #ifdef GSA
     LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
@@ -866,14 +886,15 @@ int stop_current_mode()
     timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
 #else
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );     // clear waveform picker interrupt
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );     // clear spectral matrix interrupt
-    LEON_Mask_interrupt( IRQ_SM );
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SM );                  // for SM simulation
+    LEON_Clear_interrupt( IRQ_SM );                 // for SM simulation
 #endif
     //**********************
     // suspend several tasks
-    if (lfrMode != LFR_MODE_STANDBY) {
+    if (lfrCurrentMode != LFR_MODE_STANDBY) {
         suspend_science_tasks();
     }
 
@@ -972,11 +993,11 @@ int enter_normal_mode()
     set_wfp_burst_enable_register(LFR_MODE_NORMAL);
     //****************
     // spectral matrix
-    set_local_nb_interrupt_f0_MAX();
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
-    spectral_matrix_regs->config = 0x01;
-    spectral_matrix_regs->status = 0x00;
+//    set_local_nb_interrupt_f0_MAX();
+//    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
+//    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
+//    spectral_matrix_regs->config = 0x01;
+//    spectral_matrix_regs->status = 0x00;
 #endif
 
     return status;
@@ -985,9 +1006,6 @@ int enter_normal_mode()
 int enter_burst_mode()
 {
     rtems_status_code status;
-    unsigned char lfrMode;
-
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     status = restart_science_tasks();
 
@@ -1021,9 +1039,9 @@ int enter_sbm1_mode()
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
     // SM simulation
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-    LEON_Unmask_interrupt( IRQ_SM );
+//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+//    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
+//    LEON_Unmask_interrupt( IRQ_SM );
  #endif
 
     return status;
@@ -1059,17 +1077,45 @@ int restart_science_tasks()
     ret = RTEMS_SUCCESSFUL;
 
     status[0] = rtems_task_restart( Task_id[TASKID_AVF0], 1 );
+    if (status[0] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 0 ERR %d\n", status[0])
+    }
+
     status[1] = rtems_task_restart( Task_id[TASKID_BPF0],1 );
+    if (status[1] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 1 ERR %d\n", status[1])
+    }
+
     status[2] = rtems_task_restart( Task_id[TASKID_WFRM],1 );
+    if (status[2] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 2 ERR %d\n", status[2])
+    }
+
     status[3] = rtems_task_restart( Task_id[TASKID_CWF3],1 );
+    if (status[3] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 3 ERR %d\n", status[3])
+    }
+
     status[4] = rtems_task_restart( Task_id[TASKID_CWF2],1 );
+    if (status[4] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 4 ERR %d\n", status[4])
+    }
+
     status[5] = rtems_task_restart( Task_id[TASKID_CWF1],1 );
+    if (status[5] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 5 ERR %d\n", status[5])
+    }
 
     if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
          (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
-        PRINTF("in restart_science_tasks *** ERR\n")
     }
 
     return ret;
@@ -1083,17 +1129,45 @@ int suspend_science_tasks()
     ret = RTEMS_SUCCESSFUL;
 
     status[0] = rtems_task_suspend( Task_id[TASKID_AVF0] );
+    if (status[0] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 0 ERR %d\n", status[0])
+    }
+
     status[1] = rtems_task_suspend( Task_id[TASKID_BPF0] );
+    if (status[1] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 1 ERR %d\n", status[1])
+    }
+
     status[2] = rtems_task_suspend( Task_id[TASKID_WFRM] );
+    if (status[2] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 2 ERR %d\n", status[2])
+    }
+
     status[3] = rtems_task_suspend( Task_id[TASKID_CWF3] );
+    if (status[3] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 3 ERR %d\n", status[3])
+    }
+
     status[4] = rtems_task_suspend( Task_id[TASKID_CWF2] );
+    if (status[4] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 4 ERR %d\n", status[4])
+    }
+
     status[5] = rtems_task_suspend( Task_id[TASKID_CWF1] );
+    if (status[5] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in suspend_science_task *** 5 ERR %d\n", status[5])
+    }
 
     if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
          (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
-        PRINTF("in suspend_science_tasks *** ERR\n")
     }
 
     return ret;
@@ -1102,7 +1176,7 @@ int suspend_science_tasks()
 //****************
 // CLOSING ACTIONS
 
-int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
+int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
@@ -1130,7 +1204,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
 
     // SEND DATA
     //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1139,7 +1213,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC)
     return ret;
 }
 
-int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC)
+int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
@@ -1173,7 +1247,7 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC)
 
     // SEND DATA
     //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1182,7 +1256,7 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC)
     return LFR_SUCCESSFUL;
 }
 
-int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
+int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
@@ -1214,7 +1288,7 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
 
     // SEND DATA
     //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1223,7 +1297,7 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC)
     return LFR_SUCCESSFUL;
 }
 
-int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC)
+int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
@@ -1253,7 +1327,7 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC)
 
     // SEND DATA
     //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
-    status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1294,14 +1368,14 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC)
     housekeeping_packet.hk_lfr_last_rej_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
-void close_action(ccsdsTelecommandPacket_t *TC, int result)
+void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
 {
     unsigned int val = 0;
     if (result == LFR_SUCCESSFUL)
     {
         if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) ) )
         {
-            send_tm_lfr_tc_exe_success( TC );
+            send_tm_lfr_tc_exe_success( TC, queue_id );
         }
         update_last_TC_exe( TC );
         val = housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[1];

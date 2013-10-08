@@ -8,9 +8,9 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
     rtems_isr_entry old_isr_handler;
 
     status = rtems_interrupt_catch( timer_isr, interrupt_level, &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
-    if (status==RTEMS_SUCCESSFUL)
+    if (status!=RTEMS_SUCCESSFUL)
     {
-        PRINTF("In configure_timer *** rtems_interrupt_catch successfullly configured\n")
+        PRINTF("in configure_timer *** ERR rtems_interrupt_catch\n")
     }
 
     timer_set_clock_divider( gptimer_regs, timer, clock_divider);
@@ -125,7 +125,7 @@ int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) regs;
 
     apbuart_regs->scaler = value;
-    PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
+    BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
 
     return 0;
 }
@@ -139,7 +139,7 @@ rtems_task stat_task(rtems_task_argument argument)
     int j;
     i = 0;
     j = 0;
-    PRINTF("in STAT *** \n")
+    BOOT_PRINTF("in STAT *** \n")
     while(1){
         rtems_task_wake_after(1000);
         PRINTF1("%d\n", j)
@@ -159,6 +159,7 @@ rtems_task hous_task(rtems_task_argument argument)
 {
     rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send;
+    rtems_id queue_id;
 
     spw_ioctl_send.hlen = 0;
     spw_ioctl_send.hdr = NULL;
@@ -166,7 +167,13 @@ rtems_task hous_task(rtems_task_argument argument)
     spw_ioctl_send.data = (char*) &housekeeping_packet;
     spw_ioctl_send.options = 0;
 
-    PRINTF("in HOUS ***\n")
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in HOUS *** ERR %d\n", status)
+    }
+
+    BOOT_PRINTF("in HOUS ***\n")
 
     if (rtems_rate_monotonic_ident( HK_name, &HK_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( HK_name, &HK_id );
@@ -195,7 +202,7 @@ rtems_task hous_task(rtems_task_argument argument)
         PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status )
     }
     else {
-        PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n")
+        DEBUG_PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n")
     }
 
     while(1){ // launch the rate monotonic task
@@ -215,9 +222,9 @@ rtems_task hous_task(rtems_task_argument argument)
             update_spacewire_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_send( misc_id[QUEUE_PKTS], &spw_ioctl_send, sizeof(spw_ioctl_send));
+            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send, ACTION_MSG_PKTS_SIZE);
             if (status != RTEMS_SUCCESSFUL) {
-                PRINTF1("in HOUS *** ERR %d\n", (int) status)
+                PRINTF1("in HOUS *** ERR %d\n", status)
             }
         }
     }
@@ -235,29 +242,48 @@ rtems_task send_task( rtems_task_argument argument)
     spw_ioctl_pkt_send spw_ioctl_send;  // incoming spw_ioctl_pkt_send structure
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
+    rtems_id queue_id;
 
-    PRINTF("in SEND *** \n")
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in SEND *** ERR getting queue id, %d\n", status)
+    }
+
+    BOOT_PRINTF("in SEND *** \n")
 
     while(1)
     {
-        status = rtems_message_queue_receive(misc_id[QUEUE_PKTS], (char*) &spw_ioctl_send, &size,
-                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        status = rtems_message_queue_receive( queue_id, (char*) &spw_ioctl_send, &size,
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );
+
         if (status!=RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in SEND *** (1) ERR = %d \n", status)
+            PRINTF1("in SEND *** (1) ERR = %d\n", status)
         }
         else
         {
-            status = write_spw(&spw_ioctl_send);
-            if (status != RTEMS_SUCCESSFUL) {
-                PRINTF("in SEND *** TRAFFIC JAM\n")
+            if (spw_ioctl_send.hlen == 0)
+            {
+                status = write( fdSPW, spw_ioctl_send.data, spw_ioctl_send.dlen );
+                if (status == -1){
+                    PRINTF2("in SEND *** (2.a) ERR = %d, dlen = %d\n", status, spw_ioctl_send.dlen)
+                }
+            }
+            else
+            {
+                status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
+                if (status == -1){
+                    PRINTF2("in SEND *** (2.b) ERR = %d, dlen = %d\n", status, spw_ioctl_send.dlen)
+                    PRINTF1("                            hlen = %d\n", spw_ioctl_send.hlen)
+                }
             }
         }
 
-        status = rtems_message_queue_get_number_pending( misc_id[QUEUE_PKTS], &count );
+        status = rtems_message_queue_get_number_pending( queue_id, &count );
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in SEND *** (2) ERR = %d \n", status)
+            PRINTF1("in SEND *** (3) ERR = %d\n", status)
         }
         else
         {
@@ -269,7 +295,18 @@ rtems_task send_task( rtems_task_argument argument)
     }
 }
 
+rtems_id get_pkts_queue_id( void )
+{
+    rtems_id queue_id;
+    rtems_status_code status;
 
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
+    }
+    return queue_id;
+}
 
 
 

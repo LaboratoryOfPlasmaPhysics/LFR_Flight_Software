@@ -118,16 +118,16 @@
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_SMIQ 10
 //
-#define TASK_PRIORITY_SEND 30
-//
-#define TASK_PRIORITY_RECV 40
-#define TASK_PRIORITY_ACTN 40
+#define TASK_PRIORITY_RECV 20
+#define TASK_PRIORITY_ACTN 30
 //
 #define TASK_PRIORITY_HOUS 40
 #define TASK_PRIORITY_CWF1 40
 #define TASK_PRIORITY_CWF2 40
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40
+//
+#define TASK_PRIORITY_SEND 40
 //
 #define TASK_PRIORITY_AVF0 60
 #define TASK_PRIORITY_BPF0 60
@@ -154,12 +154,32 @@
 #define PRINTF2(x,y,z) ;
 #endif
 
+#ifdef BOOT_MESSAGES
+#define BOOT_PRINTF(x) printf(x);
+#define BOOT_PRINTF1(x,y) printf(x,y);
+#define BOOT_PRINTF2(x,y,z) printf(x,y,z);
+#else
+#define BOOT_PRINTF(x) ;
+#define BOOT_PRINTF1(x,y) ;
+#define BOOT_PRINTF2(x,y,z) ;
+#endif
+
+#ifdef DEBUG_MESSAGES
+#define DEBUG_PRINTF(x) printf(x);
+#define DEBUG_PRINTF1(x,y) printf(x,y);
+#define DEBUG_PRINTF2(x,y,z) printf(x,y,z);
+#else
+#define DEBUG_PRINTF(x) ;
+#define DEBUG_PRINTF1(x,y) ;
+#define DEBUG_PRINTF2(x,y,z) ;
+#endif
+
 #define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 
 #define NB_SAMPLES_PER_SNAPSHOT 2048
 #define TIME_OFFSET 2
 #define WAVEFORM_EXTENDED_HEADER_OFFSET 22
-#define NB_BYTES_SWF_BLK 2 * 6
+#define NB_BYTES_SWF_BLK (2 * 6)
 #define NB_WORDS_SWF_BLK 3
 
 //******************

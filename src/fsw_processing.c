@@ -96,7 +96,7 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
     rtems_event_set event_out;
     unsigned int nb_interrupt_f0 = 0;
 
-    PRINTF("in SMIQ *** \n")
+    BOOT_PRINTF("in SMIQ *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
@@ -139,7 +139,7 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
     //static int nb_average_f1 = 0;
     //static int nb_average_f2 = 0;
 
-    printf("in BPPR ***\n");
+    BOOT_PRINTF("in BPPR ***\n");
 
     while(true){ // wait for an event to begin with the processing
         status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
@@ -175,7 +175,7 @@ rtems_task avf0_task(rtems_task_argument argument)
 
     nb_average = 0;
 
-    PRINTF("in AVFO *** \n")
+    BOOT_PRINTF("in AVFO *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
@@ -204,7 +204,7 @@ rtems_task bpf0_task(rtems_task_argument argument)
 {
     rtems_event_set event_out;
 
-    PRINTF("in BPFO *** \n")
+    BOOT_PRINTF("in BPFO *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
@@ -218,11 +218,19 @@ rtems_task matr_task(rtems_task_argument argument)
 {
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
     rtems_event_set event_out;
+    rtems_status_code status;
+    rtems_id queue_id;
     Header_TM_LFR_SCIENCE_ASM_t headerASM;
 
     init_header_asm( &headerASM );
 
-    PRINTF("in MATR *** \n")
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in MATR *** ERR getting queue id, %d\n", status)
+    }
+
+    BOOT_PRINTF("in MATR *** \n")
 
     fill_averaged_spectral_matrix( );
 
@@ -235,7 +243,7 @@ rtems_task matr_task(rtems_task_argument argument)
 #endif
         convert_averaged_spectral_matrix( averaged_spec_mat_f0, averaged_spec_mat_f0_char);
 
-        send_spectral_matrix( &headerASM, averaged_spec_mat_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM);
+        send_spectral_matrix( &headerASM, averaged_spec_mat_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
     }
 }
 
@@ -509,7 +517,7 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header)
 }
 
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
-                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send)
+                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id)
 {
     unsigned int i;
     unsigned int length = 0;
@@ -549,19 +557,9 @@ void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_ma
         header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
-        status = write_spw(spw_ioctl_send);
+        status =  rtems_message_queue_send( queue_id, spw_ioctl_send, ACTION_MSG_PKTS_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
-            while (true) {
-                if (status != RTEMS_SUCCESSFUL) {
-                    status = write_spw(spw_ioctl_send);
-                    //PRINTF1("%d", i)
-                    sched_yield();
-                }
-                else {
-                    //PRINTF("\n")
-                    break;
-                }
-            }
+            printf("in send_spectral_matrix *** ERR %d\n", (int) status);
         }
     }
 }

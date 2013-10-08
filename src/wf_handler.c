@@ -51,12 +51,19 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 #ifdef GSA
         PRINTF("in waveform_isr *** unexpected waveform picker interruption\n")
 #else
-        if ( (waveform_picker_regs->status & 0x7) == 0x7 ){     // [0111] f2 f1 and f0 are full
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
+        if ( (waveform_picker_regs->burst_enable & 0x7) == 0x0 ){ // if no channel is enable
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
         }
-        waveform_picker_regs->status = waveform_picker_regs->status & 0xf888; // [1111 1000 1000 1000] f2, f1, f0 bits =0
+        else {
+            if ( (waveform_picker_regs->status & 0x7) == 0x7 ){ // f2 f1 and f0 are full
+                waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable & 0x08;
+                if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+                }
+                waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
+                waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable | 0x07; // [0111] enable f2 f1 f0
+            }
+       }
 #endif
         break;
 
@@ -196,6 +203,8 @@ rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
 rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform picker VHDL IP
 {
     rtems_event_set event_out;
+    rtems_id queue_id;
+    rtems_status_code status;
 
     init_header_snapshot_wf_table( SID_NORM_SWF_F0, headerSWF_F0 );
     init_header_snapshot_wf_table( SID_NORM_SWF_F1, headerSWF_F1 );
@@ -203,7 +212,13 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     init_waveforms();
 
-    PRINTF("in WFRM ***\n")
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in WFRM *** ERR getting queue id, %d\n", status)
+    }
+
+    BOOT_PRINTF("in WFRM ***\n")
 
     while(1){
         // wait for an RTEMS_EVENT
@@ -211,41 +226,41 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
 
-        switch( event_out) {
-
-        case RTEMS_EVENT_MODE_NORMAL:
-            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0);
-            send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1);
-            send_waveform_SWF(wf_snap_f2, SID_NORM_SWF_F2, headerSWF_F2);
+        if (event_out == RTEMS_EVENT_MODE_NORMAL)
+        {
+            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+            send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
+            send_waveform_SWF(wf_snap_f2, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
 #ifdef GSA
             waveform_picker_regs->status = waveform_picker_regs->status & 0xf888; // [1111 1000 1000 1000] f2, f1, f0 bits =0
 #endif
-            break;
-
-        case RTEMS_EVENT_MODE_SBM1:
-            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0);
-            send_waveform_SWF(wf_snap_f1_norm, SID_NORM_SWF_F1, headerSWF_F1);
-            send_waveform_SWF(wf_snap_f2, SID_NORM_SWF_F2, headerSWF_F2);
+        }
+        else if (event_out == RTEMS_EVENT_MODE_SBM1)
+        {
+            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+            send_waveform_SWF(wf_snap_f1_norm, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
+            send_waveform_SWF(wf_snap_f2, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
 #ifdef GSA
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffaaa; // [1111 1010 1010 1010] f2, f0 bits = 0
 #endif
-            break;
-
-        case RTEMS_EVENT_MODE_SBM2:
-            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0);
-            send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1);
+        }
+        else if (event_out == RTEMS_EVENT_MODE_SBM2)
+        {
+            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+            send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
 #ifdef GSA
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffccc; // [1111 1100 1100 1100] f1, f0 bits = 0
 #endif
-            break;
-
-        case RTEMS_EVENT_MODE_SBM2_WFRM:
-            send_waveform_SWF(wf_snap_f2_norm, SID_NORM_SWF_F2, headerSWF_F2);
-            break;
-
-        default:
-            break;
         }
+        else if (event_out == RTEMS_EVENT_MODE_SBM2_WFRM)
+        {
+            send_waveform_SWF(wf_snap_f2_norm, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
+        }
+        else
+        {
+            PRINTF("in WFRM *** unexpected event")
+        }
+
 
 #ifdef GSA
         // irq processed, reset the related register of the timer unit
@@ -259,10 +274,13 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform picker VHDL IP
 {
     rtems_event_set event_out;
+    rtems_id queue_id;
 
     init_header_continuous_wf_table( SID_NORM_CWF_F3, headerCWF_F3 );
 
-    PRINTF("in CWF3 ***\n")
+    queue_id = get_pkts_queue_id();
+
+    BOOT_PRINTF("in CWF3 ***\n")
 
     while(1){
         // wait for an RTEMS_EVENT
@@ -272,10 +290,10 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 #ifdef GSA
 #else
         if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3) {
-            send_waveform_CWF( wf_cont_f3_bis, SID_NORM_CWF_F3, headerCWF_F3 );
+            send_waveform_CWF( wf_cont_f3_bis, SID_NORM_CWF_F3, headerCWF_F3, queue_id );
         }
         else {
-            send_waveform_CWF( wf_cont_f3, SID_NORM_CWF_F3, headerCWF_F3 );
+            send_waveform_CWF( wf_cont_f3, SID_NORM_CWF_F3, headerCWF_F3, queue_id );
         }
 #endif
     }
@@ -284,11 +302,14 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SBM2
 {
     rtems_event_set event_out;
+    rtems_id queue_id;
 
     init_header_continuous_wf_table( SID_BURST_CWF_F2, headerCWF_F2_BURST );
     init_header_continuous_wf_table( SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
 
-    PRINTF("in CWF2 ***\n")
+    queue_id = get_pkts_queue_id();
+
+    BOOT_PRINTF("in CWF2 ***\n")
 
     while(1){
         // wait for an RTEMS_EVENT
@@ -300,10 +321,10 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 #ifdef GSA
 #else
             if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
-               send_waveform_CWF( wf_snap_f2_bis, SID_BURST_CWF_F2, headerCWF_F2_BURST );
+               send_waveform_CWF( wf_snap_f2_bis, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
             }
             else {
-                send_waveform_CWF( wf_snap_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST );
+                send_waveform_CWF( wf_snap_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
             }
         #endif
         }
@@ -314,13 +335,13 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
             if (doubleSendCWF2 == 1)
             {
                 doubleSendCWF2 = 0;
-                send_waveform_CWF( wf_snap_f2_norm, SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
+                send_waveform_CWF( wf_snap_f2_norm, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
             }
             else if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
-                send_waveform_CWF( wf_snap_f2_bis, SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
+                send_waveform_CWF( wf_snap_f2_bis, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
             }
             else {
-                send_waveform_CWF( wf_snap_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
+                send_waveform_CWF( wf_snap_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
             }
             param_local.local_sbm2_nb_cwf_sent ++;
 #endif
@@ -335,10 +356,13 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 {
     rtems_event_set event_out;
+    rtems_id queue_id;
 
     init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
 
-    PRINTF("in CWF1 ***\n")
+    queue_id = get_pkts_queue_id();
+
+    BOOT_PRINTF("in CWF1 ***\n")
 
     while(1){
         // wait for an RTEMS_EVENT
@@ -351,13 +375,13 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
             if (doubleSendCWF1 == 1)
             {
                 doubleSendCWF1 = 0;
-                send_waveform_CWF( wf_snap_f1_norm, SID_SBM1_CWF_F1, headerCWF_F1 );
+                send_waveform_CWF( wf_snap_f1_norm, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
             }
             else if (waveform_picker_regs->addr_data_f1 == (int) wf_snap_f1) {
-               send_waveform_CWF( wf_snap_f1_bis, SID_SBM1_CWF_F1, headerCWF_F1 );
+               send_waveform_CWF( wf_snap_f1_bis, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
             }
             else {
-                send_waveform_CWF( wf_snap_f1, SID_SBM1_CWF_F1, headerCWF_F1);
+                send_waveform_CWF( wf_snap_f1, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
             }
             param_local.local_sbm1_nb_cwf_sent ++;
 #endif
@@ -555,7 +579,8 @@ void reset_waveforms( void )
     }
 }
 
-int send_waveform_SWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF )
+int send_waveform_SWF( volatile int *waveform, unsigned int sid,
+                       Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id )
 {
     unsigned int i;
     int ret;
@@ -592,7 +617,7 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_S
         headerSWF[ i ].acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
         headerSWF[ i ].acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
-        status =  rtems_message_queue_send( misc_id[QUEUE_PKTS], &spw_ioctl_send_SWF, ACTION_MSG_PKTS_SIZE);
+        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_SWF, ACTION_MSG_PKTS_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
             printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;
@@ -603,7 +628,8 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_S
     return ret;
 }
 
-int send_waveform_CWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF)
+int send_waveform_CWF(volatile int *waveform, unsigned int sid,
+                      Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id)
 {
     unsigned int i;
     int ret;
@@ -646,7 +672,7 @@ int send_waveform_CWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_S
         // SEND PACKET
         if (sid == SID_NORM_CWF_F3)
         {
-            status =  rtems_message_queue_send( misc_id[QUEUE_PKTS], &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
+            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
             if (status != RTEMS_SUCCESSFUL) {
                 printf("%d-%d, ERR %d\n", sid, i, (int) status);
                 ret = LFR_DEFAULT;
@@ -655,7 +681,7 @@ int send_waveform_CWF( volatile int *waveform, unsigned int sid, Header_TM_LFR_S
         }
         else
         {
-            status =  rtems_message_queue_urgent( misc_id[QUEUE_PKTS], &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
+            status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
             if (status != RTEMS_SUCCESSFUL) {
                 printf("%d-%d, ERR %d\n", sid, i, (int) status);
                 ret = LFR_DEFAULT;
@@ -724,6 +750,7 @@ void set_wfp_burst_enable_register( unsigned char mode)
     // the burst bits shall be set first, before the enable bits
     switch(mode) {
     case(LFR_MODE_NORMAL):
+        waveform_picker_regs->burst_enable = 0x00;  // [0000 0000] no burst enable
         waveform_picker_regs->burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
         break;
     case(LFR_MODE_BURST):

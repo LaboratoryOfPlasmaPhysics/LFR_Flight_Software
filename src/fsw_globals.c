@@ -6,10 +6,10 @@
 #include <fsw_params.h>
 
 // RTEMS GLOBAL VARIABLES
-rtems_name misc_name[5];
-rtems_name misc_id[5];
-rtems_id   Task_id[20];         /* array of task ids */
-rtems_name Task_name[20];       /* array of task names */
+rtems_name  misc_name[5];
+rtems_id    misc_id[5];
+rtems_name  Task_name[20];       /* array of task names */
+rtems_id    Task_id[20];         /* array of task ids */
 unsigned int maxCount;
 int fdSPW = 0;
 int fdUART = 0;

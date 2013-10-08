@@ -31,4 +31,6 @@ rtems_task stat_task(rtems_task_argument argument);
 rtems_task hous_task(rtems_task_argument argument);
 rtems_task send_task(rtems_task_argument argument);
 
+rtems_id get_pkts_queue_id( void );
+
 #endif // FSW_MISC_H_INCLUDED

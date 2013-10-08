@@ -23,7 +23,7 @@
 #define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
-#define CONFIGURE_MAXIMUM_TIMERS 5
+#define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 2
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
@@ -54,11 +54,11 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_status_code status;
     rtems_isr_entry  old_isr_handler;
 
-    PRINTF("\n\n\n\n\n")
-    PRINTF("***************************\n")
-    PRINTF("** START Flight Software **\n")
-    PRINTF("***************************\n")
-    PRINTF("\n\n")
+    BOOT_PRINTF("\n\n\n\n\n")
+    BOOT_PRINTF("***************************\n")
+    BOOT_PRINTF("** START Flight Software **\n")
+    BOOT_PRINTF("***************************\n")
+    BOOT_PRINTF("\n\n")
 
     //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
@@ -112,7 +112,7 @@ rtems_task Init( rtems_task_argument ignored )
                     IRQ_SPARC_SM, spectral_matrices_isr_simu );
 #endif
 
-    PRINTF("delete INIT\n")
+    BOOT_PRINTF("delete INIT\n")
 
     status = rtems_task_delete(RTEMS_SELF);
 
@@ -182,9 +182,9 @@ void init_local_mode_parameters( void )
     set_local_sbm2_nb_cwf_max();
     set_local_nb_interrupt_f0_MAX();
 
-    PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
-    PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
-    PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
+    BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
+    BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+    BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
 
     reset_local_sbm1_nb_cwf_sent();
     reset_local_sbm2_nb_cwf_sent();
@@ -343,7 +343,7 @@ int create_all_tasks( void )
     // SEND
     status = rtems_task_create(
         Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
     );
 
@@ -356,96 +356,100 @@ int start_all_tasks( void )
 
     status = rtems_task_start( Task_id[TASKID_SPIQ], spiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_SPIQ\n")
-    }
-
-    status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_RECV\n")
-    }
-
-    status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_ACTN\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_BPPR\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_BPPR\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_SEND], send_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n")
+    }
+
+    status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_STAT\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_AVF0\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_BPF0], bpf0_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_BPF0\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_BPF0\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_WFRM\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_DUMB\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_HOUS\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_MATR], matr_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_MATR\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_MATR\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_CWF3], cwf3_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_CWF3\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_CWF3\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_CWF2], cwf2_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_CWF2\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_CWF2\n")
     }
 
     status = rtems_task_start( Task_id[TASKID_CWF1], cwf1_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_CWF1\n")
-    }
-    status = rtems_task_start( Task_id[TASKID_SEND], send_task, 1 );
-    if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in INIT *** Error starting TASK_SEND\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n")
     }
 
     return 0;
 }
 
-int create_message_queues( void )
+rtems_status_code create_message_queues( void )
 {
     rtems_status_code status;
+    rtems_status_code ret;
+    rtems_id queue_id;
+
+    ret = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_SIZE,
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    if (ret != RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", ret)
+    }
 
     status = rtems_message_queue_create( misc_name[QUEUE_QUEU], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[QUEUE_QUEU] );
-    if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in create_message_queues *** ERR creating QUEU\n")
+                                                 RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    if (status != RTEMS_SUCCESSFUL) {
+        ret = status;
+        BOOT_PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", ret)
     }
 
-    status = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &misc_id[QUEUE_PKTS] );
-    if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in create_message_queues *** ERR creating PKTS\n")
-    }
-
-    return 0;
+   return ret;
 }

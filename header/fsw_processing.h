@@ -32,8 +32,6 @@ extern volatile int spec_mat_f2_bis[ ];
 extern volatile int spec_mat_f0_0_bis[ ];
 extern volatile int spec_mat_f0_1_bis[ ];
 
-extern rtems_id Task_id[ ];         /* array of task ids */
-
 // parameters
 extern struct param_local_str param_local;
 
@@ -62,7 +60,7 @@ void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
 //
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
-                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send);
+                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output_matrix);
 void fill_averaged_spectral_matrix();
 void reset_spectral_matrix_regs();
