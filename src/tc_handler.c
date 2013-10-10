@@ -1203,7 +1203,6 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
     status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
@@ -1246,7 +1245,6 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id que
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
     status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
@@ -1287,7 +1285,6 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id qu
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
     status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
@@ -1326,7 +1323,6 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     spw_ioctl_send.options = 0;
 
     // SEND DATA
-    //status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send );
     status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")

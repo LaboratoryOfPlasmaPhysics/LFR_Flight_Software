@@ -681,7 +681,7 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
         }
         else
         {
-            status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
+            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
             if (status != RTEMS_SUCCESSFUL) {
                 printf("%d-%d, ERR %d\n", sid, i, (int) status);
                 ret = LFR_DEFAULT;
