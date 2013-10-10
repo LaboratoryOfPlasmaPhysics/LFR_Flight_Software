@@ -7,11 +7,11 @@ CONFIG -= qt
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-13
+SWVERSION=-0-14
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=13
+DEFINES += SW_VERSION_N4=14
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
@@ -58,5 +58,6 @@ HEADERS += \
     ../header/fsw_init.h \
     ../header/ccsds_types.h \
     ../header/fsw_params_processing.h \
-    ../header/fsw_spacewire.h
+    ../header/fsw_spacewire.h \
+    ../header/tm_byte_positions.h
 

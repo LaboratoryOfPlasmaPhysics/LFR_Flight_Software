@@ -315,19 +315,21 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_BURST | RTEMS_EVENT_MODE_SBM2,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
             // F2
 #ifdef GSA
 #else
             if (waveform_picker_regs->addr_data_f2 == (int) wf_snap_f2) {
-               send_waveform_CWF( wf_snap_f2_bis, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
+                send_waveform_CWF( wf_snap_f2_bis, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
             }
             else {
                 send_waveform_CWF( wf_snap_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
             }
         #endif
         }
+
         else if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
 #ifdef GSA
@@ -494,7 +496,7 @@ int init_header_continuous_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_CWF
         headerCWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
         headerCWF[ i ].reserved = DEFAULT_RESERVED;
         headerCWF[ i ].userApplication = CCSDS_USER_APP;
-        if (SID_SBM1_CWF_F1 || SID_SBM2_CWF_F2)
+        if ( (sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2) )
         {
             headerCWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2 >> 8);
             headerCWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2);
@@ -617,7 +619,7 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
         headerSWF[ i ].acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
         headerSWF[ i ].acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
-        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_SWF, ACTION_MSG_PKTS_SIZE);
+        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_SWF, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
             printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;

@@ -302,66 +302,6 @@ unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN
     return ret;
 }
 
-unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
-                               TMHeader_t *TMHeader, unsigned char tc_sid)
-{
-    TMHeader->targetLogicalAddress = CCSDS_DESTINATION_ID;
-    TMHeader->protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    TMHeader->reserved = 0x00;
-    TMHeader->userApplication = 0x00;
-    TMHeader->packetID[0] = 0x0c;
-    TMHeader->packetSequenceControl[0] = 0xc0;
-    TMHeader->packetSequenceControl[1] = 0x00;
-    TMHeader->packetLength[0] = (unsigned char) (packetLength>>8);
-    TMHeader->packetLength[1] = (unsigned char) packetLength;
-    TMHeader->spare1_pusVersion_spare2 = 0x10;
-    TMHeader->destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
-    switch (tm_type){
-        case(TM_LFR_TC_EXE_OK):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_TC_EXE;
-            TMHeader->serviceType = TM_TYPE_TC_EXE;      // type
-            TMHeader->serviceSubType = TM_SUBTYPE_EXE_OK;   // subtype
-            TMHeader->destinationID = tc_sid;    // destination id
-            break;
-        case(TM_LFR_TC_EXE_ERR):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_TC_EXE;
-            TMHeader->serviceType = TM_TYPE_TC_EXE;      // type
-            TMHeader->serviceSubType = TM_SUBTYPE_EXE_NOK;  // subtype
-            TMHeader->destinationID = tc_sid;
-            break;
-        case(TM_LFR_HK):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_HK;
-            TMHeader->serviceType = TM_TYPE_HK;      // type
-            TMHeader->serviceSubType = TM_SUBTYPE_HK;   // subtype
-            break;
-        case(TM_LFR_SCI):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_NORMAL_BURST;
-            TMHeader->serviceType = TM_TYPE_LFR_SCIENCE; // type
-            TMHeader->serviceSubType = TM_SUBTYPE_SCIENCE;  // subtype
-            break;
-        case(TM_LFR_SCI_SBM):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_SCIENCE_SBM1_SBM2;
-            TMHeader->serviceType = TM_TYPE_LFR_SCIENCE;  // type
-            TMHeader->serviceSubType = TM_SUBTYPE_SCIENCE; // subtype
-            break;
-        case(TM_LFR_PAR_DUMP):
-            TMHeader->packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
-            TMHeader->serviceType = TM_TYPE_HK;  // type
-            TMHeader->serviceSubType = TM_SUBTYPE_HK; // subtype
-            break;
-        default:
-            return 0;
-    }
-    TMHeader->time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TMHeader->time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TMHeader->time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TMHeader->time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TMHeader->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TMHeader->time[5] = (unsigned char) (time_management_regs->fine_time);
-
-    return LFR_SUCCESSFUL;
-}
-
 //***********
 // RTEMS TASK
 rtems_task recv_task( rtems_task_argument unused )
@@ -700,33 +640,43 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     requestedMode = TC->dataAndCRC[1];
 
-    printf("try to enter mode %d\n", requestedMode);
-
-#ifdef PRINT_TASK_STATISTICS
-    if (requestedMode != LFR_MODE_STANDBY)
+    if ( (requestedMode != LFR_MODE_STANDBY)
+         && (requestedMode != LFR_MODE_NORMAL) && (requestedMode != LFR_MODE_BURST)
+         && (requestedMode != LFR_MODE_SBM1) && (requestedMode != LFR_MODE_SBM2) )
     {
-        rtems_cpu_usage_reset();
-        maxCount = 0;
-    }
-#endif
-
-    status = transition_validation(requestedMode);
-
-    if ( status == LFR_SUCCESSFUL ) {
-        if ( lfrCurrentMode != LFR_MODE_STANDBY)
-        {
-            status = stop_current_mode();
-        }
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF("ERR *** in action_enter *** stop_current_mode\n")
-        }
-        status = enter_mode(requestedMode, TC);
+        status = RTEMS_UNSATISFIED;
+        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
     }
     else
     {
-        PRINTF("ERR *** in action_enter *** transition rejected\n")
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+        printf("try to enter mode %d\n", requestedMode);
+
+#ifdef PRINT_TASK_STATISTICS
+        if (requestedMode != LFR_MODE_STANDBY)
+        {
+            rtems_cpu_usage_reset();
+            maxCount = 0;
+        }
+#endif
+
+        status = transition_validation(requestedMode);
+
+        if ( status == LFR_SUCCESSFUL ) {
+            if ( lfrCurrentMode != LFR_MODE_STANDBY)
+            {
+                status = stop_current_mode();
+            }
+            if (status != RTEMS_SUCCESSFUL)
+            {
+                PRINTF("ERR *** in action_enter *** stop_current_mode\n")
+            }
+            status = enter_mode(requestedMode, TC);
+        }
+        else
+        {
+            PRINTF("ERR *** in action_enter *** transition rejected\n")
+            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+        }
     }
 
     return status;
@@ -1180,74 +1130,156 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
-    TMHeader_t TM_header;
-    char data[4];
-    spw_ioctl_pkt_send spw_ioctl_send;
+    Packet_TM_LFR_TC_EXE_SUCCESS_t TM;
+    unsigned char messageSize;
 
     ret = LFR_SUCCESSFUL;
 
-    TM_build_header( TM_LFR_TC_EXE_OK, PACKET_LENGTH_TC_EXE_SUCCESS,
-                     &TM_header,
-                     TC->sourceID);   // TC source ID
+    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    TM.reserved = DEFAULT_RESERVED;
+    TM.userApplication = CCSDS_USER_APP;
+    // PACKET HEADER
+    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
+    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> 8);
+    TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS     );
+    // DATA FIELD HEADER
+    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    TM.serviceType = TM_TYPE_TC_EXE;
+    TM.serviceSubType = TM_SUBTYPE_EXE_OK;
+    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    //
+    TM.telecommand_pkt_id[0] = TC->packetID[0];
+    TM.telecommand_pkt_id[1] = TC->packetID[1];
+    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
+    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
 
-    data[0] = TC->packetID[0];
-    data[1] = TC->packetID[1];
-    data[2] = TC->packetSequenceControl[0];
-    data[3] = TC->packetSequenceControl[1];
-
-    // filling the structure for the spacewire transmission
-    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-    spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = 4;
-    spw_ioctl_send.data = data;
-    spw_ioctl_send.options = 0;
+    messageSize = PACKET_LENGTH_TC_EXE_SUCCESS + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
         ret = LFR_DEFAULT;
     }
 
-    return ret;
+    return LFR_SUCCESSFUL;
+}
+
+int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
+                                    unsigned char byte_position, unsigned char rcv_value)
+{
+    int ret;
+    rtems_status_code status;
+    Packet_TM_LFR_TC_EXE_INCONSISTENT_t TM;
+    unsigned char messageSize;
+
+    ret = LFR_SUCCESSFUL;
+
+    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    TM.reserved = DEFAULT_RESERVED;
+    TM.userApplication = CCSDS_USER_APP;
+    // PACKET HEADER
+    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
+    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> 8);
+    TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT     );
+    // DATA FIELD HEADER
+    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    TM.serviceType = TM_TYPE_TC_EXE;
+    TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
+    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    //
+    TM.tc_failure_code[0] = (char) (FAILURE_CODE_INCONSISTENT >> 8);
+    TM.tc_failure_code[1] = (char) (FAILURE_CODE_INCONSISTENT     );
+    TM.telecommand_pkt_id[0] = TC->packetID[0];
+    TM.telecommand_pkt_id[1] = TC->packetID[1];
+    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
+    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
+    TM.tc_service = TC->serviceType;      // type of the rejected TC
+    TM.tc_subtype = TC->serviceSubType;   // subtype of the rejected TC
+    TM.byte_position = byte_position;
+    TM.rcv_value = rcv_value;
+
+    messageSize = PACKET_LENGTH_TC_EXE_INCONSISTENT + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
+
+    // SEND DATA
+    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n")
+        ret = LFR_DEFAULT;
+    }
+
+    return LFR_SUCCESSFUL;
 }
 
 int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
-    TMHeader_t TM_header;
-    char data[10];
-    spw_ioctl_pkt_send spw_ioctl_send;
+    Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t TM;
+    unsigned char messageSize;
 
     ret = LFR_SUCCESSFUL;
 
-    TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE,
-                     &TM_header,
-                     TC->sourceID);   // TC source ID
+    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    TM.reserved = DEFAULT_RESERVED;
+    TM.userApplication = CCSDS_USER_APP;
+    // PACKET HEADER
+    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
+    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> 8);
+    TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     );
+    // DATA FIELD HEADER
+    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    TM.serviceType = TM_TYPE_TC_EXE;
+    TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
+    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    //
+    TM.tc_failure_code[0] = (char) (FAILURE_CODE_NOT_EXECUTABLE >> 8);
+    TM.tc_failure_code[1] = (char) (FAILURE_CODE_NOT_EXECUTABLE     );
+    TM.telecommand_pkt_id[0] = TC->packetID[0];
+    TM.telecommand_pkt_id[1] = TC->packetID[1];
+    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
+    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
+    TM.tc_service = TC->serviceType;      // type of the rejected TC
+    TM.tc_subtype = TC->serviceSubType;   // subtype of the rejected TC
+    TM.lfr_status_word[0] = housekeeping_packet.lfr_status_word[0];
+    TM.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1];
 
-    data[0] = (char) (FAILURE_CODE_NOT_EXECUTABLE >> 8);
-    data[1] = (char) FAILURE_CODE_NOT_EXECUTABLE;
-    data[2] = TC->packetID[0];
-    data[3] = TC->packetID[1];
-    data[4] = TC->packetSequenceControl[0];
-    data[5] = TC->packetSequenceControl[1];
-    data[6] = TC->serviceType;      // type of the rejected TC
-    data[7] = TC->serviceSubType;   // subtype of the rejected TC
-    data[8] = housekeeping_packet.lfr_status_word[0];
-    data[6] = housekeeping_packet.lfr_status_word[1];
-
-    // filling the structure for the spacewire transmission
-    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-    spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = 10;
-    spw_ioctl_send.data = data;
-    spw_ioctl_send.options = 0;
+    messageSize = PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
-        PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
+        PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n")
         ret = LFR_DEFAULT;
     }
 
@@ -1258,34 +1290,47 @@ int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id qu
 {
     int ret;
     rtems_status_code status;
-    TMHeader_t TM_header;
-    char data[8];
-    spw_ioctl_pkt_send spw_ioctl_send;
+    Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t TM;
+    unsigned char messageSize;
 
     ret = LFR_SUCCESSFUL;
 
-    TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED,
-                     &TM_header,
-                     TC->sourceID);   // TC source ID
+    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    TM.reserved = DEFAULT_RESERVED;
+    TM.userApplication = CCSDS_USER_APP;
+    // PACKET HEADER
+    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
+    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> 8);
+    TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED     );
+    // DATA FIELD HEADER
+    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    TM.serviceType = TM_TYPE_TC_EXE;
+    TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
+    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    //
+    TM.tc_failure_code[0] = (char) (FAILURE_CODE_NOT_IMPLEMENTED >> 8);
+    TM.tc_failure_code[1] = (char) (FAILURE_CODE_NOT_IMPLEMENTED     );
+    TM.telecommand_pkt_id[0] = TC->packetID[0];
+    TM.telecommand_pkt_id[1] = TC->packetID[1];
+    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
+    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
+    TM.tc_service = TC->serviceType;      // type of the rejected TC
+    TM.tc_subtype = TC->serviceSubType;   // subtype of the rejected TC
 
-    data[0] = (char) (FAILURE_CODE_NOT_IMPLEMENTED >> 8);
-    data[1] = (char) FAILURE_CODE_NOT_IMPLEMENTED;
-    data[2] = TC->packetID[0];
-    data[3] = TC->packetID[1];
-    data[4] = TC->packetSequenceControl[0];
-    data[5] = TC->packetSequenceControl[1];
-    data[6] = TC->serviceType;      // type of the rejected TC
-    data[7] = TC->serviceSubType;   // subtype of the rejected TC
-
-    // filling the structure for the spacewire transmission
-    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-    spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = 8;
-    spw_ioctl_send.data = data;
-    spw_ioctl_send.options = 0;
+    messageSize = PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
         ret = LFR_DEFAULT;
@@ -1298,32 +1343,47 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
     int ret;
     rtems_status_code status;
-    TMHeader_t TM_header;
-    char data[8];
-    spw_ioctl_pkt_send spw_ioctl_send;
+    Packet_TM_LFR_TC_EXE_ERROR_t TM;
+    unsigned char messageSize;
 
-    TM_build_header( TM_LFR_TC_EXE_ERR, PACKET_LENGTH_TC_EXE_ERROR,
-                     &TM_header,
-                     TC->sourceID);   // TC source ID
+    ret = LFR_SUCCESSFUL;
 
-    data[0] = (char) (FAILURE_CODE_ERROR >> 8);
-    data[1] = (char) FAILURE_CODE_ERROR;
-    data[2] = TC->packetID[0];
-    data[3] = TC->packetID[1];
-    data[4] = TC->packetSequenceControl[0];
-    data[5] = TC->packetSequenceControl[1];
-    data[6] = TC->serviceType;      // type of the rejected TC
-    data[7] = TC->serviceSubType;   // subtype of the rejected TC
+    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    TM.reserved = DEFAULT_RESERVED;
+    TM.userApplication = CCSDS_USER_APP;
+    // PACKET HEADER
+    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
+    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> 8);
+    TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR     );
+    // DATA FIELD HEADER
+    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    TM.serviceType = TM_TYPE_TC_EXE;
+    TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
+    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    //
+    TM.tc_failure_code[0] = (char) (FAILURE_CODE_ERROR >> 8);
+    TM.tc_failure_code[1] = (char) (FAILURE_CODE_ERROR     );
+    TM.telecommand_pkt_id[0] = TC->packetID[0];
+    TM.telecommand_pkt_id[1] = TC->packetID[1];
+    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
+    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
+    TM.tc_service = TC->serviceType;      // type of the rejected TC
+    TM.tc_subtype = TC->serviceSubType;   // subtype of the rejected TC
 
-    // filling the structure for the spacewire transmission
-    spw_ioctl_send.hlen = TM_HEADER_LEN + 4; // + 4 is for the protocole extra header
-    spw_ioctl_send.hdr = (char*) &TM_header;
-    spw_ioctl_send.dlen = 8;
-    spw_ioctl_send.data = data;
-    spw_ioctl_send.options = 0;
+    messageSize = PACKET_LENGTH_TC_EXE_ERROR + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &spw_ioctl_send, sizeof(spw_ioctl_send));
+    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
         ret = LFR_DEFAULT;

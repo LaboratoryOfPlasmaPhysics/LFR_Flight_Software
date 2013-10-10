@@ -438,14 +438,15 @@ rtems_status_code create_message_queues( void )
     rtems_status_code ret;
     rtems_id queue_id;
 
-    ret = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    ret = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT,
+                                      ACTION_MSG_PKTS_MAX_SIZE,
+                                      RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if (ret != RTEMS_SUCCESSFUL) {
         BOOT_PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", ret)
     }
 
     status = rtems_message_queue_create( misc_name[QUEUE_QUEU], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
-                                                 RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+                                         RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if (status != RTEMS_SUCCESSFUL) {
         ret = status;
         BOOT_PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", ret)

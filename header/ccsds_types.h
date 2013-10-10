@@ -235,6 +235,131 @@ struct Packet_TM_LFR_TC_EXE_str
 };
 typedef struct Packet_TM_LFR_TC_EXE_str Packet_TM_LFR_TC_EXE_t;
 
+struct Packet_TM_LFR_TC_EXE_SUCCESS_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    // PACKET HEADER
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    //
+    volatile unsigned char telecommand_pkt_id[2];
+    volatile unsigned char pkt_seq_control[2];
+};
+typedef struct Packet_TM_LFR_TC_EXE_SUCCESS_str Packet_TM_LFR_TC_EXE_SUCCESS_t;
+
+struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    // PACKET HEADER
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    //
+    volatile unsigned char tc_failure_code[2];
+    volatile unsigned char telecommand_pkt_id[2];
+    volatile unsigned char pkt_seq_control[2];
+    volatile unsigned char tc_service;
+    volatile unsigned char tc_subtype;
+    volatile unsigned char byte_position;
+    volatile unsigned char rcv_value;
+};
+typedef struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str Packet_TM_LFR_TC_EXE_INCONSISTENT_t;
+
+struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    // PACKET HEADER
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    //
+    volatile unsigned char tc_failure_code[2];
+    volatile unsigned char telecommand_pkt_id[2];
+    volatile unsigned char pkt_seq_control[2];
+    volatile unsigned char tc_service;
+    volatile unsigned char tc_subtype;
+    volatile unsigned char lfr_status_word[2];
+};
+typedef struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t;
+
+struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    // PACKET HEADER
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    //
+    volatile unsigned char tc_failure_code[2];
+    volatile unsigned char telecommand_pkt_id[2];
+    volatile unsigned char pkt_seq_control[2];
+    volatile unsigned char tc_service;
+    volatile unsigned char tc_subtype;
+};
+typedef struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
+
+struct Packet_TM_LFR_TC_EXE_ERROR_str
+{
+    volatile unsigned char targetLogicalAddress;
+    volatile unsigned char protocolIdentifier;
+    volatile unsigned char reserved;
+    volatile unsigned char userApplication;
+    // PACKET HEADER
+    volatile unsigned char packetID[2];
+    volatile unsigned char packetSequenceControl[2];
+    volatile unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    volatile unsigned char spare1_pusVersion_spare2;
+    volatile unsigned char serviceType;
+    volatile unsigned char serviceSubType;
+    volatile unsigned char destinationID;
+    volatile unsigned char time[6];
+    //
+    volatile unsigned char tc_failure_code[2];
+    volatile unsigned char telecommand_pkt_id[2];
+    volatile unsigned char pkt_seq_control[2];
+    volatile unsigned char tc_service;
+    volatile unsigned char tc_subtype;
+};
+typedef struct Packet_TM_LFR_TC_EXE_ERROR_str Packet_TM_LFR_TC_EXE_ERROR_t;
+
 struct Packet_TM_LFR_TC_EXE_CORRUPTED_str
 {
     volatile unsigned char targetLogicalAddress;

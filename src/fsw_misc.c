@@ -222,7 +222,7 @@ rtems_task hous_task(rtems_task_argument argument)
             update_spacewire_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send, ACTION_MSG_PKTS_SIZE);
+            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR %d\n", status)
             }
@@ -238,8 +238,9 @@ rtems_task hous_task(rtems_task_argument argument)
 
 rtems_task send_task( rtems_task_argument argument)
 {
-    rtems_status_code status;       // RTEMS status code
-    spw_ioctl_pkt_send spw_ioctl_send;  // incoming spw_ioctl_pkt_send structure
+    rtems_status_code status;               // RTEMS status code
+    char incomingData[ACTION_MSG_PKTS_MAX_SIZE];  // incoming data buffer
+    spw_ioctl_pkt_send *spw_ioctl_send;
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
     rtems_id queue_id;
@@ -254,7 +255,7 @@ rtems_task send_task( rtems_task_argument argument)
 
     while(1)
     {
-        status = rtems_message_queue_receive( queue_id, (char*) &spw_ioctl_send, &size,
+        status = rtems_message_queue_receive( queue_id, incomingData, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT );
 
         if (status!=RTEMS_SUCCESSFUL)
@@ -263,19 +264,30 @@ rtems_task send_task( rtems_task_argument argument)
         }
         else
         {
-            if (spw_ioctl_send.hlen == 0)
+            if ( incomingData[0] == CCSDS_DESTINATION_ID) // the incoming message is a ccsds packet
             {
-                status = write( fdSPW, spw_ioctl_send.data, spw_ioctl_send.dlen );
+                status = write( fdSPW, incomingData, size );
                 if (status == -1){
-                    PRINTF2("in SEND *** (2.a) ERR = %d, dlen = %d\n", status, spw_ioctl_send.dlen)
+                    PRINTF2("in SEND *** (2.a) ERR = %d, size = %d\n", status, size)
                 }
             }
-            else
+            else // the incoming message is a spw_ioctl_pkt_send structure
             {
-                status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-                if (status == -1){
-                    PRINTF2("in SEND *** (2.b) ERR = %d, dlen = %d\n", status, spw_ioctl_send.dlen)
-                    PRINTF1("                            hlen = %d\n", spw_ioctl_send.hlen)
+                spw_ioctl_send = (spw_ioctl_pkt_send*) incomingData;
+                if (spw_ioctl_send->hlen == 0)
+                {
+                    status = write( fdSPW, spw_ioctl_send->data, spw_ioctl_send->dlen );
+                    if (status == -1){
+                        PRINTF2("in SEND *** (2.b) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
+                    }
+                }
+                else
+                {
+                    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
+                    if (status == -1){
+                        PRINTF2("in SEND *** (2.c) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
+                        PRINTF1("                            hlen = %d\n", spw_ioctl_send->hlen)
+                    }
                 }
             }
         }

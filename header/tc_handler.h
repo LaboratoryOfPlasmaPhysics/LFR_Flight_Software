@@ -36,9 +36,6 @@ void updateLFRCurrentMode();
 int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV, rtems_id queue_id);
 unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV);
 
-unsigned char TM_build_header( enum TM_TYPE tm_type, unsigned int packetLength,
-                              TMHeader_t *TMHeader, unsigned char tc_sid);
-
 //***********
 // RTEMS TASK
 rtems_task recv_task( rtems_task_argument unused );
@@ -76,7 +73,9 @@ int suspend_science_tasks();
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id);
+//
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
+int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char byte_position, unsigned char rcv_value);
 int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);

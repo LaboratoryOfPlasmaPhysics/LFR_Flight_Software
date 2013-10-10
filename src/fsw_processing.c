@@ -557,7 +557,7 @@ void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_ma
         header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
         // SEND PACKET
-        status =  rtems_message_queue_send( queue_id, spw_ioctl_send, ACTION_MSG_PKTS_SIZE);
+        status =  rtems_message_queue_send( queue_id, spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
             printf("in send_spectral_matrix *** ERR %d\n", (int) status);
         }

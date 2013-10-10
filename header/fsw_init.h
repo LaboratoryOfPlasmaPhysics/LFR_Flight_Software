@@ -11,6 +11,7 @@
 
 #include "fsw_params.h"
 #include "fsw_misc.h"
+#include "tm_byte_positions.h"
 #include "fsw_processing.h"
 #include "tc_handler.h"
 #include "wf_handler.h"
