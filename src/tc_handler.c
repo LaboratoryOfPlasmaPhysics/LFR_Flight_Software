@@ -520,12 +520,14 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
         parameter_dump_packet.sy_lfr_n_swf_l[1] = TC->dataAndCRC[1];
 
         // sy_lfr_n_swf_p
-        tmp = (unsigned int ) floor(
+        tmp = ( unsigned int ) floor(
                     (TC->dataAndCRC[2] * 256
                     + TC->dataAndCRC[3])/8
                 ) * 8;
         if ( (tmp < 16) || (tmp>65528) )
         {
+            send_tm_lfr_tc_exe_inconsistent( TC, queue_id, 12, TC->dataAndCRC[2]);
+            send_tm_lfr_tc_exe_inconsistent( TC, queue_id, 13, TC->dataAndCRC[3]);
             result = LFR_DEFAULT;
         }
         else

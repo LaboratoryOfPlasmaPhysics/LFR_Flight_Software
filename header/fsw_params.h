@@ -183,6 +183,8 @@
 #define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK (2 * 6)
 #define NB_WORDS_SWF_BLK 3
+#define NB_BYTES_CWF3_LIGHT_BLK 6
+#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
 
 //******************
 // SEQUENCE COUNTERS

@@ -9,6 +9,7 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF_F1[7];
 Header_TM_LFR_SCIENCE_CWF_t headerCWF_F2_BURST[7];
 Header_TM_LFR_SCIENCE_CWF_t headerCWF_F2_SBM2[7];
 Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3[7];
+Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3_light[7];
 
 unsigned char doubleSendCWF1 = 0;
 unsigned char doubleSendCWF2 = 0;
@@ -277,6 +278,7 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     rtems_id queue_id;
 
     init_header_continuous_wf_table( SID_NORM_CWF_F3, headerCWF_F3 );
+    init_header_continuous_wf3_light_table( headerCWF_F3_light );
 
     queue_id = get_pkts_queue_id();
 
@@ -290,10 +292,10 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 #ifdef GSA
 #else
         if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3) {
-            send_waveform_CWF( wf_cont_f3_bis, SID_NORM_CWF_F3, headerCWF_F3, queue_id );
+            send_waveform_CWF3_light( wf_cont_f3_bis, headerCWF_F3_light, queue_id );
         }
         else {
-            send_waveform_CWF( wf_cont_f3, SID_NORM_CWF_F3, headerCWF_F3, queue_id );
+            send_waveform_CWF3_light( wf_cont_f3, headerCWF_F3_light, queue_id );
         }
 #endif
     }
@@ -551,6 +553,62 @@ int init_header_continuous_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_CWF
     return LFR_SUCCESSFUL;
 }
 
+int init_header_continuous_wf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF )
+{
+    unsigned int i;
+
+    for (i=0; i<7; i++)
+    {
+        headerCWF[ i ].targetLogicalAddress = CCSDS_DESTINATION_ID;
+        headerCWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
+        headerCWF[ i ].reserved = DEFAULT_RESERVED;
+        headerCWF[ i ].userApplication = CCSDS_USER_APP;
+
+        headerCWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
+        headerCWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+        if (i == 0)
+        {
+            headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_FIRST;
+            headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_340 >> 8);
+            headerCWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_340     );
+            headerCWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_340 >> 8);
+            headerCWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_340     );
+        }
+        else if (i == 6)
+        {
+            headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_LAST;
+            headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_8 >> 8);
+            headerCWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_8     );
+            headerCWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_8 >> 8);
+            headerCWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_8     );
+        }
+        else
+        {
+            headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_CONTINUATION;
+            headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_340 >> 8);
+            headerCWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF3_LIGHT_340     );
+            headerCWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_340 >> 8);
+            headerCWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_340     );
+        }
+        headerCWF[ i ].packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+        // DATA FIELD HEADER
+        headerCWF[ i ].spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+        headerCWF[ i ].serviceType = TM_TYPE_LFR_SCIENCE; // service type
+        headerCWF[ i ].serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+        headerCWF[ i ].destinationID = TM_DESTINATION_ID_GROUND;
+        // AUXILIARY DATA HEADER
+        headerCWF[ i ].sid = SID_NORM_CWF_F3;
+        headerCWF[ i ].hkBIA = DEFAULT_HKBIA;
+        headerCWF[ i ].time[0] = 0x00;
+        headerCWF[ i ].time[0] = 0x00;
+        headerCWF[ i ].time[0] = 0x00;
+        headerCWF[ i ].time[0] = 0x00;
+        headerCWF[ i ].time[0] = 0x00;
+        headerCWF[ i ].time[0] = 0x00;
+    }
+    return LFR_SUCCESSFUL;
+}
+
 void reset_waveforms( void )
 {
     int i = 0;
@@ -694,6 +752,76 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
     return ret;
 }
 
+int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id)
+{
+    unsigned int i;
+    int ret;
+    rtems_status_code status;
+    spw_ioctl_pkt_send spw_ioctl_send_CWF;
+    char *sample;
+
+    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
+    spw_ioctl_send_CWF.options = 0;
+
+    ret = LFR_DEFAULT;
+
+    //**********************
+    // BUILD CWF3_light DATA
+    for ( i=0; i< 2048; i++)
+    {
+        sample = (char*) &waveform[ i * NB_WORDS_SWF_BLK ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK)     ] = sample[ 0 ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 1 ] = sample[ 1 ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 2 ] = sample[ 2 ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 3 ] = sample[ 3 ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 4 ] = sample[ 4 ];
+        wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 5 ] = sample[ 5 ];
+    }
+
+    //*********************
+    // SEND CWF3_light DATA
+
+    for (i=0; i<7; i++) // send waveform
+    {
+        int coarseTime = 0x00;
+        int fineTime = 0x00;
+        spw_ioctl_send_CWF.data = (char*) &wf_cont_f3_light[ (i * 340 * NB_BYTES_CWF3_LIGHT_BLK) ];
+        spw_ioctl_send_CWF.hdr = (char*) &headerCWF[ i ];
+        // BUILD THE DATA
+        if ( i == WFRM_INDEX_OF_LAST_PACKET ) {
+            spw_ioctl_send_CWF.dlen = 8 * NB_BYTES_CWF3_LIGHT_BLK;
+        }
+        else {
+            spw_ioctl_send_CWF.dlen = 340 * NB_BYTES_CWF3_LIGHT_BLK;
+        }
+        // SET PACKET TIME
+        coarseTime = time_management_regs->coarse_time;
+        fineTime = time_management_regs->fine_time;
+        headerCWF[ i ].time[0] = (unsigned char) (coarseTime>>24);
+        headerCWF[ i ].time[1] = (unsigned char) (coarseTime>>16);
+        headerCWF[ i ].time[2] = (unsigned char) (coarseTime>>8);
+        headerCWF[ i ].time[3] = (unsigned char) (coarseTime);
+        headerCWF[ i ].time[4] = (unsigned char) (fineTime>>8);
+        headerCWF[ i ].time[5] = (unsigned char) (fineTime);
+        headerCWF[ i ].acquisitionTime[0] = (unsigned char) (coarseTime>>24);
+        headerCWF[ i ].acquisitionTime[1] = (unsigned char) (coarseTime>>16);
+        headerCWF[ i ].acquisitionTime[2] = (unsigned char) (coarseTime>>8);
+        headerCWF[ i ].acquisitionTime[3] = (unsigned char) (coarseTime);
+        headerCWF[ i ].acquisitionTime[4] = (unsigned char) (fineTime>>8);
+        headerCWF[ i ].acquisitionTime[5] = (unsigned char) (fineTime);
+        // SEND PACKET
+        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
+        if (status != RTEMS_SUCCESSFUL) {
+            printf("%d-%d, ERR %d\n", SID_NORM_CWF_F3, i, (int) status);
+            ret = LFR_DEFAULT;
+        }
+        rtems_task_wake_after(TIME_BETWEEN_TWO_CWF3_PACKETS);
+    }
+
+    return ret;
+}
+
+
 //**************
 // wfp registers
 void set_wfp_data_shaping()
@@ -720,6 +848,9 @@ char set_wfp_delta_snapshot()
 {
     char ret;
     unsigned int delta_snapshot;
+    unsigned int aux;
+
+    aux = 0;
     ret = LFR_DEFAULT;
 
     delta_snapshot = parameter_dump_packet.sy_lfr_n_swf_p[0]*256
@@ -727,7 +858,6 @@ char set_wfp_delta_snapshot()
 
 #ifdef GSA
 #else
-    unsigned char aux = 0;
     if ( delta_snapshot < MIN_DELTA_SNAPSHOT )
     {
         aux = MIN_DELTA_SNAPSHOT;
