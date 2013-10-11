@@ -33,8 +33,8 @@ void updateLFRCurrentMode();
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV, rtems_id queue_id);
-unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV);
+int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV, rtems_id queue_queu_id, rtems_id queue_pkts_id);
+unsigned char TC_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV);
 
 //***********
 // RTEMS TASK

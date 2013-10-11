@@ -79,7 +79,7 @@ void updateLFRCurrentMode()
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_id queue_id)
+int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_id queue_queu_id, rtems_id queue_pkts_id)
 {
     int ret = 0;
     rtems_status_code status;
@@ -87,13 +87,16 @@ int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_
     unsigned int parserCode = 0;
     unsigned char computed_CRC[2];
     unsigned int packetLength;
+    unsigned char *packetDataField;
 
     GetCRCAsTwoBytes( (unsigned char*) TC->packetID, computed_CRC, tc_len_recv + 5 );
     parserCode = TC_parser( TC, tc_len_recv ) ;
     if ( (parserCode == ILLEGAL_APID) | (parserCode == WRONG_LEN_PACKET) | (parserCode == INCOR_CHECKSUM)
         | (parserCode == ILL_TYPE) | (parserCode == ILL_SUBTYPE) | (parserCode == WRONG_APP_DATA) )
     { // generate TM_LFR_TC_EXE_CORRUPTED
-        packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];
+        packetDataField = (unsigned char *) &TC->headerFlag_pusVersion_Ack;     // get the beginning of the data field
+        packetLength    = (TC->packetLength[0] * 256) + TC->packetLength[1];    // compute the packet length
+        //
         packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
         packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
         packet.reserved = DEFAULT_RESERVED;
@@ -129,21 +132,25 @@ int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_
         packet.pkt_len_rcv_value[1] = TC->packetLength[1];
         packet.pkt_datafieldsize_cnt[0] = currentTC_LEN_RCV[0];
         packet.pkt_datafieldsize_cnt[1] = currentTC_LEN_RCV[1];
-        packet.rcv_crc[0] = TC->dataAndCRC[packetLength];
-        packet.rcv_crc[1] = TC->dataAndCRC[packetLength];
+        packet.rcv_crc[0] = packetDataField[ packetLength - 1 ];
+        packet.rcv_crc[1] = packetDataField[ packetLength     ];
         packet.computed_crc[0] = computed_CRC[0];
         packet.computed_crc[1] = computed_CRC[1];
-        // SEND PACKET
-        status = write( fdSPW, (char *) &packet, PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + 4);
+        // SEND DATA
+        status =  rtems_message_queue_urgent( queue_pkts_id, &packet, PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + 4);
+        if (status != RTEMS_SUCCESSFUL) {
+            PRINTF("in TC_acceptance *** ERR rtems_message_queue_urgent\n")
+            ret = LFR_DEFAULT;
+        }
     }
     else { // send valid TC to the action launcher
-        status =  rtems_message_queue_send( queue_id, TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
-        ret = -1;
+        status =  rtems_message_queue_send( queue_queu_id, TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
+        ret = LFR_SUCCESSFUL;
     }
     return ret;
 }
 
-unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN_RCV)
+unsigned char TC_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV)
 {
     unsigned char ret = 0;
     unsigned char pid = 0;
@@ -154,11 +161,11 @@ unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN
     unsigned char * CCSDSContent = NULL;
 
     // APID check *** APID on 2 bytes
-    pid = ((TMPacket->packetID[0] & 0x07)<<4) + ( (TMPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
-    category = (TMPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
-    length = (TMPacket->packetLength[0] * 256) + TMPacket->packetLength[1];
-    packetType = TMPacket->serviceType;
-    packetSubtype = TMPacket->serviceSubType;
+    pid = ((TCPacket->packetID[0] & 0x07)<<4) + ( (TCPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
+    category = (TCPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
+    length = (TCPacket->packetLength[0] * 256) + TCPacket->packetLength[1];
+    packetType = TCPacket->serviceType;
+    packetSubtype = TCPacket->serviceSubType;
 
     if ( pid != CCSDS_PROCESS_ID ) {
         ret = ILLEGAL_APID;
@@ -286,7 +293,7 @@ unsigned char TC_parser(ccsdsTelecommandPacket_t * TMPacket, unsigned int TC_LEN
 
     // packet error control, CRC check
     if ( ret == CCSDS_TM_VALID ) {
-        CCSDSContent = (unsigned char*) TMPacket->packetID;
+        CCSDSContent = (unsigned char*) TCPacket->packetID;
         GetCRCAsTwoBytes(CCSDSContent, currentTC_COMPUTED_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
         if (currentTC_COMPUTED_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
             ret = INCOR_CHECKSUM;
@@ -308,18 +315,24 @@ rtems_task recv_task( rtems_task_argument unused )
 {
     int len = 0;
     unsigned int i = 0;
-    unsigned int data_length = 0;
     ccsdsTelecommandPacket_t currentTC;
     char data[100];
     rtems_status_code status;
-    rtems_id queue_id;
+    rtems_id queue_queu_id;
+    rtems_id queue_pkts_id;
 
     for(i=0; i<100; i++) data[i] = 0;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_queu_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting queue id, %d\n", status)
+        PRINTF1("in RECV *** ERR getting queue_queu id, %d\n", status)
+    }
+
+    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_pkts_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in RECV *** ERR getting queue_pkts id, %d\n", status)
     }
 
     BOOT_PRINTF("in RECV *** \n")
@@ -329,12 +342,6 @@ rtems_task recv_task( rtems_task_argument unused )
         len = read(fdSPW, (char*) &currentTC, CCSDS_TC_PKT_MAX_SIZE); // the call to read is blocking
         if (len == -1){ // error during the read call
             PRINTF("In RECV *** last read call returned -1\n")
-            //if (rtems_event_send( Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT ) != RTEMS_SUCCESSFUL) {
-            //    PRINTF("IN RECV *** Error: rtems_event_send SPW_LINKERR_EVENT\n")
-            //}
-            //if (rtems_task_suspend(RTEMS_SELF) != RTEMS_SUCCESSFUL) {
-            //    PRINTF("In RECV *** Error: rtems_task_suspend(RTEMS_SELF)\n")
-            //}
         }
         else {
             if ( (len+1) < CCSDS_TC_PKT_MIN_SIZE ) {
@@ -344,11 +351,8 @@ rtems_task recv_task( rtems_task_argument unused )
                 currentTC_LEN_RCV[0] = 0x00;
                 currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
                 currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
-                // CHECK THE TC AND BUILD THE APPROPRIATE TM
-                data_length = TC_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt, queue_id);
-                if (data_length!=-1)
-                {
-                }
+                // CHECK THE TC
+                TC_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt, queue_queu_id, queue_pkts_id);
             }
         }
     }
