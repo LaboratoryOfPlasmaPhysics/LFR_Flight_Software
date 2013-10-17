@@ -222,7 +222,7 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     init_waveforms();
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in WFRM *** ERR getting queue id, %d\n", status)

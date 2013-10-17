@@ -264,8 +264,8 @@ int create_names( void ) // create all names for tasks and queues
     // rate monotonic period name
     HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
 
-    misc_name[QUEUE_QUEU] = rtems_build_name( 'Q', 'U', 'E', 'U' );
-    misc_name[QUEUE_PKTS] = rtems_build_name( 'P', 'K', 'T', 'S' );
+    misc_name[QUEUE_RECV] = rtems_build_name( 'Q', 'U', 'E', 'U' );
+    misc_name[QUEUE_SEND] = rtems_build_name( 'P', 'K', 'T', 'S' );
 
     return RTEMS_SUCCESSFUL;
 }
@@ -553,21 +553,21 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     rtems_status_code ret;
     rtems_id queue_id;
 
-    // create the queue for handling TM packet sending
-    ret = rtems_message_queue_create( misc_name[QUEUE_PKTS], ACTION_MSG_PKTS_COUNT,
-                                      ACTION_MSG_PKTS_MAX_SIZE,
-                                      RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
-    if (ret != RTEMS_SUCCESSFUL) {
-        BOOT_PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", ret)
-    }
-
     // create the queue for handling valid TCs
-    status = rtems_message_queue_create( misc_name[QUEUE_QUEU], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+    status = rtems_message_queue_create( misc_name[QUEUE_RECV], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
                                          RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if (status != RTEMS_SUCCESSFUL) {
         ret = status;
         BOOT_PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", ret)
     }
 
-   return ret;
+    // create the queue for handling TM packet sending
+    ret = rtems_message_queue_create( misc_name[QUEUE_SEND], ACTION_MSG_PKTS_COUNT,
+                                      ACTION_MSG_PKTS_MAX_SIZE,
+                                      RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    if (ret != RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", ret)
+    }
+
+    return ret;
 }

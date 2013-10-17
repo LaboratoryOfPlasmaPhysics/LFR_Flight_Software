@@ -143,8 +143,8 @@
 #define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE 24                   // hlen *hdr dlen *data sent options
 
-#define QUEUE_QUEU 0
-#define QUEUE_PKTS 1
+#define QUEUE_RECV 0
+#define QUEUE_SEND 1
 
 //*******
 // MACROS

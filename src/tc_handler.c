@@ -119,14 +119,14 @@ void updateLFRCurrentMode()
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int tc_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_id queue_queu_id, rtems_id queue_pkts_id)
+int tc_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_id queue_recv_id, rtems_id queue_send_id)
 {
     /** This function executes the TeleCommand acceptance steps.
      *
      * @param TC points to the TeleCommand packet which is under investigation.
      * @param tc_len_recv contains the length of the packet that has been received.
-     * @param queue_queu_id is the id of the rtems queue in which messages are written if the acceptance is not successful
-     * @param queue_pkts_id is the id of the rtems queue in which messages are written if the acceptance is successful
+     * @param queue_recv_id is the id of the rtems queue in which messages are written if the acceptance is not successful
+     * @param queue_send_id is the id of the rtems queue in which messages are written if the acceptance is successful
      * @return status code
      *
      * The acceptance steps can result in two different actions.
@@ -145,10 +145,10 @@ int tc_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int tc_len_recv, rtems_
     if ( (parserCode == ILLEGAL_APID) | (parserCode == WRONG_LEN_PACKET) | (parserCode == INCOR_CHECKSUM)
         | (parserCode == ILL_TYPE) | (parserCode == ILL_SUBTYPE) | (parserCode == WRONG_APP_DATA) )
     { // send TM_LFR_TC_EXE_CORRUPTED
-        send_tm_lfr_tc_exe_corrupted( TC, queue_queu_id, computed_CRC, currentTC_LEN_RCV );
+        send_tm_lfr_tc_exe_corrupted( TC, queue_send_id, computed_CRC, currentTC_LEN_RCV );
     }
     else { // send valid TC to the action launcher
-        status =  rtems_message_queue_send( queue_queu_id, TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
+        status =  rtems_message_queue_send( queue_recv_id, TC, tc_len_recv + CCSDS_TC_TM_PACKET_OFFSET + 3);
         ret = LFR_SUCCESSFUL;
     }
     return ret;
@@ -453,23 +453,23 @@ rtems_task recv_task( rtems_task_argument unused )
     ccsdsTelecommandPacket_t currentTC;
     char data[100];
     rtems_status_code status;
-    rtems_id queue_queu_id;
-    rtems_id queue_pkts_id;
+    rtems_id queue_recv_id;
+    rtems_id queue_send_id;
 
     for(i=0; i<100; i++) data[i] = 0;
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_queu_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_recv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting queue_queu id, %d\n", status)
+        PRINTF1("in RECV *** ERR getting QUEUE_RECV id, %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_pkts_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_send_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting queue_pkts id, %d\n", status)
+        PRINTF1("in RECV *** ERR getting QUEUE_SEND id, %d\n", status)
     }
 
     BOOT_PRINTF("in RECV *** \n")
@@ -489,7 +489,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 currentTC_LEN_RCV[1] = (unsigned char) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); //  build the corresponding packet size field
                 currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
                 // CHECK THE TC
-                tc_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt, queue_queu_id, queue_pkts_id);
+                tc_acceptance(&currentTC, currentTC_LEN_RCV_AsUnsignedInt, queue_recv_id, queue_send_id);
             }
         }
     }
@@ -514,13 +514,13 @@ rtems_task actn_task( rtems_task_argument unused )
     rtems_id queue_rcv_id;
     rtems_id queue_snd_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_QUEU], 0, &queue_rcv_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_rcv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in ACTN *** ERR getting queue_rcv_id %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_snd_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_snd_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in ACTN *** ERR getting queue_snd_id %d\n", status)

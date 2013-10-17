@@ -201,7 +201,7 @@ rtems_task matr_task(rtems_task_argument argument)
 
     init_header_asm( &headerASM );
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in MATR *** ERR getting queue id, %d\n", status)

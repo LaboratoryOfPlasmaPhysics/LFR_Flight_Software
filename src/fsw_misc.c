@@ -173,7 +173,7 @@ rtems_task hous_task(rtems_task_argument argument)
     spw_ioctl_send.data = (char*) &housekeeping_packet;
     spw_ioctl_send.options = 0;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in HOUS *** ERR %d\n", status)
@@ -251,7 +251,7 @@ rtems_task send_task( rtems_task_argument argument)
     u_int32_t count;
     rtems_id queue_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in SEND *** ERR getting queue id, %d\n", status)
@@ -318,7 +318,7 @@ rtems_id get_pkts_queue_id( void )
     rtems_id queue_id;
     rtems_status_code status;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_PKTS], 0, &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
