@@ -1,17 +1,7 @@
 #ifndef FSW_RTEMS_PROCESSING_H_INCLUDED
 #define FSW_RTEMS_PROCESSING_H_INCLUDED
 
-#include <rtems.h>
-#include <grspw.h>
-#include <leon.h>
-
-#include <fsw_init.h>
-#include <fsw_params.h>
-#include <grlib_regs.h>
-#include <ccsds_types.h>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include "fsw_init.h"
 
 extern volatile int spec_mat_f0_0[ ];
 extern volatile int spec_mat_f0_1[ ];
@@ -50,9 +40,6 @@ rtems_task bpf0_task(rtems_task_argument argument);
 rtems_task smiq_task(rtems_task_argument argument); // added to test the spectral matrix simulator
 rtems_task matr_task(rtems_task_argument argument);
 
-rtems_task spw_bppr_task_rate_monotonic(rtems_task_argument argument);
-
-void matrix_average(volatile int *spec_mat, volatile float *averaged_spec_mat);
 void matrix_compression(volatile float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat);
 void matrix_reset(volatile float *averaged_spec_mat);
 void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1);
@@ -62,7 +49,7 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
                     unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output_matrix);
-void fill_averaged_spectral_matrix();
+void fill_averaged_spectral_matrix( void );
 void reset_spectral_matrix_regs();
 
 #endif // FSW_RTEMS_PROCESSING_H_INCLUDED

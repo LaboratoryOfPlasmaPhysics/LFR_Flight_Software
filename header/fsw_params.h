@@ -1,7 +1,9 @@
 #ifndef FSW_RTEMS_CONFIG_H_INCLUDED
 #define FSW_RTEMS_CONFIG_H_INCLUDED
 
+#include "grlib_regs.h"
 #include "fsw_params_processing.h"
+#include "tm_byte_positions.h"
 #include "ccsds_types.h"
 
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
@@ -138,7 +140,7 @@
 
 #define ACTION_MSG_QUEUE_COUNT 10
 #define ACTION_MSG_PKTS_COUNT 50
-#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
+#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE 24                   // hlen *hdr dlen *data sent options
 
 #define QUEUE_QUEU 0

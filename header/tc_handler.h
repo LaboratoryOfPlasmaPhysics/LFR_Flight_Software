@@ -1,16 +1,9 @@
 #ifndef TC_HANDLER_H_INCLUDED
 #define TC_HANDLER_H_INCLUDED
 
-#include <rtems.h>
-#include <bsp.h>        // for the LEON_Unmask_interrupt function
-#include <stdio.h>
-#include <unistd.h>     // for the read call
-#include <sys/ioctl.h>  // for the ioctl call
-#include <ccsds_types.h>
-#include <grspw.h>
-
 #include "fsw_init.h"
-#include "fsw_misc.h"
+#include "tc_load_dump_parameters.h"
+#include "tm_lfr_tc_exe.h"
 
 // MODE PARAMETERS
 extern struct param_sbm1_str param_sbm1;
@@ -33,8 +26,12 @@ void updateLFRCurrentMode();
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int TC_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV, rtems_id queue_queu_id, rtems_id queue_pkts_id);
-unsigned char TC_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV);
+int tc_acceptance(ccsdsTelecommandPacket_t *TC, unsigned int TC_LEN_RCV, rtems_id queue_queu_id, rtems_id queue_pkts_id);
+int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV);
+int tc_check_type( unsigned char packetType );
+int tc_check_subtype( unsigned char packetType );
+int tc_check_length( unsigned char packetType, unsigned int length );
+int tc_check_crc( ccsdsTelecommandPacket_t * TCPacket, unsigned int length );
 
 //***********
 // RTEMS TASK
@@ -45,12 +42,6 @@ rtems_task dumb_task( rtems_task_argument unused );
 //***********
 // TC ACTIONS
 int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_load_common_par(ccsdsTelecommandPacket_t *TC);
-int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_dump_par(ccsdsTelecommandPacket_t *TC);
 int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
@@ -73,12 +64,6 @@ int suspend_science_tasks();
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id);
-//
-int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char byte_position, unsigned char rcv_value);
-int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 
 #endif // TC_HANDLER_H_INCLUDED
 

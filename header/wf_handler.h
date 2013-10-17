@@ -1,20 +1,11 @@
 #ifndef WF_HANDLER_H_INCLUDED
 #define WF_HANDLER_H_INCLUDED
 
-#include <rtems.h>
-#include <grspw.h>
-
-#include <stdio.h>
-#include <math.h>
-
-#include "fsw_params.h"
-#include "grlib_regs.h"
-#include "ccsds_types.h"
 #include "fsw_init.h"
 
-#define pi 3.1415
+#include <math.h>
 
-//#include <sys/ioctl.h>
+#define pi 3.1415
 
 extern int fdSPW;
 extern volatile int wf_snap_f0[ ];

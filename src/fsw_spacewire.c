@@ -157,8 +157,15 @@ void spacewire_set_RE(unsigned char val, unsigned int regAddr) // [R]MAP [E]nabl
     }
 }
 
-void spacewire_compute_stats_offsets()
+void spacewire_compute_stats_offsets( void )
 {
+    /** This function computes the SpaceWire statistics offsets in case of a SpaceWire related interruption raising.
+     *
+     * The offsets keep a record of the statistics in case of a reset of the statistics. They are added to the current statistics
+     * to keep the counters consistent even after a reset of the SpaceWire driver.
+     *
+     */
+
     spw_stats spacewire_stats_grspw;
     rtems_status_code status;
 

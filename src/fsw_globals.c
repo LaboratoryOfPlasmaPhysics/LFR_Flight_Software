@@ -1,9 +1,9 @@
 //#include <fsw_processing.h>
 #include <rtems.h>
 #include <grspw.h>
-#include <ccsds_types.h>
-#include <grlib_regs.h>
-#include <fsw_params.h>
+#include "ccsds_types.h"
+#include "grlib_regs.h"
+#include "fsw_params.h"
 
 // RTEMS GLOBAL VARIABLES
 rtems_name  misc_name[5];

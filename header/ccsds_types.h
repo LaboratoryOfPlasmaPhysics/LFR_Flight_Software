@@ -106,28 +106,20 @@
 #define TM_SUBTYPE_LFR_SCIENCE 3
 
 // FAILURE CODES
-#define ILLEGAL_APID       0
-#define WRONG_LEN_PACKET   1
-#define INCOR_CHECKSUM     2
-#define ILL_TYPE           3
-#define ILL_SUBTYPE        4
-#define WRONG_APP_DATA     5
+#define ILLEGAL_APID        0
+#define WRONG_LEN_PACKET    1
+#define INCOR_CHECKSUM      2
+#define ILL_TYPE            3
+#define ILL_SUBTYPE         4
+#define WRONG_APP_DATA      5           // 0x00 0x05
 //
-#define WRONG_CMD_CODE 6
-#define CCSDS_TM_VALID 7
-#define FAILURE_CODE_INCONSISTENT       5       // 0x00 0x05
-#define FAILURE_CODE_NOT_EXECUTABLE     42000   // 0xa4 0x10
-#define FAILURE_CODE_NOT_IMPLEMENTED    42002   // 0xa4 0x12
-#define FAILURE_CODE_ERROR              42003   // 0xa4 0x13
-#define FAILURE_CODE_CORRUPTED          42005   // 0xa4 0x15
+#define CCSDS_TM_VALID      7
+#define TC_NOT_EXE          42000   // 0xa4 0x10
+#define FUNCT_NOT_IMPL      42002   // 0xa4 0x12
+#define FAIL_DETECTED       42003   // 0xa4 0x13
+#define CORRUPTED           42005   // 0xa4 0x15
 
 // TM SID
-#define SID_DEFAULT 0
-#define SID_EXE_INC 5
-#define SID_NOT_EXE 42000       // 0xa4 0x10
-#define SID_NOT_IMP 42002       // 0xa4 0x12
-#define SID_EXE_ERR 42003       // 0xa4 0x13
-#define SID_EXE_CORR 42005      // 0xa4 0x15
 #define SID_HK 1
 #define SID_PARAMETER_DUMP 10
 

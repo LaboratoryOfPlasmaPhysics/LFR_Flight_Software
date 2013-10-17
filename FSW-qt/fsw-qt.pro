@@ -7,11 +7,11 @@ CONFIG -= qt
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-14
+SWVERSION=-0-15
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=14
+DEFINES += SW_VERSION_N4=15
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
@@ -28,6 +28,10 @@ contains( CONFIG, stack_report ) {
 contains( CONFIG, boot_messages ) {
     DEFINES += BOOT_MESSAGES
 }
+
+#doxygen.target = doxygen
+#doxygen.commands = doxygen ../doc/Doxyfile
+#QMAKE_EXTRA_TARGETS += doxygen
 
 TARGET = fsw
 contains( CONFIG, gsa ) {
@@ -46,7 +50,9 @@ SOURCES += \
     ../src/fsw_misc.c \
     ../src/fsw_init.c \
     ../src/fsw_globals.c \
-    ../src/fsw_spacewire.c
+    ../src/fsw_spacewire.c \
+    ../src/tc_load_dump_parameters.c \
+    ../src/tm_lfr_tc_exe.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -59,5 +65,7 @@ HEADERS += \
     ../header/ccsds_types.h \
     ../header/fsw_params_processing.h \
     ../header/fsw_spacewire.h \
-    ../header/tm_byte_positions.h
+    ../header/tm_byte_positions.h \
+    ../header/tc_load_dump_parameters.h \
+    ../header/tm_lfr_tc_exe
 

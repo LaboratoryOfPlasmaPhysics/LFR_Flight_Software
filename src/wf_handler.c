@@ -1,4 +1,13 @@
-#include <wf_handler.h>
+/** Functions and tasks related to waveform packet generation.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ * A group of functions to handle waveforms, in snapshot or continuous format.\n
+ *
+ */
+
+#include "wf_handler.h"
 
 // SWF
 Header_TM_LFR_SCIENCE_SWF_t headerSWF_F0[7];
@@ -642,6 +651,18 @@ void reset_waveforms( void )
 int send_waveform_SWF( volatile int *waveform, unsigned int sid,
                        Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id )
 {
+    /** This function sends SWF CCSDS packets (F2, F1 or F0).
+     *
+     * @param waveform points to the buffer containing the data that will be send.
+     * @param sid is the source identifier of the data that will be sent.
+     * @param headerSWF points to a table of headers that have been prepared for the data transmission.
+     * @param queue_id is the id of the rtems queue to which spw_ioctl_pkt_send structures will be send. The structures
+     * contain information to setup the transmission of the data packets.
+     *
+     * One group of 2048 samples is sent as 7 consecutive packets, 6 packets containing 340 blocks and 8 packets containing 8 blocks.
+     *
+     */
+
     unsigned int i;
     int ret;
     rtems_status_code status;
@@ -691,6 +712,18 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
 int send_waveform_CWF(volatile int *waveform, unsigned int sid,
                       Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id)
 {
+    /** This function sends CWF CCSDS packets (F2, F1 or F0).
+     *
+     * @param waveform points to the buffer containing the data that will be send.
+     * @param sid is the source identifier of the data that will be sent.
+     * @param headerCWF points to a table of headers that have been prepared for the data transmission.
+     * @param queue_id is the id of the rtems queue to which spw_ioctl_pkt_send structures will be send. The structures
+     * contain information to setup the transmission of the data packets.
+     *
+     * One group of 2048 samples is sent as 7 consecutive packets, 6 packets containing 340 blocks and 8 packets containing 8 blocks.
+     *
+     */
+
     unsigned int i;
     int ret;
     rtems_status_code status;
@@ -754,6 +787,18 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
 
 int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id)
 {
+    /** This function sends CWF_F3 CCSDS packets without the b1, b2 and b3 data.
+     *
+     * @param waveform points to the buffer containing the data that will be send.
+     * @param headerCWF points to a table of headers that have been prepared for the data transmission.
+     * @param queue_id is the id of the rtems queue to which spw_ioctl_pkt_send structures will be send. The structures
+     * contain information to setup the transmission of the data packets.
+     *
+     * By default, CWF_F3 packet are send without the b1, b2 and b3 data. This function rebuilds a data buffer
+     * from the incoming data and sends it in 7 packets, 6 containing 340 blocks and 1 one containing 8 blocks.
+     *
+     */
+
     unsigned int i;
     int ret;
     rtems_status_code status;
@@ -826,6 +871,13 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
 // wfp registers
 void set_wfp_data_shaping()
 {
+    /** This function sets the data_shaping register of the waveform picker module.
+     *
+     * The value is read from one field of the parameter_dump_packet structure:\n
+     * bw_sp0_sp1_r0_r1
+     *
+     */
+
     unsigned char data_shaping;
 
     // get the parameters for the data shaping [BW SP0 SP1 R0 R1] in sy_lfr_common1 and configure the register
@@ -846,6 +898,14 @@ void set_wfp_data_shaping()
 
 char set_wfp_delta_snapshot()
 {
+    /** This function sets the delta_snapshot register of the waveform picker module.
+     *
+     * The value is read from two (unsigned char) of the parameter_dump_packet structure:\n
+     * sy_lfr_n_swf_p[0] \n
+     * sy_lfr_n_swf_p[1]
+     *
+     */
+
     char ret;
     unsigned int delta_snapshot;
     unsigned int aux;
@@ -876,6 +936,14 @@ char set_wfp_delta_snapshot()
 
 void set_wfp_burst_enable_register( unsigned char mode)
 {
+    /** This function sets the waveform picker burst_enable register depending on the mode.
+     *
+     * @param mode is the LFR mode to launch.
+     *
+     * The burst bits shall be before the enable bits.
+     *
+     */
+
 #ifdef GSA
 #else
     // [0000 0000] burst f2, f1, f0 enable f3 f2 f1 f0
@@ -906,6 +974,12 @@ void set_wfp_burst_enable_register( unsigned char mode)
 
 void reset_wfp_burst_enable()
 {
+    /** This function resets the waveform picker burst_enable register.
+     *
+     * The burst bits [f2 f1 f0] and the enable bits [f3 f2 f1 f0] are set to 0.
+     *
+     */
+
 #ifdef GSA
 #else
     waveform_picker_regs->burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
@@ -914,6 +988,12 @@ void reset_wfp_burst_enable()
 
 void reset_wfp_status()
 {
+    /** This function resets the waveform picker status register.
+     *
+     * All status bits are set to 0 [new_err full_err full].
+     *
+     */
+
 #ifdef GSA
 #else
     waveform_picker_regs->status = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
@@ -922,6 +1002,24 @@ void reset_wfp_status()
 
 void reset_waveform_picker_regs()
 {
+    /** This function resets the waveform picker module registers.
+     *
+     * The registers affected by this function are located at the following offset addresses:
+     * - 0x00 data_shaping
+     * - 0x04 burst_enable
+     * - 0x08 addr_data_f0
+     * - 0x0C addr_data_f1
+     * - 0x10 addr_data_f2
+     * - 0x14 addr_data_f3
+     * - 0x18 status
+     * - 0x1C delta_snapshot
+     * - 0x20 delta_f2_f1
+     * - 0x24 delta_f2_f0
+     * - 0x28 nb_burst
+     * - 0x2C nb_snapshot
+     *
+     */
+
 #ifdef GSA
 #else
     set_wfp_data_shaping();
@@ -943,7 +1041,13 @@ void reset_waveform_picker_regs()
 // local parameters
 void set_local_sbm1_nb_cwf_max()
 {
-    // (2 snapshots of 2048 points per seconds) * (period of the NORM snashots) - 8 s (duration of the f2 snapshot)
+    /** This function sets the value of the sbm1_nb_cwf_max local parameter.
+     *
+     * The sbm1_nb_cwf_max parameter counts the number of CWF_F1 records that have been sent.\n
+     * This parameter is used to send CWF_F1 data as normal data when the SBM1 is active.\n\n
+     * (2 snapshots of 2048 points per seconds) * (period of the NORM snashots) - 8 s (duration of the f2 snapshot)
+     *
+     */
     param_local.local_sbm1_nb_cwf_max = 2 *
             (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
             + parameter_dump_packet.sy_lfr_n_swf_p[1]) - 8; // 16 CWF1 parts during 1 SWF2
@@ -951,23 +1055,52 @@ void set_local_sbm1_nb_cwf_max()
 
 void set_local_sbm2_nb_cwf_max()
 {
-    // (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
+    /** This function sets the value of the sbm1_nb_cwf_max local parameter.
+     *
+     * The sbm1_nb_cwf_max parameter counts the number of CWF_F1 records that have been sent.\n
+     * This parameter is used to send CWF_F2 data as normal data when the SBM2 is active.\n\n
+     * (period of the NORM snashots) / (8 seconds per snapshot at f2 = 256 Hz)
+     *
+     */
+
     param_local.local_sbm2_nb_cwf_max = (parameter_dump_packet.sy_lfr_n_swf_p[0] * 256
             + parameter_dump_packet.sy_lfr_n_swf_p[1]) / 8;
 }
 
 void set_local_nb_interrupt_f0_MAX()
 {
+    /** This function sets the value of the nb_interrupt_f0_MAX local parameter.
+     *
+     * This parameter is used for the SM validation only.\n
+     * The software waits param_local.local_nb_interrupt_f0_MAX interruptions from the spectral matrices
+     * module before launching a basic processing.
+     *
+     */
+
     param_local.local_nb_interrupt_f0_MAX = ( (parameter_dump_packet.sy_lfr_n_asm_p[0]) * 256
             + parameter_dump_packet.sy_lfr_n_asm_p[1] ) * 100;
 }
 
 void reset_local_sbm1_nb_cwf_sent()
 {
+    /** This function resets the value of the sbm1_nb_cwf_sent local parameter.
+     *
+     * The sbm1_nb_cwf_sent parameter counts the number of CWF_F1 records that have been sent.\n
+     * This parameter is used to send CWF_F1 data as normal data when the SBM1 is active.
+     *
+     */
+
     param_local.local_sbm1_nb_cwf_sent = 0;
 }
 
 void reset_local_sbm2_nb_cwf_sent()
 {
+    /** This function resets the value of the sbm2_nb_cwf_sent local parameter.
+     *
+     * The sbm2_nb_cwf_sent parameter counts the number of CWF_F2 records that have been sent.\n
+     * This parameter is used to send CWF_F2 data as normal data when the SBM2 mode is active.
+     *
+     */
+
     param_local.local_sbm2_nb_cwf_sent = 0;
 }

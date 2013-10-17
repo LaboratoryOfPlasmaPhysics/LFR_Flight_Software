@@ -135,34 +135,11 @@ rtems_task spw_bppr_task(rtems_task_argument argument)
 {
     rtems_status_code status;
     rtems_event_set event_out;
-    static int Nb_average_f0 = 0;
-    //static int nb_average_f1 = 0;
-    //static int nb_average_f2 = 0;
 
     BOOT_PRINTF("in BPPR ***\n");
 
-    while(true){ // wait for an event to begin with the processing
+    while( true ){ // wait for an event to begin with the processing
         status = rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
-        if (status == RTEMS_SUCCESSFUL) {
-            if ((spectral_matrix_regs->status & 0x00000001)==1) {
-                matrix_average(spec_mat_f0_0, averaged_spec_mat_f0);
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
-                //printf("f0_a\n");
-                Nb_average_f0++;
-            }
-            if (((spectral_matrix_regs->status>>1) & 0x00000001)==1) {
-                matrix_average(spec_mat_f0_1, compressed_spec_mat_f0);
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;
-                //printf("f0_b\n");
-                Nb_average_f0++;
-            }
-            if (Nb_average_f0 == NB_AVERAGE_NORMAL_f0) {
-                    matrix_compression(averaged_spec_mat_f0, 0, compressed_spec_mat_f0);
-                    //printf("f0 compressed\n");
-                    Nb_average_f0 = 0;
-                    matrix_reset(averaged_spec_mat_f0);
-            }
-        }
     }
 }
 
@@ -249,20 +226,6 @@ rtems_task matr_task(rtems_task_argument argument)
 
 //*****************************
 // Spectral matrices processing
-void matrix_average(volatile int *spec_mat, volatile float *averaged_spec_mat)
-{
-    int i;
-    for(i=0; i<TOTAL_SIZE_SM; i++){
-        averaged_spec_mat[i] = averaged_spec_mat[i] + spec_mat_f0_0[i]
-                                        + spec_mat_f0_1[i]
-                                        + spec_mat_f0_c[i]
-                                        + spec_mat_f0_d[i]
-                                        + spec_mat_f0_e[i]
-                                        + spec_mat_f0_f[i]
-                                        + spec_mat_f0_g[i]
-                                        + spec_mat_f0_h[i];
-    }
-}
 
 void matrix_reset(volatile float *averaged_spec_mat)
 {
@@ -586,8 +549,13 @@ void convert_averaged_spectral_matrix( volatile float *input_matrix, char *outpu
     }
 }
 
-void fill_averaged_spectral_matrix( )
+void fill_averaged_spectral_matrix(void)
 {
+    /** This function fills spectral matrices related buffers with arbitrary data.
+     *
+     *  This function is for testing purpose only.
+     *
+     */
 
 #ifdef GSA
     float offset = 10.;
@@ -671,6 +639,19 @@ void fill_averaged_spectral_matrix( )
 
 void reset_spectral_matrix_regs()
 {
+    /** This function resets the spectral matrices module registers.
+     *
+     * The registers affected by this function are located at the following offset addresses:
+     *
+     * - 0x00 config
+     * - 0x04 status
+     * - 0x08 matrixF0_Address0
+     * - 0x10 matrixFO_Address1
+     * - 0x14 matrixF1_Address
+     * - 0x18 matrixF2_Address
+     *
+     */
+
 #ifdef GSA
 #else
     spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0;

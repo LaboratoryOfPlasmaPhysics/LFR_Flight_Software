@@ -1,5 +1,4 @@
-#include <fsw_misc.h>
-#include <fsw_params.h>
+#include "fsw_misc.h"
 
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
@@ -120,14 +119,21 @@ int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on 
     return 0;
 }
 
-int set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
+void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
 {
+    /** This function sets the scaler reload register of the apbuart module
+     *
+     * @param regs is the address of the apbuart registers in memory
+     * @param value is the value that will be stored in the scaler register
+     *
+     * The value shall be set by the software to get data on the serial interface.
+     *
+     */
+
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) regs;
 
     apbuart_regs->scaler = value;
     BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
-
-    return 0;
 }
 
 //************
