@@ -22,6 +22,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
      *
      *
      */
+
     parameter_dump_packet.unused0 = TC->dataAndCRC[0];
     parameter_dump_packet.bw_sp0_sp1_r0_r1 = TC->dataAndCRC[1];
     set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
@@ -36,6 +37,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      * @param queue_id is the id of the queue which handles TM related to this execution step
      *
      */
+
     int result;
     int flag;
 
@@ -113,6 +115,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      * @param queue_id is the id of the queue which handles TM related to this execution step
      *
      */
+
     int result;
     unsigned char lfrMode;
 

@@ -1,6 +1,22 @@
-//#include <fsw_processing.h>
+/** Global variables of the LFR flight software.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ * Among global variables, there are:
+ * - RTEMS names and id.
+ * - APB configuration registers.
+ * - waveforms global buffers, used by the waveform picker hardware module to store data.
+ * - spectral  matrices buffesr, used by the hardware module to store data.
+ * - variable related to LFR modes parameters.
+ * - the global HK packet buffer.
+ * - the global dump parameter buffer.
+ *
+ */
+
 #include <rtems.h>
 #include <grspw.h>
+
 #include "ccsds_types.h"
 #include "grlib_regs.h"
 #include "fsw_params.h"

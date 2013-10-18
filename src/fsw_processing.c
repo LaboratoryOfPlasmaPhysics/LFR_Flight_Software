@@ -1,7 +1,16 @@
+/** Functions related to data processing.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ * These function are related to data processing, i.e. spectral matrices averaging and basic parameters computation.
+ *
+ */
+
 #include <fsw_processing.h>
 #include <math.h>
 
-#include <fsw_processing_globals.c>
+#include "fsw_processing_globals.c"
 
 unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_SM_F0 * 9 ];
 BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];

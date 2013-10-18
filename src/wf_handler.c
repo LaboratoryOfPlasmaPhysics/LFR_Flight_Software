@@ -25,6 +25,13 @@ unsigned char doubleSendCWF2 = 0;
 
 rtems_isr waveforms_isr( rtems_vector_number vector )
 {
+    /** This is the interrupt sub routine called by the waveform picker core.
+     *
+     * This ISR launch different actions depending mainly on two pieces of information:
+     * 1. the values read in the registers of the waveform picker.
+     * 2. the current LFR mode.
+     *
+     */
 
 #ifdef GSA
 #else
@@ -190,6 +197,12 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 
 rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
 {
+    /** This is the interrupt sub routine called by the waveform picker simulator.
+     *
+     * This ISR is for debug purpose only.
+     *
+     */
+
     unsigned char lfrMode;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
@@ -212,6 +225,17 @@ rtems_isr waveforms_simulator_isr( rtems_vector_number vector )
 
 rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform picker VHDL IP
 {
+    /** This RTEMS task is dedicated to the transmission of snapshots of the NORMAL mode.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The following data packets are sent by this task:
+     * - TM_LFR_SCIENCE_NORMAL_SWF_F0
+     * - TM_LFR_SCIENCE_NORMAL_SWF_F1
+     * - TM_LFR_SCIENCE_NORMAL_SWF_F2
+     *
+     */
+
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
@@ -283,6 +307,15 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
 rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform picker VHDL IP
 {
+    /** This RTEMS task is dedicated to the transmission of continuous waveforms at f3.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The following data packet is sent by this task:
+     * - TM_LFR_SCIENCE_NORMAL_CWF_F3
+     *
+     */
+
     rtems_event_set event_out;
     rtems_id queue_id;
 
@@ -312,6 +345,16 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 
 rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SBM2
 {
+    /** This RTEMS task is dedicated to the transmission of continuous waveforms at f2.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The following data packet is sent by this function:
+     * - TM_LFR_SCIENCE_BURST_CWF_F2
+     * - TM_LFR_SCIENCE_SBM2_CWF_F2
+     *
+     */
+
     rtems_event_set event_out;
     rtems_id queue_id;
 
@@ -368,6 +411,15 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 
 rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 {
+    /** This RTEMS task is dedicated to the transmission of continuous waveforms at f1.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The following data packet is sent by this function:
+     * - TM_LFR_SCIENCE_SBM1_CWF_F1
+     *
+     */
+
     rtems_event_set event_out;
     rtems_id queue_id;
 
@@ -900,9 +952,9 @@ char set_wfp_delta_snapshot()
 {
     /** This function sets the delta_snapshot register of the waveform picker module.
      *
-     * The value is read from two (unsigned char) of the parameter_dump_packet structure:\n
-     * sy_lfr_n_swf_p[0] \n
-     * sy_lfr_n_swf_p[1]
+     * The value is read from two (unsigned char) of the parameter_dump_packet structure:
+     * - sy_lfr_n_swf_p[0]
+     * - sy_lfr_n_swf_p[1]
      *
      */
 
@@ -928,7 +980,7 @@ char set_wfp_delta_snapshot()
         aux = delta_snapshot ;
         ret = LFR_SUCCESSFUL;
     }
-    waveform_picker_regs->delta_snapshot = aux;             // max 2 bytes
+    waveform_picker_regs->delta_snapshot = aux - 1;             // max 2 bytes
 #endif
 
     return ret;
@@ -1103,4 +1155,17 @@ void reset_local_sbm2_nb_cwf_sent()
      */
 
     param_local.local_sbm2_nb_cwf_sent = 0;
+}
+
+rtems_id get_pkts_queue_id( void )
+{
+    rtems_id queue_id;
+    rtems_status_code status;
+
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
+    }
+    return queue_id;
 }

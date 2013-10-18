@@ -1,5 +1,5 @@
-#ifndef GRLIBREGS_H_INCLUDED
-#define GRLIBREGS_H_INCLUDED
+#ifndef GRLIB_REGS_H_INCLUDED
+#define GRLIB_REGS_H_INCLUDED
 
 #define NB_GPTIMER 3
 
@@ -71,4 +71,4 @@ struct spectral_matrix_regs_str{
 };
 typedef struct spectral_matrix_regs_str spectral_matrix_regs_t;
 
-#endif // GRLIBREGS_H_INCLUDED
+#endif // GRLIB_REGS_H_INCLUDED

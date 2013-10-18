@@ -1,16 +1,7 @@
-#ifndef FSW_RTEMS_H_INCLUDED
-#define FSW_RTEMS_H_INCLUDED
-
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>     // for the read call
-#include <sys/ioctl.h>  // for the ioctl call
+#ifndef FSW_INIT_H_INCLUDED
+#define FSW_INIT_H_INCLUDED
 
 #include <rtems.h>
-#include <grspw.h>
-#include <apbuart.h>
 #include <leon.h>
 
 #include "fsw_params.h"
@@ -55,4 +46,4 @@ extern void rtems_stack_checker_report_usage( void );
 extern int sched_yield( void );
 extern int errno;
 
-#endif // FSW_RTEMS_CONFIG_H_INCLUDED
+#endif // FSW_INIT_H_INCLUDED

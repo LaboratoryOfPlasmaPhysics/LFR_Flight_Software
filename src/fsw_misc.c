@@ -1,8 +1,37 @@
+/** General usage functions and RTEMS tasks.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ */
+
 #include "fsw_misc.h"
+
+char *DumbMessages[6] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+                    "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
+                    "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
+                    "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
+                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
+                    "in DUMB *** waveforms_simulator_isr"                                   // RTEMS_EVENT_5
+};
 
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
-{ // configure the timer for the waveforms simulation
+{
+    /** This function configures a GPTIMER timer instantiated in the VHDL design.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     * @param clock_divider is the divider of the 1 MHz clock that will be configured.
+     * @param interrupt_level is the interrupt level that the timer drives.
+     * @param timer_isr is the interrupt subroutine that will be attached to the IRQ driven by the timer.
+     *
+     * @return
+     *
+     * Interrupt levels are described in the SPARC documentation sparcv8.pdf p.76
+     *
+     */
+
     rtems_status_code status;
     rtems_isr_entry old_isr_handler;
 
@@ -19,6 +48,15 @@ int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned 
 
 int timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
 {
+    /** This function starts a GPTIMER timer.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     *
+     * @return 1
+     *
+     */
+
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000004;  // LD load value from the reload register
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000001;  // EN enable the timer
@@ -30,6 +68,15 @@ int timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
 
 int timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
 {
+    /** This function stops a GPTIMER timer.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     *
+     * @return 1
+     *
+     */
+
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xfffffffe;  // EN enable the timer
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xffffffef;  // IE interrupt enable
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
@@ -39,74 +86,19 @@ int timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
 
 int timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider)
 {
+    /** This function sets the clock divider of a GPTIMER timer.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     * @param clock_divider is the divider of the 1 MHz clock that will be configured.
+     *
+     * @return 1
+     *
+     */
+
     gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
     
     return 1;
-}
-
-void update_spacewire_statistics()
-{
-    rtems_status_code status;
-    spw_stats spacewire_stats_grspw;
-
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
-
-    spacewire_stats.packets_received = spacewire_stats_backup.packets_received
-            + spacewire_stats_grspw.packets_received;
-    spacewire_stats.packets_sent = spacewire_stats_backup.packets_sent
-            + spacewire_stats_grspw.packets_sent;
-    spacewire_stats.parity_err = spacewire_stats_backup.parity_err
-            + spacewire_stats_grspw.parity_err;
-    spacewire_stats.disconnect_err = spacewire_stats_backup.disconnect_err
-            + spacewire_stats_grspw.disconnect_err;
-    spacewire_stats.escape_err = spacewire_stats_backup.escape_err
-            + spacewire_stats_grspw.escape_err;
-    spacewire_stats.credit_err = spacewire_stats_backup.credit_err
-            + spacewire_stats_grspw.credit_err;
-    spacewire_stats.write_sync_err = spacewire_stats_backup.write_sync_err
-            + spacewire_stats_grspw.write_sync_err;
-    spacewire_stats.rx_rmap_header_crc_err = spacewire_stats_backup.rx_rmap_header_crc_err
-            + spacewire_stats_grspw.rx_rmap_header_crc_err;
-    spacewire_stats.rx_rmap_data_crc_err = spacewire_stats_backup.rx_rmap_data_crc_err
-            + spacewire_stats_grspw.rx_rmap_data_crc_err;
-    spacewire_stats.early_ep = spacewire_stats_backup.early_ep
-            + spacewire_stats_grspw.early_ep;
-    spacewire_stats.invalid_address = spacewire_stats_backup.invalid_address
-            + spacewire_stats_grspw.invalid_address;
-    spacewire_stats.rx_eep_err = spacewire_stats_backup.rx_eep_err
-            +  spacewire_stats_grspw.rx_eep_err;
-    spacewire_stats.rx_truncated = spacewire_stats_backup.rx_truncated
-            + spacewire_stats_grspw.rx_truncated;
-    //spacewire_stats.tx_link_err;
-
-    //****************************
-    // DPU_SPACEWIRE_IF_STATISTICS
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0] = (unsigned char) (spacewire_stats.packets_received >> 8);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[1] = (unsigned char) (spacewire_stats.packets_received);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0] = (unsigned char) (spacewire_stats.packets_sent >> 8);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[1] = (unsigned char) (spacewire_stats.packets_sent);
-    //housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt;
-    //housekeeping_packet.hk_lfr_dpu_spw_last_timc;
-
-    //******************************************
-    // ERROR COUNTERS / SPACEWIRE / LOW SEVERITY
-    housekeeping_packet.hk_lfr_dpu_spw_parity = (unsigned char) spacewire_stats.parity_err;
-    housekeeping_packet.hk_lfr_dpu_spw_disconnect = (unsigned char) spacewire_stats.disconnect_err;
-    housekeeping_packet.hk_lfr_dpu_spw_escape = (unsigned char) spacewire_stats.escape_err;
-    housekeeping_packet.hk_lfr_dpu_spw_credit = (unsigned char) spacewire_stats.credit_err;
-    housekeeping_packet.hk_lfr_dpu_spw_write_sync = (unsigned char) spacewire_stats.write_sync_err;
-    // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb;
-    // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb;
-    housekeeping_packet.hk_lfr_dpu_spw_header_crc = (unsigned char) spacewire_stats.rx_rmap_header_crc_err;
-    housekeeping_packet.hk_lfr_dpu_spw_data_crc = (unsigned char) spacewire_stats.rx_rmap_data_crc_err;
-
-    //*********************************************
-    // ERROR COUNTERS / SPACEWIRE / MEDIUM SEVERITY
-    housekeeping_packet.hk_lfr_dpu_spw_early_eop = (unsigned char) spacewire_stats.early_ep;
-    housekeeping_packet.hk_lfr_dpu_spw_invalid_addr = (unsigned char) spacewire_stats.invalid_address;
-    housekeeping_packet.hk_lfr_dpu_spw_eep = (unsigned char) spacewire_stats.rx_eep_err;
-    housekeeping_packet.hk_lfr_dpu_spw_rx_too_big = (unsigned char) spacewire_stats.rx_truncated;
-
 }
 
 int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on the apbuart port
@@ -225,7 +217,7 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
             housekeeping_packet.sid = SID_HK;
 
-            update_spacewire_statistics();
+            spacewire_update_statistics();
 
             // SEND PACKET
             status =  rtems_message_queue_send( queue_id, &spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
@@ -239,92 +231,43 @@ rtems_task hous_task(rtems_task_argument argument)
 
     status = rtems_task_delete( RTEMS_SELF ); // should not return
     printf( "rtems_task_delete returned with status of %d.\n", status );
-    exit( 1 );
+    return;
 }
 
-rtems_task send_task( rtems_task_argument argument)
+rtems_task dumb_task( rtems_task_argument unused )
 {
-    rtems_status_code status;               // RTEMS status code
-    char incomingData[ACTION_MSG_PKTS_MAX_SIZE];  // incoming data buffer
-    spw_ioctl_pkt_send *spw_ioctl_send;
-    size_t size;                            // size of the incoming TC packet
-    u_int32_t count;
-    rtems_id queue_id;
+    /** This RTEMS taks is used to print messages without affecting the general behaviour of the software.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The DUMB taks waits for RTEMS events and print messages depending on the incoming events.
+     *
+     */
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in SEND *** ERR getting queue id, %d\n", status)
-    }
+    unsigned int i;
+    unsigned int intEventOut;
+    unsigned int coarse_time = 0;
+    unsigned int fine_time = 0;
+    rtems_event_set event_out;
 
-    BOOT_PRINTF("in SEND *** \n")
+    BOOT_PRINTF("in DUMB *** \n")
 
-    while(1)
-    {
-        status = rtems_message_queue_receive( queue_id, incomingData, &size,
-                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );
-
-        if (status!=RTEMS_SUCCESSFUL)
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4 | RTEMS_EVENT_5,
+                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
+        intEventOut =  (unsigned int) event_out;
+        for ( i=0; i<32; i++)
         {
-            PRINTF1("in SEND *** (1) ERR = %d\n", status)
-        }
-        else
-        {
-            if ( incomingData[0] == CCSDS_DESTINATION_ID) // the incoming message is a ccsds packet
+            if ( ((intEventOut >> i) & 0x0001) != 0)
             {
-                status = write( fdSPW, incomingData, size );
-                if (status == -1){
-                    PRINTF2("in SEND *** (2.a) ERR = %d, size = %d\n", status, size)
-                }
-            }
-            else // the incoming message is a spw_ioctl_pkt_send structure
-            {
-                spw_ioctl_send = (spw_ioctl_pkt_send*) incomingData;
-                if (spw_ioctl_send->hlen == 0)
-                {
-                    status = write( fdSPW, spw_ioctl_send->data, spw_ioctl_send->dlen );
-                    if (status == -1){
-                        PRINTF2("in SEND *** (2.b) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
-                    }
-                }
-                else
-                {
-                    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-                    if (status == -1){
-                        PRINTF2("in SEND *** (2.c) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
-                        PRINTF1("                            hlen = %d\n", spw_ioctl_send->hlen)
-                    }
-                }
-            }
-        }
-
-        status = rtems_message_queue_get_number_pending( queue_id, &count );
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF1("in SEND *** (3) ERR = %d\n", status)
-        }
-        else
-        {
-            if (count > maxCount)
-            {
-                maxCount = count;
+                coarse_time = time_management_regs->coarse_time;
+                fine_time = time_management_regs->fine_time;
+                printf("in DUMB *** time = coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
             }
         }
     }
 }
 
-rtems_id get_pkts_queue_id( void )
-{
-    rtems_id queue_id;
-    rtems_status_code status;
-
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
-    }
-    return queue_id;
-}
 
 
 

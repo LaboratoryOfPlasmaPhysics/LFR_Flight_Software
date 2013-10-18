@@ -1,5 +1,5 @@
-#ifndef FSW_RTEMS_CONFIG_H_INCLUDED
-#define FSW_RTEMS_CONFIG_H_INCLUDED
+#ifndef FSW_PARAMS_H_INCLUDED
+#define FSW_PARAMS_H_INCLUDED
 
 #include "grlib_regs.h"
 #include "fsw_params_processing.h"
@@ -222,4 +222,4 @@ struct param_local_str{
     unsigned int local_nb_interrupt_f0_MAX;
 };
 
-#endif // FSW_RTEMS_CONFIG_H_INCLUDED
+#endif // FSW_PARAMS_H_INCLUDED

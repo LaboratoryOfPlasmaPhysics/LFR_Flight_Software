@@ -52,7 +52,9 @@ SOURCES += \
     ../src/fsw_globals.c \
     ../src/fsw_spacewire.c \
     ../src/tc_load_dump_parameters.c \
-    ../src/tm_lfr_tc_exe.c
+    ../src/tm_lfr_tc_exe.c \
+    ../src/tc_acceptance.c
+
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -67,5 +69,6 @@ HEADERS += \
     ../header/fsw_spacewire.h \
     ../header/tm_byte_positions.h \
     ../header/tc_load_dump_parameters.h \
-    ../header/tm_lfr_tc_exe.h
+    ../header/tm_lfr_tc_exe.h \
+    ../header/tc_acceptance.h
 

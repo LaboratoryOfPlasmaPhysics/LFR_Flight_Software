@@ -1,3 +1,14 @@
+/** This is the RTEMS initialization module.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ * This module contains two very different information:
+ * - specific instructions to configure the compilation of the RTEMS executive
+ * - functions related to the fligth softwre initialization, especially the INIT RTEMS task
+ *
+ */
+
 //*************************
 // GPL reminder to be added
 //*************************
@@ -51,6 +62,15 @@
 
 rtems_task Init( rtems_task_argument ignored )
 {
+    /** This is the RTEMS INIT taks, it the first task launched by the system.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The INIT task create and run all other RTEMS tasks.
+     *
+     */
+
+
     rtems_status_code status;
     rtems_isr_entry  old_isr_handler;
 
@@ -131,6 +151,10 @@ rtems_task Init( rtems_task_argument ignored )
 
 void init_parameter_dump( void )
 {
+    /** This function initialize the parameter_dump_packet global variable with default values.
+     *
+     */
+
     parameter_dump_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
     parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     parameter_dump_packet.reserved = CCSDS_RESERVED;
@@ -188,6 +212,10 @@ void init_parameter_dump( void )
 
 void init_local_mode_parameters( void )
 {
+    /** This function initialize the param_local global variable with default values.
+     *
+     */
+
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
     set_local_sbm2_nb_cwf_max();
@@ -203,6 +231,10 @@ void init_local_mode_parameters( void )
 
 void init_housekeeping_parameters( void )
 {
+    /** This function initialize the housekeeping_packet global variable with default values.
+     *
+     */
+
     unsigned int i = 0;
     unsigned int j = 0;
     unsigned int k = 0;
@@ -240,7 +272,7 @@ int create_names( void ) // create all names for tasks and queues
     /** This function creates all RTEMS names used in the software for tasks and queues.
      *
      * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - message sent successfully
+     * - RTEMS_SUCCESSFUL - successful completion
      *
      */
 

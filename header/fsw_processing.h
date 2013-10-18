@@ -1,7 +1,14 @@
-#ifndef FSW_RTEMS_PROCESSING_H_INCLUDED
-#define FSW_RTEMS_PROCESSING_H_INCLUDED
+#ifndef FSW_PROCESSING_H_INCLUDED
+#define FSW_PROCESSING_H_INCLUDED
 
-#include "fsw_init.h"
+#include <rtems.h>
+#include <grspw.h>
+#include <math.h>
+#include <stdlib.h> // abs() is in the stdlib
+#include <stdio.h>  // printf()
+
+#include "fsw_params.h"
+
 
 extern volatile int spec_mat_f0_0[ ];
 extern volatile int spec_mat_f0_1[ ];
@@ -29,6 +36,9 @@ extern struct param_local_str param_local;
 extern time_management_regs_t *time_management_regs;
 extern spectral_matrix_regs_t *spectral_matrix_regs;
 
+extern rtems_name  misc_name[5];
+extern rtems_id    Task_id[20];         /* array of task ids */
+
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
@@ -52,4 +62,4 @@ void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output
 void fill_averaged_spectral_matrix( void );
 void reset_spectral_matrix_regs();
 
-#endif // FSW_RTEMS_PROCESSING_H_INCLUDED
+#endif // FSW_PROCESSING_H_INCLUDED

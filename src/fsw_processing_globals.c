@@ -1,3 +1,10 @@
+/** Global variables used by the processing functions.
+ *
+ * @file
+ * @author P. LEROY
+ *
+ */
+
 // TOTAL = 32 coefficients * 4 = 128 octets * 3 * 12 = 4608 octets
 // SX 12 coefficients
 float K14_sx_re = 1;
