@@ -15,6 +15,7 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsigned char *computed_CRC);
 int tc_check_type( unsigned char packetType );
 int tc_check_subtype( unsigned char packetType );
+int tc_check_sid( unsigned char sid );
 int tc_check_length( unsigned char packetType, unsigned int length );
 int tc_check_crc(ccsdsTelecommandPacket_t * TCPacket, unsigned int length , unsigned char *computed_CRC);
 

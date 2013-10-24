@@ -156,14 +156,7 @@ rtems_task stat_task(rtems_task_argument argument)
 rtems_task hous_task(rtems_task_argument argument)
 {
     rtems_status_code status;
-    spw_ioctl_pkt_send spw_ioctl_send;
     rtems_id queue_id;
-
-    spw_ioctl_send.hlen = 0;
-    spw_ioctl_send.hdr = NULL;
-    spw_ioctl_send.dlen = PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
-    spw_ioctl_send.data = (char*) &housekeeping_packet;
-    spw_ioctl_send.options = 0;
 
     status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -173,8 +166,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
     BOOT_PRINTF("in HOUS ***\n")
 
-    if (rtems_rate_monotonic_ident( HK_name, &HK_id) != RTEMS_SUCCESSFUL) {
-        status = rtems_rate_monotonic_create( HK_name, &HK_id );
+    if (rtems_rate_monotonic_ident( name_hk_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
+        status = rtems_rate_monotonic_create( name_hk_rate_monotonic, &HK_id );
         if( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
         }
@@ -220,7 +213,8 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
+            status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
+                                                PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR %d\n", status)
             }
@@ -268,7 +262,32 @@ rtems_task dumb_task( rtems_task_argument unused )
     }
 }
 
+//*****************************
+// init housekeeping parameters
 
+void init_housekeeping_parameters( void )
+{
+    /** This function initialize the housekeeping_packet global variable with default values.
+     *
+     */
 
+    unsigned int i = 0;
+    char *parameters;
 
+    parameters = (char*) &housekeeping_packet.lfr_status_word;
+    for(i = 0; i< SIZE_HK_PARAMETERS; i++)
+    {
+        parameters[i] = 0x00;
+    }
+    // init status word
+    housekeeping_packet.lfr_status_word[0] = DEFAULT_STATUS_WORD_BYTE0;
+    housekeeping_packet.lfr_status_word[1] = DEFAULT_STATUS_WORD_BYTE1;
+    // init software version
+    housekeeping_packet.lfr_sw_version[0] = SW_VERSION_N1;
+    housekeeping_packet.lfr_sw_version[1] = SW_VERSION_N2;
+    housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
+    housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
+
+    updateLFRCurrentMode();
+}
 

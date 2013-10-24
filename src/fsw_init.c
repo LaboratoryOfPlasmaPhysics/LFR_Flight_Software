@@ -72,6 +72,7 @@ rtems_task Init( rtems_task_argument ignored )
 
 
     rtems_status_code status;
+    rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
 
     BOOT_PRINTF("\n\n\n\n\n")
@@ -87,15 +88,48 @@ rtems_task Init( rtems_task_argument ignored )
     init_local_mode_parameters();
     init_housekeeping_parameters();
 
-    create_names();         // create all names
+    create_names();                             // create all names
+    status = create_message_queues();           // create message queues
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in INIT *** ERR in create_message_queues, code %d", status)
+    }
 
-    create_message_queues();
-
-    status = create_all_tasks();    // create all tasks
+    status = create_all_tasks();                // create all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in INIT *** ERR in create_all_tasks, code %d", status)
     }
+
+    // **************************
+    // <SPACEWIRE INITIALIZATION>
+    grspw_timecode_callback = &timecode_irq_handler;
+
+    status_spw = spacewire_open_link();     // (1) open the link
+    if ( status_spw != RTEMS_SUCCESSFUL )
+    {
+        PRINTF1("in INIT *** ERR spacewire_open_link code %d\n", status_spw )
+    }
+
+    if ( status_spw == RTEMS_SUCCESSFUL )   // (2) configure the link
+    {
+        status_spw = spacewire_configure_link( fdSPW );
+        if ( status_spw != RTEMS_SUCCESSFUL )
+        {
+            PRINTF1("in INIT *** ERR spacewire_configure_link code %d\n", status_spw )
+        }
+    }
+
+    if ( status_spw == RTEMS_SUCCESSFUL)    // (3) start the link
+    {
+        status_spw = spacewire_start_link( fdSPW );
+        if (  status_spw != RTEMS_SUCCESSFUL )
+        {
+            PRINTF1("in INIT *** ERR spacewire_start_link code %d\n",  status_spw )
+        }
+    }
+    // </SPACEWIRE INITIALIZATION>
+    // ***************************
 
     status = start_all_tasks();     // start all tasks
     if (status != RTEMS_SUCCESSFUL)
@@ -103,15 +137,17 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** ERR in start_all_tasks, code %d", status)
     }
 
+    status = start_recv_send_tasks();
+    if ( status != RTEMS_SUCCESSFUL )
+    {
+        PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n",  status )
+    }
+
     status = stop_current_mode();   // go in STANDBY mode
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in INIT *** ERR in stop_current_mode, code %d", status)
     }
-
-    grspw_timecode_callback = &timecode_irq_handler;
-
-    spacewire_configure_link();
 
 #ifdef GSA
     // mask IRQ lines
@@ -143,71 +179,18 @@ rtems_task Init( rtems_task_argument ignored )
                     IRQ_SPARC_SM, spectral_matrices_isr_simu );
 #endif
 
+    if ( status_spw != RTEMS_SUCCESSFUL )
+    {
+        status = rtems_event_send( Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT );
+        if ( status != RTEMS_SUCCESSFUL ) {
+            PRINTF1("in INIT *** ERR rtems_event_send to SPIQ code %d\n",  status )
+        }
+    }
+
     BOOT_PRINTF("delete INIT\n")
 
     status = rtems_task_delete(RTEMS_SELF);
 
-}
-
-void init_parameter_dump( void )
-{
-    /** This function initialize the parameter_dump_packet global variable with default values.
-     *
-     */
-
-    parameter_dump_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    parameter_dump_packet.reserved = CCSDS_RESERVED;
-    parameter_dump_packet.userApplication = CCSDS_USER_APP;
-    parameter_dump_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_PARAMETER_DUMP >> 8);
-    parameter_dump_packet.packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
-    parameter_dump_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    parameter_dump_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    parameter_dump_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_PARAMETER_DUMP >> 8);
-    parameter_dump_packet.packetLength[1] = (unsigned char) PACKET_LENGTH_PARAMETER_DUMP;
-    // DATA FIELD HEADER
-    parameter_dump_packet.spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
-    parameter_dump_packet.serviceType = TM_TYPE_PARAMETER_DUMP;
-    parameter_dump_packet.serviceSubType = TM_SUBTYPE_PARAMETER_DUMP;
-    parameter_dump_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    parameter_dump_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    parameter_dump_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    parameter_dump_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    parameter_dump_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
-    parameter_dump_packet.sid = SID_PARAMETER_DUMP;
-
-    //******************
-    // COMMON PARAMETERS
-    parameter_dump_packet.unused0 = DEFAULT_SY_LFR_COMMON0;
-    parameter_dump_packet.bw_sp0_sp1_r0_r1 = DEFAULT_SY_LFR_COMMON1;
-
-    //******************
-    // NORMAL PARAMETERS
-    parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_L >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_L     );
-    parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_P >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (DEFAULT_SY_LFR_N_SWF_P     );
-    parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (DEFAULT_SY_LFR_N_ASM_P >> 8);
-    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (DEFAULT_SY_LFR_N_ASM_P     );
-    parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) DEFAULT_SY_LFR_N_BP_P0;
-    parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) DEFAULT_SY_LFR_N_BP_P1;
-
-    //*****************
-    // BURST PARAMETERS
-    parameter_dump_packet.sy_lfr_b_bp_p0 = (unsigned char) DEFAULT_SY_LFR_B_BP_P0;
-    parameter_dump_packet.sy_lfr_b_bp_p1 = (unsigned char) DEFAULT_SY_LFR_B_BP_P1;
-
-    //****************
-    // SBM1 PARAMETERS
-    parameter_dump_packet.sy_lfr_s1_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0; // min value is 0.25 s for the period
-    parameter_dump_packet.sy_lfr_s1_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P1;
-
-    //****************
-    // SBM2 PARAMETERS
-    parameter_dump_packet.sy_lfr_s2_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
-    parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P1;
 }
 
 void init_local_mode_parameters( void )
@@ -215,6 +198,10 @@ void init_local_mode_parameters( void )
     /** This function initialize the param_local global variable with default values.
      *
      */
+
+    unsigned int i;
+    unsigned int j;
+    unsigned int k;
 
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
@@ -227,32 +214,7 @@ void init_local_mode_parameters( void )
 
     reset_local_sbm1_nb_cwf_sent();
     reset_local_sbm2_nb_cwf_sent();
-}
 
-void init_housekeeping_parameters( void )
-{
-    /** This function initialize the housekeeping_packet global variable with default values.
-     *
-     */
-
-    unsigned int i = 0;
-    unsigned int j = 0;
-    unsigned int k = 0;
-    char *parameters;
-
-    parameters = (char*) &housekeeping_packet.lfr_status_word;
-    for(i = 0; i< SIZE_HK_PARAMETERS; i++)
-    {
-        parameters[i] = 0x00;
-    }
-    // init status word
-    housekeeping_packet.lfr_status_word[0] = 0x00;
-    housekeeping_packet.lfr_status_word[1] = 0x00;
-    // init software version
-    housekeeping_packet.lfr_sw_version[0] = SW_VERSION_N1;
-    housekeeping_packet.lfr_sw_version[1] = SW_VERSION_N2;
-    housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
-    housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
     // init sequence counters
     for (i = 0; i<SEQ_CNT_NB_PID; i++)
     {
@@ -264,10 +226,9 @@ void init_housekeeping_parameters( void )
             }
         }
     }
-    updateLFRCurrentMode();
 }
 
-int create_names( void ) // create all names for tasks and queues
+void create_names( void ) // create all names for tasks and queues
 {
     /** This function creates all RTEMS names used in the software for tasks and queues.
      *
@@ -292,14 +253,13 @@ int create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_CWF2] = rtems_build_name( 'C', 'W', 'F', '2' );
     Task_name[TASKID_CWF1] = rtems_build_name( 'C', 'W', 'F', '1' );
     Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
+    Task_name[TASKID_WTDG] = rtems_build_name( 'W', 'T', 'D', 'G' );
 
-    // rate monotonic period name
-    HK_name = rtems_build_name( 'H', 'O', 'U', 'S' );
+    // rate monotonic period names
+    name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
 
-    misc_name[QUEUE_RECV] = rtems_build_name( 'Q', 'U', 'E', 'U' );
-    misc_name[QUEUE_SEND] = rtems_build_name( 'P', 'K', 'T', 'S' );
-
-    return RTEMS_SUCCESSFUL;
+    misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
+    misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
 }
 
 int create_all_tasks( void ) // create all tasks which run in the software
@@ -439,11 +399,39 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
         );
     }
+    if (status == RTEMS_SUCCESSFUL) // WTDG
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_WTDG], TASK_PRIORITY_WTDG, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
+        );
+    }
 
     return status;
 }
 
-int start_all_tasks( void )
+int start_recv_send_tasks( void )
+{
+    rtems_status_code status;
+
+    status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
+    if (status!=RTEMS_SUCCESSFUL) {
+        BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n")
+    }
+
+    if (status == RTEMS_SUCCESSFUL)     // SEND
+    {
+        status = rtems_task_start( Task_id[TASKID_SEND], send_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n")
+        }
+    }
+
+    return status;
+}
+
+int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
 {
     /** This function starts all RTEMS tasks used in the software.
      *
@@ -464,27 +452,19 @@ int start_all_tasks( void )
         BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n")
     }
 
+    if (status == RTEMS_SUCCESSFUL)     // WTDG
+    {
+        status = rtems_task_start( Task_id[TASKID_WTDG], wtdg_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_WTDG\n")
+        }
+    }
+
     if (status == RTEMS_SUCCESSFUL)     // SMIQ
     {
         status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_BPPR\n")
-        }
-    }
-
-    if (status == RTEMS_SUCCESSFUL)     // RECV
-    {
-        status = rtems_task_start( Task_id[TASKID_RECV], recv_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n")
-        }
-    }
-
-    if (status == RTEMS_SUCCESSFUL)     // SEND
-    {
-        status = rtems_task_start( Task_id[TASKID_SEND], send_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n")
         }
     }
 
@@ -575,31 +555,41 @@ int start_all_tasks( void )
             BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n")
         }
     }
-
     return status;
 }
 
 rtems_status_code create_message_queues( void ) // create the two message queues used in the software
 {
-    rtems_status_code status;
+    rtems_status_code status_recv;
+    rtems_status_code status_send;
     rtems_status_code ret;
     rtems_id queue_id;
 
     // create the queue for handling valid TCs
-    status = rtems_message_queue_create( misc_name[QUEUE_RECV], ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+    status_recv = rtems_message_queue_create( misc_name[QUEUE_RECV],
+                                              ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
                                          RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
-    if (status != RTEMS_SUCCESSFUL) {
-        ret = status;
-        BOOT_PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", ret)
+    if ( status_recv != RTEMS_SUCCESSFUL ) {
+        PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
     }
 
     // create the queue for handling TM packet sending
-    ret = rtems_message_queue_create( misc_name[QUEUE_SEND], ACTION_MSG_PKTS_COUNT,
-                                      ACTION_MSG_PKTS_MAX_SIZE,
+    status_send = rtems_message_queue_create( misc_name[QUEUE_SEND],
+                                              ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_MAX_SIZE,
                                       RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
-    if (ret != RTEMS_SUCCESSFUL) {
-        BOOT_PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", ret)
+    if ( status_send != RTEMS_SUCCESSFUL ) {
+        PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
+    }
+
+    if ( status_recv != RTEMS_SUCCESSFUL )
+    {
+        ret = status_recv;
+    }
+    else
+    {
+        ret = status_send;
     }
 
     return ret;
 }
+

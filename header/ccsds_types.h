@@ -119,6 +119,20 @@
 #define FAIL_DETECTED       42003   // 0xa4 0x13
 #define CORRUPTED           42005   // 0xa4 0x15
 
+#define SID_TC_DEFAULT      0       // the default SID for TC sent to the LFR
+#define SID_TC_GROUND       0
+#define SID_TC_MISSION_TIMELINE         110
+#define SID_TC_TC_SEQUENCES             111
+#define SID_TC_RECOVERY_ACTION_CMD      112
+#define SID_TC_BACKUP_MISSION_TIMELINE  113
+#define SID_TC_DIRECT_CMD               120
+#define SID_TC_SPARE_GRD_SRC1           121
+#define SID_TC_SPARE_GRD_SRC2           122
+#define SID_TC_OBCP                     15
+#define SID_TC_SYSTEM_CONTROL           14
+#define SID_TC_AOCS                     11
+#define SID_TC_RPW_INTERNAL             254
+
 // TM SID
 #define SID_HK 1
 #define SID_PARAMETER_DUMP 10

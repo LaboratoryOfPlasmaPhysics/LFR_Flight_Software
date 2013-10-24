@@ -30,14 +30,13 @@ extern unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_N
 rtems_task Init( rtems_task_argument argument);
 
 // OTHER functions
-int create_names( void );
+void create_names( void );
+rtems_status_code create_message_queues( void );
 int create_all_tasks( void );
 int start_all_tasks( void );
-rtems_status_code create_message_queues( void );
+int start_recv_send_tasks( void );
 //
-void init_parameter_dump( void );
 void init_local_mode_parameters( void );
-void init_housekeeping_parameters( void );
 
 extern int rtems_cpu_usage_report( void );
 extern int rtems_cpu_usage_reset( void );

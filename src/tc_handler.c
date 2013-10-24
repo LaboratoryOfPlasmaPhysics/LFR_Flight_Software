@@ -207,27 +207,22 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM transmission by the SpaceWire driver
      *
+     * @return LFR directive status code:
+     * - LFR_DEFAULT
+     * - LFR_SUCCESSFUL
+     *
      */
 
     unsigned int val;
     int result;
-    unsigned char lfrMode;
 
     result = LFR_DEFAULT;
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_STANDBY) ) {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
-        result = LFR_DEFAULT;
-    }
-    else {
-        val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
-                + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
-        val++;
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
-        result = LFR_SUCCESSFUL;
-    }
+    val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
+            + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
+    val++;
+    housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
+    housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
 
     return result;
 }
@@ -290,6 +285,8 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
      *
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM transmission by the SpaceWire driver
+     *
+     * @return LFR_SUCCESSFUL
      *
      */
 
@@ -729,7 +726,10 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
     unsigned int val = 0;
     if (result == LFR_SUCCESSFUL)
     {
-        if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) ) )
+        if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
+             &&
+             !( (TC->serviceType==TC_TYPE_GEN) && (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
+             )
         {
             send_tm_lfr_tc_exe_success( TC, queue_id );
         }

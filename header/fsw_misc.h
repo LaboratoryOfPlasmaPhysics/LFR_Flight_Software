@@ -8,7 +8,7 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-rtems_name HK_name;     // name of the HK rate monotonic
+rtems_name name_hk_rate_monotonic;     // name of the HK rate monotonic
 rtems_id HK_id;         // id of the HK rate monotonic period
 
 extern rtems_name  misc_name[5];
@@ -29,5 +29,7 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
 rtems_task stat_task( rtems_task_argument argument );
 rtems_task hous_task( rtems_task_argument argument );
 rtems_task dumb_task( rtems_task_argument unused );
+
+void init_housekeeping_parameters( void );
 
 #endif // FSW_MISC_H_INCLUDED

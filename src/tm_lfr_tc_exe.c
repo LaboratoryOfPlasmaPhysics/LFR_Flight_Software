@@ -28,7 +28,7 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -43,8 +43,8 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS     );
     // DATA FIELD HEADER
@@ -91,7 +91,7 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -106,8 +106,8 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT     );
     // DATA FIELD HEADER
@@ -157,7 +157,7 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -172,8 +172,8 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     );
     // DATA FIELD HEADER
@@ -223,7 +223,7 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -238,8 +238,8 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED     );
     // DATA FIELD HEADER
@@ -287,7 +287,7 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -302,8 +302,8 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR     );
     // DATA FIELD HEADER
@@ -354,7 +354,7 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
      * - RTEMS_INVALID_SIZE - invalid message size
      * - RTEMS_INVALID_ADDRESS - buffer is NULL
      * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue’s limit has been reached
+     * - RTEMS_TOO_MANY - queue s limit has been reached
      *
      */
 
@@ -364,8 +364,8 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     unsigned int packetLength;
     unsigned char *packetDataField;
 
-    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];    // compute the packet length
-    packetDataField = (unsigned char *) &TC->headerFlag_pusVersion_Ack;     // get the beginning of the data field
+    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];   // compute the packet length parameter
+    packetDataField = (unsigned char *) &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -374,8 +374,8 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = (TM_PACKET_SEQ_CTRL_STANDALONE >> 8);
-    TM.packetSequenceControl[1] = (TM_PACKET_SEQ_CTRL_STANDALONE     );
+    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED     );
     // DATA FIELD HEADER

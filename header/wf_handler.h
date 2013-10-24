@@ -31,7 +31,9 @@ extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern struct param_local_str param_local;
 
 extern rtems_name  misc_name[5];
+extern rtems_name  Task_name[20];       /* array of task ids */
 extern rtems_id    Task_id[20];         /* array of task ids */
+
 extern unsigned char lfrCurrentMode;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );

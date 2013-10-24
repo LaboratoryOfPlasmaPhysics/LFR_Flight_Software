@@ -26,4 +26,6 @@ int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int set_sy_lfr_n_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
+void init_parameter_dump( void );
+
 #endif // TC_LOAD_DUMP_PARAMETERS_H

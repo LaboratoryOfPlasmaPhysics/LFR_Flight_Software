@@ -72,7 +72,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     }
 
     //***************
-    // sy_lfr_n_asm_p
+    // SY_LFR_N_ASM_P
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_asm_p( TC, queue_id );
@@ -83,7 +83,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     }
 
     //***************
-    // sy_lfr_n_bp_p0
+    // SY_LFR_N_BP_P0
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_bp_p0( TC, queue_id );
@@ -211,6 +211,13 @@ int action_dump_par( rtems_id queue_id )
 
     int status;
 
+    // UPDATE TIME
+    parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    parameter_dump_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    parameter_dump_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    parameter_dump_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    parameter_dump_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
     // SEND DATA
     status =  rtems_message_queue_send( queue_id, &parameter_dump_packet,
                                         PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
@@ -303,7 +310,7 @@ int set_sy_lfr_n_swf_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
 int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
-    /** This function sets the time between two full spectral matrices transmission, in s (sy_lfr_n_asm_p).
+    /** This function sets the time between two full spectral matrices transmission, in s (SY_LFR_N_ASM_P).
      *
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM related to this execution step
@@ -326,7 +333,7 @@ int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
 int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
-    /** This function sets the time between two basic parameter sets, in s (sy_lfr_n_bp_p0).
+    /** This function sets the time between two basic parameter sets, in s (SY_LFR_N_BP_P0).
      *
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM related to this execution step
@@ -369,8 +376,69 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 //*********************
 // SBM2 MODE PARAMETERS
 
+//**********
+// init dump
 
+void init_parameter_dump( void )
+{
+    /** This function initialize the parameter_dump_packet global variable with default values.
+     *
+     */
 
+    parameter_dump_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    parameter_dump_packet.reserved = CCSDS_RESERVED;
+    parameter_dump_packet.userApplication = CCSDS_USER_APP;
+    parameter_dump_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_PARAMETER_DUMP >> 8);
+    parameter_dump_packet.packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
+    parameter_dump_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    parameter_dump_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    parameter_dump_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_PARAMETER_DUMP >> 8);
+    parameter_dump_packet.packetLength[1] = (unsigned char) PACKET_LENGTH_PARAMETER_DUMP;
+    // DATA FIELD HEADER
+    parameter_dump_packet.spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
+    parameter_dump_packet.serviceType = TM_TYPE_PARAMETER_DUMP;
+    parameter_dump_packet.serviceSubType = TM_SUBTYPE_PARAMETER_DUMP;
+    parameter_dump_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    parameter_dump_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    parameter_dump_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    parameter_dump_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    parameter_dump_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+    parameter_dump_packet.sid = SID_PARAMETER_DUMP;
+
+    //******************
+    // COMMON PARAMETERS
+    parameter_dump_packet.unused0 = DEFAULT_SY_LFR_COMMON0;
+    parameter_dump_packet.bw_sp0_sp1_r0_r1 = DEFAULT_SY_LFR_COMMON1;
+
+    //******************
+    // NORMAL PARAMETERS
+    parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (SY_LFR_N_SWF_L >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (SY_LFR_N_SWF_L     );
+    parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (SY_LFR_N_SWF_P >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (SY_LFR_N_SWF_P     );
+    parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (SY_LFR_N_ASM_P >> 8);
+    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (SY_LFR_N_ASM_P     );
+    parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) SY_LFR_N_BP_P0;
+    parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) SY_LFR_N_BP_P1;
+
+    //*****************
+    // BURST PARAMETERS
+    parameter_dump_packet.sy_lfr_b_bp_p0 = (unsigned char) DEFAULT_SY_LFR_B_BP_P0;
+    parameter_dump_packet.sy_lfr_b_bp_p1 = (unsigned char) DEFAULT_SY_LFR_B_BP_P1;
+
+    //****************
+    // SBM1 PARAMETERS
+    parameter_dump_packet.sy_lfr_s1_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P0; // min value is 0.25 s for the period
+    parameter_dump_packet.sy_lfr_s1_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S1_BP_P1;
+
+    //****************
+    // SBM2 PARAMETERS
+    parameter_dump_packet.sy_lfr_s2_bp_p0 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P0;
+    parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P1;
+}
 
 
 

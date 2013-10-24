@@ -98,6 +98,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
      *
      * @param TC points to the TeleCommand that will be parsed.
      * @param TC_LEN_RCV is the received packet length.
+     *
      * @return Status code of the parsing.
      *
      * The parsing checks:
@@ -116,6 +117,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     unsigned int length;
     unsigned char packetType;
     unsigned char packetSubtype;
+    unsigned char sid;
 
     status = CCSDS_TM_VALID;
 
@@ -125,6 +127,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     length = (TCPacket->packetLength[0] * 256) + TCPacket->packetLength[1];
     packetType = TCPacket->serviceType;
     packetSubtype = TCPacket->serviceSubType;
+    sid = TCPacket->sourceID;
 
     if ( pid != CCSDS_PROCESS_ID )  // CHECK THE PROCESS ID
     {
@@ -157,6 +160,10 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     {
         status = tc_check_subtype( packetSubtype );
     }
+    if (status == CCSDS_TM_VALID)   // CHECK THE SID
+    {
+        status = tc_check_sid( sid );
+    }
     if (status == CCSDS_TM_VALID)   // CHECK THE SUBTYPE AND LENGTH COMPLIANCE
     {
         status = tc_check_length( packetSubtype, length );
@@ -174,6 +181,7 @@ int tc_check_type( unsigned char packetType )
     /** This function checks that the type of a TeleCommand is valid.
      *
      * @param packetType is the type to check.
+     *
      * @return Status code CCSDS_TM_VALID or ILL_TYPE.
      *
      */
@@ -197,6 +205,7 @@ int tc_check_subtype( unsigned char packetSubType )
     /** This function checks that the subtype of a TeleCommand is valid.
      *
      * @param packetSubType is the subtype to check.
+     *
      * @return Status code CCSDS_TM_VALID or ILL_SUBTYPE.
      *
      */
@@ -222,12 +231,42 @@ int tc_check_subtype( unsigned char packetSubType )
     return status;
 }
 
+int tc_check_sid( unsigned char sid )
+{
+    /** This function checks that the sid of a TeleCommand is valid.
+     *
+     * @param sid is the sid to check.
+     *
+     * @return Status code CCSDS_TM_VALID or CORRUPTED.
+     *
+     */
+
+    int status;
+
+    if ( (sid == SID_TC_GROUND)
+         || (sid == SID_TC_MISSION_TIMELINE) || (sid == SID_TC_TC_SEQUENCES)   || (sid == SID_TC_RECOVERY_ACTION_CMD)
+         || (sid == SID_TC_BACKUP_MISSION_TIMELINE)
+         || (sid == SID_TC_DIRECT_CMD)       || (sid == SID_TC_SPARE_GRD_SRC1) || (sid == SID_TC_SPARE_GRD_SRC2)
+         || (sid == SID_TC_OBCP)             || (sid == SID_TC_SYSTEM_CONTROL) || (sid == SID_TC_AOCS)
+         || (sid == SID_TC_RPW_INTERNAL))
+    {
+        status = CCSDS_TM_VALID;
+    }
+    else
+    {
+        status = CORRUPTED;
+    }
+
+    return status;
+}
+
 int tc_check_length( unsigned char packetSubType, unsigned int length )
 {
     /** This function checks that the subtype and the length are compliant.
      *
      * @param packetSubType is the subtype to check.
      * @param length is the length to check.
+     *
      * @return Status code CCSDS_TM_VALID or ILL_TYPE.
      *
      */
@@ -348,6 +387,7 @@ int tc_check_crc( ccsdsTelecommandPacket_t * TCPacket, unsigned int length, unsi
      *
      * @param TCPacket points to the TeleCommand packet to check.
      * @param length is the length of the TC packet.
+     *
      * @return Status code CCSDS_TM_VALID or INCOR_CHECKSUM.
      *
      */

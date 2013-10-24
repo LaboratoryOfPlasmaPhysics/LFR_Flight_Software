@@ -35,11 +35,11 @@
 #define DEFAULT_SY_LFR_COMMON0 0x00
 #define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
 // NORM
-#define DEFAULT_SY_LFR_N_SWF_L 2048 // nb sample
-#define DEFAULT_SY_LFR_N_SWF_P 16   // sec
-#define DEFAULT_SY_LFR_N_ASM_P 16   // sec
-#define DEFAULT_SY_LFR_N_BP_P0 4    // sec
-#define DEFAULT_SY_LFR_N_BP_P1 20   // sec
+#define SY_LFR_N_SWF_L 2048 // nb sample
+#define SY_LFR_N_SWF_P 300  // sec
+#define SY_LFR_N_ASM_P 3600 // sec
+#define SY_LFR_N_BP_P0 4    // sec
+#define SY_LFR_N_BP_P1 20   // sec
 #define MIN_DELTA_SNAPSHOT 16       // sec
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
@@ -52,8 +52,13 @@
 #define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
 // ADDITIONAL PARAMETERS
 #define TIME_BETWEEN_TWO_SWF_PACKETS 30     // nb x 10 ms => 300 ms
-#define TIME_BETWEEN_TWO_CWF3_PACKETS 1000 // nb x 10 ms => 10 s
+#define TIME_BETWEEN_TWO_CWF3_PACKETS 1000  // nb x 10 ms => 10 s
+// STATUS WORD
+#define DEFAULT_STATUS_WORD_BYTE0 0x0d  // [0000] [1] [101] mode 4 bits / SPW enabled 1 bit / state is run 3 bits
+#define DEFAULT_STATUS_WORD_BYTE1 0x00
 //
+#define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
+#define SY_LFR_DPU_CONNECT_ATTEMPT 3
 //****************************
 
 //*****************************
@@ -117,11 +122,13 @@
 #define TASKID_CWF2 13
 #define TASKID_CWF1 14
 #define TASKID_SEND 15
+#define TASKID_WTDG 16
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_SMIQ 10
 //
-#define TASK_PRIORITY_RECV 20
+#define TASK_PRIORITY_WTDG 20
+//
 #define TASK_PRIORITY_ACTN 30
 //
 #define TASK_PRIORITY_HOUS 40
@@ -129,8 +136,9 @@
 #define TASK_PRIORITY_CWF2 40
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40
-//
 #define TASK_PRIORITY_SEND 40
+//
+#define TASK_PRIORITY_RECV 50   // this priority prevents the blocking of of other tasks in case of link deconnexion
 //
 #define TASK_PRIORITY_AVF0 60
 #define TASK_PRIORITY_BPF0 60
@@ -140,7 +148,7 @@
 
 #define ACTION_MSG_QUEUE_COUNT 10
 #define ACTION_MSG_PKTS_COUNT 50
-#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
+#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE 24                   // hlen *hdr dlen *data sent options
 
 #define QUEUE_RECV 0
