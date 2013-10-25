@@ -39,6 +39,7 @@ rtems_task spiq_task(rtems_task_argument unused)
 
     while(true){
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
+        PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n")
 
         // [0] SUSPEND RECV ADN SEND TASKS
         rtems_task_suspend( Task_id[ TASKID_RECV ] );
@@ -70,11 +71,11 @@ rtems_task spiq_task(rtems_task_argument unused)
         // [3] COMPLETE RECOVERY ACTION AFTER SY_LFR_DPU_CONNECT_ATTEMPTS
         if ( status == RTEMS_SUCCESSFUL )   // [3.a] the link is in run state and has been started successfully
         {
-            status = rtems_task_resume( Task_id[ TASKID_SEND ] );
+            status = rtems_task_restart( Task_id[ TASKID_SEND ], 1 );
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF("in SPIQ *** ERR resuming SEND Task\n")
             }
-            status = rtems_task_resume( Task_id[ TASKID_RECV ] );
+            status = rtems_task_restart( Task_id[ TASKID_RECV ], 1 );
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF("in SPIQ *** ERR resuming RECV Task\n")
             }
@@ -85,7 +86,7 @@ rtems_task spiq_task(rtems_task_argument unused)
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR enter_mode *** code %d\n", status)
             }
-            // wake the WTDG task
+            // wake the WTDG task up to wait for the link recovery
             status =  rtems_event_send ( Task_id[TASKID_WTDG], RTEMS_EVENT_0 );
             rtems_task_suspend( RTEMS_SELF );
         }
@@ -206,7 +207,7 @@ rtems_task send_task( rtems_task_argument argument)
             {
                 status = write( fdSPW, incomingData, size );
                 if (status == -1){
-                    PRINTF2("in SEND *** (2.a) ERR = %d, size = %d\n", status, size)
+                    PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)
                 }
             }
             else // the incoming message is a spw_ioctl_pkt_send structure
@@ -216,14 +217,14 @@ rtems_task send_task( rtems_task_argument argument)
                 {
                     status = write( fdSPW, spw_ioctl_send->data, spw_ioctl_send->dlen );
                     if (status == -1){
-                        PRINTF2("in SEND *** (2.b) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
+                        PRINTF2("in SEND *** (2.b) ERRNO = %d, dlen = %d\n", errno, spw_ioctl_send->dlen)
                     }
                 }
                 else
                 {
                     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
                     if (status == -1){
-                        PRINTF2("in SEND *** (2.c) ERR = %d, dlen = %d\n", status, spw_ioctl_send->dlen)
+                        PRINTF2("in SEND *** (2.c) ERRNO = %d, dlen = %d\n", errno, spw_ioctl_send->dlen)
                         PRINTF1("                            hlen = %d\n", spw_ioctl_send->hlen)
                     }
                 }
@@ -278,16 +279,19 @@ rtems_task wtdg_task( rtems_task_argument argument )
         }
 
         // restart the SPIQ task
-        rtems_task_restart( Task_id[TASKID_SPIQ], 1 );
+        status = rtems_task_restart( Task_id[TASKID_SPIQ], 1 );
+        if ( status != RTEMS_SUCCESSFUL ) {
+            PRINTF("in SPIQ *** ERR restarting SPIQ Task\n")
+        }
 
-        // resume RECV and SEND
+        // restart RECV and SEND
         status = rtems_task_restart( Task_id[ TASKID_SEND ], 1 );
         if ( status != RTEMS_SUCCESSFUL ) {
-            PRINTF("in SPIQ *** ERR resuming SEND Task\n")
+            PRINTF("in SPIQ *** ERR restarting SEND Task\n")
         }
         status = rtems_task_restart( Task_id[ TASKID_RECV ], 1 );
         if ( status != RTEMS_SUCCESSFUL ) {
-            PRINTF("in SPIQ *** ERR resuming RECV Task\n")
+            PRINTF("in SPIQ *** ERR restarting RECV Task\n")
         }
     }
 }
@@ -370,7 +374,7 @@ int spacewire_configure_link( int fd )
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n")
     //
-    status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 0);      // transmission blocks on full
+    status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);      // transmission blocks when no transmission descriptor is available
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
