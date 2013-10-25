@@ -88,7 +88,12 @@ rtems_task Init( rtems_task_argument ignored )
     init_local_mode_parameters();
     init_housekeeping_parameters();
 
+    updateLFRCurrentMode();
+
+    BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
+
     create_names();                             // create all names
+
     status = create_message_queues();           // create message queues
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -137,13 +142,21 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** ERR in start_all_tasks, code %d", status)
     }
 
+    // start RECV and SEND *AFTER* SpaceWire Initialization, due to the timeout of the start call during the initialization
     status = start_recv_send_tasks();
     if ( status != RTEMS_SUCCESSFUL )
     {
         PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n",  status )
     }
 
-    status = stop_current_mode();   // go in STANDBY mode
+    // suspend science tasks. they will be restarted later depending on the mode
+    status = suspend_science_tasks();   // suspend science tasks (not done in stop_current_mode if current mode = STANDBY)
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
+    }
+
+    status = stop_current_mode();       // go in STANDBY mode
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in INIT *** ERR in stop_current_mode, code %d", status)
@@ -160,25 +173,13 @@ rtems_task Init( rtems_task_argument ignored )
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
                     IRQ_SPARC_WF, waveforms_simulator_isr );
 #else
-    // mask IRQ lines
-    LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );
-    // reset configuration registers
-    reset_waveform_picker_regs();
-    reset_spectral_matrix_regs();
     // configure IRQ handling for the waveform picker unit
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
-    // configure IRQ handling for the spectral matrix unit
-//    status = rtems_interrupt_catch( spectral_matrices_isr,
-//                                   IRQ_SPARC_SPECTRAL_MATRIX,
-//                                   &old_isr_handler) ;
-    // Spectral Matrices simulator
-    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
-                    IRQ_SPARC_SM, spectral_matrices_isr_simu );
 #endif
 
+    // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )
     {
         status = rtems_event_send( Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT );

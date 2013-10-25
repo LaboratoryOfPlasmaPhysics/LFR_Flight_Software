@@ -129,6 +129,7 @@
 //
 #define TASK_PRIORITY_WTDG 20
 //
+#define TASK_PRIORITY_RECV 30
 #define TASK_PRIORITY_ACTN 30
 //
 #define TASK_PRIORITY_HOUS 40
@@ -136,9 +137,8 @@
 #define TASK_PRIORITY_CWF2 40
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40
-#define TASK_PRIORITY_SEND 40
 //
-#define TASK_PRIORITY_RECV 50   // this priority prevents the blocking of of other tasks in case of link deconnexion
+#define TASK_PRIORITY_SEND 40
 //
 #define TASK_PRIORITY_AVF0 60
 #define TASK_PRIORITY_BPF0 60

@@ -77,7 +77,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
                 if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
                 }
-                waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
+//                waveform_picker_regs->status = waveform_picker_regs->status & 0x00;
+                waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888;
                 waveform_picker_regs->burst_enable = waveform_picker_regs->burst_enable | 0x07; // [0111] enable f2 f1 f0
             }
        }
@@ -1069,8 +1070,8 @@ void reset_waveform_picker_regs()
 
 #ifdef GSA
 #else
-    set_wfp_data_shaping();
     reset_wfp_burst_enable();
+    set_wfp_data_shaping();
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    //
     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    //
     waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    //
@@ -1080,7 +1081,7 @@ void reset_waveform_picker_regs()
     waveform_picker_regs->delta_f2_f0 = 0x17c00;        // 97 280 (max 5 bytes)
     waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
     waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
-    waveform_picker_regs->status = 0x00;                //
+    reset_wfp_status();
 #endif
 }
 

@@ -379,21 +379,20 @@ int stop_current_mode()
 
     status = RTEMS_SUCCESSFUL;
 
-    // mask all IRQ lines related to signal processing
-    LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrices interrupt (coming from the timer VHDL IP)
-    LEON_Clear_interrupt( IRQ_SM );                 // clear spectral matrices interrupt (coming from the timer VHDL IP)
-
 #ifdef GSA
     LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
     LEON_Clear_interrupt( IRQ_WF );                  // clear waveform interrupt (coming from the timer VHDL IP)
     timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
 #else
+    // mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
-    LEON_Mask_interrupt( IRQ_SM );                  // for SM simulation
-    LEON_Clear_interrupt( IRQ_SM );                 // for SM simulation
+    // reset registers
+    reset_wfp_burst_enable();                       // reset burst and enable bits
+    reset_wfp_status();                             // reset all the status bits
+    // creal interruptions
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectarl matrix interrupt
 #endif
     //**********************
     // suspend several tasks
@@ -405,14 +404,6 @@ int stop_current_mode()
     {
         PRINTF1("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
-
-    //*************************
-    // initialize the registers
-#ifdef GSA
-#else
-    reset_wfp_burst_enable();   // reset burst and enable bits
-    reset_wfp_status();         // reset all the status bits
-#endif
 
     return status;
 }
@@ -490,17 +481,12 @@ int enter_normal_mode()
 #else
     //****************
     // waveform picker
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_NORMAL);
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     //****************
     // spectral matrix
-//    set_local_nb_interrupt_f0_MAX();
-//    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-//    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
-//    spectral_matrix_regs->config = 0x01;
-//    spectral_matrix_regs->status = 0x00;
 #endif
 
     return status;
@@ -515,10 +501,10 @@ int enter_burst_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_BURST);
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
 #endif
 
     return status;
@@ -537,10 +523,10 @@ int enter_sbm1_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     // SM simulation
 //    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
 //    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
@@ -563,10 +549,10 @@ int enter_sbm2_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM2);
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
 #endif
 
     return status;
@@ -642,6 +628,7 @@ int suspend_science_tasks()
     {
         PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
     }
+
     if (status == RTEMS_SUCCESSFUL)        // suspend BPF0
     {
         status = rtems_task_suspend( Task_id[TASKID_BPF0] );
@@ -650,6 +637,7 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** BPF0 ERR %d\n", status)
         }
     }
+
     if (status == RTEMS_SUCCESSFUL)        // suspend WFRM
     {
         status = rtems_task_suspend( Task_id[TASKID_WFRM] );
@@ -667,6 +655,7 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** CWF3 ERR %d\n", status)
         }
     }
+
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF2
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF2] );
@@ -675,6 +664,7 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** CWF2 ERR %d\n", status)
         }
     }
+
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF1
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF1] );

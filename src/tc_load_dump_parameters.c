@@ -253,7 +253,7 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
             ) * 16;
 
     if ( (tmp < 16) || (tmp > 2048) )   // the snapshot period is a multiple of 16
-    {                                   // 2048 is the maximum limit due to thesize of the buffers
+    {                                   // 2048 is the maximum limit due to the size of the buffers
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb );
         result = WRONG_APP_DATA;
     }

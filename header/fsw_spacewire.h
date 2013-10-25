@@ -25,6 +25,7 @@ rtems_task wtdg_task( rtems_task_argument argument );
 
 int spacewire_open_link( void );
 int spacewire_start_link( int fd );
+int spacewire_stop_start_link( int fd );
 int spacewire_configure_link(int fd );
 int spacewire_reset_link( void );
 void spacewire_set_NP( unsigned char val, unsigned int regAddr ); // No Port force
