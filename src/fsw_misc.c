@@ -199,7 +199,7 @@ rtems_task hous_task(rtems_task_argument argument)
     while(1){ // launch the rate monotonic task
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
-            PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_period *** code %d\n", status);
+            PRINTF1( "in HOUS *** ERR period: %d\n", status);
         }
         else {
             housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
@@ -216,7 +216,7 @@ rtems_task hous_task(rtems_task_argument argument)
             status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL) {
-                PRINTF1("in HOUS *** ERR %d\n", status)
+                PRINTF1("in HOUS *** ERR send: %d\n", status)
             }
         }
     }

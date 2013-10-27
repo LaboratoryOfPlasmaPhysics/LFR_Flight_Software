@@ -129,13 +129,15 @@
 //
 #define TASK_PRIORITY_WTDG 20
 //
-#define TASK_PRIORITY_HOUS 40
-#define TASK_PRIORITY_CWF1 40
-#define TASK_PRIORITY_CWF2 40
-#define TASK_PRIORITY_WFRM 40
-#define TASK_PRIORITY_CWF3 40
+#define TASK_PRIORITY_HOUS 30
 //
-#define TASK_PRIORITY_SEND 40
+#define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
+#define TASK_PRIORITY_CWF2 35   //
+//
+#define TASK_PRIORITY_WFRM 40
+#define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
+//
+#define TASK_PRIORITY_SEND 45
 //
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50

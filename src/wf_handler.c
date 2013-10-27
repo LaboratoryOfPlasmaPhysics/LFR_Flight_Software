@@ -1157,8 +1157,11 @@ rtems_id get_pkts_queue_id( void )
 {
     rtems_id queue_id;
     rtems_status_code status;
+    rtems_name queue_send_name;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    queue_send_name = rtems_build_name( 'Q', '_', 'S', 'D' );
+
+    status =  rtems_message_queue_ident( queue_send_name, 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
