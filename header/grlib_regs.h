@@ -61,6 +61,25 @@ struct waveform_picker_regs_str{
 };
 typedef struct waveform_picker_regs_str waveform_picker_regs_t;
 
+struct waveform_picker_regs_str_alt{
+    volatile int data_shaping;      // 0x00 00      *** R1 R0 SP1 SP0 BW
+    volatile int run_burst_enable;  // 0x04 01      *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    volatile int addr_data_f0;      // 0x08
+    volatile int addr_data_f1;      // 0x0c
+    volatile int addr_data_f2;      // 0x10
+    volatile int addr_data_f3;      // 0x14
+    volatile int status;            // 0x18
+    volatile int delta_snapshot;    // 0x1c
+    volatile int delta_f0;          // 0x20
+    volatile int delta_f0_2;
+    volatile int delta_f1;
+    volatile int delta_f2;
+    volatile int nb_data_by_buffer;
+    volatile int snapshot_param;
+    volatile int start_date;
+};
+typedef struct waveform_picker_regs_str_alt waveform_picker_regs_t_alt;
+
 struct spectral_matrix_regs_str{
     volatile int config;
     volatile int status;

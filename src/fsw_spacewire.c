@@ -41,7 +41,7 @@ rtems_task spiq_task(rtems_task_argument unused)
         rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
         PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n")
 
-        // [0] SUSPEND RECV ADN SEND TASKS
+        // [0] SUSPEND RECV AND SEND TASKS
         rtems_task_suspend( Task_id[ TASKID_RECV ] );
         rtems_task_suspend( Task_id[ TASKID_SEND ] );
 
@@ -82,9 +82,13 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else                                // [3.b] the link is not in run state, go in STANDBY mode
         {
-            status = enter_mode( LFR_MODE_STANDBY, NULL ); // enter the STANDBY mode
+            status = stop_current_mode();
             if ( status != RTEMS_SUCCESSFUL ) {
-                PRINTF1("in SPIQ *** ERR enter_mode *** code %d\n", status)
+                PRINTF1("in SPIQ *** ERR stop_current_mode *** code %d\n", status)
+            }
+            status = enter_standby_mode();
+            if ( status != RTEMS_SUCCESSFUL ) {
+                PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }
             // wake the WTDG task up to wait for the link recovery
             status =  rtems_event_send ( Task_id[TASKID_WTDG], RTEMS_EVENT_0 );
@@ -148,10 +152,18 @@ rtems_task recv_task( rtems_task_argument unused )
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (currentTC_LEN_RCV_AsUnsignedInt     );
                 // CHECK THE TC
                 parserCode = tc_parser( &currentTC, currentTC_LEN_RCV_AsUnsignedInt, computed_CRC ) ;
-                if ( (parserCode == ILLEGAL_APID) || (parserCode == WRONG_LEN_PACKET) || (parserCode == INCOR_CHECKSUM)
-                    | (parserCode == ILL_TYPE) || (parserCode == ILL_SUBTYPE) || (parserCode == WRONG_APP_DATA) )
+                if ( (parserCode == ILLEGAL_APID)       || (parserCode == WRONG_LEN_PKT)
+                     || (parserCode == INCOR_CHECKSUM)  || (parserCode == ILL_TYPE)
+                     || (parserCode == ILL_SUBTYPE)     || (parserCode == WRONG_APP_DATA)
+                     || (parserCode == WRONG_SRC_ID) )
                 { // send TM_LFR_TC_EXE_CORRUPTED
-                    send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV );
+                    if ( !( (currentTC.serviceType==TC_TYPE_TIME) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_TIME) )
+                         &&
+                         !( (currentTC.serviceType==TC_TYPE_GEN) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_INFO))
+                         )
+                    {
+                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV );
+                    }
                 }
                 else
                 { // send valid TC to the action launcher

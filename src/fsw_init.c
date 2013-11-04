@@ -156,12 +156,6 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
-    status = stop_current_mode();       // go in STANDBY mode
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in INIT *** ERR in stop_current_mode, code %d", status)
-    }
-
 #ifdef GSA
     // mask IRQ lines
     LEON_Mask_interrupt( IRQ_SM );

@@ -51,7 +51,7 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_OK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);

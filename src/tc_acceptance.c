@@ -19,6 +19,7 @@ unsigned int Crc_opt( unsigned char D, unsigned int Chk)
      *
      * @param D is the current byte of data.
      * @param Chk is the current syndrom value.
+     *
      * @return the value of the new syndrome on two bytes.
      *
      */
@@ -143,13 +144,13 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     if (status == CCSDS_TM_VALID)   // CHECK THE PACKET LENGTH FIELD AND THE ACTUAL LENGTH COMPLIANCE
     {
         if (length != TC_LEN_RCV ) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
     }
     if (status == CCSDS_TM_VALID)   // CHECK THAT THE PACKET DOES NOT EXCEED THE MAX SIZE
     {
         if ( length >= CCSDS_TC_PKT_MAX_SIZE ) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
     }
     if (status == CCSDS_TM_VALID)   // CHECK THE TYPE
@@ -225,7 +226,7 @@ int tc_check_subtype( unsigned char packetSubType )
     }
     else
     {
-        status = ILL_TYPE;
+        status = ILL_SUBTYPE;
     }
 
     return status;
@@ -254,7 +255,7 @@ int tc_check_sid( unsigned char sid )
     }
     else
     {
-        status = CORRUPTED;
+        status = WRONG_SRC_ID;
     }
 
     return status;
@@ -279,7 +280,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
     {
     case TC_SUBTYPE_RESET:
         if (length!=(TC_LEN_RESET-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -287,7 +288,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_LOAD_COMM:
         if (length!=(TC_LEN_LOAD_COMM-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -295,7 +296,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_LOAD_NORM:
         if (length!=(TC_LEN_LOAD_NORM-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -303,7 +304,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_LOAD_BURST:
         if (length!=(TC_LEN_LOAD_BURST-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -311,7 +312,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_LOAD_SBM1:
         if (length!=(TC_LEN_LOAD_SBM1-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -319,7 +320,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_LOAD_SBM2:
         if (length!=(TC_LEN_LOAD_SBM2-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -327,7 +328,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_DUMP:
         if (length!=(TC_LEN_DUMP-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -335,7 +336,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_ENTER:
         if (length!=(TC_LEN_ENTER-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -343,7 +344,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_UPDT_INFO:
         if (length!=(TC_LEN_UPDT_INFO-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -351,7 +352,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_EN_CAL:
         if (length!=(TC_LEN_EN_CAL-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -359,7 +360,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_DIS_CAL:
         if (length!=(TC_LEN_DIS_CAL-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;
@@ -367,7 +368,7 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_UPDT_TIME:
         if (length!=(TC_LEN_UPDT_TIME-CCSDS_TC_TM_PACKET_OFFSET)) {
-            status = WRONG_LEN_PACKET;
+            status = WRONG_LEN_PKT;
         }
         else {
             status = CCSDS_TM_VALID;

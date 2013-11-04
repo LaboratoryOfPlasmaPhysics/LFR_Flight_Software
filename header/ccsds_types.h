@@ -107,18 +107,20 @@
 
 // FAILURE CODES
 #define ILLEGAL_APID        0
-#define WRONG_LEN_PACKET    1
+#define WRONG_LEN_PKT       1
 #define INCOR_CHECKSUM      2
 #define ILL_TYPE            3
 #define ILL_SUBTYPE         4
-#define WRONG_APP_DATA      5           // 0x00 0x05
-//
-#define CCSDS_TM_VALID      7
+#define WRONG_APP_DATA      5       // 0x00 0x05
 #define TC_NOT_EXE          42000   // 0xa4 0x10
+#define WRONG_SRC_ID        42001   // 0xa4 0x11
 #define FUNCT_NOT_IMPL      42002   // 0xa4 0x12
 #define FAIL_DETECTED       42003   // 0xa4 0x13
+#define NOT_ALLOWED         42004   // 0xa4 0x14
 #define CORRUPTED           42005   // 0xa4 0x15
+#define CCSDS_TM_VALID      7
 
+// TC SID
 #define SID_TC_DEFAULT      0       // the default SID for TC sent to the LFR
 #define SID_TC_GROUND       0
 #define SID_TC_MISSION_TIMELINE         110

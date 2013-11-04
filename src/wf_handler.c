@@ -1071,18 +1071,39 @@ void reset_waveform_picker_regs()
 #ifdef GSA
 #else
     reset_wfp_burst_enable();
-    set_wfp_data_shaping();
+    reset_wfp_status();
+    // set buffer addresses
     waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    //
     waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    //
     waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    //
     waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    //
+    // set other parameters
+    set_wfp_data_shaping();
     set_wfp_delta_snapshot();                           // time in seconds between two snapshots
     waveform_picker_regs->delta_f2_f1 = 0xffff;         // 0x16800 => 92160 (max 4 bytes)
     waveform_picker_regs->delta_f2_f0 = 0x17c00;        // 97 280 (max 5 bytes)
     waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
     waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
-    reset_wfp_status();
 #endif
+}
+
+void reset_waveform_picker_regs_alt()
+{
+    waveform_picker_regs_alt->data_shaping = 0x01;      // 0x00 00      *** R1 R0 SP1 SP0 BW
+    waveform_picker_regs_alt->run_burst_enable = 0x00;  // 0x04 01      *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    waveform_picker_regs_alt->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
+    waveform_picker_regs_alt->addr_data_f1 = (int) (wf_snap_f1);    // 0x0c
+    waveform_picker_regs_alt->addr_data_f2 = (int) (wf_snap_f2);    // 0x10
+    waveform_picker_regs_alt->addr_data_f3 = (int) (wf_cont_f3);    // 0x14
+    waveform_picker_regs_alt->status = 0x00;                        // 0x18
+    waveform_picker_regs_alt->delta_snapshot = 0x12800;             // 0x1c
+    waveform_picker_regs_alt->delta_f0 = 0x3f5;                     // 0x20 *** 1013
+    waveform_picker_regs_alt->delta_f0_2 = 0x7;                     // 0x24 *** 7
+    waveform_picker_regs_alt->delta_f1 = 0x3c0;                     // 0x28 *** 960
+    waveform_picker_regs_alt->delta_f2 = 0x12200;                   // 0x2c *** 74240
+    waveform_picker_regs_alt->nb_data_by_buffer = 0x1802;           // 0x30 *** 2048 * 3 + 2
+    waveform_picker_regs_alt->snapshot_param = 0x7ff;               // 0x34 *** 2048 -1
+    waveform_picker_regs_alt->start_date = 0x00;
 }
 
 //*****************

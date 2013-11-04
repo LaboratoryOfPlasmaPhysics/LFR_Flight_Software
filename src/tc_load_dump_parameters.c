@@ -150,7 +150,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( lfrMode == LFR_MODE_SBM1 ) {
+    if ( (lfrMode == LFR_MODE_SBM1) || (lfrMode == LFR_MODE_SBM2) ) {
         send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
@@ -179,7 +179,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( lfrMode == LFR_MODE_SBM2 ) {
+    if ( (lfrMode == LFR_MODE_SBM2) || (lfrMode == LFR_MODE_SBM2) ) {
         send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }

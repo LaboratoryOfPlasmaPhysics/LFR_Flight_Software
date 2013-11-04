@@ -25,6 +25,7 @@ extern volatile int wf_cont_f3[ ];
 extern volatile int wf_cont_f3_bis[ ];
 extern char wf_cont_f3_light[ ];
 extern waveform_picker_regs_t *waveform_picker_regs;
+extern waveform_picker_regs_t_alt *waveform_picker_regs_alt;
 extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;

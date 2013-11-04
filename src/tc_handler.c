@@ -242,7 +242,7 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_BURST) | (lfrMode == LFR_MODE_SBM2) ) {
+    if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
         send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
@@ -268,7 +268,7 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_STANDBY) | (lfrMode == LFR_MODE_BURST) | (lfrMode == LFR_MODE_SBM2) ) {
+    if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
         send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
@@ -415,23 +415,23 @@ int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
     status = RTEMS_UNSATISFIED;
 
     housekeeping_packet.lfr_status_word[0] = (unsigned char) ((mode << 4) + 0x0d);
-    lfrCurrentMode = mode;
+    updateLFRCurrentMode();
 
     switch(mode){
     case LFR_MODE_STANDBY:
-        status = enter_standby_mode( TC );
+        status = enter_standby_mode( );
         break;
     case LFR_MODE_NORMAL:
-        status = enter_normal_mode( TC );
+        status = enter_normal_mode( );
         break;
     case LFR_MODE_BURST:
-        status = enter_burst_mode( TC );
+        status = enter_burst_mode( );
         break;
     case LFR_MODE_SBM1:
-        status = enter_sbm1_mode( TC );
+        status = enter_sbm1_mode( );
         break;
     case LFR_MODE_SBM2:
-        status = enter_sbm2_mode( TC );
+        status = enter_sbm2_mode( );
         break;
     default:
         status = RTEMS_UNSATISFIED;
@@ -448,8 +448,6 @@ int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
 
 int enter_standby_mode()
 {
-    reset_waveform_picker_regs();
-
     PRINTF1("maxCount = %d\n", maxCount)
 
 #ifdef PRINT_TASK_STATISTICS

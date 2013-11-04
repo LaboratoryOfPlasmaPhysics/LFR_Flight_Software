@@ -288,6 +288,5 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
     housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
 
-    updateLFRCurrentMode();
 }
 
