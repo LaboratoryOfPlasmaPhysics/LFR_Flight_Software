@@ -33,6 +33,9 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
      *
      */
 
+    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+    new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff00f;   // clear new_err and full_err
+
 #ifdef GSA
 #else
     if ( (lfrCurrentMode == LFR_MODE_NORMAL)
@@ -999,7 +1002,8 @@ void set_wfp_burst_enable_register( unsigned char mode)
     switch(mode) {
     case(LFR_MODE_NORMAL):
         new_waveform_picker_regs->run_burst_enable = 0x00;  // [0000 0000] no burst enable
-        new_waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
+//        new_waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
+        new_waveform_picker_regs->run_burst_enable = 0x07; // [0000 0111] enable f2 f1 f0
         break;
     case(LFR_MODE_BURST):
         new_waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
@@ -1020,7 +1024,7 @@ void set_wfp_burst_enable_register( unsigned char mode)
 #endif
 }
 
-void reset_wfp_burst_enable()
+void reset_wfp_run_burst_enable()
 {
     /** This function resets the waveform picker burst_enable register.
      *
@@ -1050,21 +1054,42 @@ void reset_wfp_status()
 
 void reset_new_waveform_picker_regs()
 {
-    new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 00      *** R1 R0 SP1 SP0 BW
-    new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 01      *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
+    new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
     new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
     new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    // 0x0c
     new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    // 0x10
     new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    // 0x14
-    new_waveform_picker_regs->status = 0x00;                        // 0x18
-    new_waveform_picker_regs->delta_snapshot = 0x12800;             // 0x1c
-    new_waveform_picker_regs->delta_f0 = 0x3f5;                     // 0x20 *** 1013
-    new_waveform_picker_regs->delta_f0_2 = 0x7;                     // 0x24 *** 7
-    new_waveform_picker_regs->delta_f1 = 0x3c0;                     // 0x28 *** 960
-    new_waveform_picker_regs->delta_f2 = 0x12200;                   // 0x2c *** 74240
-    new_waveform_picker_regs->nb_data_by_buffer = 0x1802;           // 0x30 *** 2048 * 3 + 2
-    new_waveform_picker_regs->snapshot_param = 0x7ff;               // 0x34 *** 2048 -1
-    new_waveform_picker_regs->start_date = 0x00;
+    new_waveform_picker_regs->status = 0x00;                // 0x18
+//    new_waveform_picker_regs->delta_snapshot = 0x12800;     // 0x1c 296 * 256 = 75776
+    new_waveform_picker_regs->delta_snapshot = 0x1000;      // 0x1c 16 * 256 = 4096
+    new_waveform_picker_regs->delta_f0 = 0x3f5;             // 0x20 *** 1013
+    new_waveform_picker_regs->delta_f0_2 = 0x7;             // 0x24 *** 7
+    new_waveform_picker_regs->delta_f1 = 0x3c0;             // 0x28 *** 960
+//    new_waveform_picker_regs->delta_f2 = 0x12200;         // 0x2c *** 74240
+    new_waveform_picker_regs->delta_f2 = 0xc00;             // 0x2c *** 12 * 256 = 2048
+    new_waveform_picker_regs->nb_data_by_buffer = 0x1802;   // 0x30 *** 2048 * 3 + 2
+    new_waveform_picker_regs->snapshot_param = 0x7ff;       // 0x34 *** 2048 -1
+    new_waveform_picker_regs->start_date = 0x00;            // 0x38
+}
+
+void reset_new_waveform_picker_regs_alt()
+{
+    new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
+    new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
+    new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    // 0x0c
+    new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    // 0x10
+    new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    // 0x14
+    new_waveform_picker_regs->status = 0x00;            // 0x18
+    new_waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c 16 * 256 = 4096
+    new_waveform_picker_regs->delta_f0 = 0x19;          // 0x20 *** 1013
+    new_waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7
+    new_waveform_picker_regs->delta_f1 = 0x19;          // 0x28 *** 960
+    new_waveform_picker_regs->delta_f2 = 0x400;         // 0x2c *** 4 * 256 = 1024
+    new_waveform_picker_regs->nb_data_by_buffer = 0x32; // 0x30 *** 16 * 3 + 2
+    new_waveform_picker_regs->snapshot_param = 0xf;     // 0x34 *** 16 -1
+    new_waveform_picker_regs->start_date = 0x00;        // 0x38
 }
 
 //*****************

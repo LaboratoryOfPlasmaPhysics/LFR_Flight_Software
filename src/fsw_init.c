@@ -70,7 +70,6 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
-
     rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
@@ -83,6 +82,10 @@ rtems_task Init( rtems_task_argument ignored )
 
     //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
+
+    // waveform picker registers initialization
+    reset_wfp_run_burst_enable();
+    reset_wfp_status();
 
     init_parameter_dump();
     init_local_mode_parameters();
