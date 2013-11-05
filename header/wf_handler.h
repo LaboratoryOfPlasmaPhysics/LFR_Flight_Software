@@ -24,7 +24,8 @@ extern volatile int wf_snap_f2_norm[ ];
 extern volatile int wf_cont_f3[ ];
 extern volatile int wf_cont_f3_bis[ ];
 extern char wf_cont_f3_light[ ];
-extern new_waveform_picker_regs_t *new_waveform_picker_regs;
+extern waveform_picker_regs_t *waveform_picker_regs;
+extern waveform_picker_regs_t_alt *waveform_picker_regs_alt;
 extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
@@ -65,10 +66,9 @@ rtems_id get_pkts_queue_id( void );
 void set_wfp_data_shaping();
 char set_wfp_delta_snapshot();
 void set_wfp_burst_enable_register( unsigned char mode);
-void reset_wfp_run_burst_enable();
+void reset_wfp_burst_enable();
 void reset_wfp_status();
-void reset_new_waveform_picker_regs();
-void reset_new_waveform_picker_regs_alt();
+void reset_waveform_picker_regs();
 
 //*****************
 // local parameters

@@ -70,6 +70,7 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
+
     rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
@@ -83,9 +84,7 @@ rtems_task Init( rtems_task_argument ignored )
     //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
-    // waveform picker registers initialization
-    reset_wfp_run_burst_enable();
-    reset_wfp_status();
+    reset_wfp_burst_enable();       // stop the waveform picker if it was running
 
     init_parameter_dump();
     init_local_mode_parameters();
@@ -393,7 +392,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
         );
     }

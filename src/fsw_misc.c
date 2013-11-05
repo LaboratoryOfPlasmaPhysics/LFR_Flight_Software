@@ -7,12 +7,13 @@
 
 #include "fsw_misc.h"
 
-char *DumbMessages[6] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+char *DumbMessages[7] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
                     "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                     "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
                     "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                     "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
-                    "in DUMB *** waveforms_simulator_isr"                                   // RTEMS_EVENT_5
+                    "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
+                    "ERR HK"                                                                // RTEMS_EVENT_6
 };
 
 int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
@@ -200,6 +201,7 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "in HOUS *** ERR period: %d\n", status);
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         }
         else {
             housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
@@ -213,7 +215,7 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
+            status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR send: %d\n", status)
@@ -247,7 +249,8 @@ rtems_task dumb_task( rtems_task_argument unused )
     BOOT_PRINTF("in DUMB *** \n")
 
     while(1){
-        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3 | RTEMS_EVENT_4 | RTEMS_EVENT_5,
+        rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
+                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -256,7 +259,7 @@ rtems_task dumb_task( rtems_task_argument unused )
             {
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
-                printf("in DUMB *** time = coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
+                printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
             }
         }
     }

@@ -388,7 +388,7 @@ int stop_current_mode()
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
     // reset registers
-    reset_wfp_run_burst_enable();                       // reset run, burst and enable bits, [r b2 b1 b0 e3 e2 e1 e0]
+    reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
     // creal interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
@@ -464,7 +464,6 @@ int enter_standby_mode()
 int enter_normal_mode()
 {
     rtems_status_code status;
-    int startDate;
 
     status = restart_science_tasks();
 
@@ -480,13 +479,10 @@ int enter_normal_mode()
 #else
     //****************
     // waveform picker
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_NORMAL);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    startDate = time_management_regs->coarse_time + 2;
-    new_waveform_picker_regs->start_date = startDate;
-    new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
     //****************
     // spectral matrix
 #endif
@@ -503,7 +499,7 @@ int enter_burst_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_BURST);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -525,7 +521,7 @@ int enter_sbm1_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -551,7 +547,7 @@ int enter_sbm2_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM2);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
