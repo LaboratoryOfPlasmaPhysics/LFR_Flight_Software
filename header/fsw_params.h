@@ -36,7 +36,7 @@
 #define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
 // NORM
 #define SY_LFR_N_SWF_L 2048 // nb sample
-#define SY_LFR_N_SWF_P 300  // sec
+#define SY_LFR_N_SWF_P 296  // sec
 #define SY_LFR_N_ASM_P 3600 // sec
 #define SY_LFR_N_BP_P0 4    // sec
 #define SY_LFR_N_BP_P1 20   // sec

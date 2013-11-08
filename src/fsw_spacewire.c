@@ -228,20 +228,9 @@ rtems_task send_task( rtems_task_argument argument)
             else // the incoming message is a spw_ioctl_pkt_send structure
             {
                 spw_ioctl_send = (spw_ioctl_pkt_send*) incomingData;
-                if (spw_ioctl_send->hlen == 0)
-                {
-                    status = write( fdSPW, spw_ioctl_send->data, spw_ioctl_send->dlen );
-                    if (status == -1){
-                        PRINTF2("in SEND *** (2.b) ERRNO = %d, dlen = %d\n", errno, spw_ioctl_send->dlen)
-                    }
-                }
-                else
-                {
-                    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-                    if (status == -1){
-                        PRINTF2("in SEND *** (2.c) ERRNO = %d, dlen = %d\n", errno, spw_ioctl_send->dlen)
-                        PRINTF1("                            hlen = %d\n", spw_ioctl_send->hlen)
-                    }
+                status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
+                if (status == -1){
+                    PRINTF2("in SEND *** (2.b) ERRNO = %d, RTEMS = %d\n", errno, status)
                 }
             }
         }

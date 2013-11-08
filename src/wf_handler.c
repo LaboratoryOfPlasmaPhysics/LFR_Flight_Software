@@ -1183,8 +1183,8 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
 
-    if ( (sid ==SID_NORM_SWF_F0) || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
-         || (sid ==SID_BURST_CWF_F2) )
+    if ( (sid ==SID_NORM_SWF_F0)    || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
+         || (sid ==SID_NORM_CWF_F3) || (sid ==SID_BURST_CWF_F2) )
     {
         sequence_cnt = &sequenceCounters_SCIENCE_NORMAL_BURST;
     }

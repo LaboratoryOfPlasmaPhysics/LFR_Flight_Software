@@ -42,9 +42,9 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     int flag;
 
     flag = LFR_SUCCESSFUL;
-    result = LFR_SUCCESSFUL;
 
-    if ( lfrCurrentMode == LFR_MODE_NORMAL ) {
+    if ( (lfrCurrentMode == LFR_MODE_NORMAL) ||
+         (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) ) {
         send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         flag = LFR_DEFAULT;
     }
@@ -104,7 +104,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
         }
     }
 
-    return result;
+    return flag;
 }
 
 int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
