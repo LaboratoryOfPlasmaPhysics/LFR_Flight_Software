@@ -121,7 +121,6 @@
 #define CCSDS_TM_VALID      7
 
 // TC SID
-#define SID_TC_DEFAULT      0       // the default SID for TC sent to the LFR
 #define SID_TC_GROUND       0
 #define SID_TC_MISSION_TIMELINE         110
 #define SID_TC_TC_SEQUENCES             111
@@ -134,6 +133,25 @@
 #define SID_TC_SYSTEM_CONTROL           14
 #define SID_TC_AOCS                     11
 #define SID_TC_RPW_INTERNAL             254
+
+enum apid_destid{
+    GROUND,
+    MISSION_TIMELINE,
+    TC_SEQUENCES,
+    RECOVERY_ACTION_CMD,
+    BACKUP_MISSION_TIMELINE,
+    DIRECT_CMD,
+    SPARE_GRD_SRC1,
+    SPARE_GRD_SRC2,
+    OBCP,
+    SYSTEM_CONTROL,
+    AOCS,
+    RPW_INTERNAL,
+    UNKNOWN
+};
+// SEQUENCE COUNTERS
+#define SEQ_CNT_MAX 16383
+#define SEQ_CNT_NB_DEST_ID 12
 
 // TM SID
 #define SID_HK 1
@@ -210,301 +228,301 @@ enum TM_TYPE{
 
 struct TMHeader_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
 };
 typedef struct TMHeader_str TMHeader_t;
 
 struct Packet_TM_LFR_TC_EXE_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
-    volatile unsigned char data[LENGTH_TM_LFR_TC_EXE_MAX - 10 + 1];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    unsigned char data[LENGTH_TM_LFR_TC_EXE_MAX - 10 + 1];
 };
 typedef struct Packet_TM_LFR_TC_EXE_str Packet_TM_LFR_TC_EXE_t;
 
 struct Packet_TM_LFR_TC_EXE_SUCCESS_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
 };
 typedef struct Packet_TM_LFR_TC_EXE_SUCCESS_str Packet_TM_LFR_TC_EXE_SUCCESS_t;
 
 struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char tc_failure_code[2];
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
-    volatile unsigned char tc_service;
-    volatile unsigned char tc_subtype;
-    volatile unsigned char byte_position;
-    volatile unsigned char rcv_value;
+    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
+    unsigned char tc_service;
+    unsigned char tc_subtype;
+    unsigned char byte_position;
+    unsigned char rcv_value;
 };
 typedef struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str Packet_TM_LFR_TC_EXE_INCONSISTENT_t;
 
 struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char tc_failure_code[2];
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
-    volatile unsigned char tc_service;
-    volatile unsigned char tc_subtype;
-    volatile unsigned char lfr_status_word[2];
+    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
+    unsigned char tc_service;
+    unsigned char tc_subtype;
+    unsigned char lfr_status_word[2];
 };
 typedef struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t;
 
 struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char tc_failure_code[2];
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
-    volatile unsigned char tc_service;
-    volatile unsigned char tc_subtype;
+    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
+    unsigned char tc_service;
+    unsigned char tc_subtype;
 };
 typedef struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
 
 struct Packet_TM_LFR_TC_EXE_ERROR_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char tc_failure_code[2];
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
-    volatile unsigned char tc_service;
-    volatile unsigned char tc_subtype;
+    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
+    unsigned char tc_service;
+    unsigned char tc_subtype;
 };
 typedef struct Packet_TM_LFR_TC_EXE_ERROR_str Packet_TM_LFR_TC_EXE_ERROR_t;
 
 struct Packet_TM_LFR_TC_EXE_CORRUPTED_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
     // PACKET HEADER
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     //
-    volatile unsigned char tc_failure_code[2];
-    volatile unsigned char telecommand_pkt_id[2];
-    volatile unsigned char pkt_seq_control[2];
-    volatile unsigned char tc_service;
-    volatile unsigned char tc_subtype;
-    volatile unsigned char pkt_len_rcv_value[2];
-    volatile unsigned char pkt_datafieldsize_cnt[2];
-    volatile unsigned char rcv_crc[2];
-    volatile unsigned char computed_crc[2];
+    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[2];
+    unsigned char pkt_seq_control[2];
+    unsigned char tc_service;
+    unsigned char tc_subtype;
+    unsigned char pkt_len_rcv_value[2];
+    unsigned char pkt_datafieldsize_cnt[2];
+    unsigned char rcv_crc[2];
+    unsigned char computed_crc[2];
 };
 typedef struct Packet_TM_LFR_TC_EXE_CORRUPTED_str Packet_TM_LFR_TC_EXE_CORRUPTED_t;
 
 struct Header_TM_LFR_SCIENCE_SWF_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     // AUXILIARY HEADER
-    volatile unsigned char sid;
-    volatile unsigned char hkBIA;
-    volatile unsigned char pktCnt;
-    volatile unsigned char pktNr;
-    volatile unsigned char acquisitionTime[6];
-    volatile unsigned char blkNr[2];
+    unsigned char sid;
+    unsigned char hkBIA;
+    unsigned char pktCnt;
+    unsigned char pktNr;
+    unsigned char acquisitionTime[6];
+    unsigned char blkNr[2];
 };
 typedef struct Header_TM_LFR_SCIENCE_SWF_str Header_TM_LFR_SCIENCE_SWF_t;
 
 struct Header_TM_LFR_SCIENCE_CWF_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     // AUXILIARY DATA HEADER
-    volatile unsigned char sid;
-    volatile unsigned char hkBIA;
-    volatile unsigned char acquisitionTime[6];
-    volatile unsigned char blkNr[2];
+    unsigned char sid;
+    unsigned char hkBIA;
+    unsigned char acquisitionTime[6];
+    unsigned char blkNr[2];
 };
 typedef struct Header_TM_LFR_SCIENCE_CWF_str Header_TM_LFR_SCIENCE_CWF_t;
 
 struct Header_TM_LFR_SCIENCE_ASM_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
     // AUXILIARY HEADER
-    volatile unsigned char sid;
-    volatile unsigned char biaStatusInfo;
-    volatile unsigned char cntASM;
-    volatile unsigned char nrASM;
-    volatile unsigned char acquisitionTime[6];
-    volatile unsigned char blkNr[2];
+    unsigned char sid;
+    unsigned char biaStatusInfo;
+    unsigned char cntASM;
+    unsigned char nrASM;
+    unsigned char acquisitionTime[6];
+    unsigned char blkNr[2];
 };
 typedef struct Header_TM_LFR_SCIENCE_ASM_str Header_TM_LFR_SCIENCE_ASM_t;
 
 struct ccsdsTelecommandPacket_str
 {
     //unsigned char targetLogicalAddress; // removed by the grspw module
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char headerFlag_pusVersion_Ack;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char sourceID;
-    volatile unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
+    unsigned char headerFlag_pusVersion_Ack;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char sourceID;
+    unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
 };
 typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;
 
 struct Packet_TM_LFR_HK_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
-    volatile unsigned char sid;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    unsigned char sid;
 
     //**************
     // HK PARAMETERS
@@ -539,7 +557,7 @@ struct Packet_TM_LFR_HK_str
     unsigned char hk_lfr_dpu_spw_pkt_rcv_cnt[2];
     unsigned char hk_lfr_dpu_spw_pkt_sent_cnt[2];
     unsigned char hk_lfr_dpu_spw_tick_out_cnt;
-    unsigned char hk_lfr_dpu_spw_last_timc;
+    unsigned char hk_lfr_dpu_spw_last_time;
     // ahb error statistics
     unsigned int hk_lfr_last_fail_addr;
     // temperatures
@@ -594,48 +612,48 @@ typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
 
 struct Packet_TM_LFR_PARAMETER_DUMP_str
 {
-    volatile unsigned char targetLogicalAddress;
-    volatile unsigned char protocolIdentifier;
-    volatile unsigned char reserved;
-    volatile unsigned char userApplication;
-    volatile unsigned char packetID[2];
-    volatile unsigned char packetSequenceControl[2];
-    volatile unsigned char packetLength[2];
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
     // DATA FIELD HEADER
-    volatile unsigned char spare1_pusVersion_spare2;
-    volatile unsigned char serviceType;
-    volatile unsigned char serviceSubType;
-    volatile unsigned char destinationID;
-    volatile unsigned char time[6];
-    volatile unsigned char sid;
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    unsigned char sid;
 
     //******************
     // COMMON PARAMETERS
-    volatile unsigned char unused0;
-    volatile unsigned char bw_sp0_sp1_r0_r1;
+    unsigned char unused0;
+    unsigned char bw_sp0_sp1_r0_r1;
 
     //******************
     // NORMAL PARAMETERS
-    volatile unsigned char sy_lfr_n_swf_l[2];
-    volatile unsigned char sy_lfr_n_swf_p[2];
-    volatile unsigned char sy_lfr_n_asm_p[2];
-    volatile unsigned char sy_lfr_n_bp_p0;
-    volatile unsigned char sy_lfr_n_bp_p1;
+    unsigned char sy_lfr_n_swf_l[2];
+    unsigned char sy_lfr_n_swf_p[2];
+    unsigned char sy_lfr_n_asm_p[2];
+    unsigned char sy_lfr_n_bp_p0;
+    unsigned char sy_lfr_n_bp_p1;
 
     //*****************
     // BURST PARAMETERS
-    volatile unsigned char sy_lfr_b_bp_p0;
-    volatile unsigned char sy_lfr_b_bp_p1;
+    unsigned char sy_lfr_b_bp_p0;
+    unsigned char sy_lfr_b_bp_p1;
 
     //****************
     // SBM1 PARAMETERS
-    volatile unsigned char sy_lfr_s1_bp_p0;
-    volatile unsigned char sy_lfr_s1_bp_p1;
+    unsigned char sy_lfr_s1_bp_p0;
+    unsigned char sy_lfr_s1_bp_p1;
 
     //****************
     // SBM2 PARAMETERS
-    volatile unsigned char sy_lfr_s2_bp_p0;
-    volatile unsigned char sy_lfr_s2_bp_p1;
+    unsigned char sy_lfr_s2_bp_p0;
+    unsigned char sy_lfr_s2_bp_p1;
 };
 typedef struct Packet_TM_LFR_PARAMETER_DUMP_str Packet_TM_LFR_PARAMETER_DUMP_t;
 

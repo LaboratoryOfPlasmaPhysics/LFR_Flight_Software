@@ -6,8 +6,10 @@
 #include <math.h>
 #include <stdlib.h> // abs() is in the stdlib
 #include <stdio.h>  // printf()
+#include <math.h>
 
 #include "fsw_params.h"
+#include "fsw_spacewire.h"
 
 
 extern volatile int spec_mat_f0_0[ ];

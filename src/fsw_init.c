@@ -197,8 +197,6 @@ void init_local_mode_parameters( void )
      */
 
     unsigned int i;
-    unsigned int j;
-    unsigned int k;
 
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
@@ -213,16 +211,13 @@ void init_local_mode_parameters( void )
     reset_local_sbm2_nb_cwf_sent();
 
     // init sequence counters
-    for (i = 0; i<SEQ_CNT_NB_PID; i++)
+
+    for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
     {
-        for(j = 0; j<SEQ_CNT_NB_CAT; j++)
-        {
-            for(k = 0; k<SEQ_CNT_NB_DEST_ID; k++)
-            {
-                sequenceCounters[i][j][k] = 0x00;
-            }
-        }
+        sequenceCounters_TC_EXE[i] = 0x00;
     }
+    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
+    sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
 }
 
 void create_names( void ) // create all names for tasks and queues
@@ -352,7 +347,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
         );
     }
@@ -589,4 +584,3 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 
     return ret;
 }
-

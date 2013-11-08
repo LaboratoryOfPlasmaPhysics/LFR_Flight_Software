@@ -21,6 +21,9 @@ char *lstates[6] = {"Error-reset",
                     "Run"
 };
 
+rtems_name semq_name;
+rtems_id semq_id;
+
 //***********
 // RTEMS TASK
 rtems_task spiq_task(rtems_task_argument unused)
@@ -600,3 +603,21 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
         status = RTEMS_SUCCESSFUL;
     }
 }
+
+rtems_status_code rtems_message_queue_send_lfr( rtems_id id, const void *buffer, size_t size )
+{
+    rtems_status_code status;
+    rtems_mode previous_mode_set;
+
+    // set the preemption OFF
+    status =  rtems_task_mode( RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &previous_mode_set );
+
+    // use the message queue
+    status = rtems_message_queue_send_lfr( id, buffer, size );
+
+    // set the preemption ON
+    status =  rtems_task_mode( RTEMS_PREEMPT , RTEMS_PREEMPT_MASK, &previous_mode_set );
+
+    return status;
+}
+

@@ -7,6 +7,7 @@
 #include "fsw_params.h"
 #include "wf_handler.h"
 #include "tm_lfr_tc_exe.h"
+#include "fsw_misc.h"
 
 extern int fdSPW;
 extern unsigned char lfrCurrentMode;

@@ -83,7 +83,9 @@ struct param_local_str param_local;
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
 // sequence counters are incremented by APID (PID + CAT) and destination ID
-unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
+unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
+unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
+unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
 spw_stats spacewire_stats;
 spw_stats spacewire_stats_backup;
 

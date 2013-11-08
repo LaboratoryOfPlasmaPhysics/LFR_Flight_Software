@@ -43,8 +43,7 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS     );
     // DATA FIELD HEADER
@@ -67,7 +66,7 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     messageSize = PACKET_LENGTH_TC_EXE_SUCCESS + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
     }
@@ -106,15 +105,14 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -136,7 +134,7 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     messageSize = PACKET_LENGTH_TC_EXE_INCONSISTENT + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n")
     }
@@ -172,15 +170,14 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;    // default destination id
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -202,7 +199,7 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     messageSize = PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n")
     }
@@ -238,15 +235,14 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;    // default destination id
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -266,7 +262,7 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     messageSize = PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
     }
@@ -302,15 +298,14 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;    // default destination id
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -330,7 +325,7 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     messageSize = PACKET_LENGTH_TC_EXE_ERROR + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
     }
@@ -374,15 +369,14 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     // PACKET HEADER
     TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
     TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
-    TM.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    TM.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TM_DESTINATION_ID_GROUND;    // default destination id
+    TM.destinationID = TC->sourceID;    // default destination id
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -410,10 +404,87 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     messageSize = PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
     // SEND DATA
-    status =  rtems_message_queue_urgent( queue_id, &TM, messageSize);
+    status =  rtems_message_queue_send( queue_id, &TM, messageSize);
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
     }
 
     return status;
+}
+
+void increment_seq_counter_destination_id( unsigned char *packet_sequence_control, unsigned char destination_id )
+{
+    unsigned short sequence_cnt;
+    unsigned short segmentation_grouping_flag;
+    unsigned short new_packet_sequence_control;
+    unsigned char i;
+
+    switch (destination_id)
+    {
+    case SID_TC_GROUND:
+        i = GROUND;
+        break;
+    case SID_TC_MISSION_TIMELINE:
+        i = MISSION_TIMELINE;
+        break;
+    case SID_TC_TC_SEQUENCES:
+        i = TC_SEQUENCES;
+        break;
+    case SID_TC_RECOVERY_ACTION_CMD:
+        i = RECOVERY_ACTION_CMD;
+        break;
+    case SID_TC_BACKUP_MISSION_TIMELINE:
+        i = BACKUP_MISSION_TIMELINE;
+        break;
+    case SID_TC_DIRECT_CMD:
+        i = DIRECT_CMD;
+        break;
+    case SID_TC_SPARE_GRD_SRC1:
+        i = SPARE_GRD_SRC1;
+        break;
+    case SID_TC_SPARE_GRD_SRC2:
+        i = SPARE_GRD_SRC2;
+        break;
+    case SID_TC_OBCP:
+        i = OBCP;
+        break;
+    case SID_TC_SYSTEM_CONTROL:
+        i = SYSTEM_CONTROL;
+        break;
+    case SID_TC_AOCS:
+        i = AOCS;
+        break;
+    case SID_TC_RPW_INTERNAL:
+        i = RPW_INTERNAL;
+        break;
+    default:
+        i = UNKNOWN;
+        break;
+    }
+
+    if (i != UNKNOWN)
+    {
+        segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+        sequence_cnt                = sequenceCounters_TC_EXE[ i ] & 0x3fff;
+
+        new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
+
+        packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+        packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
+
+        // increment the seuqence counter for the next packet
+        if ( sequenceCounters_TC_EXE[ i ] < SEQ_CNT_MAX)
+        {
+            sequenceCounters_TC_EXE[ i ] = sequenceCounters_TC_EXE[ i ] + 1;
+        }
+        else
+        {
+            sequenceCounters_TC_EXE[ i ] = 0;
+        }
+    }
+    else
+    {
+        PRINTF1("in increment_seq_counter_destination_id *** ERR destination ID %d not known\n", destination_id)
+    }
+
 }

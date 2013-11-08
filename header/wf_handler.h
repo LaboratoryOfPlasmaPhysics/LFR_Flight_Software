@@ -7,6 +7,8 @@
 #include <math.h>
 
 #include "fsw_params.h"
+#include "fsw_spacewire.h"
+#include "fsw_misc.h"
 
 #define pi 3.1415
 
@@ -30,6 +32,9 @@ extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern struct param_local_str param_local;
+
+extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
+extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 
 extern rtems_name  misc_name[5];
 extern rtems_name  Task_name[20];       /* array of task ids */
@@ -77,5 +82,7 @@ void set_local_sbm2_nb_cwf_max();
 void set_local_nb_interrupt_f0_MAX();
 void reset_local_sbm1_nb_cwf_sent();
 void reset_local_sbm2_nb_cwf_sent();
+
+void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid );
 
 #endif // WF_HANDLER_H_INCLUDED

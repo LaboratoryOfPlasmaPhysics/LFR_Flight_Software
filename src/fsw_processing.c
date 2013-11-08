@@ -8,7 +8,6 @@
  */
 
 #include <fsw_processing.h>
-#include <math.h>
 
 #include "fsw_processing_globals.c"
 

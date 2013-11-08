@@ -204,6 +204,7 @@ rtems_task hous_task(rtems_task_argument argument)
             rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         }
         else {
+            increment_seq_counter( housekeeping_packet.packetSequenceControl );
             housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
             housekeeping_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
             housekeeping_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -215,7 +216,7 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
+            status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR send: %d\n", status)
@@ -292,4 +293,33 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
 
 }
+
+void increment_seq_counter( unsigned char *packet_sequence_control)
+{
+    unsigned short sequence_cnt;
+    unsigned short segmentation_grouping_flag;
+    unsigned short new_packet_sequence_control;
+
+    segmentation_grouping_flag  = (unsigned short) ( (packet_sequence_control[0] & 0xc0) << 8 );   // keep bits 7 downto 6
+    sequence_cnt                = (unsigned short) (
+                ( (packet_sequence_control[0] & 0x3f) << 8 )    // keep bits 5 downto 0
+                                + packet_sequence_control[1]
+            );
+
+    if ( sequence_cnt < SEQ_CNT_MAX)
+    {
+        sequence_cnt = sequence_cnt + 1;
+    }
+    else
+    {
+        sequence_cnt = 0;
+    }
+
+    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
+
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
+}
+
+
 

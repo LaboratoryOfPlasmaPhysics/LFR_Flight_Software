@@ -148,6 +148,8 @@
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
+#define SEMQ_PRIORITY_CEILING 30
+
 #define ACTION_MSG_QUEUE_COUNT 10
 #define ACTION_MSG_PKTS_COUNT 50
 #define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
@@ -197,32 +199,6 @@
 #define NB_WORDS_SWF_BLK 3
 #define NB_BYTES_CWF3_LIGHT_BLK 6
 #define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
-
-//******************
-// SEQUENCE COUNTERS
-#define SEQ_CNT_NB_PID 2
-#define SEQ_CNT_NB_CAT 4
-#define SEQ_CNT_NB_DEST_ID 11
-// pid
-#define SEQ_CNT_PID_76 0
-#define SEQ_CNT_PID_79 1
-//cat
-#define SEQ_CNT_CAT_1 0
-#define SEQ_CNT_CAT_4 1
-#define SEQ_CNT_CAT_9 2
-#define SEQ_CNT_CAT_12 3
-// destination id
-#define SEQ_CNT_DST_ID_GROUND 0
-#define SEQ_CNT_DST_ID_MISSION_TIMELINE 1
-#define SEQ_CNT_DST_ID_TC_SEQUENCES 2
-#define SEQ_CNT_DST_ID_RECOVERY_ACTION_CMD 3
-#define SEQ_CNT_DST_ID_BACKUP_MISSION_TIMELINE 4
-#define SEQ_CNT_DST_ID_DIRECT_CMD 5
-#define SEQ_CNT_DST_ID_SPARE_GRD_SRC1 6
-#define SEQ_CNT_DST_ID_SPARE_GRD_SRC2 7
-#define SEQ_CNT_DST_ID_OBCP 8
-#define SEQ_CNT_DST_ID_SYSTEM_CONTROL 9
-#define SEQ_CNT_DST_ID_AOCS 10
 
 struct param_local_str{
     unsigned int local_sbm1_nb_cwf_sent;

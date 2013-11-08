@@ -24,16 +24,20 @@ extern unsigned char lfrCurrentMode;
 // MODE PARAMETERS
 extern struct param_local_str param_local;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
-extern unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
+extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
+extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
+extern unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);
 
 // OTHER functions
 void create_names( void );
-rtems_status_code create_message_queues( void );
 int create_all_tasks( void );
 int start_all_tasks( void );
+//
+rtems_status_code create_message_queues( void );
+//
 int start_recv_send_tasks( void );
 //
 void init_local_mode_parameters( void );
