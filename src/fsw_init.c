@@ -70,7 +70,6 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
-
     rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
@@ -84,7 +83,9 @@ rtems_task Init( rtems_task_argument ignored )
     //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
-    reset_wfp_burst_enable();       // stop the waveform picker if it was running
+    // waveform picker registers initialization
+    reset_wfp_run_burst_enable();
+    reset_wfp_status();
 
     init_parameter_dump();
     init_local_mode_parameters();
@@ -197,6 +198,8 @@ void init_local_mode_parameters( void )
      */
 
     unsigned int i;
+    unsigned int j;
+    unsigned int k;
 
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
@@ -211,13 +214,16 @@ void init_local_mode_parameters( void )
     reset_local_sbm2_nb_cwf_sent();
 
     // init sequence counters
-
-    for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
+    for (i = 0; i<SEQ_CNT_NB_PID; i++)
     {
-        sequenceCounters_TC_EXE[i] = 0x00;
+        for(j = 0; j<SEQ_CNT_NB_CAT; j++)
+        {
+            for(k = 0; k<SEQ_CNT_NB_DEST_ID; k++)
+            {
+                sequenceCounters[i][j][k] = 0x00;
+            }
+        }
     }
-    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
-    sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
 }
 
 void create_names( void ) // create all names for tasks and queues
@@ -347,7 +353,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
         );
     }
@@ -584,3 +590,4 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 
     return ret;
 }
+

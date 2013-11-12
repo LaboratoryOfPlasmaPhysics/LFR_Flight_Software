@@ -36,8 +36,7 @@ time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_AD
 gptimer_regs_t         *gptimer_regs         = (gptimer_regs_t *)        REGS_ADDR_GPTIMER;
 #ifdef GSA
 #else
-    waveform_picker_regs_t *waveform_picker_regs = (waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
-    waveform_picker_regs_t_alt *waveform_picker_regs_alt = (waveform_picker_regs_t_alt*) REGS_ADDR_WAVEFORM_PICKER;
+    new_waveform_picker_regs_t *new_waveform_picker_regs = (new_waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
 #endif
 spectral_matrix_regs_t *spectral_matrix_regs = (spectral_matrix_regs_t*) REGS_ADDR_SPECTRAL_MATRIX;
 
@@ -83,9 +82,7 @@ struct param_local_str param_local;
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
 // sequence counters are incremented by APID (PID + CAT) and destination ID
-unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
-unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
-unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
+unsigned short sequenceCounters[SEQ_CNT_NB_PID][SEQ_CNT_NB_CAT][SEQ_CNT_NB_DEST_ID];
 spw_stats spacewire_stats;
 spw_stats spacewire_stats_backup;
 

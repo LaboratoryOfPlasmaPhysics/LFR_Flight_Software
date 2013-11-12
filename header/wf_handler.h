@@ -7,8 +7,6 @@
 #include <math.h>
 
 #include "fsw_params.h"
-#include "fsw_spacewire.h"
-#include "fsw_misc.h"
 
 #define pi 3.1415
 
@@ -26,15 +24,11 @@ extern volatile int wf_snap_f2_norm[ ];
 extern volatile int wf_cont_f3[ ];
 extern volatile int wf_cont_f3_bis[ ];
 extern char wf_cont_f3_light[ ];
-extern waveform_picker_regs_t *waveform_picker_regs;
-extern waveform_picker_regs_t_alt *waveform_picker_regs_alt;
+extern new_waveform_picker_regs_t *new_waveform_picker_regs;
 extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern struct param_local_str param_local;
-
-extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
-extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 
 extern rtems_name  misc_name[5];
 extern rtems_name  Task_name[20];       /* array of task ids */
@@ -71,9 +65,10 @@ rtems_id get_pkts_queue_id( void );
 void set_wfp_data_shaping();
 char set_wfp_delta_snapshot();
 void set_wfp_burst_enable_register( unsigned char mode);
-void reset_wfp_burst_enable();
+void reset_wfp_run_burst_enable();
 void reset_wfp_status();
-void reset_waveform_picker_regs();
+void reset_new_waveform_picker_regs();
+void reset_new_waveform_picker_regs_alt();
 
 //*****************
 // local parameters
@@ -82,7 +77,5 @@ void set_local_sbm2_nb_cwf_max();
 void set_local_nb_interrupt_f0_MAX();
 void reset_local_sbm1_nb_cwf_sent();
 void reset_local_sbm2_nb_cwf_sent();
-
-void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid );
 
 #endif // WF_HANDLER_H_INCLUDED
