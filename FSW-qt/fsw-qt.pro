@@ -17,6 +17,10 @@ contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
 }
 
+contains( CONFIG, debug_messages ) {
+    DEFINES += DEBUG_MESSAGES
+}
+
 contains( CONFIG, cpu_usage_report ) {
     DEFINES += PRINT_TASK_STATISTICS
 }
