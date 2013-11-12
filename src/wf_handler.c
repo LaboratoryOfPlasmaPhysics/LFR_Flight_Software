@@ -735,6 +735,8 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
         else {
             spw_ioctl_send_SWF.dlen = 340 * NB_BYTES_SWF_BLK;
         }
+        // SET PACKET SEQUENCE COUNTER
+        increment_seq_counter_source_id( headerSWF[ i ].packetSequenceControl, sid );
         // SET PACKET TIME
         headerSWF[ i ].acquisitionTime[0] = (unsigned char) (time_management_regs->coarse_time>>24);
         headerSWF[ i ].acquisitionTime[1] = (unsigned char) (time_management_regs->coarse_time>>16);
@@ -798,6 +800,8 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
         else {
             spw_ioctl_send_CWF.dlen = 340 * NB_BYTES_SWF_BLK;
         }
+        // SET PACKET SEQUENCE COUNTER
+        increment_seq_counter_source_id( headerCWF[ i ].packetSequenceControl, sid );
         // SET PACKET TIME
         coarseTime = time_management_regs->coarse_time;
         fineTime = time_management_regs->fine_time;
@@ -890,6 +894,8 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
         else {
             spw_ioctl_send_CWF.dlen = 340 * NB_BYTES_CWF3_LIGHT_BLK;
         }
+        // SET PACKET SEQUENCE COUNTER
+        increment_seq_counter_source_id( headerCWF[ i ].packetSequenceControl, SID_NORM_CWF_F3 );
         // SET PACKET TIME
         coarseTime = time_management_regs->coarse_time;
         fineTime = time_management_regs->fine_time;
@@ -1054,6 +1060,27 @@ void reset_wfp_status()
 
 void reset_new_waveform_picker_regs()
 {
+    /** This function resets the waveform picker module registers.
+   *
+   * The registers affected by this function are located at the following offset addresses:
+   * - 0x00 data_shaping
+   * - 0x04 run_burst_enable
+   * - 0x08 addr_data_f0
+   * - 0x0C addr_data_f1
+   * - 0x10 addr_data_f2
+   * - 0x14 addr_data_f3
+   * - 0x18 status
+   * - 0x1C delta_snapshot
+   * - 0x20 delta_f0
+   * - 0x24 delta_f0_2
+   * - 0x28 delta_f1
+   * - 0x2c delta_f2
+   * - 0x30 nb_data_by_buffer
+   * - 0x34 nb_snapshot_param
+   * - 0x38 start_date
+   *
+   */
+
     new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
     new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
     new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
@@ -1071,25 +1098,6 @@ void reset_new_waveform_picker_regs()
     new_waveform_picker_regs->nb_data_by_buffer = 0x1802;   // 0x30 *** 2048 * 3 + 2
     new_waveform_picker_regs->snapshot_param = 0x7ff;       // 0x34 *** 2048 -1
     new_waveform_picker_regs->start_date = 0x00;            // 0x38
-}
-
-void reset_new_waveform_picker_regs_alt()
-{
-    new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
-    new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
-    new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    // 0x0c
-    new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    // 0x10
-    new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    // 0x14
-    new_waveform_picker_regs->status = 0x00;            // 0x18
-    new_waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c 16 * 256 = 4096
-    new_waveform_picker_regs->delta_f0 = 0x19;          // 0x20 *** 1013
-    new_waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7
-    new_waveform_picker_regs->delta_f1 = 0x19;          // 0x28 *** 960
-    new_waveform_picker_regs->delta_f2 = 0x400;         // 0x2c *** 4 * 256 = 1024
-    new_waveform_picker_regs->nb_data_by_buffer = 0x32; // 0x30 *** 16 * 3 + 2
-    new_waveform_picker_regs->snapshot_param = 0xf;     // 0x34 *** 16 -1
-    new_waveform_picker_regs->start_date = 0x00;        // 0x38
 }
 
 //*****************
@@ -1174,4 +1182,44 @@ rtems_id get_pkts_queue_id( void )
         PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
     }
     return queue_id;
+}
+
+void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid )
+{
+    unsigned short *sequence_cnt;
+    unsigned short segmentation_grouping_flag;
+    unsigned short new_packet_sequence_control;
+
+    if ( (sid ==SID_NORM_SWF_F0) || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
+      || (sid ==SID_NORM_CWF_F3) || (sid ==SID_BURST_CWF_F2) )
+    {
+        sequence_cnt = &sequenceCounters_SCIENCE_NORMAL_BURST;
+    }
+    else if ( (sid ==SID_SBM1_CWF_F1) || (sid ==SID_SBM2_CWF_F2) )
+    {
+        sequence_cnt = &sequenceCounters_SCIENCE_SBM1_SBM2;
+    }
+    else
+    {
+        sequence_cnt = &sequenceCounters_TC_EXE[ UNKNOWN ];
+        PRINTF1("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", sid)
+    }
+
+    segmentation_grouping_flag = (packet_sequence_control[ 0 ] & 0xc0) << 8;
+    *sequence_cnt = (*sequence_cnt) & 0x3fff;
+
+    new_packet_sequence_control = segmentation_grouping_flag | *sequence_cnt ;
+
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control );
+
+    // increment the sequence counter for the next packet
+    if ( *sequence_cnt < SEQ_CNT_MAX)
+    {
+        *sequence_cnt = *sequence_cnt + 1;
+    }
+    else
+    {
+        *sequence_cnt = 0;
+    }
 }

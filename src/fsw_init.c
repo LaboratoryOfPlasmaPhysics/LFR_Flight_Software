@@ -194,36 +194,25 @@ rtems_task Init( rtems_task_argument ignored )
 void init_local_mode_parameters( void )
 {
     /** This function initialize the param_local global variable with default values.
-     *
-     */
-
+    *
+    */
     unsigned int i;
-    unsigned int j;
-    unsigned int k;
-
     // LOCAL PARAMETERS
     set_local_sbm1_nb_cwf_max();
     set_local_sbm2_nb_cwf_max();
     set_local_nb_interrupt_f0_MAX();
-
     BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
     BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
-
     reset_local_sbm1_nb_cwf_sent();
     reset_local_sbm2_nb_cwf_sent();
-
     // init sequence counters
-    for (i = 0; i<SEQ_CNT_NB_PID; i++)
+    for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
     {
-        for(j = 0; j<SEQ_CNT_NB_CAT; j++)
-        {
-            for(k = 0; k<SEQ_CNT_NB_DEST_ID; k++)
-            {
-                sequenceCounters[i][j][k] = 0x00;
-            }
-        }
+    sequenceCounters_TC_EXE[i] = 0x00;
     }
+    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
+    sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
 }
 
 void create_names( void ) // create all names for tasks and queues
