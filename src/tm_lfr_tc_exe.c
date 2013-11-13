@@ -334,7 +334,8 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 }
 
 int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
-                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV )
+                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV,
+                                 unsigned char destinationID)
 {
     /** This function sends a TM_LFR_TC_EXE_CORRUPTED packet in the dedicated RTEMS message queue.
      *
@@ -376,7 +377,7 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TC->sourceID;    // default destination id
+    TM.destinationID = destinationID;
     TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -472,7 +473,7 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
         packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
         packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 
-        // increment the seuqence counter for the next packet
+        // increment the sequence counter for the next packet
         if ( sequenceCounters_TC_EXE[ i ] < SEQ_CNT_MAX)
         {
             sequenceCounters_TC_EXE[ i ] = sequenceCounters_TC_EXE[ i ] + 1;
@@ -484,7 +485,7 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
     }
     else
     {
-        PRINTF1("in increment_seq_counter_destination_id *** ERR destination ID %d not known\n", destination_id)
+        DEBUG_PRINTF1("in increment_seq_counter_destination_id *** ERR destination ID %d not known\n", destination_id)
     }
 
 }

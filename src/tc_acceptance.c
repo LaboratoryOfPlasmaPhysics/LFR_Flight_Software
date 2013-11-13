@@ -113,6 +113,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
      */
 
     int status;
+    int status_crc;
     unsigned char pid;
     unsigned char category;
     unsigned int length;
@@ -169,9 +170,10 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     {
         status = tc_check_length( packetSubtype, length );
     }
+    status_crc = tc_check_crc( TCPacket, length, computed_CRC );
     if (status == CCSDS_TM_VALID )  // CHECK CRC
     {
-        status = tc_check_crc( TCPacket, length, computed_CRC );
+        status = status_crc;
     }
 
     return status;

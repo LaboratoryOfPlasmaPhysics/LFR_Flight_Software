@@ -18,7 +18,7 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id que
 int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
-                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV);
+                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV, unsigned char destinationID);
 
 void increment_seq_counter_destination_id( unsigned char *packet_sequence_control, unsigned char destination_id );
 

@@ -117,6 +117,7 @@ rtems_task recv_task( rtems_task_argument unused )
     ccsdsTelecommandPacket_t currentTC;
     unsigned char computed_CRC[ 2 ];
     unsigned char currentTC_LEN_RCV[ 2 ];
+    unsigned char destinationID;
     unsigned int currentTC_LEN_RCV_AsUnsignedInt;
     unsigned int parserCode;
     rtems_status_code status;
@@ -165,7 +166,15 @@ rtems_task recv_task( rtems_task_argument unused )
                          !( (currentTC.serviceType==TC_TYPE_GEN) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_INFO))
                          )
                     {
-                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV );
+                        if ( parserCode == WRONG_SRC_ID )
+                        {
+                            destinationID = SID_TC_GROUND;
+                        }
+                        else
+                        {
+                            destinationID = currentTC.sourceID;
+                        }
+                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV, destinationID );
                     }
                 }
                 else

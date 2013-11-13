@@ -36,7 +36,8 @@ time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_AD
 gptimer_regs_t         *gptimer_regs         = (gptimer_regs_t *)        REGS_ADDR_GPTIMER;
 #ifdef GSA
 #else
-    new_waveform_picker_regs_t *new_waveform_picker_regs = (new_waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
+    waveform_picker_regs_t *waveform_picker_regs = (waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
+    waveform_picker_regs_t_alt *waveform_picker_regs_alt = (waveform_picker_regs_t_alt*) REGS_ADDR_WAVEFORM_PICKER;
 #endif
 spectral_matrix_regs_t *spectral_matrix_regs = (spectral_matrix_regs_t*) REGS_ADDR_SPECTRAL_MATRIX;
 
