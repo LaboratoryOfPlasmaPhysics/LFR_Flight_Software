@@ -25,7 +25,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
 
     parameter_dump_packet.unused0 = TC->dataAndCRC[0];
     parameter_dump_packet.bw_sp0_sp1_r0_r1 = TC->dataAndCRC[1];
-    set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
+    set_wfp_data_shaping( parameter_dump_packet.bw_sp0_sp1_r0_r1 );
     return LFR_SUCCESSFUL;
 }
 
