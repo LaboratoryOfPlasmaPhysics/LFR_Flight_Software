@@ -76,13 +76,10 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         }
         else {
             if ( (new_waveform_picker_regs->status & 0x7) == 0x7 ){ // f2 f1 and f0 are full
-                new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable & 0x08;
                 if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
                 }
-//                new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0x00;
                 new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-                new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x07; // [0111] enable f2 f1 f0
             }
        }
 #endif
