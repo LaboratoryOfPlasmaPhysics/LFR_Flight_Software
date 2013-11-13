@@ -1078,6 +1078,7 @@ void reset_new_waveform_picker_regs()
    * - 0x30 nb_data_by_buffer
    * - 0x34 nb_snapshot_param
    * - 0x38 start_date
+   * - 0x3c nb_word_in_buffer
    *
    */
 
@@ -1095,9 +1096,10 @@ void reset_new_waveform_picker_regs()
     new_waveform_picker_regs->delta_f1 = 0x3c0;             // 0x28 *** 960
 //    new_waveform_picker_regs->delta_f2 = 0x12200;         // 0x2c *** 74240
     new_waveform_picker_regs->delta_f2 = 0xc00;             // 0x2c *** 12 * 256 = 2048
-    new_waveform_picker_regs->nb_data_by_buffer = 0x1802;   // 0x30 *** 2048 * 3 + 2
-    new_waveform_picker_regs->snapshot_param = 0x7ff;       // 0x34 *** 2048 -1
+    new_waveform_picker_regs->nb_data_by_buffer = 0x7ff;    // 0x30 *** 2048 -1
+    new_waveform_picker_regs->snapshot_param = 0x800;       // 0x34 *** 2048
     new_waveform_picker_regs->start_date = 0x00;            // 0x38
+    new_waveform_picker_regs->nb_word_in_buffer = 0x1802;   // 0x3c *** 2048 * 3 + 2 = 6146
 }
 
 //*****************
