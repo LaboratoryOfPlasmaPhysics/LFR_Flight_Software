@@ -472,7 +472,7 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
         packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
         packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 
-        // increment the sequence counter for the next packet
+        // increment the seuqence counter for the next packet
         if ( sequenceCounters_TC_EXE[ i ] < SEQ_CNT_MAX)
         {
             sequenceCounters_TC_EXE[ i ] = sequenceCounters_TC_EXE[ i ] + 1;
@@ -484,7 +484,7 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
     }
     else
     {
-        DEBUG_PRINTF1("in increment_seq_counter_destination_id *** ERR destination ID %d not known\n", destination_id)
+        PRINTF1("in increment_seq_counter_destination_id *** ERR destination ID %d not known\n", destination_id)
     }
 
 }

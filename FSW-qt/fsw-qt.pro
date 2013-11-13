@@ -7,18 +7,14 @@ CONFIG -= qt
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-21
+SWVERSION=-0-22
 DEFINES += SW_VERSION_N1=0
 DEFINES += SW_VERSION_N2=0
 DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=21
+DEFINES += SW_VERSION_N4=22
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
-}
-
-contains( CONFIG, debug_messages ) {
-    DEFINES += DEBUG_MESSAGES
 }
 
 contains( CONFIG, cpu_usage_report ) {
