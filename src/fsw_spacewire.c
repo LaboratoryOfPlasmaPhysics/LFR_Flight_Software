@@ -120,6 +120,7 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned char destinationID;
     unsigned int currentTC_LEN_RCV_AsUnsignedInt;
     unsigned int parserCode;
+    unsigned char time[6];
     rtems_status_code status;
     rtems_id queue_recv_id;
     rtems_id queue_send_id;
@@ -174,7 +175,11 @@ rtems_task recv_task( rtems_task_argument unused )
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV, destinationID );
+                        getTime( time );
+                        close_action( &currentTC, LFR_DEFAULT, queue_send_id, time);
+                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
+                                                      computed_CRC, currentTC_LEN_RCV,
+                                                      destinationID, time );
                     }
                 }
                 else

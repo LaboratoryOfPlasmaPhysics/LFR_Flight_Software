@@ -34,4 +34,6 @@ void init_housekeeping_parameters( void );
 
 void increment_seq_counter( unsigned char *packet_sequence_control);
 
+void getTime( unsigned char *time);
+
 #endif // FSW_MISC_H_INCLUDED

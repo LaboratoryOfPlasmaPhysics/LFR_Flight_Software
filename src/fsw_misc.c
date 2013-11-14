@@ -321,5 +321,13 @@ void increment_seq_counter( unsigned char *packet_sequence_control)
     packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 }
 
-
+void getTime( unsigned char *time)
+{
+    time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    time[3] = (unsigned char) (time_management_regs->coarse_time);
+    time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    time[5] = (unsigned char) (time_management_regs->fine_time);
+}
 
