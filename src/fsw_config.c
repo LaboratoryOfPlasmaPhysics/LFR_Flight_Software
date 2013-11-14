@@ -52,4 +52,3 @@ struct drvmgr_bus_res grlib_drv_resources = {
     }
 };
 
-
