@@ -13,7 +13,7 @@
 extern struct param_sbm1_str param_sbm1;
 extern struct param_sbm2_str param_sbm2;
 extern time_management_regs_t *time_management_regs;
-extern new_waveform_picker_regs_t *new_waveform_picker_regs;
+extern waveform_picker_regs_t *waveform_picker_regs;
 extern gptimer_regs_t         *gptimer_regs;
 extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
@@ -53,8 +53,8 @@ int suspend_science_tasks();
 
 // other functions
 void updateLFRCurrentMode();
-void update_last_TC_exe(ccsdsTelecommandPacket_t *TC);
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC);
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time);
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time);
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id);
 
 #endif // TC_HANDLER_H_INCLUDED

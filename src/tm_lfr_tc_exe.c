@@ -15,7 +15,7 @@
 
 #include "tm_lfr_tc_exe.h"
 
-int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
 {
     /** This function sends a TM_LFR_TC_EXE_SUCCESS packet in the dedicated RTEMS message queue.
      *
@@ -51,12 +51,12 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_OK;
     TM.destinationID = TC->sourceID;
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[0] = time[0];
+    TM.time[1] = time[1];
+    TM.time[2] = time[2];
+    TM.time[3] = time[3];
+    TM.time[4] = time[4];
+    TM.time[5] = time[5];
     //
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];

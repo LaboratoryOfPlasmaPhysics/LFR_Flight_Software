@@ -388,7 +388,7 @@ int stop_current_mode()
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
     // reset registers
-    reset_wfp_run_burst_enable();                       // reset run, burst and enable bits, [r b2 b1 b0 e3 e2 e1 e0]
+    reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
     // creal interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
@@ -464,7 +464,6 @@ int enter_standby_mode()
 int enter_normal_mode()
 {
     rtems_status_code status;
-    int startDate;
 
     status = restart_science_tasks();
 
@@ -480,13 +479,10 @@ int enter_normal_mode()
 #else
     //****************
     // waveform picker
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_NORMAL);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    startDate = time_management_regs->coarse_time + 2;
-    new_waveform_picker_regs->start_date = startDate;
-    new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
     //****************
     // spectral matrix
 #endif
@@ -503,7 +499,7 @@ int enter_burst_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_BURST);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -525,7 +521,7 @@ int enter_sbm1_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -551,7 +547,7 @@ int enter_sbm2_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM2);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -681,7 +677,7 @@ int suspend_science_tasks()
 
 //****************
 // CLOSING ACTIONS
-void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
     housekeeping_packet.hk_lfr_last_exe_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_exe_tc_id[1] = TC->packetID[1];
@@ -689,15 +685,15 @@ void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)
     housekeeping_packet.hk_lfr_last_exe_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = time[0];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = time[1];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = time[2];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = time[3];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = time[4];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = time[5];
 }
 
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC)
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
     housekeeping_packet.hk_lfr_last_rej_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_rej_tc_id[1] = TC->packetID[1];
@@ -705,17 +701,26 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC)
     housekeeping_packet.hk_lfr_last_rej_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = time[0];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = time[1];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = time[2];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = time[3];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = time[4];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = time[5];
 }
 
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
 {
     unsigned int val = 0;
+    unsigned char time[6];
+
+    time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    time[3] = (unsigned char) (time_management_regs->coarse_time);
+    time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    time[5] = (unsigned char) (time_management_regs->fine_time);
+
     if (result == LFR_SUCCESSFUL)
     {
         if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
@@ -723,9 +728,9 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
              !( (TC->serviceType==TC_TYPE_GEN) && (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
              )
         {
-            send_tm_lfr_tc_exe_success( TC, queue_id );
+            send_tm_lfr_tc_exe_success( TC, queue_id, time );
         }
-        update_last_TC_exe( TC );
+        update_last_TC_exe( TC, time );
         val = housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[1];
         val++;
         housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
@@ -733,7 +738,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
     }
     else
     {
-        update_last_TC_rej( TC );
+        update_last_TC_rej( TC, time );
         val = housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[1];
         val++;
         housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
