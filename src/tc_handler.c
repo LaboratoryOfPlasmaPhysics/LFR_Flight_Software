@@ -218,7 +218,7 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     unsigned int val;
     int result;
 
-    result = LFR_DEFAULT;
+    result = LFR_SUCCESSFUL;
 
     val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
             + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
