@@ -40,12 +40,13 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
 
     int result;
     int flag;
+    rtems_status_code status;
 
     flag = LFR_SUCCESSFUL;
 
     if ( (lfrCurrentMode == LFR_MODE_NORMAL) ||
          (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         flag = LFR_DEFAULT;
     }
 
@@ -118,12 +119,13 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
 
     int result;
     unsigned char lfrMode;
+    rtems_status_code status;
 
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( lfrMode == LFR_MODE_BURST ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     else {
@@ -146,12 +148,13 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
      */
     int result;
     unsigned char lfrMode;
+    rtems_status_code status;
 
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_SBM1) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     else {
@@ -175,12 +178,13 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
 
     int result;
     unsigned char lfrMode;
+    rtems_status_code status;
 
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_SBM2) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     else {
@@ -245,6 +249,7 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
     int result;
     unsigned char msb;
     unsigned char lsb;
+    rtems_status_code status;
 
     msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_L ];
     lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_L+1 ];
@@ -255,12 +260,12 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
 
     if ( (tmp < 16) || (tmp > 2048) )   // the snapshot period is a multiple of 16
     {                                   // 2048 is the maximum limit due to the size of the buffers
-        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb, time );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb, time );
         result = WRONG_APP_DATA;
     }
     else if (tmp != 2048)
     {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
         result = FUNCT_NOT_IMPL;
     }
     else
@@ -286,6 +291,7 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
     int result;
     unsigned char msb;
     unsigned char lsb;
+    rtems_status_code status;
 
     msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P ];
     lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P+1 ];
@@ -296,7 +302,7 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
 
     if ( (tmp < 16) || (tmp > 65528) )
     {
-        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb, time );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb, time );
         result = WRONG_APP_DATA;
     }
     else
