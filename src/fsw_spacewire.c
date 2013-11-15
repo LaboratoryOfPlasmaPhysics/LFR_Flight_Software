@@ -13,6 +13,14 @@
 
 #include "fsw_spacewire.h"
 
+char *lstates[6] = {"Error-reset",
+                    "Error-wait",
+                    "Ready",
+                    "Started",
+                    "Connecting",
+                    "Run"
+};
+
 rtems_name semq_name;
 rtems_id semq_id;
 
@@ -37,24 +45,18 @@ rtems_task spiq_task(rtems_task_argument unused)
         PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n")
 
         // [0] SUSPEND RECV AND SEND TASKS
-        status = rtems_task_suspend( Task_id[ TASKID_RECV ] );
-        if ( status != RTEMS_SUCCESSFUL ) {
-            PRINTF("in SPIQ *** ERR suspending RECV Task\n")
-        }
-        status = rtems_task_suspend( Task_id[ TASKID_SEND ] );
-        if ( status != RTEMS_SUCCESSFUL ) {
-            PRINTF("in SPIQ *** ERR suspending SEND Task\n")
-        }
+        rtems_task_suspend( Task_id[ TASKID_RECV ] );
+        rtems_task_suspend( Task_id[ TASKID_SEND ] );
 
         // [1] CHECK THE LINK
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (1)
+        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (1)
         if ( linkStatus != 5) {
             PRINTF1("in SPIQ *** linkStatus %d, wait...\n", linkStatus)
-            status = rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
+            rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status (2)
+        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status (2)
         if ( linkStatus != 5 )  // [2.a] not in run state, reset the link
         {
             spacewire_compute_stats_offsets();
@@ -93,7 +95,7 @@ rtems_task spiq_task(rtems_task_argument unused)
             }
             // wake the WTDG task up to wait for the link recovery
             status =  rtems_event_send ( Task_id[TASKID_WTDG], RTEMS_EVENT_0 );
-            status = rtems_task_suspend( RTEMS_SELF );
+            rtems_task_suspend( RTEMS_SELF );
         }
     }
 }
@@ -118,7 +120,6 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned char destinationID;
     unsigned int currentTC_LEN_RCV_AsUnsignedInt;
     unsigned int parserCode;
-    unsigned char time[6];
     rtems_status_code status;
     rtems_id queue_recv_id;
     rtems_id queue_send_id;
@@ -173,11 +174,7 @@ rtems_task recv_task( rtems_task_argument unused )
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        getTime( time );
-                        close_action( &currentTC, LFR_DEFAULT, queue_send_id, time);
-                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
-                                                      computed_CRC, currentTC_LEN_RCV,
-                                                      destinationID, time );
+                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV, destinationID );
                     }
                 }
                 else
@@ -276,11 +273,11 @@ rtems_task wtdg_task( rtems_task_argument argument )
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         PRINTF("in WTDG *** wait for the link\n")
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);        // get the link status
+        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);        // get the link status
         while( linkStatus != 5)                                             // wait for the link
         {
             rtems_task_wake_after( 10 );
-            status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
+            ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
         }
 
         status = spacewire_stop_start_link( fdSPW );
@@ -597,7 +594,7 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
     int linkStatus;
     rtems_status_code status;
 
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
+    ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
 
     if ( linkStatus == 5) {
         PRINTF("in spacewire_reset_link *** link is running\n")

@@ -12,6 +12,22 @@
 
 #include "fsw_spacewire.h"
 
+extern rtems_name  misc_name[5];
+extern rtems_id    misc_id[5];
+extern rtems_name  Task_name[20];       /* array of task names */
+extern rtems_id    Task_id[20];         /* array of task ids */
+extern unsigned int maxCount;
+extern int fdSPW;   // grspw file descriptor
+extern int fdUART;  // uart file descriptor
+extern unsigned char lfrCurrentMode;
+
+// MODE PARAMETERS
+extern struct param_local_str param_local;
+extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
+extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
+extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
+extern unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
+
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);
 
@@ -31,5 +47,6 @@ extern int rtems_cpu_usage_reset( void );
 extern void rtems_stack_checker_report_usage( void );
 
 extern int sched_yield( void );
+extern int errno;
 
 #endif // FSW_INIT_H_INCLUDED
