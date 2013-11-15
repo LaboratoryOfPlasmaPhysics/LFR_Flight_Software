@@ -57,7 +57,10 @@ rtems_task actn_task( rtems_task_argument unused )
         status = rtems_message_queue_receive( queue_rcv_id, (char*) &TC, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         getTime( time );    // set time to the current time
-        if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        if (status!=RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        }
         else
         {
             subtype = TC.serviceSubType;
@@ -190,7 +193,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
             {
                 PRINTF("ERR *** in action_enter *** stop_current_mode\n")
             }
-            status = enter_mode(requestedMode, TC);
+            status = enter_mode( requestedMode );
         }
         else
         {
@@ -313,6 +316,16 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
 
 int transition_validation(unsigned char requestedMode)
 {
+    /** This function checks the validity of the transition requested by the TC_LFR_ENTER_MODE.
+     *
+     * @param requestedMode is the mode requested by the TC_LFR_ENTER_MODE
+     *
+     * @return LFR directive status codes:
+     * - LFR_SUCCESSFUL - the transition is authorized
+     * - LFR_DEFAULT - the transition is not authorized
+     *
+     */
+
     int status;
 
     switch (requestedMode)
@@ -410,8 +423,18 @@ int stop_current_mode()
     return status;
 }
 
-int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
+int enter_mode(unsigned char mode )
 {
+    /** This function is launched after a mode transition validation.
+     *
+     * @param mode is the mode in which LFR will be put.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_NOT_SATISFIED - the mode has not been entered successfully
+     *
+     */
+
     rtems_status_code status;
 
     status = RTEMS_UNSATISFIED;
@@ -450,6 +473,13 @@ int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
 
 int enter_standby_mode()
 {
+    /** This function is used to enter the STANDBY mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     *
+     */
+
     PRINTF1("maxCount = %d\n", maxCount)
 
 #ifdef PRINT_TASK_STATISTICS
@@ -494,6 +524,16 @@ int enter_normal_mode()
 
 int enter_burst_mode()
 {
+    /** This function is used to enter the STANDBY mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
 
     status = restart_science_tasks();
@@ -512,6 +552,16 @@ int enter_burst_mode()
 
 int enter_sbm1_mode()
 {
+    /** This function is used to enter the SBM1 mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
 
     status = restart_science_tasks();
@@ -527,10 +577,6 @@ int enter_sbm1_mode()
     set_wfp_burst_enable_register(LFR_MODE_SBM1);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    // SM simulation
-//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-//    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-//    LEON_Unmask_interrupt( IRQ_SM );
  #endif
 
     return status;
@@ -538,6 +584,16 @@ int enter_sbm1_mode()
 
 int enter_sbm2_mode()
 {
+    /** This function is used to enter the SBM2 mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
 
     status = restart_science_tasks();
@@ -560,6 +616,18 @@ int enter_sbm2_mode()
 
 int restart_science_tasks()
 {
+    /** This function is used to restart all science tasks.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * Science tasks are AVF0, BPF0, WFRM, CWF3, CW2, CWF1
+     *
+     */
+
     rtems_status_code status[6];
     rtems_status_code ret;
 
@@ -681,6 +749,13 @@ int suspend_science_tasks()
 // CLOSING ACTIONS
 void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
+    /** This function is used to update the HK packets statistics after a successful TC execution.
+     *
+     * @param TC points to the TC being processed
+     * @param time is the time used to date the TC execution
+     *
+     */
+
     housekeeping_packet.hk_lfr_last_exe_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_exe_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_exe_tc_type[0] = 0x00;
@@ -697,6 +772,13 @@ void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
+    /** This function is used to update the HK packets statistics after a TC rejection.
+     *
+     * @param TC points to the TC being processed
+     * @param time is the time used to date the TC rejection
+     *
+     */
+
     housekeeping_packet.hk_lfr_last_rej_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_rej_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_rej_tc_type[0] = 0x00;
@@ -713,6 +795,15 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, unsigned char *time)
 {
+    /** This function is the last step of the TC execution workflow.
+     *
+     * @param TC points to the TC being processed
+     * @param result is the result of the TC execution (LFR_SUCCESSFUL / LFR_DEFAULT)
+     * @param queue_id is the id of the RTEMS message queue used to send TM packets
+     * @param time is the time used to date the TC execution
+     *
+     */
+
     unsigned int val = 0;
 
     if (result == LFR_SUCCESSFUL)

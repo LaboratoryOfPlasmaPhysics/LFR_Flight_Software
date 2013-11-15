@@ -1095,7 +1095,7 @@ void reset_waveform_picker_regs()
 
 //*****************
 // local parameters
-void set_local_sbm1_nb_cwf_max()
+void set_local_sbm1_nb_cwf_max( void )
 {
     /** This function sets the value of the sbm1_nb_cwf_max local parameter.
      *
@@ -1109,7 +1109,7 @@ void set_local_sbm1_nb_cwf_max()
             + parameter_dump_packet.sy_lfr_n_swf_p[1]) - 8; // 16 CWF1 parts during 1 SWF2
 }
 
-void set_local_sbm2_nb_cwf_max()
+void set_local_sbm2_nb_cwf_max(void)
 {
     /** This function sets the value of the sbm1_nb_cwf_max local parameter.
      *
@@ -1123,7 +1123,7 @@ void set_local_sbm2_nb_cwf_max()
             + parameter_dump_packet.sy_lfr_n_swf_p[1]) / 8;
 }
 
-void set_local_nb_interrupt_f0_MAX()
+void set_local_nb_interrupt_f0_MAX( void )
 {
     /** This function sets the value of the nb_interrupt_f0_MAX local parameter.
      *
@@ -1137,7 +1137,7 @@ void set_local_nb_interrupt_f0_MAX()
             + parameter_dump_packet.sy_lfr_n_asm_p[1] ) * 100;
 }
 
-void reset_local_sbm1_nb_cwf_sent()
+void reset_local_sbm1_nb_cwf_sent( void )
 {
     /** This function resets the value of the sbm1_nb_cwf_sent local parameter.
      *
@@ -1149,7 +1149,7 @@ void reset_local_sbm1_nb_cwf_sent()
     param_local.local_sbm1_nb_cwf_sent = 0;
 }
 
-void reset_local_sbm2_nb_cwf_sent()
+void reset_local_sbm2_nb_cwf_sent( void )
 {
     /** This function resets the value of the sbm2_nb_cwf_sent local parameter.
      *

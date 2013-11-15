@@ -10,16 +10,7 @@
 #include "wf_handler.h"
 
 // MODE PARAMETERS
-extern struct param_sbm1_str param_sbm1;
-extern struct param_sbm2_str param_sbm2;
-extern time_management_regs_t *time_management_regs;
-extern waveform_picker_regs_t *waveform_picker_regs;
-extern gptimer_regs_t         *gptimer_regs;
-extern rtems_name  misc_name[5];
-extern rtems_id    Task_id[20];         /* array of task ids */
-extern unsigned char lfrCurrentMode;
 extern unsigned int maxCount;
-
 
 //****
 // ISR
@@ -42,7 +33,7 @@ int action_update_time(ccsdsTelecommandPacket_t *TC);
 // mode transition
 int transition_validation(unsigned char requestedMode);
 int stop_current_mode();
-int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC);
+int enter_mode(unsigned char mode);
 int enter_standby_mode();
 int enter_normal_mode();
 int enter_burst_mode();

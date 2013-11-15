@@ -27,7 +27,6 @@ extern volatile int wf_cont_f3[ ];
 extern volatile int wf_cont_f3_bis[ ];
 extern char wf_cont_f3_light[ ];
 extern waveform_picker_regs_t *waveform_picker_regs;
-extern waveform_picker_regs_t_alt *waveform_picker_regs_alt;
 extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
@@ -77,11 +76,11 @@ void reset_waveform_picker_regs();
 
 //*****************
 // local parameters
-void set_local_sbm1_nb_cwf_max();
-void set_local_sbm2_nb_cwf_max();
-void set_local_nb_interrupt_f0_MAX();
-void reset_local_sbm1_nb_cwf_sent();
-void reset_local_sbm2_nb_cwf_sent();
+void set_local_sbm1_nb_cwf_max( void );
+void set_local_sbm2_nb_cwf_max( void );
+void set_local_nb_interrupt_f0_MAX( void );
+void reset_local_sbm1_nb_cwf_sent( void );
+void reset_local_sbm2_nb_cwf_sent( void );
 
 void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid );
 

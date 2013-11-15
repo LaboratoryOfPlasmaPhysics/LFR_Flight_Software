@@ -7,8 +7,6 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-extern time_management_regs_t *time_management_regs;
-extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern unsigned short sequenceCounters_TC_EXE[];
 
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);

@@ -9,11 +9,6 @@
 #include "tm_lfr_tc_exe.h"
 #include "fsw_misc.h"
 
-extern int fdSPW;
-extern unsigned char lfrCurrentMode;
-extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
-extern Packet_TM_LFR_HK_t housekeeping_packet;
-
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
 int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);

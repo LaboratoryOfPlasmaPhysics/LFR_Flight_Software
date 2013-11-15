@@ -416,6 +416,15 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
 
 void increment_seq_counter_destination_id( unsigned char *packet_sequence_control, unsigned char destination_id )
 {
+    /** This function increment the packet sequence control parameter of a TC, depending on its destination ID.
+     *
+     * @param packet_sequence_control points to the packet sequence control which will be incremented
+     * @param destination_id is the destination ID of the TM, there is one counter by destination ID
+     *
+     * If the destination ID is not known, a dedicated counter is incremented.
+     *
+     */
+
     unsigned short sequence_cnt;
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
