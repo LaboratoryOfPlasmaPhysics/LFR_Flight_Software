@@ -48,6 +48,9 @@ void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time);
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time);
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, unsigned char *time);
 
+extern rtems_status_code get_message_queue_id_send( rtems_id *queue_id );
+extern rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
+
 #endif // TC_HANDLER_H_INCLUDED
 
 

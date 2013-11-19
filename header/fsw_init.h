@@ -12,6 +12,9 @@
 
 #include "fsw_spacewire.h"
 
+extern rtems_name  Task_name[20];       /* array of task names */
+extern rtems_id    Task_id[20];         /* array of task ids */
+
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);
 
@@ -21,6 +24,8 @@ int create_all_tasks( void );
 int start_all_tasks( void );
 //
 rtems_status_code create_message_queues( void );
+rtems_status_code get_message_queue_id_send( rtems_id *queue_id );
+rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 //
 int start_recv_send_tasks( void );
 //

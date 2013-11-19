@@ -584,3 +584,27 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 
     return ret;
 }
+
+rtems_status_code get_message_queue_id_send( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'S', 'D' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}
+
+rtems_status_code get_message_queue_id_recv( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'R', 'V' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}

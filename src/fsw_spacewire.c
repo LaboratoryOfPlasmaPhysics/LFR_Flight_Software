@@ -125,16 +125,16 @@ rtems_task recv_task( rtems_task_argument unused )
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_recv_id );
+    status =  get_message_queue_id_recv( &queue_recv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting QUEUE_RECV id, %d\n", status)
+        PRINTF1("in RECV *** ERR get_message_queue_id_recv %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_send_id );
+    status =  get_message_queue_id_send( &queue_send_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting QUEUE_SEND id, %d\n", status)
+        PRINTF1("in RECV *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in RECV *** \n")
@@ -211,10 +211,10 @@ rtems_task send_task( rtems_task_argument argument)
     u_int32_t count;
     rtems_id queue_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in SEND *** ERR getting queue id, %d\n", status)
+        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in SEND *** \n")
@@ -604,21 +604,3 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
         status = RTEMS_SUCCESSFUL;
     }
 }
-
-rtems_status_code rtems_message_queue_send_lfr( rtems_id id, const void *buffer, size_t size )
-{
-    rtems_status_code status;
-    rtems_mode previous_mode_set;
-
-    // set the preemption OFF
-    status =  rtems_task_mode( RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &previous_mode_set );
-
-    // use the message queue
-    status = rtems_message_queue_send_lfr( id, buffer, size );
-
-    // set the preemption ON
-    status =  rtems_task_mode( RTEMS_PREEMPT , RTEMS_PREEMPT_MASK, &previous_mode_set );
-
-    return status;
-}
-

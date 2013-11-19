@@ -8,10 +8,10 @@ include(./sparc.pri)
 
 # flight software version
 SWVERSION=-1-0
-DEFINES += SW_VERSION_N1=0
-DEFINES += SW_VERSION_N2=0
-DEFINES += SW_VERSION_N3=1
-DEFINES += SW_VERSION_N4=0
+DEFINES += SW_VERSION_N1=1 # major
+DEFINES += SW_VERSION_N2=0 # minor
+DEFINES += SW_VERSION_N3=0 # patch
+DEFINES += SW_VERSION_N4=0 # internal
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE

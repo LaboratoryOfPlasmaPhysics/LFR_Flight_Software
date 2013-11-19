@@ -35,16 +35,16 @@ rtems_task actn_task( rtems_task_argument unused )
     rtems_id queue_rcv_id;
     rtems_id queue_snd_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_rcv_id );
+    status =  get_message_queue_id_recv( &queue_rcv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR getting queue_rcv_id %d\n", status)
+        PRINTF1("in ACTN *** ERR get_message_queue_id_recv %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_snd_id );
+    status =  get_message_queue_id_send( &queue_snd_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR getting queue_snd_id %d\n", status)
+        PRINTF1("in ACTN *** ERR get_message_queue_id_send %d\n", status)
     }
 
     result = LFR_SUCCESSFUL;

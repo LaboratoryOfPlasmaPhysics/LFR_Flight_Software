@@ -35,8 +35,6 @@ extern struct param_local_str param_local;
 extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
 extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 
-extern rtems_name  misc_name[5];
-extern rtems_name  Task_name[20];       /* array of task ids */
 extern rtems_id    Task_id[20];         /* array of task ids */
 
 extern unsigned char lfrCurrentMode;

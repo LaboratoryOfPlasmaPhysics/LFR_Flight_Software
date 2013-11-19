@@ -143,10 +143,10 @@ rtems_task hous_task(rtems_task_argument argument)
     rtems_status_code status;
     rtems_id queue_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in HOUS *** ERR %d\n", status)
+        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in HOUS ***\n")
@@ -172,6 +172,7 @@ rtems_task hous_task(rtems_task_argument argument)
     housekeeping_packet.serviceType = TM_TYPE_HK;
     housekeeping_packet.serviceSubType = TM_SUBTYPE_HK;
     housekeeping_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    housekeeping_packet.sid = SID_HK;
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL ) {
@@ -195,7 +196,6 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
             housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
-            housekeeping_packet.sid = SID_HK;
 
             spacewire_update_statistics();
 

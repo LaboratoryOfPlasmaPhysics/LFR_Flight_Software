@@ -239,6 +239,7 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     rtems_event_set event_out;
     rtems_id queue_id;
+    rtems_status_code status;
 
     init_header_snapshot_wf_table( SID_NORM_SWF_F0, headerSWF_F0 );
     init_header_snapshot_wf_table( SID_NORM_SWF_F1, headerSWF_F1 );
@@ -246,7 +247,11 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     init_waveforms();
 
-    queue_id = get_pkts_queue_id();
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in WFRM *** ERR get_message_queue_id_send %d\n", status)
+    }
 
     BOOT_PRINTF("in WFRM ***\n")
 
@@ -314,11 +319,16 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 
     rtems_event_set event_out;
     rtems_id queue_id;
+    rtems_status_code status;
 
     init_header_continuous_wf_table( SID_NORM_CWF_F3, headerCWF_F3 );
     init_header_continuous_wf3_light_table( headerCWF_F3_light );
 
-    queue_id = get_pkts_queue_id();
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in CWF3 *** ERR get_message_queue_id_send %d\n", status)
+    }
 
     BOOT_PRINTF("in CWF3 ***\n")
 
@@ -353,11 +363,16 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 
     rtems_event_set event_out;
     rtems_id queue_id;
+    rtems_status_code status;
 
     init_header_continuous_wf_table( SID_BURST_CWF_F2, headerCWF_F2_BURST );
     init_header_continuous_wf_table( SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
 
-    queue_id = get_pkts_queue_id();
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in CWF2 *** ERR get_message_queue_id_send %d\n", status)
+    }
 
     BOOT_PRINTF("in CWF2 ***\n")
 
@@ -418,10 +433,15 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 
     rtems_event_set event_out;
     rtems_id queue_id;
+    rtems_status_code status;
 
     init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
 
-    queue_id = get_pkts_queue_id();
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in CWF1 *** ERR get_message_queue_id_send %d\n", status)
+    }
 
     BOOT_PRINTF("in CWF1 ***\n")
 
@@ -1159,22 +1179,6 @@ void reset_local_sbm2_nb_cwf_sent( void )
      */
 
     param_local.local_sbm2_nb_cwf_sent = 0;
-}
-
-rtems_id get_pkts_queue_id( void )
-{
-    rtems_id queue_id;
-    rtems_status_code status;
-    rtems_name queue_send_name;
-
-    queue_send_name = rtems_build_name( 'Q', '_', 'S', 'D' );
-
-    status =  rtems_message_queue_ident( queue_send_name, 0, &queue_id );
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in get_pkts_queue_id *** ERR %d\n", status)
-    }
-    return queue_id;
 }
 
 void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid )
