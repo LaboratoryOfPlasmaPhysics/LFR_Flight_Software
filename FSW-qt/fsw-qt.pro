@@ -7,11 +7,11 @@ CONFIG -= qt
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-1-0
-DEFINES += SW_VERSION_N1=1 # major
-DEFINES += SW_VERSION_N2=0 # minor
-DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=0 # internal
+SWVERSION=-0-22
+DEFINES += SW_VERSION_N1=0
+DEFINES += SW_VERSION_N2=0
+DEFINES += SW_VERSION_N3=0
+DEFINES += SW_VERSION_N4=22
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
@@ -74,6 +74,5 @@ HEADERS += \
     ../header/tm_byte_positions.h \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
-    ../header/tc_acceptance.h \
-    ../header/fsw_params_nb_bytes.h
+    ../header/tc_acceptance.h
 

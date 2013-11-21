@@ -226,7 +226,45 @@ enum TM_TYPE{
     TM_LFR_PAR_DUMP
 };
 
-typedef struct {
+struct TMHeader_str
+{
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+};
+typedef struct TMHeader_str TMHeader_t;
+
+struct Packet_TM_LFR_TC_EXE_str
+{
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    unsigned char data[LENGTH_TM_LFR_TC_EXE_MAX - 10 + 1];
+};
+typedef struct Packet_TM_LFR_TC_EXE_str Packet_TM_LFR_TC_EXE_t;
+
+struct Packet_TM_LFR_TC_EXE_SUCCESS_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -244,9 +282,11 @@ typedef struct {
     //
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
-} Packet_TM_LFR_TC_EXE_SUCCESS_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_SUCCESS_str Packet_TM_LFR_TC_EXE_SUCCESS_t;
 
-typedef struct {
+struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -269,9 +309,11 @@ typedef struct {
     unsigned char tc_subtype;
     unsigned char byte_position;
     unsigned char rcv_value;
-} Packet_TM_LFR_TC_EXE_INCONSISTENT_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_INCONSISTENT_str Packet_TM_LFR_TC_EXE_INCONSISTENT_t;
 
-typedef struct {
+struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -293,9 +335,11 @@ typedef struct {
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char lfr_status_word[2];
-} Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_str Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t;
 
-typedef struct {
+struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -316,9 +360,11 @@ typedef struct {
     unsigned char pkt_seq_control[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
-} Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_str Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
 
-typedef struct {
+struct Packet_TM_LFR_TC_EXE_ERROR_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -339,9 +385,11 @@ typedef struct {
     unsigned char pkt_seq_control[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
-} Packet_TM_LFR_TC_EXE_ERROR_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_ERROR_str Packet_TM_LFR_TC_EXE_ERROR_t;
 
-typedef struct {
+struct Packet_TM_LFR_TC_EXE_CORRUPTED_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -366,9 +414,11 @@ typedef struct {
     unsigned char pkt_datafieldsize_cnt[2];
     unsigned char rcv_crc[2];
     unsigned char computed_crc[2];
-} Packet_TM_LFR_TC_EXE_CORRUPTED_t;
+};
+typedef struct Packet_TM_LFR_TC_EXE_CORRUPTED_str Packet_TM_LFR_TC_EXE_CORRUPTED_t;
 
-typedef struct {
+struct Header_TM_LFR_SCIENCE_SWF_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -389,9 +439,11 @@ typedef struct {
     unsigned char pktNr;
     unsigned char acquisitionTime[6];
     unsigned char blkNr[2];
-} Header_TM_LFR_SCIENCE_SWF_t;
+};
+typedef struct Header_TM_LFR_SCIENCE_SWF_str Header_TM_LFR_SCIENCE_SWF_t;
 
-typedef struct {
+struct Header_TM_LFR_SCIENCE_CWF_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -410,9 +462,11 @@ typedef struct {
     unsigned char hkBIA;
     unsigned char acquisitionTime[6];
     unsigned char blkNr[2];
-} Header_TM_LFR_SCIENCE_CWF_t;
+};
+typedef struct Header_TM_LFR_SCIENCE_CWF_str Header_TM_LFR_SCIENCE_CWF_t;
 
-typedef struct {
+struct Header_TM_LFR_SCIENCE_ASM_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -433,10 +487,12 @@ typedef struct {
     unsigned char nrASM;
     unsigned char acquisitionTime[6];
     unsigned char blkNr[2];
-} Header_TM_LFR_SCIENCE_ASM_t;
+};
+typedef struct Header_TM_LFR_SCIENCE_ASM_str Header_TM_LFR_SCIENCE_ASM_t;
 
-typedef struct {
-    //targetLogicalAddress is removed by the grspw module
+struct ccsdsTelecommandPacket_str
+{
+    //unsigned char targetLogicalAddress; // removed by the grspw module
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
@@ -449,9 +505,11 @@ typedef struct {
     unsigned char serviceSubType;
     unsigned char sourceID;
     unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
-} ccsdsTelecommandPacket_t;
+};
+typedef struct ccsdsTelecommandPacket_str ccsdsTelecommandPacket_t;
 
-typedef struct {
+struct Packet_TM_LFR_HK_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -549,9 +607,11 @@ typedef struct {
     unsigned char hk_lfr_cpu_data_exception;
     unsigned char hk_lfr_cpu_div_exception;
     unsigned char hk_lfr_cpu_arith_overflow;
-} Packet_TM_LFR_HK_t;
+};
+typedef struct Packet_TM_LFR_HK_str Packet_TM_LFR_HK_t;
 
-typedef struct {
+struct Packet_TM_LFR_PARAMETER_DUMP_str
+{
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
@@ -594,7 +654,8 @@ typedef struct {
     // SBM2 PARAMETERS
     unsigned char sy_lfr_s2_bp_p0;
     unsigned char sy_lfr_s2_bp_p1;
-} Packet_TM_LFR_PARAMETER_DUMP_t;
+};
+typedef struct Packet_TM_LFR_PARAMETER_DUMP_str Packet_TM_LFR_PARAMETER_DUMP_t;
 
 
 #endif // CCSDS_TYPES_H_INCLUDED
