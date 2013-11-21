@@ -36,24 +36,24 @@ time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_AD
 gptimer_regs_t         *gptimer_regs         = (gptimer_regs_t *)        REGS_ADDR_GPTIMER;
 #ifdef GSA
 #else
-    new_waveform_picker_regs_t *new_waveform_picker_regs = (new_waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
+    waveform_picker_regs_t *waveform_picker_regs = (waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
 #endif
 spectral_matrix_regs_t *spectral_matrix_regs = (spectral_matrix_regs_t*) REGS_ADDR_SPECTRAL_MATRIX;
 
 // WAVEFORMS GLOBAL VARIABLES // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
-volatile int wf_snap_f0[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
+volatile int wf_snap_f0[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_snap_f1[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-volatile int wf_snap_f1_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-volatile int wf_snap_f1_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
+volatile int wf_snap_f1[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_snap_f1_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_snap_f1_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_snap_f2[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-volatile int wf_snap_f2_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-volatile int wf_snap_f2_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
+volatile int wf_snap_f2[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_snap_f2_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_snap_f2_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_cont_f3[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-volatile int wf_cont_f3_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET + ALIGNEMENT_OFFSET ];
-char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK        + ALIGNEMENT_OFFSET ];
+volatile int wf_cont_f3[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_cont_f3_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK        ];
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
 volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];

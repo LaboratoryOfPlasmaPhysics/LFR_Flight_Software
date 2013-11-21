@@ -7,18 +7,16 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-extern time_management_regs_t *time_management_regs;
-extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern unsigned short sequenceCounters_TC_EXE[];
 
-int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
+int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
-                                    unsigned char byte_position, unsigned char rcv_value);
-int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
+                                    unsigned char byte_position, unsigned char rcv_value, unsigned char *time);
+int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int send_tm_lfr_tc_exe_not_implemented(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
-                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV, unsigned char destinationID);
+                                 unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV, unsigned char destinationID, unsigned char *time);
 
 void increment_seq_counter_destination_id( unsigned char *packet_sequence_control, unsigned char destination_id );
 

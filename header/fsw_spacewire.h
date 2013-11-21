@@ -14,8 +14,6 @@
 
 extern spw_stats spacewire_stats;
 extern spw_stats spacewire_stats_backup;
-extern Packet_TM_LFR_HK_t housekeeping_packet;
-extern rtems_id    Task_id[20];         /* array of task ids */
 
 // RTEMS TASK
 rtems_task spiq_task( rtems_task_argument argument );

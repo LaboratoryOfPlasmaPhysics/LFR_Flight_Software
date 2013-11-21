@@ -11,7 +11,6 @@
 
 #include "fsw_processing_globals.c"
 
-unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_SM_F0 * 9 ];
 BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];
 float averaged_spec_mat_f0[ TOTAL_SIZE_SM ];
 char averaged_spec_mat_f0_char[ TOTAL_SIZE_SM * 2 ];
@@ -119,26 +118,6 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
     }
 }
 
-//rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
-//{
-//    rtems_event_set event_out;
-//    unsigned int nb_interrupt_f0 = 0;
-
-//    PRINTF("in SMIQ *** \n")
-
-//    while(1){
-//        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-//        nb_interrupt_f0 = nb_interrupt_f0 + 1;
-//        if (nb_interrupt_f0 == param_local.local_nb_interrupt_f0_MAX ){
-//            if (rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-//            {
-//                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-//            }
-//            nb_interrupt_f0 = 0;
-//        }
-//    }
-//}
-
 rtems_task spw_bppr_task(rtems_task_argument argument)
 {
     rtems_status_code status;
@@ -188,6 +167,7 @@ rtems_task avf0_task(rtems_task_argument argument)
 rtems_task bpf0_task(rtems_task_argument argument)
 {
     rtems_event_set event_out;
+    static unsigned char LFR_BP1_F0[ NB_BINS_COMPRESSED_SM_F0 * 9 ];
 
     BOOT_PRINTF("in BPFO *** \n")
 
@@ -195,7 +175,6 @@ rtems_task bpf0_task(rtems_task_argument argument)
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         matrix_compression(averaged_spec_mat_f0, 0, compressed_spec_mat_f0);
         BP1_set(compressed_spec_mat_f0, NB_BINS_COMPRESSED_SM_F0, LFR_BP1_F0);
-        //PRINTF("IN TASK BPF0 *** Matrix compressed, parameters calculated\n")
     }
 }
 
@@ -209,10 +188,10 @@ rtems_task matr_task(rtems_task_argument argument)
 
     init_header_asm( &headerASM );
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in MATR *** ERR getting queue id, %d\n", status)
+        PRINTF1("in MATR *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in MATR *** \n")
@@ -237,10 +216,10 @@ rtems_task matr_task(rtems_task_argument argument)
 
 void matrix_reset(volatile float *averaged_spec_mat)
 {
-//    int i;
-//    for(i=0; i<TOTAL_SIZE_SM; i++){
-//        averaged_spec_mat_f0[i] = 0;
-//    }
+    int i;
+    for(i=0; i<TOTAL_SIZE_SM; i++){
+        averaged_spec_mat[i] = 0;
+    }
 }
 
 void matrix_compression(volatile float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat)

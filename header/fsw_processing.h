@@ -11,7 +11,6 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-
 extern volatile int spec_mat_f0_0[ ];
 extern volatile int spec_mat_f0_1[ ];
 extern volatile int spec_mat_f0_a[ ];
