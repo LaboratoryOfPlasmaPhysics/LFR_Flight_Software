@@ -7,16 +7,18 @@
 
 #include "fsw_misc.h"
 
-//char *DumbMessages[7] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
-//                    "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-//                    "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
-//                    "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
-//                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
-//                    "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-//                    "ERR HK"                                                                // RTEMS_EVENT_6
-//};
+char *DumbMessages[9] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+                    "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
+                    "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
+                    "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
+                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
+                    "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
+                    "ERR HK",                                                               // RTEMS_EVENT_6
+                    "full is 0",    // RTEMS_EVENT_7
+                    "full is 1"     // RTEMS_EVENT_8
+};
 
-void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
+int configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
 {
     /** This function configures a GPTIMER timer instantiated in the VHDL design.
@@ -26,6 +28,8 @@ void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned
      * @param clock_divider is the divider of the 1 MHz clock that will be configured.
      * @param interrupt_level is the interrupt level that the timer drives.
      * @param timer_isr is the interrupt subroutine that will be attached to the IRQ driven by the timer.
+     *
+     * @return
      *
      * Interrupt levels are described in the SPARC documentation sparcv8.pdf p.76
      *
@@ -41,14 +45,18 @@ void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned
     }
 
     timer_set_clock_divider( gptimer_regs, timer, clock_divider);
+
+    return 1;
 }
 
-void timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
+int timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
 {
     /** This function starts a GPTIMER timer.
      *
      * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
      * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     *
+     * @return 1
      *
      */
 
@@ -57,23 +65,29 @@ void timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000001;  // EN enable the timer
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000002;  // RS restart
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000008;  // IE interrupt enable
+
+    return 1;
 }
 
-void timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
+int timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
 {
     /** This function stops a GPTIMER timer.
      *
      * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
      * @param timer is the number of the timer in the IP core (several timers can be instantiated).
      *
+     * @return 1
+     *
      */
 
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xfffffffe;  // EN enable the timer
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xffffffef;  // IE interrupt enable
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
+
+    return 1;
 }
 
-void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider)
+int timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider)
 {
     /** This function sets the clock divider of a GPTIMER timer.
      *
@@ -81,9 +95,13 @@ void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, 
      * @param timer is the number of the timer in the IP core (several timers can be instantiated).
      * @param clock_divider is the divider of the 1 MHz clock that will be configured.
      *
+     * @return 1
+     *
      */
 
     gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
+    
+    return 1;
 }
 
 int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on the apbuart port
@@ -143,10 +161,10 @@ rtems_task hous_task(rtems_task_argument argument)
     rtems_status_code status;
     rtems_id queue_id;
 
-    status =  get_message_queue_id_send( &queue_id );
+    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF1("in HOUS *** ERR %d\n", status)
     }
 
     BOOT_PRINTF("in HOUS ***\n")
@@ -172,7 +190,6 @@ rtems_task hous_task(rtems_task_argument argument)
     housekeeping_packet.serviceType = TM_TYPE_HK;
     housekeeping_packet.serviceSubType = TM_SUBTYPE_HK;
     housekeeping_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    housekeeping_packet.sid = SID_HK;
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL ) {
@@ -196,6 +213,7 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
             housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+            housekeeping_packet.sid = SID_HK;
 
             spacewire_update_statistics();
 
@@ -231,20 +249,12 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[7] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
-                        "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-                        "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
-                        "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
-                        "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
-                        "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-                        "ERR HK"                                                                // RTEMS_EVENT_6
-    };
-
     BOOT_PRINTF("in DUMB *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
-                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6,
+                          | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6
+                          | RTEMS_EVENT_7 | RTEMS_EVENT_8 | RTEMS_EVENT_9  ,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -289,12 +299,6 @@ void init_housekeeping_parameters( void )
 
 void increment_seq_counter( unsigned char *packet_sequence_control)
 {
-    /** This function increment the sequence counter psased in argument.
-     *
-     * The increment does not affect the grouping flag. In case of an overflow, the counter is reset to 0.
-     *
-     */
-
     unsigned short sequence_cnt;
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
@@ -320,17 +324,5 @@ void increment_seq_counter( unsigned char *packet_sequence_control)
     packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 }
 
-void getTime( unsigned char *time)
-{
-    /** This function write the current local time in the time buffer passed in argument.
-     *
-     */
 
-    time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    time[3] = (unsigned char) (time_management_regs->coarse_time);
-    time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    time[5] = (unsigned char) (time_management_regs->fine_time);
-}
 
