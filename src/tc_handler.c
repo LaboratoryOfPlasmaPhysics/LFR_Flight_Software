@@ -515,6 +515,7 @@ int enter_burst_mode()
 int enter_sbm1_mode()
 {
     rtems_status_code status;
+    int startDate;
 
     status = restart_science_tasks();
 
@@ -525,14 +526,17 @@ int enter_sbm1_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
+    //****************
+    // waveform picker
     reset_new_waveform_picker_regs();
-    set_wfp_burst_enable_register(LFR_MODE_SBM1);
+    set_wfp_burst_enable_register( LFR_MODE_SBM1 );
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    // SM simulation
-//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-//    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-//    LEON_Unmask_interrupt( IRQ_SM );
+    startDate = time_management_regs->coarse_time + 2;
+    new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
+    new_waveform_picker_regs->start_date = startDate;
+    //****************
+    // spectral matrix
  #endif
 
     return status;

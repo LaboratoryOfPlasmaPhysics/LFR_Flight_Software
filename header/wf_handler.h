@@ -72,7 +72,6 @@ void set_wfp_burst_enable_register( unsigned char mode);
 void reset_wfp_run_burst_enable();
 void reset_wfp_status();
 void reset_new_waveform_picker_regs();
-unsigned int address_alignment( volatile int *address);
 
 //*****************
 // local parameters

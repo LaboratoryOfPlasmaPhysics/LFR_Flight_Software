@@ -75,28 +75,12 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 #else
         statusReg = new_waveform_picker_regs->status;
         fullRecord = fullRecord | ( statusReg & 0x7 );
-//        if ( (new_waveform_picker_regs->status & 0x7) == 0x7 ){ // f2 f1 and f0 are full
-//        if ( (new_waveform_picker_regs->status & 0x1) == 0x1 )  // f0 is full
-        if ( (new_waveform_picker_regs->status & 0x4) == 0x4 )  // f2 is full
+        if ( (new_waveform_picker_regs->status & 0x7) == 0x7 ) // f2 f1 and f0 are full
         {
             if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
             new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-            new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-            new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-            new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-            new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xfffff888;
-            //        if ( (new_waveform_picker_regs->status & 0x1) == 0x1 )
-            if ( (new_waveform_picker_regs->status & 0x4) == 0x4 )  // f2 is full
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-            }
-            //        if ( (new_waveform_picker_regs->status & 0x1) == 0x0 )
-            if ( (new_waveform_picker_regs->status & 0x4) == 0x0 )
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_7 );
-            }
         }
 #endif
         break;
@@ -274,8 +258,8 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
-            //send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
-            //send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
+            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+            send_waveform_SWF(wf_snap_f1, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
             send_waveform_SWF(wf_snap_f2, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
 #ifdef GSA
             new_waveform_picker_regs->status = new_waveform_picker_regs->status & 0xf888; // [1111 1000 1000 1000] f2, f1, f0 bits =0
@@ -1038,11 +1022,8 @@ void set_wfp_burst_enable_register( unsigned char mode)
     // the burst bits shall be set first, before the enable bits
     switch(mode) {
     case(LFR_MODE_NORMAL):
-        new_waveform_picker_regs->run_burst_enable = 0x00;  // [0000 0000] no burst enable
-//        new_waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
-//        new_waveform_picker_regs->run_burst_enable = 0x07; // [0000 0111] enable f2 f1 f0
-//        new_waveform_picker_regs->run_burst_enable = 0x01; // [0000 0001] enable f0
-        new_waveform_picker_regs->run_burst_enable = 0x04; // [0000 0100] enable f0
+        new_waveform_picker_regs->run_burst_enable = 0x80;  // [1000 0000] f3 burst enable
+        new_waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
         break;
     case(LFR_MODE_BURST):
         new_waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
@@ -1115,21 +1096,12 @@ void reset_new_waveform_picker_regs()
    *
    */
 
-    unsigned int wf_snap_f0_aligned;
-    unsigned int wf_snap_f1_aligned;
-    unsigned int wf_snap_f2_aligned;
-    unsigned int wf_cont_f3_aligned;
-
     new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
     new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    wf_snap_f0_aligned = address_alignment( wf_snap_f0 );
-    wf_snap_f1_aligned = address_alignment( wf_snap_f1 );
-    wf_snap_f2_aligned = address_alignment( wf_snap_f2 );
-    wf_cont_f3_aligned = address_alignment( wf_cont_f3 );
-    new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0_aligned);    // 0x08
-    new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_aligned);    // 0x0c
-    new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2_aligned);    // 0x10
-    new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_aligned);    // 0x14
+    new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);    // 0x08
+    new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1);    // 0x0c
+    new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2);    // 0x10
+    new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3);    // 0x14
     new_waveform_picker_regs->status = 0x00;                // 0x18
 //    new_waveform_picker_regs->delta_snapshot = 0x12800;     // 0x1c 296 * 256 = 75776
 //    new_waveform_picker_regs->delta_snapshot = 0x1000;      // 0x1c 16 * 256 = 4096
@@ -1143,59 +1115,6 @@ void reset_new_waveform_picker_regs()
     new_waveform_picker_regs->snapshot_param = 0x800;       // 0x34 *** 2048 => nb samples
     new_waveform_picker_regs->start_date = 0x00;            // 0x38
     new_waveform_picker_regs->nb_word_in_buffer = 0x1802;   // 0x3c *** 2048 * 3 + 2 = 6146
-}
-
-void reset_new_waveform_picker_regs_alt()
-{
-    /** This function resets the waveform picker module registers.
-   *
-   * The registers affected by this function are located at the following offset addresses:
-   * - 0x00 data_shaping
-   * - 0x04 run_burst_enable
-   * - 0x08 addr_data_f0
-   * - 0x0C addr_data_f1
-   * - 0x10 addr_data_f2
-   * - 0x14 addr_data_f3
-   * - 0x18 status
-   * - 0x1C delta_snapshot
-   * - 0x20 delta_f0
-   * - 0x24 delta_f0_2
-   * - 0x28 delta_f1
-   * - 0x2c delta_f2
-   * - 0x30 nb_data_by_buffer
-   * - 0x34 nb_snapshot_param
-   * - 0x38 start_date
-   * - 0x3c nb_word_in_buffer
-   *
-   */
-
-    unsigned int wf_snap_f0_aligned;
-    unsigned int wf_snap_f1_aligned;
-    unsigned int wf_snap_f2_aligned;
-    unsigned int wf_cont_f3_aligned;
-
-    new_waveform_picker_regs->data_shaping = 0x01;      // 0x00 *** R1 R0 SP1 SP0 BW
-    new_waveform_picker_regs->run_burst_enable = 0x00;  // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    wf_snap_f0_aligned = address_alignment( wf_snap_f0 );
-    wf_snap_f1_aligned = address_alignment( wf_snap_f1 );
-    wf_snap_f2_aligned = address_alignment( wf_snap_f2 );
-    wf_cont_f3_aligned = address_alignment( wf_cont_f3 );
-    new_waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0_aligned);    // 0x08
-    new_waveform_picker_regs->addr_data_f1 = (int) (wf_snap_f1_aligned);    // 0x0c
-    new_waveform_picker_regs->addr_data_f2 = (int) (wf_snap_f2_aligned);    // 0x10
-    new_waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_aligned);    // 0x14
-    new_waveform_picker_regs->status = 0x00;                // 0x18
-//    new_waveform_picker_regs->delta_snapshot = 0x12800;     // 0x1c 296 * 256 = 75776
-    new_waveform_picker_regs->delta_snapshot = 0x1000;      // 0x1c 16 * 256 = 4096
-    new_waveform_picker_regs->delta_f0 = 0xbf5;             // 0x20 *** 1013
-    new_waveform_picker_regs->delta_f0_2 = 0x7;             // 0x24 *** 7   [7 bits]
-    new_waveform_picker_regs->delta_f1 = 0xbc0;             // 0x28 *** 960
-//    new_waveform_picker_regs->delta_f2 = 0x12200;         // 0x2c *** 74240
-    new_waveform_picker_regs->delta_f2 = 0xc00;             // 0x2c *** 12 * 256 = 3072
-    new_waveform_picker_regs->nb_data_by_buffer = 0x07;    // 0x30 *** 7
-    new_waveform_picker_regs->snapshot_param = 0x10;       // 0x34 *** 16
-    new_waveform_picker_regs->start_date = 0x00;            // 0x38
-    new_waveform_picker_regs->nb_word_in_buffer = 0x34;   // 0x3c *** (3 * 8 + 2) * 2
 }
 
 //*****************
@@ -1320,32 +1239,4 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     {
         *sequence_cnt = 0;
     }
-}
-
-unsigned int address_alignment( volatile int *address)
-{
-    unsigned char i;
-    unsigned char lastByte;
-    unsigned int addressAligned;
-
-    addressAligned = (unsigned int) address;
-
-    PRINTF1("address %x\n", addressAligned );
-
-    for (i=0; i<256; i++)
-    {
-        lastByte = (unsigned char) ( addressAligned & 0x000000ff ) ;
-        if (lastByte == 0x00)
-        {
-            break;
-        }
-        else
-        {
-            addressAligned = addressAligned + 1;
-        }
-    }
-
-    PRINTF2("i = %d, address %x\n", i, (int) addressAligned);
-
-    return addressAligned;
 }
