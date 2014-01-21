@@ -1014,8 +1014,12 @@ void reset_waveform_picker_regs()
     set_wfp_delta_snapshot();                           // time in seconds between two snapshots
     waveform_picker_regs->delta_f2_f1 = 0xffff;         // 0x16800 => 92160 (max 4 bytes)
     waveform_picker_regs->delta_f2_f0 = 0x17c00;        // 97 280 (max 5 bytes)
-    waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
-    waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
+//    waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
+//                                                        // 3 * 2048 / 16 = 384
+//    waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
+    waveform_picker_regs->nb_burst_available = 0x1b9;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
+                                                        // 3 * 2352 / 16 = 441
+    waveform_picker_regs->nb_snapshot_param = 0x944;    // max 3 octets, 2372 - 1
 #endif
 }
 

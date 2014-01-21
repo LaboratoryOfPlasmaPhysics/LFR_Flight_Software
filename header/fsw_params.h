@@ -13,7 +13,8 @@
 // flight software version
 // this parameters is handled by the Qt project options
 
-#define NB_SAMPLES_PER_SNAPSHOT 2048
+//#define NB_SAMPLES_PER_SNAPSHOT 2048
+#define NB_SAMPLES_PER_SNAPSHOT 2352    // 336 * 7 = 2352
 #define TIME_OFFSET 2
 #define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK (2 * 6)
