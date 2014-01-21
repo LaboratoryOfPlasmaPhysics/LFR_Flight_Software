@@ -31,19 +31,20 @@ rtems_task actn_task( rtems_task_argument unused )
     ccsdsTelecommandPacket_t TC;    // TC sent to the ACTN task
     size_t size;                    // size of the incoming TC packet
     unsigned char subtype;          // subtype of the current TC packet
+    unsigned char time[6];
     rtems_id queue_rcv_id;
     rtems_id queue_snd_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_rcv_id );
+    status =  get_message_queue_id_recv( &queue_rcv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR getting queue_rcv_id %d\n", status)
+        PRINTF1("in ACTN *** ERR get_message_queue_id_recv %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_snd_id );
+    status =  get_message_queue_id_send( &queue_snd_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR getting queue_snd_id %d\n", status)
+        PRINTF1("in ACTN *** ERR get_message_queue_id_send %d\n", status)
     }
 
     result = LFR_SUCCESSFUL;
@@ -55,70 +56,74 @@ rtems_task actn_task( rtems_task_argument unused )
     {
         status = rtems_message_queue_receive( queue_rcv_id, (char*) &TC, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-        if (status!=RTEMS_SUCCESSFUL) PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        getTime( time );    // set time to the current time
+        if (status!=RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+        }
         else
         {
             subtype = TC.serviceSubType;
             switch(subtype)
             {
                 case TC_SUBTYPE_RESET:
-                    result = action_reset( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_reset( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_COMM:
                     result = action_load_common_par( &TC );
-                    close_action( &TC, result, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_NORM:
-                    result = action_load_normal_par( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_load_normal_par( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_BURST:
-                    result = action_load_burst_par( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_load_burst_par( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM1:
-                    result = action_load_sbm1_par( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_load_sbm1_par( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM2:
-                    result = action_load_sbm2_par( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_load_sbm2_par( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_DUMP:
                     result = action_dump_par( queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_ENTER:
-                    result = action_enter_mode( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_enter_mode( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_INFO:
                     result = action_update_info( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_EN_CAL:
-                    result = action_enable_calibration( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_enable_calibration( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_DIS_CAL:
-                    result = action_disable_calibration( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
+                    result = action_disable_calibration( &TC, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_TIME:
                     result = action_update_time( &TC );
-                    close_action( &TC, result, queue_snd_id );
+                    close_action( &TC, result, queue_snd_id, time );
                     break;
                     //
                 default:
@@ -131,7 +136,7 @@ rtems_task actn_task( rtems_task_argument unused )
 //***********
 // TC ACTIONS
 
-int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function executes specific actions when a TC_LFR_RESET TeleCommand has been received.
      *
@@ -140,11 +145,11 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      *
      */
 
-    send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
     return LFR_DEFAULT;
 }
 
-int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function executes specific actions when a TC_LFR_ENTER_MODE TeleCommand has been received.
      *
@@ -163,7 +168,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
          && (requestedMode != LFR_MODE_SBM1) && (requestedMode != LFR_MODE_SBM2) )
     {
         status = RTEMS_UNSATISFIED;
-        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
+        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode, time );
     }
     else
     {
@@ -188,12 +193,12 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
             {
                 PRINTF("ERR *** in action_enter *** stop_current_mode\n")
             }
-            status = enter_mode(requestedMode, TC);
+            status = enter_mode( requestedMode );
         }
         else
         {
             PRINTF("ERR *** in action_enter *** transition rejected\n")
-            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+            send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         }
     }
 
@@ -216,7 +221,7 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     unsigned int val;
     int result;
 
-    result = LFR_DEFAULT;
+    result = LFR_SUCCESSFUL;
 
     val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
             + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
@@ -227,7 +232,7 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     return result;
 }
 
-int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function executes specific actions when a TC_LFR_ENABLE_CALIBRATION TeleCommand has been received.
      *
@@ -243,17 +248,17 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
+        send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     return result;
 }
 
-int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function executes specific actions when a TC_LFR_DISABLE_CALIBRATION TeleCommand has been received.
      *
@@ -269,11 +274,11 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     else {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id );
+        send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
         result = LFR_DEFAULT;
     }
     return result;
@@ -311,6 +316,16 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
 
 int transition_validation(unsigned char requestedMode)
 {
+    /** This function checks the validity of the transition requested by the TC_LFR_ENTER_MODE.
+     *
+     * @param requestedMode is the mode requested by the TC_LFR_ENTER_MODE
+     *
+     * @return LFR directive status codes:
+     * - LFR_SUCCESSFUL - the transition is authorized
+     * - LFR_DEFAULT - the transition is not authorized
+     *
+     */
+
     int status;
 
     switch (requestedMode)
@@ -388,7 +403,7 @@ int stop_current_mode()
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
     // reset registers
-    reset_wfp_run_burst_enable();                       // reset run, burst and enable bits, [r b2 b1 b0 e3 e2 e1 e0]
+    reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
     // creal interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
@@ -408,8 +423,18 @@ int stop_current_mode()
     return status;
 }
 
-int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
+int enter_mode(unsigned char mode )
 {
+    /** This function is launched after a mode transition validation.
+     *
+     * @param mode is the mode in which LFR will be put.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_NOT_SATISFIED - the mode has not been entered successfully
+     *
+     */
+
     rtems_status_code status;
 
     status = RTEMS_UNSATISFIED;
@@ -448,6 +473,13 @@ int enter_mode(unsigned char mode, ccsdsTelecommandPacket_t *TC )
 
 int enter_standby_mode()
 {
+    /** This function is used to enter the STANDBY mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     *
+     */
+
     PRINTF1("maxCount = %d\n", maxCount)
 
 #ifdef PRINT_TASK_STATISTICS
@@ -464,7 +496,6 @@ int enter_standby_mode()
 int enter_normal_mode()
 {
     rtems_status_code status;
-    int startDate;
 
     status = restart_science_tasks();
 
@@ -480,13 +511,10 @@ int enter_normal_mode()
 #else
     //****************
     // waveform picker
-    reset_new_waveform_picker_regs();
-    set_wfp_burst_enable_register( LFR_MODE_NORMAL );
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register(LFR_MODE_NORMAL);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    startDate = time_management_regs->coarse_time + 2;
-    new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
-    new_waveform_picker_regs->start_date = startDate;
     //****************
     // spectral matrix
 #endif
@@ -496,6 +524,16 @@ int enter_normal_mode()
 
 int enter_burst_mode()
 {
+    /** This function is used to enter the STANDBY mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
 
     status = restart_science_tasks();
@@ -503,7 +541,7 @@ int enter_burst_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_BURST);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -514,8 +552,17 @@ int enter_burst_mode()
 
 int enter_sbm1_mode()
 {
+    /** This function is used to enter the SBM1 mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
-    int startDate;
 
     status = restart_science_tasks();
 
@@ -528,15 +575,11 @@ int enter_sbm1_mode()
 #else
     //****************
     // waveform picker
-    reset_new_waveform_picker_regs();
-    set_wfp_burst_enable_register( LFR_MODE_SBM1 );
+    reset_current_ring_nodes();
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register(LFR_MODE_SBM1);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-    startDate = time_management_regs->coarse_time + 2;
-    new_waveform_picker_regs->run_burst_enable = new_waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
-    new_waveform_picker_regs->start_date = startDate;
-    //****************
-    // spectral matrix
  #endif
 
     return status;
@@ -544,6 +587,16 @@ int enter_sbm1_mode()
 
 int enter_sbm2_mode()
 {
+    /** This function is used to enter the SBM2 mode.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     */
+
     rtems_status_code status;
 
     status = restart_science_tasks();
@@ -555,7 +608,10 @@ int enter_sbm2_mode()
 #ifdef GSA
     LEON_Unmask_interrupt( IRQ_SM );
 #else
-    reset_new_waveform_picker_regs();
+    //****************
+    // waveform picker
+    reset_current_ring_nodes();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register(LFR_MODE_SBM2);
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
@@ -566,6 +622,18 @@ int enter_sbm2_mode()
 
 int restart_science_tasks()
 {
+    /** This function is used to restart all science tasks.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * Science tasks are AVF0, BPF0, WFRM, CWF3, CW2, CWF1
+     *
+     */
+
     rtems_status_code status[6];
     rtems_status_code ret;
 
@@ -685,41 +753,65 @@ int suspend_science_tasks()
 
 //****************
 // CLOSING ACTIONS
-void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
+    /** This function is used to update the HK packets statistics after a successful TC execution.
+     *
+     * @param TC points to the TC being processed
+     * @param time is the time used to date the TC execution
+     *
+     */
+
     housekeeping_packet.hk_lfr_last_exe_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_exe_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_exe_tc_type[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = time[0];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = time[1];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = time[2];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = time[3];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = time[4];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = time[5];
 }
 
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC)
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
 {
+    /** This function is used to update the HK packets statistics after a TC rejection.
+     *
+     * @param TC points to the TC being processed
+     * @param time is the time used to date the TC rejection
+     *
+     */
+
     housekeeping_packet.hk_lfr_last_rej_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_rej_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_rej_tc_type[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = time[0];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = time[1];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = time[2];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = time[3];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = time[4];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = time[5];
 }
 
-void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
+void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, unsigned char *time)
 {
+    /** This function is the last step of the TC execution workflow.
+     *
+     * @param TC points to the TC being processed
+     * @param result is the result of the TC execution (LFR_SUCCESSFUL / LFR_DEFAULT)
+     * @param queue_id is the id of the RTEMS message queue used to send TM packets
+     * @param time is the time used to date the TC execution
+     *
+     */
+
     unsigned int val = 0;
+
     if (result == LFR_SUCCESSFUL)
     {
         if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
@@ -727,9 +819,9 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
              !( (TC->serviceType==TC_TYPE_GEN) && (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
              )
         {
-            send_tm_lfr_tc_exe_success( TC, queue_id );
+            send_tm_lfr_tc_exe_success( TC, queue_id, time );
         }
-        update_last_TC_exe( TC );
+        update_last_TC_exe( TC, time );
         val = housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[1];
         val++;
         housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
@@ -737,7 +829,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id)
     }
     else
     {
-        update_last_TC_rej( TC );
+        update_last_TC_rej( TC, time );
         val = housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[1];
         val++;
         housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
