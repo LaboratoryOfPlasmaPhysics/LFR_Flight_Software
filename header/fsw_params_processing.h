@@ -3,6 +3,8 @@
 
 #define NB_BINS_PER_SM 128
 #define NB_VALUES_PER_SM 25
+//#define TOTAL_SIZE_SM (NB_BINS_PER_SM * NB_VALUES_PER_SM)
+//#define SM_HEADER 4
 #define TOTAL_SIZE_SM 0
 #define SM_HEADER 0
 
@@ -13,7 +15,7 @@
 #define NB_AVERAGE_NORMAL_f0 96*4
 #define NB_SM_TO_RECEIVE_BEFORE_AVF0 8
 
-typedef struct {
+struct BP1_str{
     volatile unsigned char PE[2];
     volatile unsigned char PB[2];
     volatile unsigned char V0;
@@ -21,6 +23,7 @@ typedef struct {
     volatile unsigned char V2_ELLIP_DOP;
     volatile unsigned char SZ;
     volatile unsigned char VPHI;
-} BP1_t;
+};
+typedef struct BP1_str BP1_t;
 
 #endif // FSW_PARAMS_PROCESSING_H
