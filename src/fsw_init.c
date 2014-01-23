@@ -70,6 +70,7 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
+
     rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
@@ -83,9 +84,8 @@ rtems_task Init( rtems_task_argument ignored )
     //send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
-    // waveform picker registers initialization
-    reset_wfp_run_burst_enable();
-    reset_wfp_status();
+    reset_wfp_burst_enable();       // stop the waveform picker if it was running
+    init_waveform_rings();          // initialize the waveform rings
 
     init_parameter_dump();
     init_local_mode_parameters();
@@ -194,22 +194,23 @@ rtems_task Init( rtems_task_argument ignored )
 void init_local_mode_parameters( void )
 {
     /** This function initialize the param_local global variable with default values.
-    *
-    */
+     *
+     */
+
     unsigned int i;
+
     // LOCAL PARAMETERS
-    set_local_sbm1_nb_cwf_max();
-    set_local_sbm2_nb_cwf_max();
     set_local_nb_interrupt_f0_MAX();
+
     BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
     BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
-    reset_local_sbm1_nb_cwf_sent();
-    reset_local_sbm2_nb_cwf_sent();
+
     // init sequence counters
+
     for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
     {
-    sequenceCounters_TC_EXE[i] = 0x00;
+        sequenceCounters_TC_EXE[i] = 0x00;
     }
     sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
     sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
@@ -342,7 +343,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
         );
     }
@@ -580,3 +581,26 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     return ret;
 }
 
+rtems_status_code get_message_queue_id_send( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'S', 'D' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}
+
+rtems_status_code get_message_queue_id_recv( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'R', 'V' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}

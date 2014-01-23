@@ -13,14 +13,6 @@
 
 #include "fsw_spacewire.h"
 
-char *lstates[6] = {"Error-reset",
-                    "Error-wait",
-                    "Ready",
-                    "Started",
-                    "Connecting",
-                    "Run"
-};
-
 rtems_name semq_name;
 rtems_id semq_id;
 
@@ -45,18 +37,24 @@ rtems_task spiq_task(rtems_task_argument unused)
         PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n")
 
         // [0] SUSPEND RECV AND SEND TASKS
-        rtems_task_suspend( Task_id[ TASKID_RECV ] );
-        rtems_task_suspend( Task_id[ TASKID_SEND ] );
+        status = rtems_task_suspend( Task_id[ TASKID_RECV ] );
+        if ( status != RTEMS_SUCCESSFUL ) {
+            PRINTF("in SPIQ *** ERR suspending RECV Task\n")
+        }
+        status = rtems_task_suspend( Task_id[ TASKID_SEND ] );
+        if ( status != RTEMS_SUCCESSFUL ) {
+            PRINTF("in SPIQ *** ERR suspending SEND Task\n")
+        }
 
         // [1] CHECK THE LINK
-        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (1)
+        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (1)
         if ( linkStatus != 5) {
             PRINTF1("in SPIQ *** linkStatus %d, wait...\n", linkStatus)
-            rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
+            status = rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
-        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status (2)
+        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status (2)
         if ( linkStatus != 5 )  // [2.a] not in run state, reset the link
         {
             spacewire_compute_stats_offsets();
@@ -95,7 +93,7 @@ rtems_task spiq_task(rtems_task_argument unused)
             }
             // wake the WTDG task up to wait for the link recovery
             status =  rtems_event_send ( Task_id[TASKID_WTDG], RTEMS_EVENT_0 );
-            rtems_task_suspend( RTEMS_SELF );
+            status = rtems_task_suspend( RTEMS_SELF );
         }
     }
 }
@@ -120,22 +118,23 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned char destinationID;
     unsigned int currentTC_LEN_RCV_AsUnsignedInt;
     unsigned int parserCode;
+    unsigned char time[6];
     rtems_status_code status;
     rtems_id queue_recv_id;
     rtems_id queue_send_id;
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_RECV], 0, &queue_recv_id );
+    status =  get_message_queue_id_recv( &queue_recv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting QUEUE_RECV id, %d\n", status)
+        PRINTF1("in RECV *** ERR get_message_queue_id_recv %d\n", status)
     }
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_send_id );
+    status =  get_message_queue_id_send( &queue_send_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in RECV *** ERR getting QUEUE_SEND id, %d\n", status)
+        PRINTF1("in RECV *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in RECV *** \n")
@@ -174,7 +173,11 @@ rtems_task recv_task( rtems_task_argument unused )
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id, computed_CRC, currentTC_LEN_RCV, destinationID );
+                        getTime( time );
+                        close_action( &currentTC, LFR_DEFAULT, queue_send_id, time);
+                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
+                                                      computed_CRC, currentTC_LEN_RCV,
+                                                      destinationID, time );
                     }
                 }
                 else
@@ -208,10 +211,10 @@ rtems_task send_task( rtems_task_argument argument)
     u_int32_t count;
     rtems_id queue_id;
 
-    status =  rtems_message_queue_ident( misc_name[QUEUE_SEND], 0, &queue_id );
+    status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in SEND *** ERR getting queue id, %d\n", status)
+        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in SEND *** \n")
@@ -273,11 +276,11 @@ rtems_task wtdg_task( rtems_task_argument argument )
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         PRINTF("in WTDG *** wait for the link\n")
-        ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);        // get the link status
+        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);        // get the link status
         while( linkStatus != 5)                                             // wait for the link
         {
             rtems_task_wake_after( 10 );
-            ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
+            status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
         }
 
         status = spacewire_stop_start_link( fdSPW );
@@ -594,28 +597,10 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
     int linkStatus;
     rtems_status_code status;
 
-    ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
+    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
 
     if ( linkStatus == 5) {
         PRINTF("in spacewire_reset_link *** link is running\n")
         status = RTEMS_SUCCESSFUL;
     }
 }
-
-rtems_status_code rtems_message_queue_send_lfr( rtems_id id, const void *buffer, size_t size )
-{
-    rtems_status_code status;
-    rtems_mode previous_mode_set;
-
-    // set the preemption OFF
-    status =  rtems_task_mode( RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &previous_mode_set );
-
-    // use the message queue
-    status = rtems_message_queue_send_lfr( id, buffer, size );
-
-    // set the preemption ON
-    status =  rtems_task_mode( RTEMS_PREEMPT , RTEMS_PREEMPT_MASK, &previous_mode_set );
-
-    return status;
-}
-

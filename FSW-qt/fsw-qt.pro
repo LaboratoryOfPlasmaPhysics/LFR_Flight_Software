@@ -1,17 +1,17 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
-# CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** gsa
-CONFIG += console verbose
+# CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** gsa *** vhdl_dev
+CONFIG += console verbose debug_messages vhdl_dev
 CONFIG -= qt
 
 include(./sparc.pri)
 
 # flight software version
-SWVERSION=-0-22
-DEFINES += SW_VERSION_N1=0
-DEFINES += SW_VERSION_N2=0
-DEFINES += SW_VERSION_N3=0
-DEFINES += SW_VERSION_N4=22
+SWVERSION=-1-0
+DEFINES += SW_VERSION_N1=1 # major
+DEFINES += SW_VERSION_N2=0 # minor
+DEFINES += SW_VERSION_N3=0 # patch
+DEFINES += SW_VERSION_N4=1 # internal
 
 contains( CONFIG, verbose ) {
     DEFINES += PRINT_MESSAGES_ON_CONSOLE
@@ -41,6 +41,12 @@ TARGET = fsw
 contains( CONFIG, gsa ) {
     DEFINES += GSA
     TARGET = fsw-gsa
+}
+
+TARGET = fsw
+contains( CONFIG, vhdl_dev ) {
+    DEFINES += VHDL_DEV
+    TARGET = fsw
 }
 
 INCLUDEPATH += \
@@ -74,5 +80,6 @@ HEADERS += \
     ../header/tm_byte_positions.h \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
-    ../header/tc_acceptance.h
+    ../header/tc_acceptance.h \
+    ../header/fsw_params_nb_bytes.h
 

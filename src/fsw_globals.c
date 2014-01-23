@@ -31,29 +31,16 @@ int fdSPW = 0;
 int fdUART = 0;
 unsigned char lfrCurrentMode;
 
-// APB CONFIGURATION REGISTERS
-time_management_regs_t *time_management_regs = (time_management_regs_t*) REGS_ADDR_TIME_MANAGEMENT;
-gptimer_regs_t         *gptimer_regs         = (gptimer_regs_t *)        REGS_ADDR_GPTIMER;
-#ifdef GSA
-#else
-    new_waveform_picker_regs_t *new_waveform_picker_regs = (new_waveform_picker_regs_t*) REGS_ADDR_WAVEFORM_PICKER;
-#endif
-spectral_matrix_regs_t *spectral_matrix_regs = (spectral_matrix_regs_t*) REGS_ADDR_SPECTRAL_MATRIX;
-
 // WAVEFORMS GLOBAL VARIABLES // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
-volatile int wf_snap_f0[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_snap_f1[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_snap_f1_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_snap_f1_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+volatile int wf_snap_f1[ NB_RING_NODES_F1 ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_snap_f2[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_snap_f2_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_snap_f2_norm[  NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+volatile int wf_snap_f2[ NB_RING_NODES_F2 ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
 //
-volatile int wf_cont_f3[       NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_cont_f3_bis[   NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK        ] __attribute__((aligned(0x100)));
+volatile int wf_cont_f3_a[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+volatile int wf_cont_f3_b[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK        ];
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
 volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];
@@ -74,6 +61,17 @@ volatile int spec_mat_f1_bis[ SM_HEADER + TOTAL_SIZE_SM ];
 //
 volatile int spec_mat_f2[ SM_HEADER + TOTAL_SIZE_SM ];
 volatile int spec_mat_f2_bis[ SM_HEADER + TOTAL_SIZE_SM ];
+
+// APB CONFIGURATION REGISTERS
+time_management_regs_t      *time_management_regs   = (time_management_regs_t*)     REGS_ADDR_TIME_MANAGEMENT;
+gptimer_regs_t              *gptimer_regs           = (gptimer_regs_t *)            REGS_ADDR_GPTIMER;
+
+#ifdef VHDL_DEV
+waveform_picker_regs_new_t  *waveform_picker_regs   = (waveform_picker_regs_new_t*) REGS_ADDR_WAVEFORM_PICKER;
+#else
+waveform_picker_regs_t      *waveform_picker_regs   = (waveform_picker_regs_t*)     REGS_ADDR_WAVEFORM_PICKER;
+#endif
+spectral_matrix_regs_t      *spectral_matrix_regs   = (spectral_matrix_regs_t*)     REGS_ADDR_SPECTRAL_MATRIX;
 
 // MODE PARAMETERS
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;

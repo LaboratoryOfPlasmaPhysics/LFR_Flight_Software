@@ -13,6 +13,17 @@
 // flight software version
 // this parameters is handled by the Qt project options
 
+//#define NB_SAMPLES_PER_SNAPSHOT 2048
+#define NB_SAMPLES_PER_SNAPSHOT 2352    // 336 * 7 = 2352
+#define TIME_OFFSET 2
+#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
+#define NB_BYTES_SWF_BLK (2 * 6)
+#define NB_WORDS_SWF_BLK 3
+#define NB_BYTES_CWF3_LIGHT_BLK 6
+#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
+#define NB_RING_NODES_F1 5  // AT LEAST 3
+#define NB_RING_NODES_F2 5  // AT LEAST 3
+
 //**********
 // LFR MODES
 #define LFR_MODE_STANDBY 0
@@ -36,7 +47,7 @@
 #define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
 // NORM
 #define SY_LFR_N_SWF_L 2048 // nb sample
-#define SY_LFR_N_SWF_P 296  // sec
+#define SY_LFR_N_SWF_P 20   // sec
 #define SY_LFR_N_ASM_P 3600 // sec
 #define SY_LFR_N_BP_P0 4    // sec
 #define SY_LFR_N_BP_P1 20   // sec
@@ -126,29 +137,20 @@
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_SMIQ 10
-//
 #define TASK_PRIORITY_WTDG 20
-//
 #define TASK_PRIORITY_HOUS 30
-//
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //
-//
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
-//
 #define TASK_PRIORITY_SEND 45
-//
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50
-//
 #define TASK_PRIORITY_AVF0 60
 #define TASK_PRIORITY_BPF0 60
 #define TASK_PRIORITY_MATR 100
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
-
-#define SEMQ_PRIORITY_CEILING 30
 
 #define ACTION_MSG_QUEUE_COUNT 10
 #define ACTION_MSG_PKTS_COUNT 50
@@ -191,15 +193,6 @@
 #endif
 
 #define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
-
-#define NB_SAMPLES_PER_SNAPSHOT 2048
-#define TIME_OFFSET 2
-#define ALIGNEMENT_OFFSET 100
-#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
-#define NB_BYTES_SWF_BLK (2 * 6)
-#define NB_WORDS_SWF_BLK 3
-#define NB_BYTES_CWF3_LIGHT_BLK 6
-#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
 
 struct param_local_str{
     unsigned int local_sbm1_nb_cwf_sent;
