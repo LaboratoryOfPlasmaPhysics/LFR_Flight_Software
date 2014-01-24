@@ -100,7 +100,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             current_ring_node_f2 = current_ring_node_f2->next;
             waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
             // (2) send an event for the waveforms transmission
-            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_SBM2 ) != RTEMS_SUCCESSFUL) {
+            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
@@ -289,11 +289,11 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
-            send_waveform_CWF( (volatile int *) ring_node_to_send_cwf_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
+            send_waveform_CWF( (volatile int *) ring_node_to_send_cwf_f2->buffer_address, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
-            send_waveform_CWF( (volatile int *) ring_node_to_send_cwf_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
+            send_waveform_CWF( (volatile int *) ring_node_to_send_cwf_f2->buffer_address, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
         }
     }
 }
@@ -327,7 +327,7 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        send_waveform_CWF((volatile int*) ring_node_to_send_cwf_f1->buffer_address, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
+        send_waveform_CWF( (volatile int*) ring_node_to_send_cwf_f1->buffer_address, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
     }
 }
 

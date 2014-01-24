@@ -26,10 +26,9 @@ extern int fdSPW;
 // waveform buffers
 // F0
 extern volatile int wf_snap_f0[ ];
-// F1
-extern volatile int wf_snap_f1[ ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-// F2
-extern volatile int wf_snap_f2[ ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
+// F1 F2
+extern volatile int wf_snap_f1[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
+extern volatile int wf_snap_f2[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
 // F3
 extern volatile int wf_cont_f3_a[ ];
 extern volatile int wf_cont_f3_b[ ];

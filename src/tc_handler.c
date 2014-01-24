@@ -172,7 +172,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
     }
     else
     {
-        printf("try to enter mode %d\n", requestedMode);
+        printf("in action_enter_mode *** enter mode %d\n", requestedMode);
 
 #ifdef PRINT_TASK_STATISTICS
         if (requestedMode != LFR_MODE_STANDBY)
@@ -394,21 +394,15 @@ int stop_current_mode()
 
     status = RTEMS_SUCCESSFUL;
 
-#ifdef GSA
-    LEON_Mask_interrupt( IRQ_WF );                  // mask waveform interrupt (coming from the timer VHDL IP)
-    LEON_Clear_interrupt( IRQ_WF );                  // clear waveform interrupt (coming from the timer VHDL IP)
-    timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR );
-#else
     // mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
     // reset registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
-    // creal interruptions
+    // clear interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectarl matrix interrupt
-#endif
     //**********************
     // suspend several tasks
     if (lfrCurrentMode != LFR_MODE_STANDBY) {
@@ -708,11 +702,18 @@ int suspend_science_tasks()
 
 void launch_waveform_picker( unsigned char mode )
 {
+    int startDate;
+
     reset_current_ring_nodes();
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+#ifdef VHDL_DEV
+    startDate = time_management_regs->coarse_time + 2;
+    waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
+    waveform_picker_regs->start_date = startDate;
+#endif
 }
 
 //****************

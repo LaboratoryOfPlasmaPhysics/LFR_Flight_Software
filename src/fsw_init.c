@@ -78,6 +78,9 @@ rtems_task Init( rtems_task_argument ignored )
     BOOT_PRINTF("\n\n\n\n\n")
     BOOT_PRINTF("***************************\n")
     BOOT_PRINTF("** START Flight Software **\n")
+        #ifdef VHDL_DEV
+            PRINTF("/!\\ this is the VHDL_DEV flight software /!\\ \n")
+        #endif
     BOOT_PRINTF("***************************\n")
     BOOT_PRINTF("\n\n")
 

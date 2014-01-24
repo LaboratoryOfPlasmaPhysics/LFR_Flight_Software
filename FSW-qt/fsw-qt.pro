@@ -46,7 +46,7 @@ contains( CONFIG, gsa ) {
 TARGET = fsw
 contains( CONFIG, vhdl_dev ) {
     DEFINES += VHDL_DEV
-    TARGET = fsw
+    TARGET = fsw-vhdl-dev
 }
 
 INCLUDEPATH += \

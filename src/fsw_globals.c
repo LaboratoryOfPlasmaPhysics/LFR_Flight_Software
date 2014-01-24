@@ -32,15 +32,15 @@ int fdUART = 0;
 unsigned char lfrCurrentMode;
 
 // WAVEFORMS GLOBAL VARIABLES // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
-volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-//
-volatile int wf_snap_f1[ NB_RING_NODES_F1 ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-//
-volatile int wf_snap_f2[ NB_RING_NODES_F2 ][ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-//
-volatile int wf_cont_f3_a[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-volatile int wf_cont_f3_b[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ];
-char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK        ];
+// F0
+volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+// F1 F2
+volatile int wf_snap_f1[ NB_RING_NODES_F1 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
+volatile int wf_snap_f2[ NB_RING_NODES_F2 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
+// F3
+volatile int wf_cont_f3_a[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+volatile int wf_cont_f3_b[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK    ] __attribute__((aligned(0x100)));
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
 volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];
