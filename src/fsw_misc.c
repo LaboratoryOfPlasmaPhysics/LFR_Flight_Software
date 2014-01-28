@@ -231,20 +231,21 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[7] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+    char *DumbMessages[8] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                         "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                         "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
                         "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-                        "ERR HK"                                                                // RTEMS_EVENT_6
+                        "ERR HK",                                                               // RTEMS_EVENT_6
+                         "ready for dump"                                                       // RTEMS_EVENT_7
     };
 
     BOOT_PRINTF("in DUMB *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
-                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6,
+                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -269,9 +270,9 @@ void init_housekeeping_parameters( void )
      */
 
     unsigned int i = 0;
-    char *parameters;
+    unsigned char *parameters;
 
-    parameters = (char*) &housekeeping_packet.lfr_status_word;
+    parameters = (unsigned char*) &housekeeping_packet.lfr_status_word;
     for(i = 0; i< SIZE_HK_PARAMETERS; i++)
     {
         parameters[i] = 0x00;
@@ -284,7 +285,11 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_sw_version[1] = SW_VERSION_N2;
     housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
     housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
-
+    // init fpga version
+    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xd0);
+    housekeeping_packet.lfr_fpga_version[0] = parameters[1]; // n1
+    housekeeping_packet.lfr_fpga_version[1] = parameters[2]; // n2
+    housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3
 }
 
 void increment_seq_counter( unsigned char *packet_sequence_control)

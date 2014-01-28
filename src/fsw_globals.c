@@ -33,7 +33,8 @@ unsigned char lfrCurrentMode;
 
 // WAVEFORMS GLOBAL VARIABLES // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes
 // F0
-volatile int wf_snap_f0[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
+//volatile int wf_snap_f0                    [ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
+volatile int wf_snap_f0[ NB_RING_NODES_F0 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
 // F1 F2
 volatile int wf_snap_f1[ NB_RING_NODES_F1 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
 volatile int wf_snap_f2[ NB_RING_NODES_F2 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));

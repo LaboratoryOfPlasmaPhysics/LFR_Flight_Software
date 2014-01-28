@@ -21,6 +21,7 @@
 #define NB_WORDS_SWF_BLK 3
 #define NB_BYTES_CWF3_LIGHT_BLK 6
 #define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
+#define NB_RING_NODES_F0 3  // AT LEAST 3
 #define NB_RING_NODES_F1 5  // AT LEAST 3
 #define NB_RING_NODES_F2 5  // AT LEAST 3
 

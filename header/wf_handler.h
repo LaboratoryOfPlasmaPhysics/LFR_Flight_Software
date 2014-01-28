@@ -25,8 +25,9 @@ extern int fdSPW;
 //*****************
 // waveform buffers
 // F0
-extern volatile int wf_snap_f0[ ];
+//extern volatile int wf_snap_f0[ ];
 // F1 F2
+extern volatile int wf_snap_f0[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
 extern volatile int wf_snap_f1[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
 extern volatile int wf_snap_f2[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
 // F3
@@ -65,7 +66,7 @@ void reset_current_ring_nodes( void );
 //
 int init_header_snapshot_wf_table(      unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF );
 int init_header_continuous_wf_table(    unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
-int init_header_continuous_wf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
+int init_header_continuous_cwf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
 //
 int send_waveform_SWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id );
 int send_waveform_CWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );

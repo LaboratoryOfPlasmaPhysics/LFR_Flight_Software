@@ -24,8 +24,11 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3_light[7];
 
 //**************
 // waveform ring
+ring_node waveform_ring_f0[NB_RING_NODES_F0];
 ring_node waveform_ring_f1[NB_RING_NODES_F1];
 ring_node waveform_ring_f2[NB_RING_NODES_F2];
+ring_node *current_ring_node_f0;
+ring_node *ring_node_to_send_swf_f0;
 ring_node *current_ring_node_f1;
 ring_node *ring_node_to_send_swf_f1;
 ring_node *ring_node_to_send_cwf_f1;
@@ -75,6 +78,10 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         // NORMAL
         case(LFR_MODE_NORMAL):
         if ( (waveform_picker_regs->status & 0x7) == 0x7 ){ // f2 f1 and f0 are full
+            // change F0 ring node
+            ring_node_to_send_swf_f0 = current_ring_node_f0;
+            current_ring_node_f0 = current_ring_node_f0->next;
+            waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address;
             // change F1 ring node
             ring_node_to_send_swf_f1 = current_ring_node_f1;
             current_ring_node_f1 = current_ring_node_f1->next;
@@ -88,6 +95,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
+//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_7 );
+//            reset_wfp_burst_enable();
         }
         break;
 
@@ -202,7 +211,7 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
-            send_waveform_SWF(wf_snap_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+            send_waveform_SWF((volatile int*) ring_node_to_send_swf_f0->buffer_address, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f1->buffer_address, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f2->buffer_address, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
         }
@@ -228,8 +237,8 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     rtems_id queue_id;
     rtems_status_code status;
 
-    init_header_continuous_wf_table( SID_NORM_CWF_F3, headerCWF_F3 );
-    init_header_continuous_wf3_light_table( headerCWF_F3_light );
+    init_header_continuous_wf_table( SID_NORM_CWF_LONG_F3, headerCWF_F3 );
+    init_header_continuous_cwf3_light_table( headerCWF_F3_light );
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -244,15 +253,28 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         PRINTF("send CWF F3 \n")
-#ifdef GSA
-#else
         if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
-            send_waveform_CWF3_light( wf_cont_f3_b, headerCWF_F3_light, queue_id );
+            if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
+            {
+                send_waveform_CWF( wf_cont_f3_b, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+            }
+            else
+            {
+                send_waveform_CWF3_light( wf_cont_f3_b, headerCWF_F3_light, queue_id );
+            }
         }
-        else {
-            send_waveform_CWF3_light( wf_cont_f3_a, headerCWF_F3_light, queue_id );
+        else
+        {
+            if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x00)
+            {
+                send_waveform_CWF( wf_cont_f3_a, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+            }
+            else
+            {
+                send_waveform_CWF3_light( wf_cont_f3_a, headerCWF_F3_light, queue_id );
+            }
+
         }
-#endif
     }
 }
 
@@ -341,9 +363,9 @@ void init_waveforms( void )
     {
         //***
         // F0
-        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET ] = 0x88887777;     //
-        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x22221111;    //
-        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0x44443333;    //
+//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET ] = 0x88887777;     //
+//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x22221111;    //
+//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0x44443333;    //
 
         //***
         // F1
@@ -368,6 +390,22 @@ void init_waveforms( void )
 void init_waveform_rings( void )
 {
     unsigned char i;
+
+    // F0 RING
+    waveform_ring_f0[0].next            = (ring_node*) &waveform_ring_f0[1];
+    waveform_ring_f0[0].previous        = (ring_node*) &waveform_ring_f0[NB_RING_NODES_F0-1];
+    waveform_ring_f0[0].buffer_address  = (int) &wf_snap_f0[0][0];
+
+    waveform_ring_f0[NB_RING_NODES_F0-1].next           = (ring_node*) &waveform_ring_f0[0];
+    waveform_ring_f0[NB_RING_NODES_F0-1].previous       = (ring_node*) &waveform_ring_f0[NB_RING_NODES_F0-2];
+    waveform_ring_f0[NB_RING_NODES_F0-1].buffer_address = (int) &wf_snap_f0[NB_RING_NODES_F0-1][0];
+
+    for(i=1; i<NB_RING_NODES_F0-1; i++)
+    {
+        waveform_ring_f0[i].next            = (ring_node*) &waveform_ring_f0[i+1];
+        waveform_ring_f0[i].previous        = (ring_node*) &waveform_ring_f0[i-1];
+        waveform_ring_f0[i].buffer_address  = (int) &wf_snap_f0[i][0];
+    }
 
     // F1 RING
     waveform_ring_f1[0].next            = (ring_node*) &waveform_ring_f1[1];
@@ -401,6 +439,7 @@ void init_waveform_rings( void )
         waveform_ring_f2[i].buffer_address  = (int) &wf_snap_f2[i][0];
     }
 
+    DEBUG_PRINTF1("waveform_ring_f0 @%x\n", (unsigned int) waveform_ring_f0)
     DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int) waveform_ring_f1)
     DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int) waveform_ring_f2)
 
@@ -408,6 +447,9 @@ void init_waveform_rings( void )
 
 void reset_current_ring_nodes( void )
 {
+    current_ring_node_f0        = waveform_ring_f0;
+    ring_node_to_send_swf_f0    = waveform_ring_f0;
+
     current_ring_node_f1        = waveform_ring_f1;
     ring_node_to_send_cwf_f1    = waveform_ring_f1;
     ring_node_to_send_swf_f1    = waveform_ring_f1;
@@ -429,29 +471,20 @@ int init_header_snapshot_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t
         headerSWF[ i ].userApplication = CCSDS_USER_APP;
         headerSWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
         headerSWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
-        if (i == 0)
+        headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+        if (i == 6)
         {
-            headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_FIRST;
-            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_340 >> 8);
-            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_340     );
-            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_340 >> 8);
-            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_340     );
-        }
-        else if (i == 6)
-        {
-            headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_LAST;
-            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_8 >> 8);
-            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_8     );
-            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_8 >> 8);
-            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_8     );
+            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_224 >> 8);
+            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_224     );
+            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_224 >> 8);
+            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_224     );
         }
         else
         {
-            headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_CONTINUATION;
-            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_340 >> 8);
-            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_340     );
-            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_340 >> 8);
-            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_340     );
+            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_304 >> 8);
+            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_304     );
+            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_304 >> 8);
+            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_304     );
         }
         headerSWF[ i ].packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
         headerSWF[ i ].pktCnt = DEFAULT_PKTCNT;  // PKT_CNT
@@ -539,7 +572,7 @@ int init_header_continuous_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_CWF
     return LFR_SUCCESSFUL;
 }
 
-int init_header_continuous_wf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF )
+int init_header_continuous_cwf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF )
 {
     unsigned int i;
 
@@ -623,17 +656,17 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
     for (i=0; i<7; i++) // send waveform
     {
 #ifdef VHDL_DEV
-        spw_ioctl_send_SWF.data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) + TIME_OFFSET];
+        spw_ioctl_send_SWF.data = (char*) &waveform[ (i * 304 * NB_WORDS_SWF_BLK) + TIME_OFFSET];
 #else
-        spw_ioctl_send_SWF.data = (char*) &waveform[ (i * 340 * NB_WORDS_SWF_BLK) ];
+        spw_ioctl_send_SWF.data = (char*) &waveform[ (i * 304 * NB_WORDS_SWF_BLK) ];
 #endif
         spw_ioctl_send_SWF.hdr = (char*) &headerSWF[ i ];
         // BUILD THE DATA
         if (i==6) {
-            spw_ioctl_send_SWF.dlen = 8 * NB_BYTES_SWF_BLK;
+            spw_ioctl_send_SWF.dlen = 224 * NB_BYTES_SWF_BLK;
         }
         else {
-            spw_ioctl_send_SWF.dlen = 340 * NB_BYTES_SWF_BLK;
+            spw_ioctl_send_SWF.dlen = 304 * NB_BYTES_SWF_BLK;
         }
         // SET PACKET SEQUENCE COUNTER
         increment_seq_counter_source_id( headerSWF[ i ].packetSequenceControl, sid );
@@ -722,7 +755,7 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
         headerCWF[ i ].time[4] = (unsigned char) (fineTime>>8);
         headerCWF[ i ].time[5] = (unsigned char) (fineTime);
         // SEND PACKET
-        if (sid == SID_NORM_CWF_F3)
+        if (sid == SID_NORM_CWF_LONG_F3)
         {
             status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
             if (status != RTEMS_SUCCESSFUL) {
@@ -773,7 +806,11 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
     // BUILD CWF3_light DATA
     for ( i=0; i< 2048; i++)
     {
+#ifdef VHDL_DEV
+        sample = (char*) &waveform[ (i * NB_WORDS_SWF_BLK) + TIME_OFFSET ];
+#else
         sample = (char*) &waveform[ i * NB_WORDS_SWF_BLK ];
+#endif
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK)     ] = sample[ 0 ];
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 1 ] = sample[ 1 ];
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 2 ] = sample[ 2 ];
@@ -789,11 +826,8 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
     {
         int coarseTime = 0x00;
         int fineTime = 0x00;
-#ifdef VHDL_DEV
-        spw_ioctl_send_CWF.data = (char*) &wf_cont_f3_light[ (i * 340 * NB_BYTES_CWF3_LIGHT_BLK) + TIME_OFFSET];
-#else
+
         spw_ioctl_send_CWF.data = (char*) &wf_cont_f3_light[ (i * 340 * NB_BYTES_CWF3_LIGHT_BLK) ];
-#endif
         spw_ioctl_send_CWF.hdr = (char*) &headerCWF[ i ];
         // BUILD THE DATA
         if ( i == WFRM_INDEX_OF_LAST_PACKET ) {
@@ -1026,14 +1060,15 @@ void reset_waveform_picker_regs()
     */
     waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
     waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
+    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
+    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
     waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
     waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
     waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
     waveform_picker_regs->status = 0x00; // 0x18
     // waveform_picker_regs->delta_snapshot = 0x12800; // 0x1c 296 * 256 = 75776
-    // waveform_picker_regs->delta_snapshot = 0x1000; // 0x1c 16 * 256 = 4096
-    waveform_picker_regs->delta_snapshot = 0x2000; // 0x1c 32 * 256 = 8192
+    waveform_picker_regs->delta_snapshot = 0x1000; // 0x1c 16 * 256 = 4096
+    //waveform_picker_regs->delta_snapshot = 0x2000; // 0x1c 32 * 256 = 8192
     waveform_picker_regs->delta_f0 = 0xbf5; // 0x20 *** 1013
     waveform_picker_regs->delta_f0_2 = 0x7; // 0x24 *** 7 [7 bits]
     waveform_picker_regs->delta_f1 = 0xbc0; // 0x28 *** 960
@@ -1109,7 +1144,7 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     unsigned short new_packet_sequence_control;
 
     if ( (sid ==SID_NORM_SWF_F0)    || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
-         || (sid ==SID_NORM_CWF_F3) || (sid ==SID_BURST_CWF_F2) )
+         || (sid ==SID_NORM_CWF_F3) || (sid==SID_NORM_CWF_LONG_F3) || (sid ==SID_BURST_CWF_F2) )
     {
         sequence_cnt = &sequenceCounters_SCIENCE_NORMAL_BURST;
     }

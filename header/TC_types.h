@@ -10,13 +10,13 @@
 
 #define PACKET_LENGTH_TC_LFR_RESET                  (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_LOAD_COMMON_PAR        (14 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_LFR_LOAD_NORMAL_PAR        (20 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_LFR_LOAD_NORMAL_PAR        (22 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_LOAD_BURST_PAR         (14 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_LOAD_SBM1_PAR          (14 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_LOAD_SBM2_PAR          (14 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DUMP_PAR               (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_ENTER_MODE             (20 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_LFR_UPDATE_INFO            (48 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_LFR_UPDATE_INFO            (46 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_ENABLE_CALIBRATION     (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DISABLE_CALIBRATION    (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_UPDATE_TIME            (18 - CCSDS_TC_TM_PACKET_OFFSET)
@@ -145,6 +145,8 @@ struct Packet_TC_LFR_LOAD_NORMAL_PAR_str
     unsigned char sy_lfr_n_asm_p[2];
     unsigned char sy_lfr_n_bp_p0;
     unsigned char sy_lfr_n_bp_p1;
+    unsigned char sy_lfr_n_cwf_long_f3;
+    unsigned char lfr_normal_parameters_spare;
     unsigned char crc[2];
 };
 typedef struct Packet_TC_LFR_LOAD_NORMAL_PAR_str Packet_TC_LFR_LOAD_NORMAL_PAR_t;

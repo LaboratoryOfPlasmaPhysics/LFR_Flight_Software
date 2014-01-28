@@ -80,13 +80,13 @@
 // TC LEN
 #define TC_LEN_RESET 12
 #define TC_LEN_LOAD_COMM 14
-#define TC_LEN_LOAD_NORM 20
+#define TC_LEN_LOAD_NORM 22
 #define TC_LEN_LOAD_BURST 14
 #define TC_LEN_LOAD_SBM1 14
 #define TC_LEN_LOAD_SBM2 14
 #define TC_LEN_DUMP 12
 #define TC_LEN_ENTER 20
-#define TC_LEN_UPDT_INFO 48
+#define TC_LEN_UPDT_INFO 46
 #define TC_LEN_EN_CAL 12
 #define TC_LEN_DIS_CAL 12
 #define TC_LEN_UPDT_TIME 18
@@ -182,6 +182,7 @@ enum apid_destid{
 #define SID_SBM2_BP2_F0 32
 #define SID_SBM2_BP1_F1 30
 #define SID_SBM2_BP2_F1 33
+#define SID_NORM_CWF_LONG_F3 34
 
 // LENGTH (BYTES)
 #define LENGTH_TM_LFR_TC_EXE_MAX 32
@@ -206,8 +207,13 @@ enum apid_destid{
 #define LEN_TM_LFR_HK               130     // 126 + 4
 #define LEN_TM_LFR_TC_EXE_NOT_IMP   28      // 24 + 4
 
+// R1
 #define TM_LEN_SCI_SWF_340          4101    // 340 * 12 + 10 + 12 - 1
 #define TM_LEN_SCI_SWF_8            117     //   8 * 12 + 10 + 12 - 1
+// R2
+#define TM_LEN_SCI_SWF_304          3669    // 304 * 12 + 10 + 12 - 1
+#define TM_LEN_SCI_SWF_224          2709    // 224 * 12 + 10 + 12 - 1
+//
 #define TM_LEN_SCI_CWF_340          4099    // 340 * 12 + 10 + 10 - 1
 #define TM_LEN_SCI_CWF_8            115     //   8 * 12 + 10 + 10 - 1
 #define TM_LEN_SCI_CWF3_LIGHT_340   2059    // 340 * 6  + 10 + 10 - 1
@@ -215,6 +221,8 @@ enum apid_destid{
 #define DEFAULT_PKTCNT  0x07
 #define BLK_NR_340      0x0154
 #define BLK_NR_8        0x0008
+#define BLK_NR_304      0x0130
+#define BLK_NR_224      0x00e0
 
 enum TM_TYPE{
     TM_LFR_TC_EXE_OK,
@@ -469,11 +477,16 @@ typedef struct {
     // HK PARAMETERS
     unsigned char lfr_status_word[2];
     unsigned char lfr_sw_version[4];
+    unsigned char lfr_fpga_version[3];
+    // ressource statistics
+    unsigned char hk_lfr_cpu_load;
+    unsigned char hk_lfr_load_max;
+    unsigned char hk_lfr_load_aver;
     // tc statistics
     unsigned char hk_lfr_update_info_tc_cnt[2];
     unsigned char hk_lfr_update_time_tc_cnt[2];
-    unsigned char hk_dpu_exe_tc_lfr_cnt[2];
-    unsigned char hk_dpu_rej_tc_lfr_cnt[2];
+    unsigned char hk_lfr_exe_tc_cnt[2];
+    unsigned char hk_lfr_rej_tc_cnt[2];
     unsigned char hk_lfr_last_exe_tc_id[2];
     unsigned char hk_lfr_last_exe_tc_type[2];
     unsigned char hk_lfr_last_exe_tc_subtype[2];
@@ -498,13 +511,17 @@ typedef struct {
     unsigned char hk_lfr_dpu_spw_pkt_rcv_cnt[2];
     unsigned char hk_lfr_dpu_spw_pkt_sent_cnt[2];
     unsigned char hk_lfr_dpu_spw_tick_out_cnt;
-    unsigned char hk_lfr_dpu_spw_last_time;
+    unsigned char hk_lfr_dpu_spw_last_timc;
     // ahb error statistics
     unsigned int hk_lfr_last_fail_addr;
     // temperatures
     unsigned char hk_lfr_temp_scm[2];
     unsigned char hk_lfr_temp_pcb[2];
     unsigned char hk_lfr_temp_fpga[2];
+    // spacecraft potential
+    unsigned char hk_lfr_sc_v_f3[2];
+    unsigned char hk_lfr_sc_e1_f3[2];
+    unsigned char hk_lfr_sc_e2_f3[2];
     // error counters
     unsigned char hk_lfr_dpu_spw_parity;
     unsigned char hk_lfr_dpu_spw_disconnect;
@@ -513,8 +530,6 @@ typedef struct {
     unsigned char hk_lfr_dpu_spw_write_sync;
     unsigned char hk_lfr_dpu_spw_rx_ahb;
     unsigned char hk_lfr_dpu_spw_tx_ahb;
-    unsigned char hk_lfr_dpu_spw_header_crc;
-    unsigned char hk_lfr_dpu_spw_data_crc;
     unsigned char hk_lfr_dpu_spw_early_eop;
     unsigned char hk_lfr_dpu_spw_invalid_addr;
     unsigned char hk_lfr_dpu_spw_eep;
@@ -533,21 +548,8 @@ typedef struct {
     // hk_lfr_ahb_
     unsigned char hk_lfr_ahb_correctable;
     unsigned char hk_lfr_ahb_uncorrectable;
-    unsigned char hk_lfr_ahb_fails_trans;
-    // hk_lfr_adc_
-    unsigned char hk_lfr_adc_failure;
-    unsigned char hk_lfr_adc_timeout;
-    unsigned char hk_lfr_toomany_err;
-    // hk_lfr_cpu_
-    unsigned char hk_lfr_cpu_write_err;
-    unsigned char hk_lfr_cpu_ins_access_err;
-    unsigned char hk_lfr_cpu_illegal_ins;
-    unsigned char hk_lfr_cpu_privilegied_ins;
-    unsigned char hk_lfr_cpu_register_hw;
-    unsigned char hk_lfr_cpu_not_aligned;
-    unsigned char hk_lfr_cpu_data_exception;
-    unsigned char hk_lfr_cpu_div_exception;
-    unsigned char hk_lfr_cpu_arith_overflow;
+    // spare
+    unsigned char parameters_spare;
 } Packet_TM_LFR_HK_t;
 
 typedef struct {
@@ -578,6 +580,8 @@ typedef struct {
     unsigned char sy_lfr_n_asm_p[2];
     unsigned char sy_lfr_n_bp_p0;
     unsigned char sy_lfr_n_bp_p1;
+    unsigned char sy_lfr_n_cwf_long_f3;
+    unsigned char lfr_normal_parameters_spare;
 
     //*****************
     // BURST PARAMETERS

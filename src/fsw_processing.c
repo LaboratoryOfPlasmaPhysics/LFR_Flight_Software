@@ -200,13 +200,9 @@ rtems_task matr_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-
-#ifdef GSA
-#else
-        fill_averaged_spectral_matrix( );
-#endif
+        // 1) convert the float array in a char array
         convert_averaged_spectral_matrix( averaged_spec_mat_f0, averaged_spec_mat_f0_char);
-
+        // 2) send the spectral matrix packets
         send_spectral_matrix( &headerASM, averaged_spec_mat_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
     }
 }
@@ -528,10 +524,10 @@ void convert_averaged_spectral_matrix( volatile float *input_matrix, char *outpu
     {
         for ( j=0; j<NB_VALUES_PER_SM; j++)
         {
-            pt_char_input =  (char*)  &input_matrix[       (i*NB_VALUES_PER_SM) + j   ];
+            pt_char_input =  (char*) &input_matrix [       (i*NB_VALUES_PER_SM) + j   ];
             pt_char_output = (char*) &output_matrix[ 2 * ( (i*NB_VALUES_PER_SM) + j ) ];
-            pt_char_output[0] = pt_char_input[0]; // bits 31 downto 24 of the float
-            pt_char_output[1] = pt_char_input[1];  // bits 23 downto 16 of the float
+            pt_char_output[0] = pt_char_input[0];   // bits 31 downto 24 of the float
+            pt_char_output[1] = pt_char_input[1];   // bits 23 downto 16 of the float
         }
     }
 }
@@ -544,10 +540,11 @@ void fill_averaged_spectral_matrix(void)
      *
      */
 
-#ifdef GSA
-    float offset = 10.;
-    float coeff = 100000.;
+    float offset;
+    float coeff;
 
+    offset = 10.;
+    coeff = 100000.;
     averaged_spec_mat_f0[ 0 + 25 * 0  ] = 0. + offset;
     averaged_spec_mat_f0[ 0 + 25 * 1  ] = 1. + offset;
     averaged_spec_mat_f0[ 0 + 25 * 2  ] = 2. + offset;
@@ -578,6 +575,7 @@ void fill_averaged_spectral_matrix(void)
     averaged_spec_mat_f0[ 9 + 25 * 12 ] = -(12. + offset)* coeff;
     averaged_spec_mat_f0[ 9 + 25 * 13 ] = -(13. + offset)* coeff;
     averaged_spec_mat_f0[ 9 + 25 * 14 ] = -(14. + offset)* coeff;
+
     offset = 10000000;
     averaged_spec_mat_f0[ 16 + 25 * 0  ] = (0. + offset)* coeff;
     averaged_spec_mat_f0[ 16 + 25 * 1  ] = (1. + offset)* coeff;
@@ -611,17 +609,6 @@ void fill_averaged_spectral_matrix(void)
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 13 ] = averaged_spec_mat_f0[ 13 ];
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 14 ] = averaged_spec_mat_f0[ 14 ];
     averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 15 ] = averaged_spec_mat_f0[ 15 ];
-#else
-    unsigned int i;
-
-    for(i=0; i<TOTAL_SIZE_SM; i++)
-    {
-        if (spectral_matrix_regs->matrixF0_Address0 == (int) spec_mat_f0_0)
-            averaged_spec_mat_f0[i] = (float) spec_mat_f0_0_bis[ SM_HEADER + i ];
-        else
-            averaged_spec_mat_f0[i] = (float) spec_mat_f0_0[ SM_HEADER + i ];
-    }
-#endif
 }
 
 void reset_spectral_matrix_regs()

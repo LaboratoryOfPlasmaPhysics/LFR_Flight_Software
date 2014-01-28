@@ -75,17 +75,18 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
 
+    // UART settings
+    send_console_outputs_on_apbuart_port();
+    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
+
     BOOT_PRINTF("\n\n\n\n\n")
     BOOT_PRINTF("***************************\n")
     BOOT_PRINTF("** START Flight Software **\n")
-        #ifdef VHDL_DEV
-            PRINTF("/!\\ this is the VHDL_DEV flight software /!\\ \n")
-        #endif
+#ifdef VHDL_DEV
+    PRINTF("/!\\ this is the VHDL_DEV flight software /!\\ \n")
+#endif
     BOOT_PRINTF("***************************\n")
     BOOT_PRINTF("\n\n")
-
-    //send_console_outputs_on_apbuart_port();
-    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
 
     reset_wfp_burst_enable();       // stop the waveform picker if it was running
     init_waveform_rings();          // initialize the waveform rings
@@ -162,22 +163,19 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
-#ifdef GSA
-    // mask IRQ lines
+
+    //******************************
+    // <SPECTRAL MATRICES SIMULATOR>
     LEON_Mask_interrupt( IRQ_SM );
-    LEON_Mask_interrupt( IRQ_WF );
-    // Spectral Matrices simulator
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
-                    IRQ_SPARC_SM, spectral_matrices_isr );
-    // WaveForms
-    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_WF_SIMULATOR, CLKDIV_WF_SIMULATOR,
-                    IRQ_SPARC_WF, waveforms_simulator_isr );
-#else
+                    IRQ_SPARC_SM, spectral_matrices_isr_simu );
+    // </SPECTRAL MATRICES SIMULATOR>
+    //*******************************
+
     // configure IRQ handling for the waveform picker unit
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
-#endif
 
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )

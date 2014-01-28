@@ -396,13 +396,15 @@ int stop_current_mode()
 
     // mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
+    //LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrix interrupt simulator
     // reset registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
     // clear interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectarl matrix interrupt
+    //LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Clear_interrupt( IRQ_SM );                 // clear spectral matrix interrupt simulator
     //**********************
     // suspend several tasks
     if (lfrCurrentMode != LFR_MODE_STANDBY) {
@@ -493,15 +495,13 @@ int enter_normal_mode()
 
     status = restart_science_tasks();
 
-#ifdef GSA
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    //
-    set_local_nb_interrupt_f0_MAX();
-    LEON_Clear_interrupt( IRQ_SM ); // the IRQ_SM seems to be incompatible with the IRQ_WF on the xilinx board
-    LEON_Unmask_interrupt( IRQ_SM );
-#else
-    launch_waveform_picker( LFR_MODE_SBM1 );
-#endif
+    // Spectral Matrices simulator
+//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+//    set_local_nb_interrupt_f0_MAX();
+//    LEON_Clear_interrupt( IRQ_SM );
+//    LEON_Unmask_interrupt( IRQ_SM );
+
+    launch_waveform_picker( LFR_MODE_NORMAL );
 
     return status;
 }
@@ -787,18 +787,18 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, u
             send_tm_lfr_tc_exe_success( TC, queue_id, time );
         }
         update_last_TC_exe( TC, time );
-        val = housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[1];
+        val = housekeeping_packet.hk_lfr_exe_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
         val++;
-        housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
-        housekeeping_packet.hk_dpu_exe_tc_lfr_cnt[1] = (unsigned char) (val);
+        housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_exe_tc_cnt[1] = (unsigned char) (val);
     }
     else
     {
         update_last_TC_rej( TC, time );
-        val = housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] * 256 + housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[1];
+        val = housekeeping_packet.hk_lfr_rej_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
         val++;
-        housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[0] = (unsigned char) (val >> 8);
-        housekeeping_packet.hk_dpu_rej_tc_lfr_cnt[1] = (unsigned char) (val);
+        housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_rej_tc_cnt[1] = (unsigned char) (val);
     }
 }
 

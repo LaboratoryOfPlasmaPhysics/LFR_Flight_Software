@@ -105,6 +105,17 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         }
     }
 
+    //*********************
+    // sy_lfr_n_cwf_long_f3
+    if (flag == LFR_SUCCESSFUL)
+    {
+        result = set_sy_lfr_n_cwf_long_f3( TC, queue_id );
+        if (result != LFR_SUCCESSFUL)
+        {
+            flag = LFR_DEFAULT;
+        }
+    }
+
     return flag;
 }
 
@@ -370,6 +381,24 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     status = LFR_SUCCESSFUL;
 
     parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_BP_P1 ];
+
+    return status;
+}
+
+int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+{
+    /** This function allows to switch from CWF_F3 packets to CWF_LONG_F3 packets.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     * @param queue_id is the id of the queue which handles TM related to this execution step
+     *
+     */
+
+    int status;
+
+    status = LFR_SUCCESSFUL;
+
+    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_CWF_LONG_F3 ];
 
     return status;
 }

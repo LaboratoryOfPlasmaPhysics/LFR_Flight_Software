@@ -571,10 +571,6 @@ void spacewire_update_statistics( void )
     housekeeping_packet.hk_lfr_dpu_spw_escape = (unsigned char) spacewire_stats.escape_err;
     housekeeping_packet.hk_lfr_dpu_spw_credit = (unsigned char) spacewire_stats.credit_err;
     housekeeping_packet.hk_lfr_dpu_spw_write_sync = (unsigned char) spacewire_stats.write_sync_err;
-    // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb;
-    // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb;
-    housekeeping_packet.hk_lfr_dpu_spw_header_crc = (unsigned char) spacewire_stats.rx_rmap_header_crc_err;
-    housekeeping_packet.hk_lfr_dpu_spw_data_crc = (unsigned char) spacewire_stats.rx_rmap_data_crc_err;
 
     //*********************************************
     // ERROR COUNTERS / SPACEWIRE / MEDIUM SEVERITY
@@ -582,7 +578,6 @@ void spacewire_update_statistics( void )
     housekeeping_packet.hk_lfr_dpu_spw_invalid_addr = (unsigned char) spacewire_stats.invalid_address;
     housekeeping_packet.hk_lfr_dpu_spw_eep = (unsigned char) spacewire_stats.rx_eep_err;
     housekeeping_packet.hk_lfr_dpu_spw_rx_too_big = (unsigned char) spacewire_stats.rx_truncated;
-
 }
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
