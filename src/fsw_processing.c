@@ -11,10 +11,48 @@
 
 #include "fsw_processing_globals.c"
 
+//************************
+// spectral matrices rings
+ring_node sm_ring_f0[NB_RING_NODES_ASM_F0];
+ring_node sm_ring_f1[NB_RING_NODES_ASM_F1];
+ring_node sm_ring_f2[NB_RING_NODES_ASM_F2];
+ring_node *current_ring_node_sm_f0;
+ring_node *current_ring_node_sm_f1;
+ring_node *current_ring_node_sm_f2;
+
 BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];
-float averaged_spec_mat_f0[ TOTAL_SIZE_SM ];
-char averaged_spec_mat_f0_char[ TOTAL_SIZE_SM * 2 ];
-float compressed_spec_mat_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
+float averaged_sm_f0[ TOTAL_SIZE_SM ];
+char averaged_sm_f0_char[ TOTAL_SIZE_SM * 2 ];
+float compressed_sm_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
+
+void init_asm_rings( void )
+{
+    unsigned char i;
+
+    // F0 RING
+    sm_ring_f0[0].next            = (ring_node*) &sm_ring_f0[1];
+    sm_ring_f0[0].previous        = (ring_node*) &sm_ring_f0[NB_RING_NODES_ASM_F0-1];
+    sm_ring_f0[0].buffer_address  = (int) &sm_f0[0][0];
+
+    sm_ring_f0[NB_RING_NODES_ASM_F0-1].next           = (ring_node*) &sm_ring_f0[0];
+    sm_ring_f0[NB_RING_NODES_ASM_F0-1].previous       = (ring_node*) &sm_ring_f0[NB_RING_NODES_ASM_F0-2];
+    sm_ring_f0[NB_RING_NODES_ASM_F0-1].buffer_address = (int) &sm_f0[NB_RING_NODES_ASM_F0-1][0];
+
+    for(i=1; i<NB_RING_NODES_ASM_F0-1; i++)
+    {
+        sm_ring_f0[i].next            = (ring_node*) &sm_ring_f0[i+1];
+        sm_ring_f0[i].previous        = (ring_node*) &sm_ring_f0[i-1];
+        sm_ring_f0[i].buffer_address  = (int) &sm_f0[i][0];
+    }
+
+    DEBUG_PRINTF1("asm_ring_f0 @%x\n", (unsigned int) sm_ring_f0)
+
+}
+
+void reset_current_sm_ring_nodes( void )
+{
+    current_ring_node_sm_f0    = sm_ring_f0;
+}
 
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
@@ -31,48 +69,13 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
             switch(i)
             {
             case 0:
-                if (spectral_matrix_regs->matrixF0_Address0 == (int) spec_mat_f0_0)
-                {
-                    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0_bis;
-                }
-                else
-                {
-                    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0;
-                }
+                current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+                spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
                 spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
                 break;
             case 1:
-                if (spectral_matrix_regs->matrixFO_Address1 == (int) spec_mat_f0_1)
-                {
-                    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1_bis;
-                }
-                else
-                {
-                    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1;
-                }
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;
                 break;
             case 2:
-                if (spectral_matrix_regs->matrixF1_Address == (int) spec_mat_f1)
-                {
-                    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1_bis;
-                }
-                else
-                {
-                    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1;
-                }
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffb;
-                break;
-            case 3:
-                if (spectral_matrix_regs->matrixF2_Address == (int) spec_mat_f2)
-                {
-                    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2_bis;
-                }
-                else
-                {
-                    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2;
-                }
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff7;
                 break;
             default:
                 break;
@@ -144,14 +147,14 @@ rtems_task avf0_task(rtems_task_argument argument)
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         for(i=0; i<TOTAL_SIZE_SM; i++){
-            averaged_spec_mat_f0[i] = averaged_spec_mat_f0[i] + spec_mat_f0_a[i]
-                                            + spec_mat_f0_b[i]
-                                            + spec_mat_f0_c[i]
-                                            + spec_mat_f0_d[i]
-                                            + spec_mat_f0_e[i]
-                                            + spec_mat_f0_f[i]
-                                            + spec_mat_f0_g[i]
-                                            + spec_mat_f0_h[i];
+            averaged_sm_f0[i] = current_ring_node_sm_f0[0].buffer_address
+                    + current_ring_node_sm_f0[1].buffer_address
+                    + current_ring_node_sm_f0[2].buffer_address
+                    + current_ring_node_sm_f0[3].buffer_address
+                    + current_ring_node_sm_f0[4].buffer_address
+                    + current_ring_node_sm_f0[5].buffer_address
+                    + current_ring_node_sm_f0[6].buffer_address
+                    + current_ring_node_sm_f0[7].buffer_address;
         }
         nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
         if (nb_average == NB_AVERAGE_NORMAL_f0) {
@@ -173,8 +176,8 @@ rtems_task bpf0_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        matrix_compression(averaged_spec_mat_f0, 0, compressed_spec_mat_f0);
-        BP1_set(compressed_spec_mat_f0, NB_BINS_COMPRESSED_SM_F0, LFR_BP1_F0);
+        matrix_compression(averaged_sm_f0, 0, compressed_sm_f0);
+        BP1_set(compressed_sm_f0, NB_BINS_COMPRESSED_SM_F0, LFR_BP1_F0);
     }
 }
 
@@ -201,9 +204,9 @@ rtems_task matr_task(rtems_task_argument argument)
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         // 1) convert the float array in a char array
-        convert_averaged_spectral_matrix( averaged_spec_mat_f0, averaged_spec_mat_f0_char);
+        convert_averaged_spectral_matrix( averaged_sm_f0, averaged_sm_f0_char);
         // 2) send the spectral matrix packets
-        send_spectral_matrix( &headerASM, averaged_spec_mat_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
+        send_spectral_matrix( &headerASM, averaged_sm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
     }
 }
 
@@ -545,70 +548,70 @@ void fill_averaged_spectral_matrix(void)
 
     offset = 10.;
     coeff = 100000.;
-    averaged_spec_mat_f0[ 0 + 25 * 0  ] = 0. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 1  ] = 1. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 2  ] = 2. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 3  ] = 3. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 4  ] = 4. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 5  ] = 5. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 6  ] = 6. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 7  ] = 7. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 8  ] = 8. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 9  ] = 9. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 10 ] = 10. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 11 ] = 11. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 12 ] = 12. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 13 ] = 13. + offset;
-    averaged_spec_mat_f0[ 0 + 25 * 14 ] = 14. + offset;
-    averaged_spec_mat_f0[ 9 + 25 * 0  ] = -(0. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 1  ] = -(1. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 2  ] = -(2. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 3  ] = -(3. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 4  ] = -(4. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 5  ] = -(5. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 6  ] = -(6. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 7  ] = -(7. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 8  ] = -(8. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 9  ] = -(9. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 10 ] = -(10. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 11 ] = -(11. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 12 ] = -(12. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 13 ] = -(13. + offset)* coeff;
-    averaged_spec_mat_f0[ 9 + 25 * 14 ] = -(14. + offset)* coeff;
+    averaged_sm_f0[ 0 + 25 * 0  ] = 0. + offset;
+    averaged_sm_f0[ 0 + 25 * 1  ] = 1. + offset;
+    averaged_sm_f0[ 0 + 25 * 2  ] = 2. + offset;
+    averaged_sm_f0[ 0 + 25 * 3  ] = 3. + offset;
+    averaged_sm_f0[ 0 + 25 * 4  ] = 4. + offset;
+    averaged_sm_f0[ 0 + 25 * 5  ] = 5. + offset;
+    averaged_sm_f0[ 0 + 25 * 6  ] = 6. + offset;
+    averaged_sm_f0[ 0 + 25 * 7  ] = 7. + offset;
+    averaged_sm_f0[ 0 + 25 * 8  ] = 8. + offset;
+    averaged_sm_f0[ 0 + 25 * 9  ] = 9. + offset;
+    averaged_sm_f0[ 0 + 25 * 10 ] = 10. + offset;
+    averaged_sm_f0[ 0 + 25 * 11 ] = 11. + offset;
+    averaged_sm_f0[ 0 + 25 * 12 ] = 12. + offset;
+    averaged_sm_f0[ 0 + 25 * 13 ] = 13. + offset;
+    averaged_sm_f0[ 0 + 25 * 14 ] = 14. + offset;
+    averaged_sm_f0[ 9 + 25 * 0  ] = -(0. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 1  ] = -(1. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 2  ] = -(2. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 3  ] = -(3. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 4  ] = -(4. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 5  ] = -(5. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 6  ] = -(6. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 7  ] = -(7. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 8  ] = -(8. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 9  ] = -(9. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 10 ] = -(10. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 11 ] = -(11. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 12 ] = -(12. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 13 ] = -(13. + offset)* coeff;
+    averaged_sm_f0[ 9 + 25 * 14 ] = -(14. + offset)* coeff;
 
     offset = 10000000;
-    averaged_spec_mat_f0[ 16 + 25 * 0  ] = (0. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 1  ] = (1. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 2  ] = (2. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 3  ] = (3. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 4  ] = (4. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 5  ] = (5. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 6  ] = (6. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 7  ] = (7. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 8  ] = (8. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 9  ] = (9. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 10 ] = (10. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 11 ] = (11. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 12 ] = (12. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 13 ] = (13. + offset)* coeff;
-    averaged_spec_mat_f0[ 16 + 25 * 14 ] = (14. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 0  ] = (0. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 1  ] = (1. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 2  ] = (2. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 3  ] = (3. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 4  ] = (4. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 5  ] = (5. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 6  ] = (6. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 7  ] = (7. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 8  ] = (8. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 9  ] = (9. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 10 ] = (10. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 11 ] = (11. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 12 ] = (12. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 13 ] = (13. + offset)* coeff;
+    averaged_sm_f0[ 16 + 25 * 14 ] = (14. + offset)* coeff;
 
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 0 ] = averaged_spec_mat_f0[ 0 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 1 ] = averaged_spec_mat_f0[ 1 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 2 ] = averaged_spec_mat_f0[ 2 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 3 ] = averaged_spec_mat_f0[ 3 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 4 ] = averaged_spec_mat_f0[ 4 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 5 ] = averaged_spec_mat_f0[ 5 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 6 ] = averaged_spec_mat_f0[ 6 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 7 ] = averaged_spec_mat_f0[ 7 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 8 ] = averaged_spec_mat_f0[ 8 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 9 ] = averaged_spec_mat_f0[ 9 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 10 ] = averaged_spec_mat_f0[ 10 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 11 ] = averaged_spec_mat_f0[ 11 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 12 ] = averaged_spec_mat_f0[ 12 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 13 ] = averaged_spec_mat_f0[ 13 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 14 ] = averaged_spec_mat_f0[ 14 ];
-    averaged_spec_mat_f0[ (TOTAL_SIZE_SM/2) + 15 ] = averaged_spec_mat_f0[ 15 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 0 ] = averaged_sm_f0[ 0 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 1 ] = averaged_sm_f0[ 1 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 2 ] = averaged_sm_f0[ 2 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 3 ] = averaged_sm_f0[ 3 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 4 ] = averaged_sm_f0[ 4 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 5 ] = averaged_sm_f0[ 5 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 6 ] = averaged_sm_f0[ 6 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 7 ] = averaged_sm_f0[ 7 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 8 ] = averaged_sm_f0[ 8 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 9 ] = averaged_sm_f0[ 9 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 10 ] = averaged_sm_f0[ 10 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 11 ] = averaged_sm_f0[ 11 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 12 ] = averaged_sm_f0[ 12 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 13 ] = averaged_sm_f0[ 13 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 14 ] = averaged_sm_f0[ 14 ];
+    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 15 ] = averaged_sm_f0[ 15 ];
 }
 
 void reset_spectral_matrix_regs()
@@ -628,10 +631,10 @@ void reset_spectral_matrix_regs()
 
 #ifdef GSA
 #else
-    spectral_matrix_regs->matrixF0_Address0 = (int) spec_mat_f0_0;
-    spectral_matrix_regs->matrixFO_Address1 = (int) spec_mat_f0_1;
-    spectral_matrix_regs->matrixF1_Address = (int) spec_mat_f1;
-    spectral_matrix_regs->matrixF2_Address = (int) spec_mat_f2;
+    spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->matrixFO_Address1 = current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->matrixF1_Address = current_ring_node_sm_f1->buffer_address;
+    spectral_matrix_regs->matrixF2_Address = current_ring_node_sm_f2->buffer_address;
 #endif
 }
 

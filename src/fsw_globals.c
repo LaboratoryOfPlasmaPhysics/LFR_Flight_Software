@@ -39,29 +39,14 @@ volatile int wf_snap_f0[ NB_RING_NODES_F0 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS
 volatile int wf_snap_f1[ NB_RING_NODES_F1 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
 volatile int wf_snap_f2[ NB_RING_NODES_F2 ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ] __attribute__((aligned(0x100)));
 // F3
-volatile int wf_cont_f3_a[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-volatile int wf_cont_f3_b[ NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK + TIME_OFFSET ] __attribute__((aligned(0x100)));
-char         wf_cont_f3_light[ NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK    ] __attribute__((aligned(0x100)));
+volatile int wf_cont_f3_a    [ (NB_SAMPLES_PER_SNAPSHOT) * NB_WORDS_SWF_BLK        + TIME_OFFSET          ] __attribute__((aligned(0x100)));
+volatile int wf_cont_f3_b    [ (NB_SAMPLES_PER_SNAPSHOT) * NB_WORDS_SWF_BLK        + TIME_OFFSET          ] __attribute__((aligned(0x100)));
+char         wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK + TIME_OFFSET_IN_BYTES ] __attribute__((aligned(0x100)));
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
-volatile int spec_mat_f0_0[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_1[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_a[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_b[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_c[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_d[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_e[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_f[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_g[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_h[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_0_bis[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f0_1_bis[ SM_HEADER + TOTAL_SIZE_SM ];
-//
-volatile int spec_mat_f1[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f1_bis[ SM_HEADER + TOTAL_SIZE_SM ];
-//
-volatile int spec_mat_f2[ SM_HEADER + TOTAL_SIZE_SM ];
-volatile int spec_mat_f2_bis[ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int sm_f0[ NB_RING_NODES_ASM_F0 ][ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int sm_f1[ NB_RING_NODES_ASM_F1 ][ SM_HEADER + TOTAL_SIZE_SM ];
+volatile int sm_f2[ NB_RING_NODES_ASM_F2 ][ SM_HEADER + TOTAL_SIZE_SM ];
 
 // APB CONFIGURATION REGISTERS
 time_management_regs_t      *time_management_regs   = (time_management_regs_t*)     REGS_ADDR_TIME_MANAGEMENT;

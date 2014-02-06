@@ -12,14 +12,6 @@
 
 #define pi 3.1415
 
-typedef struct ring_node
-{
-    struct ring_node *previous;
-    int buffer_address;
-    struct ring_node *next;
-    unsigned int status;
-} ring_node;
-
 extern int fdSPW;
 
 //*****************
@@ -72,6 +64,8 @@ int send_waveform_SWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_
 int send_waveform_CWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
 int send_waveform_CWF3( volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
 int send_waveform_CWF3_light( volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
+//
+void compute_acquisition_time(unsigned int *coarseTime, unsigned int *fineTime, unsigned int sid, unsigned char pa_lfr_pkt_nr );
 //
 rtems_id get_pkts_queue_id( void );
 

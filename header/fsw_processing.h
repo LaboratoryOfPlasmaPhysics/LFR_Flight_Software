@@ -11,24 +11,9 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-extern volatile int spec_mat_f0_0[ ];
-extern volatile int spec_mat_f0_1[ ];
-extern volatile int spec_mat_f0_a[ ];
-extern volatile int spec_mat_f0_b[ ];
-extern volatile int spec_mat_f0_c[ ];
-extern volatile int spec_mat_f0_d[ ];
-extern volatile int spec_mat_f0_e[ ];
-extern volatile int spec_mat_f0_f[ ];
-extern volatile int spec_mat_f0_g[ ];
-extern volatile int spec_mat_f0_h[ ];
-
-extern volatile int spec_mat_f1[ ];
-extern volatile int spec_mat_f2[ ];
-
-extern volatile int spec_mat_f1_bis[ ];
-extern volatile int spec_mat_f2_bis[ ];
-extern volatile int spec_mat_f0_0_bis[ ];
-extern volatile int spec_mat_f0_1_bis[ ];
+extern volatile int sm_f0[ ][ SM_HEADER + TOTAL_SIZE_SM ];
+extern volatile int sm_f1[ ][ SM_HEADER + TOTAL_SIZE_SM ];
+extern volatile int sm_f2[ ][ SM_HEADER + TOTAL_SIZE_SM ];
 
 // parameters
 extern struct param_local_str param_local;
@@ -39,6 +24,9 @@ extern spectral_matrix_regs_t *spectral_matrix_regs;
 
 extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
+
+//
+void init_asm_rings( void );
 
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );

@@ -210,19 +210,21 @@ enum apid_destid{
 // R1
 #define TM_LEN_SCI_SWF_340          4101    // 340 * 12 + 10 + 12 - 1
 #define TM_LEN_SCI_SWF_8            117     //   8 * 12 + 10 + 12 - 1
-// R2
-#define TM_LEN_SCI_SWF_304          3669    // 304 * 12 + 10 + 12 - 1
-#define TM_LEN_SCI_SWF_224          2709    // 224 * 12 + 10 + 12 - 1
-//
 #define TM_LEN_SCI_CWF_340          4099    // 340 * 12 + 10 + 10 - 1
 #define TM_LEN_SCI_CWF_8            115     //   8 * 12 + 10 + 10 - 1
 #define TM_LEN_SCI_CWF3_LIGHT_340   2059    // 340 * 6  + 10 + 10 - 1
 #define TM_LEN_SCI_CWF3_LIGHT_8     67      //   8 * 6  + 10 + 10 - 1
-#define DEFAULT_PKTCNT  0x07
-#define BLK_NR_340      0x0154
-#define BLK_NR_8        0x0008
-#define BLK_NR_304      0x0130
-#define BLK_NR_224      0x00e0
+// R2
+#define TM_LEN_SCI_SWF_304          3669    // 304 * 12 + 10 + 12 - 1
+#define TM_LEN_SCI_SWF_224          2709    // 224 * 12 + 10 + 12 - 1
+#define TM_LEN_SCI_CWF_336          4051    // 336 * 12 + 10 + 10 - 1
+#define TM_LEN_SCI_CWF_672          4051    // 672 * 6 + 10 + 10 - 1
+//
+#define DEFAULT_PKTCNT      0x07
+#define BLK_NR_304          0x0130
+#define BLK_NR_224          0x00e0
+#define BLK_NR_CWF          0x0150  // 336
+#define BLK_NR_CWF_SHORT_F3 0x02a0  // 672
 
 enum TM_TYPE{
     TM_LFR_TC_EXE_OK,
