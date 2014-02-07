@@ -23,6 +23,7 @@ void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, 
 
 // SERIAL LINK
 int send_console_outputs_on_apbuart_port( void );
+int enable_apbuart_transmitter( void );
 void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
 
 // RTEMS TASKS

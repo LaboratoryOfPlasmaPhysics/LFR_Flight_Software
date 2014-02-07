@@ -7,15 +7,6 @@
 
 #include "fsw_misc.h"
 
-//char *DumbMessages[7] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
-//                    "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-//                    "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
-//                    "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
-//                    "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
-//                    "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-//                    "ERR HK"                                                                // RTEMS_EVENT_6
-//};
-
 void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
 {
@@ -91,7 +82,15 @@ int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on 
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
 
     apbuart_regs->ctrl = apbuart_regs->ctrl & APBUART_CTRL_REG_MASK_DB;
-    PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
+
+    return 0;
+}
+
+int enable_apbuart_transmitter( void )  // set the bit 1, TE Transmitter Enable to 1 in the APBUART control register
+{
+    struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
+
+    apbuart_regs->ctrl = apbuart_regs->ctrl | APBUART_CTRL_REG_MASK_TE;
 
     return 0;
 }
@@ -255,6 +254,7 @@ rtems_task dumb_task( rtems_task_argument unused )
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
                 printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
+                PRINTF1("status = %x\n", waveform_picker_regs->status)
             }
         }
     }

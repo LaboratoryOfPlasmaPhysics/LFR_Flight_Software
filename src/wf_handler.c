@@ -46,8 +46,6 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
      *
      */
 
-    static unsigned char nb_swf = 0;
-
     if ( (lfrCurrentMode == LFR_MODE_NORMAL)
          || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
     { // in modes other than STANDBY and BURST, send the CWF_F3 data
@@ -77,7 +75,12 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         //******
         // NORMAL
         case(LFR_MODE_NORMAL):
-        if ( (waveform_picker_regs->status & 0x7) == 0x7 ){ // f2 f1 and f0 are full
+        if ( (waveform_picker_regs->status & 0xff8) != 0x00)    // [1000] check the error bits
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+        }
+        if ( (waveform_picker_regs->status & 0x07) == 0x07)    // [0111] check the f2, f1, f0 full bits
+        {
             // change F0 ring node
             ring_node_to_send_swf_f0 = current_ring_node_f0;
             current_ring_node_f0 = current_ring_node_f0->next;
@@ -90,20 +93,13 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             ring_node_to_send_swf_f2 = current_ring_node_f2;
             current_ring_node_f2 = current_ring_node_f2->next;
             waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
-            // send an event to the WFRM task
+            //
             if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
-//            nb_swf = nb_swf + 1;
-//            if (nb_swf == 2)
-//            {
-//                reset_wfp_burst_enable();
-//            }
-//            else
-//            {
-                waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
-//            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
         }
+
         break;
 
         //******
@@ -213,19 +209,28 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive(RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1
-                            | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM,
+                            | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM
+                            | RTEMS_EVENT_MODE_NORMAL_SWF_F0
+                            | RTEMS_EVENT_MODE_NORMAL_SWF_F1
+                            | RTEMS_EVENT_MODE_NORMAL_SWF_F2,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
-            PRINTF1("status %x\n", waveform_picker_regs->status )
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f0->buffer_address, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f1->buffer_address, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f2->buffer_address, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
         }
-        else
+        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F0) == RTEMS_EVENT_MODE_NORMAL_SWF_F0)
         {
-            PRINTF("in WFRM *** unexpected event")
+            send_waveform_SWF((volatile int*) ring_node_to_send_swf_f0->buffer_address, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
+        }
+        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F1) == RTEMS_EVENT_MODE_NORMAL_SWF_F1)
+        {
+            send_waveform_SWF((volatile int*) ring_node_to_send_swf_f1->buffer_address, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
+        }
+        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F2) == RTEMS_EVENT_MODE_NORMAL_SWF_F2)
+        {
+            send_waveform_SWF((volatile int*) ring_node_to_send_swf_f2->buffer_address, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
         }
     }
 }
@@ -1126,17 +1131,23 @@ void reset_waveform_picker_regs()
     waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
     waveform_picker_regs->status = 0x00; // 0x18
     //
-//    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
-//    waveform_picker_regs->delta_f0 = 0xc0b;         // 0x20 *** 3083 = 4096 - 1013
-//    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-//    waveform_picker_regs->delta_f1 = 0xc40;         // 0x28 *** 3136 = 4096 - 960
-//    waveform_picker_regs->delta_f2 = 0xc00;         // 0x2c *** 3072 =   12 * 256
-    //
     waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
-    waveform_picker_regs->delta_f0 = 0x1;           // 0x20 ***
+    waveform_picker_regs->delta_f0 = 0xc0b;         // 0x20 *** 3083 = 4096 - 1013
     waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-    waveform_picker_regs->delta_f1 = 0x1;           // 0x28 ***
-    waveform_picker_regs->delta_f2 = 0x1;           // 0x2c ***
+    waveform_picker_regs->delta_f1 = 0xc40;         // 0x28 *** 3136 = 4096 - 960
+    waveform_picker_regs->delta_f2 = 0xc00;         // 0x2c *** 3072 =   12 * 256
+    //
+//    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
+//    waveform_picker_regs->delta_f0 = 0x1;           // 0x20 ***
+//    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
+//    waveform_picker_regs->delta_f1 = 0x1;           // 0x28 ***
+//    waveform_picker_regs->delta_f2 = 0x1;           // 0x2c ***
+    //
+//    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
+//    waveform_picker_regs->delta_f0 = 0x0fff;        // 0x20 ***
+//    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
+//    waveform_picker_regs->delta_f1 = 0x0fff;        // 0x28 ***
+//    waveform_picker_regs->delta_f2 = 0x1;           // 0x2c ***
     // 2048
 //    waveform_picker_regs->nb_data_by_buffer = 0x7ff;    // 0x30 *** 2048 -1 => nb samples -1
 //    waveform_picker_regs->snapshot_param = 0x800;       // 0x34 *** 2048 => nb samples

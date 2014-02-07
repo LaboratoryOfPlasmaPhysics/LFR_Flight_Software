@@ -76,8 +76,10 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_isr_entry  old_isr_handler;
 
     // UART settings
-    send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
+    send_console_outputs_on_apbuart_port();
+    enable_apbuart_transmitter();
+    PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 
     BOOT_PRINTF("\n\n\n\n\n")
     BOOT_PRINTF("***************************\n")
