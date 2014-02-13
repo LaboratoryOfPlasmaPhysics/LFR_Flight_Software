@@ -10,6 +10,7 @@
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
+#include "basic_parameters.h"
 
 extern volatile int sm_f0[ ][ SM_HEADER + TOTAL_SIZE_SM ];
 extern volatile int sm_f1[ ][ SM_HEADER + TOTAL_SIZE_SM ];
@@ -26,7 +27,8 @@ extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
 
 //
-void init_asm_rings( void );
+void init_sm_rings( void );
+void reset_current_sm_ring_nodes( void );
 
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
@@ -41,8 +43,8 @@ rtems_task matr_task(rtems_task_argument argument);
 
 void matrix_compression(volatile float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat);
 void matrix_reset(volatile float *averaged_spec_mat);
-void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1);
-void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat);
+void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1);
+void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat);
 //
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,

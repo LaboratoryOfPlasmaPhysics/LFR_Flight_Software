@@ -46,6 +46,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
      *
      */
 
+    static unsigned char nb_swf = 0;
+
     if ( (lfrCurrentMode == LFR_MODE_NORMAL)
          || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
     { // in modes other than STANDBY and BURST, send the CWF_F3 data
@@ -94,12 +96,174 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             current_ring_node_f2 = current_ring_node_f2->next;
             waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
             //
+            if (nb_swf < 2)
+//            if (true)
+            {
+                if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+                }
+                 waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
+                nb_swf = nb_swf + 1;
+            }
+            else
+            {
+                 reset_wfp_burst_enable();
+                 nb_swf = 0;
+            }
+
+        }
+
+        break;
+
+        //******
+        // BURST
+        case(LFR_MODE_BURST):
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            // (2) send an event for the waveforms transmission
+            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
+        }
+        break;
+
+        //*****
+        // SBM1
+        case(LFR_MODE_SBM1):
+        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f1 = current_ring_node_f1;
+            current_ring_node_f1 = current_ring_node_f1->next;
+            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
+            // (2) send an event for the waveforms transmission
+            if (rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_SBM1 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bit = 0
+        }
+        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
+            ring_node_to_send_swf_f1 = current_ring_node_f1->previous;
+        }
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ) { // [0100] check the f2 full bit
             if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffaaa; // [1111 1010 1010 1010] f2 and f0 bits = 0
         }
+        break;
 
+        //*****
+        // SBM2
+        case(LFR_MODE_SBM2):
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            // (2) send an event for the waveforms transmission
+            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_SBM2 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
+        }
+        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
+            ring_node_to_send_swf_f2 = current_ring_node_f2->previous;
+        }
+        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffccc; // [1111 1100 1100 1100] f1, f0 bits = 0
+        }
+        break;
+
+        //********
+        // DEFAULT
+        default:
+        break;
+    }
+}
+
+rtems_isr waveforms_isr_alt( rtems_vector_number vector )
+{
+    /** This is the interrupt sub routine called by the waveform picker core.
+     *
+     * This ISR launch different actions depending mainly on two pieces of information:
+     * 1. the values read in the registers of the waveform picker.
+     * 2. the current LFR mode.
+     *
+     */
+
+    if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+         || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+    { // in modes other than STANDBY and BURST, send the CWF_F3 data
+        if ((waveform_picker_regs->status & 0x08) == 0x08){     // [1000] f3 is full
+            // (1) change the receiving buffer for the waveform picker
+            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
+                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_b);
+            }
+            else {
+                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);
+            }
+            // (2) send an event for the waveforms transmission
+            if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff777; // reset f3 bits to 0, [1111 0111 0111 0111]
+        }
+    }
+
+    switch(lfrCurrentMode)
+    {
+        //********
+        // STANDBY
+        case(LFR_MODE_STANDBY):
+        break;
+
+        //******
+        // NORMAL
+        case(LFR_MODE_NORMAL):
+        if ( (waveform_picker_regs->status & 0xff8) != 0x00)    // [1000] check the error bits
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+        }
+        if ( (waveform_picker_regs->status & 0x01) == 0x01)    // [0001] check the f0 full bit
+        {
+            // change F0 ring node
+            ring_node_to_send_swf_f0 = current_ring_node_f0;
+            current_ring_node_f0 = current_ring_node_f0->next;
+            waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffeee; // [1110 1110 1110]
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F0 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+        }
+        if ( (waveform_picker_regs->status & 0x02) == 0x02)    // [0010] check the f1 full bit
+        {
+            // change F1 ring node
+            ring_node_to_send_swf_f1 = current_ring_node_f1;
+            current_ring_node_f1 = current_ring_node_f1->next;
+            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1101 1101 1101]
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F1 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+        }
+        if ( (waveform_picker_regs->status & 0x04) == 0x04)    // [0100] check the f2 full bit
+        {
+            // change F2 ring node
+            ring_node_to_send_swf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1011 1011 1011]
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F2 ) != RTEMS_SUCCESSFUL) {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+            }
+        }
         break;
 
         //******
@@ -682,7 +846,7 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
             printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;
         }
-        rtems_task_wake_after(TIME_BETWEEN_TWO_SWF_PACKETS);  // 300 ms between each packet => 7 * 3 = 21 packets => 6.3 seconds
+//        rtems_task_wake_after(TIME_BETWEEN_TWO_SWF_PACKETS);  // 300 ms between each packet => 7 * 3 = 21 packets => 6.3 seconds
     }
 
     return ret;
@@ -1098,8 +1262,7 @@ void reset_wfp_status()
 #endif
 }
 
-#ifdef VHDL_DEV
-void reset_waveform_picker_regs()
+void reset_waveform_picker_regs_vhdl_dev()
 {
     /** This function resets the waveform picker module registers.
     *
@@ -1154,12 +1317,105 @@ void reset_waveform_picker_regs()
 //    waveform_picker_regs->start_date = 0x00;            // 0x38
 //    waveform_picker_regs->nb_word_in_buffer = 0x1802;   // 0x3c *** 2048 * 3 + 2 = 6146
     // 2352 = 7 * 336
-    waveform_picker_regs->nb_data_by_buffer = 0x92f;    // 0x30 *** 2352 - 1 => nb samples -1
-    waveform_picker_regs->snapshot_param = 0x930;       // 0x34 *** 2352 => nb samples
+//    waveform_picker_regs->nb_data_by_buffer = 0x92f;    // 0x30 *** 2352 - 1 => nb samples -1
+//    waveform_picker_regs->snapshot_param = 0x930;       // 0x34 *** 2352 => nb samples
+//    waveform_picker_regs->start_date = 0x00;            // 0x38
+//    waveform_picker_regs->nb_word_in_buffer = 0x1b92;   // 0x3c *** 2352 * 3 + 2 = 7058
+    // 128
+    waveform_picker_regs->nb_data_by_buffer = 0x7f;     // 0x30 *** 128 - 1 => nb samples -1
+    waveform_picker_regs->snapshot_param = 0x80;        // 0x34 *** 128 => nb samples
     waveform_picker_regs->start_date = 0x00;            // 0x38
-    waveform_picker_regs->nb_word_in_buffer = 0x1b92;   // 0x3c *** 2352 * 3 + 2 = 7058
+    waveform_picker_regs->nb_word_in_buffer = 0x182;    // 0x3c *** 128 * 3 + 2 = 386
 }
-#else
+
+void reset_waveform_picker_regs_vhdl_dev_debug()
+{
+    /** This function resets the waveform picker module registers.
+    *
+    * The registers affected by this function are located at the following offset addresses:
+    * - 0x00 data_shaping
+    * - 0x04 run_burst_enable
+    * - 0x08 addr_data_f0
+    * - 0x0C addr_data_f1
+    * - 0x10 addr_data_f2
+    * - 0x14 addr_data_f3
+    * - 0x18 status
+    * - 0x1C delta_snapshot
+    * - 0x20 delta_f0
+    * - 0x24 delta_f0_2
+    * - 0x28 delta_f1
+    * - 0x2c delta_f2
+    * - 0x30 nb_data_by_buffer
+    * - 0x34 nb_snapshot_param
+    * - 0x38 start_date
+    * - 0x3c nb_word_in_buffer
+    *
+    */
+    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
+    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
+    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
+    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
+    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
+    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
+    waveform_picker_regs->status = 0x00; // 0x18
+    //
+    waveform_picker_regs->delta_snapshot = 0x100;   // 0x1c *** 256
+    waveform_picker_regs->delta_f0 = 0xc1;          // 0x20 *** 256 - 63
+    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
+    waveform_picker_regs->delta_f1 = 0xc4;          // 0x28 *** 256 - 60
+    waveform_picker_regs->delta_f2 = 0xc0;          // 0x2c *** 192
+    // 128
+    waveform_picker_regs->nb_data_by_buffer = 0x7f;     // 0x30 *** 128 - 1 => nb samples -1
+    waveform_picker_regs->snapshot_param = 0x80;        // 0x34 *** 128 => nb samples
+    waveform_picker_regs->start_date = 0x00;            // 0x38
+    waveform_picker_regs->nb_word_in_buffer = 0x182;    // 0x3c *** 128 * 3 + 2 = 386
+}
+
+void reset_waveform_picker_regs_vhdl_dev_debug_64()
+{
+    /** This function resets the waveform picker module registers.
+    *
+    * The registers affected by this function are located at the following offset addresses:
+    * - 0x00 data_shaping
+    * - 0x04 run_burst_enable
+    * - 0x08 addr_data_f0
+    * - 0x0C addr_data_f1
+    * - 0x10 addr_data_f2
+    * - 0x14 addr_data_f3
+    * - 0x18 status
+    * - 0x1C delta_snapshot
+    * - 0x20 delta_f0
+    * - 0x24 delta_f0_2
+    * - 0x28 delta_f1
+    * - 0x2c delta_f2
+    * - 0x30 nb_data_by_buffer
+    * - 0x34 nb_snapshot_param
+    * - 0x38 start_date
+    * - 0x3c nb_word_in_buffer
+    *
+    */
+    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
+    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
+    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
+    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
+    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
+    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
+    waveform_picker_regs->status = 0x00; // 0x18
+    //
+    waveform_picker_regs->delta_snapshot = 0x80;    // 0x1c *** 128
+    waveform_picker_regs->delta_f0 = 0x60;          // 0x20 *** 128 - 32 = 96
+    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
+    waveform_picker_regs->delta_f1 = 0x62;          // 0x28 *** 128 - 30 = 90
+    waveform_picker_regs->delta_f2 = 0x60;          // 0x2c *** 192
+    // 128
+    waveform_picker_regs->nb_data_by_buffer = 0x3f;     // 0x30 *** 64 - 1 => nb samples -1
+    waveform_picker_regs->snapshot_param = 0x40;        // 0x34 *** 64 => nb samples
+    waveform_picker_regs->start_date = 0x00;            // 0x38
+    waveform_picker_regs->nb_word_in_buffer = 0xc2;    // 0x3c *** 64 * 3 + 2 = 194
+}
+
 void reset_waveform_picker_regs()
 {
     /** This function resets the waveform picker module registers.
@@ -1180,6 +1436,8 @@ void reset_waveform_picker_regs()
      *
      */
 
+#ifdef VHDL_DEV
+#else
     reset_wfp_burst_enable();
     reset_wfp_status();
     // set buffer addresses
@@ -1198,8 +1456,8 @@ void reset_waveform_picker_regs()
     waveform_picker_regs->nb_burst_available = 0x1b9;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
                                                         // 3 * 2352 / 16 = 441
     waveform_picker_regs->nb_snapshot_param = 0x944;    // max 3 octets, 2372 - 1
-}
 #endif
+}
 
 //*****************
 // local parameters

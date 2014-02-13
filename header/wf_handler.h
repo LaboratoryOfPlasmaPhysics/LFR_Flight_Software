@@ -45,6 +45,7 @@ extern rtems_id    Task_id[20];         /* array of task ids */
 extern unsigned char lfrCurrentMode;
 
 rtems_isr waveforms_isr( rtems_vector_number vector );
+rtems_isr waveforms_isr_alt( rtems_vector_number vector );
 rtems_task wfrm_task( rtems_task_argument argument );
 rtems_task cwf3_task( rtems_task_argument argument );
 rtems_task cwf2_task( rtems_task_argument argument );
@@ -76,6 +77,9 @@ char set_wfp_delta_snapshot();
 void set_wfp_burst_enable_register( unsigned char mode );
 void reset_wfp_burst_enable();
 void reset_wfp_status();
+void reset_waveform_picker_regs_vhdl_dev();
+void reset_waveform_picker_regs_vhdl_dev_debug();
+void reset_waveform_picker_regs_vhdl_dev_debug_64();
 void reset_waveform_picker_regs();
 void reset_new_waveform_picker_regs();
 

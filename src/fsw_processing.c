@@ -17,6 +17,7 @@ ring_node sm_ring_f0[NB_RING_NODES_ASM_F0];
 ring_node sm_ring_f1[NB_RING_NODES_ASM_F1];
 ring_node sm_ring_f2[NB_RING_NODES_ASM_F2];
 ring_node *current_ring_node_sm_f0;
+ring_node *ring_node_for_averaging_sm_f0;
 ring_node *current_ring_node_sm_f1;
 ring_node *current_ring_node_sm_f2;
 
@@ -25,7 +26,7 @@ float averaged_sm_f0[ TOTAL_SIZE_SM ];
 char averaged_sm_f0_char[ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 
-void init_asm_rings( void )
+void init_sm_rings( void )
 {
     unsigned char i;
 
@@ -51,7 +52,8 @@ void init_asm_rings( void )
 
 void reset_current_sm_ring_nodes( void )
 {
-    current_ring_node_sm_f0    = sm_ring_f0;
+    current_ring_node_sm_f0         = sm_ring_f0;
+    ring_node_for_averaging_sm_f0   = sm_ring_f0;
 }
 
 //***********************************************************
@@ -60,6 +62,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
     unsigned char status;
     unsigned char i;
+    static unsigned int nb_interrupt_f0 = 0;
 
     status = spectral_matrix_regs->status; //[f2 f1 f0_1 f0_0]
     for (i=0; i<4; i++)
@@ -72,6 +75,15 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
                 current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
                 spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
                 spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
+                nb_interrupt_f0 = nb_interrupt_f0 + 1;
+                if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 ){
+                    ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+                    if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+                    {
+                        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+                    }
+                    nb_interrupt_f0 = 0;
+                }
                 break;
             case 1:
                 break;
@@ -85,16 +97,24 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     // reset error codes to 0
     spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf; // [1100 1111]
-
-    if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_4 );
-    }
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 {
-    if (rtems_event_send( Task_id[TASKID_SMIQ], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_4 );
+    static unsigned int nb_interrupt_f0 = 0;
+
+    current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+    spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
+    nb_interrupt_f0 = nb_interrupt_f0 + 1;
+    if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 )
+    {
+        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
+        nb_interrupt_f0 = 0;
     }
 }
 
@@ -104,20 +124,11 @@ rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matrices IRQ
 {
     rtems_event_set event_out;
-    unsigned int nb_interrupt_f0 = 0;
 
     BOOT_PRINTF("in SMIQ *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        nb_interrupt_f0 = nb_interrupt_f0 + 1;
-        if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 ){
-            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-            }
-            nb_interrupt_f0 = 0;
-        }
     }
 }
 
@@ -146,15 +157,19 @@ rtems_task avf0_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        for (i=0; i<NB_SM_TO_RECEIVE_BEFORE_AVF0; i++)
+        {
+            ring_node_for_averaging_sm_f0 = ring_node_for_averaging_sm_f0->previous;
+        }
         for(i=0; i<TOTAL_SIZE_SM; i++){
-            averaged_sm_f0[i] = current_ring_node_sm_f0[0].buffer_address
-                    + current_ring_node_sm_f0[1].buffer_address
-                    + current_ring_node_sm_f0[2].buffer_address
-                    + current_ring_node_sm_f0[3].buffer_address
-                    + current_ring_node_sm_f0[4].buffer_address
-                    + current_ring_node_sm_f0[5].buffer_address
-                    + current_ring_node_sm_f0[6].buffer_address
-                    + current_ring_node_sm_f0[7].buffer_address;
+            averaged_sm_f0[i] = ( (int *) (ring_node_for_averaging_sm_f0[0].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[1].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[2].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[3].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[4].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[5].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[6].buffer_address) )[i]
+                    + ( (int *) (ring_node_for_averaging_sm_f0[7].buffer_address) )[i];
         }
         nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
         if (nb_average == NB_AVERAGE_NORMAL_f0) {
@@ -250,7 +265,7 @@ void matrix_compression(volatile float *averaged_spec_mat, unsigned char fChanne
     }
 }
 
-void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1){
+void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1){
     int i;
     int j;
     unsigned char tmp_u_char;
@@ -384,7 +399,7 @@ void BP1_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_
 
 }
 
-void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat){
+void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat){
     // BP2 autocorrelation
     int i;
     int aux = 0;
@@ -629,13 +644,10 @@ void reset_spectral_matrix_regs()
      *
      */
 
-#ifdef GSA
-#else
     spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
     spectral_matrix_regs->matrixFO_Address1 = current_ring_node_sm_f0->buffer_address;
     spectral_matrix_regs->matrixF1_Address = current_ring_node_sm_f1->buffer_address;
     spectral_matrix_regs->matrixF2_Address = current_ring_node_sm_f2->buffer_address;
-#endif
 }
 
 //******************

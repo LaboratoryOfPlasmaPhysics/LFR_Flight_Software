@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** gsa *** vhdl_dev
-CONFIG += console verbose debug_messages vhdl_dev
+CONFIG += console verbose debug_messages vhdl_dev cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -51,7 +51,8 @@ contains( CONFIG, vhdl_dev ) {
 
 INCLUDEPATH += \
     ../src \
-    ../header
+    ../header \
+    ../../LFR_basic-parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -63,7 +64,8 @@ SOURCES += \
     ../src/fsw_spacewire.c \
     ../src/tc_load_dump_parameters.c \
     ../src/tm_lfr_tc_exe.c \
-    ../src/tc_acceptance.c
+    ../src/tc_acceptance.c \
+    ../../LFR_basic-parameters/basic_parameters.c
 
 
 HEADERS += \
@@ -81,5 +83,6 @@ HEADERS += \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
-    ../header/fsw_params_nb_bytes.h
+    ../header/fsw_params_nb_bytes.h \
+    ../../LFR_basic-parameters/basic_parameters.h
 

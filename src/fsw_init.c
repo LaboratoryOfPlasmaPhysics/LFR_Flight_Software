@@ -76,8 +76,8 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_isr_entry  old_isr_handler;
 
     // UART settings
-    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
     send_console_outputs_on_apbuart_port();
+    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
     enable_apbuart_transmitter();
     PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 
@@ -92,6 +92,7 @@ rtems_task Init( rtems_task_argument ignored )
 
     reset_wfp_burst_enable();       // stop the waveform picker if it was running
     init_waveform_rings();          // initialize the waveform rings
+    init_sm_rings();
 
     init_parameter_dump();
     init_local_mode_parameters();

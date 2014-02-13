@@ -81,7 +81,7 @@ int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on 
 {
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
 
-    apbuart_regs->ctrl = apbuart_regs->ctrl & APBUART_CTRL_REG_MASK_DB;
+    apbuart_regs->ctrl = APBUART_CTRL_REG_MASK_TE;
 
     return 0;
 }

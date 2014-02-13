@@ -8,6 +8,7 @@
 #include "tc_acceptance.h"
 #include "tm_lfr_tc_exe.h"
 #include "wf_handler.h"
+#include "fsw_processing.h"
 
 // MODE PARAMETERS
 extern unsigned int maxCount;
@@ -42,6 +43,7 @@ int enter_sbm2_mode();
 int restart_science_tasks();
 int suspend_science_tasks();
 void launch_waveform_picker( unsigned char mode );
+void launch_spectral_matrix( unsigned char mode );
 
 // other functions
 void updateLFRCurrentMode();

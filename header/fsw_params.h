@@ -17,6 +17,14 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
+typedef struct ring_node_sm
+{
+    struct ring_node *previous;
+    volatile int *buffer_address;
+    struct ring_node *next;
+    unsigned int status;
+} ring_node_sm;
+
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -33,7 +41,7 @@ typedef struct ring_node
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
-#define NB_RING_NODES_ASM_F0 8  // AT LEAST 3
+#define NB_RING_NODES_ASM_F0 12  // AT LEAST 3
 #define NB_RING_NODES_ASM_F1 2  // AT LEAST 3
 #define NB_RING_NODES_ASM_F2 2  // AT LEAST 3
 

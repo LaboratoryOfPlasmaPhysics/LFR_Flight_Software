@@ -495,13 +495,8 @@ int enter_normal_mode()
 
     status = restart_science_tasks();
 
-    // Spectral Matrices simulator
-//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-//    set_local_nb_interrupt_f0_MAX();
-//    LEON_Clear_interrupt( IRQ_SM );
-//    LEON_Unmask_interrupt( IRQ_SM );
-
     launch_waveform_picker( LFR_MODE_NORMAL );
+//    launch_spectral_matrix( LFR_MODE_NORMAL );
 
     return status;
 }
@@ -705,15 +700,24 @@ void launch_waveform_picker( unsigned char mode )
     int startDate;
 
     reset_current_ring_nodes();
-    reset_waveform_picker_regs();
+    reset_waveform_picker_regs_vhdl_dev_debug_64();
     set_wfp_burst_enable_register( mode );
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
-#ifdef VHDL_DEV
     startDate = time_management_regs->coarse_time + 2;
     waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
     waveform_picker_regs->start_date = startDate;
-#endif
+}
+
+void launch_spectral_matrix( unsigned char mode )
+{
+    reset_current_sm_ring_nodes();
+    reset_spectral_matrix_regs();
+    // Spectral Matrices simulator
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    set_local_nb_interrupt_f0_MAX();
+    LEON_Clear_interrupt( IRQ_SM );
+    LEON_Unmask_interrupt( IRQ_SM );
 }
 
 //****************
