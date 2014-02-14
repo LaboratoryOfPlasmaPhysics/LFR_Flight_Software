@@ -700,7 +700,7 @@ void launch_waveform_picker( unsigned char mode )
     int startDate;
 
     reset_current_ring_nodes();
-    reset_waveform_picker_regs_vhdl_dev_debug_64();
+    reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );

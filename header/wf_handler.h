@@ -72,16 +72,17 @@ rtems_id get_pkts_queue_id( void );
 
 //**************
 // wfp registers
-void set_wfp_data_shaping();
-char set_wfp_delta_snapshot();
+// RESET
+void reset_wfp_burst_enable( void );
+void reset_wfp_status(void);
+void reset_waveform_picker_regs( void );
+// SET
+void set_wfp_data_shaping(void);
 void set_wfp_burst_enable_register( unsigned char mode );
-void reset_wfp_burst_enable();
-void reset_wfp_status();
-void reset_waveform_picker_regs_vhdl_dev();
-void reset_waveform_picker_regs_vhdl_dev_debug();
-void reset_waveform_picker_regs_vhdl_dev_debug_64();
-void reset_waveform_picker_regs();
-void reset_new_waveform_picker_regs();
+void set_wfp_delta_snapshot( void );
+void set_wfp_delta_f0_f0_2( void );
+void set_wfp_delta_f1( void );
+void set_wfp_delta_f2( void );
 
 //*****************
 // local parameters

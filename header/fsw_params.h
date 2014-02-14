@@ -41,7 +41,7 @@ typedef struct ring_node_sm
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
-#define NB_RING_NODES_ASM_F0 12  // AT LEAST 3
+#define NB_RING_NODES_ASM_F0 12 // AT LEAST 3
 #define NB_RING_NODES_ASM_F1 2  // AT LEAST 3
 #define NB_RING_NODES_ASM_F2 2  // AT LEAST 3
 
@@ -71,7 +71,7 @@ typedef struct ring_node_sm
 #define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
 // NORM
 #define SY_LFR_N_SWF_L 2048 // nb sample
-#define SY_LFR_N_SWF_P 20   // sec
+#define SY_LFR_N_SWF_P 300  // sec
 #define SY_LFR_N_ASM_P 3600 // sec
 #define SY_LFR_N_BP_P0 4    // sec
 #define SY_LFR_N_BP_P1 20   // sec

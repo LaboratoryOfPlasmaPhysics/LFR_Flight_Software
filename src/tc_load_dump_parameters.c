@@ -25,7 +25,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
 
     parameter_dump_packet.unused0 = TC->dataAndCRC[0];
     parameter_dump_packet.bw_sp0_sp1_r0_r1 = TC->dataAndCRC[1];
-    set_wfp_data_shaping(parameter_dump_packet.bw_sp0_sp1_r0_r1);
+    set_wfp_data_shaping( );
     return LFR_SUCCESSFUL;
 }
 
@@ -307,11 +307,9 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
     msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P ];
     lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P+1 ];
 
-    tmp = ( unsigned int ) floor(
-                ( ( msb*256 ) + lsb ) / 8
-            ) * 8;
+    tmp = msb * 256  + lsb;
 
-    if ( (tmp < 16) || (tmp > 65528) )
+    if ( tmp < 16 )
     {
         status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb, time );
         result = WRONG_APP_DATA;

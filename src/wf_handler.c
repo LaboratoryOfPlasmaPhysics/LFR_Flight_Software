@@ -96,8 +96,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             current_ring_node_f2 = current_ring_node_f2->next;
             waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
             //
-            if (nb_swf < 2)
-//            if (true)
+//            if (nb_swf < 2)
+            if (true)
             {
                 if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
                     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
@@ -1096,7 +1096,84 @@ void compute_acquisition_time( unsigned int *coarseTime, unsigned int *fineTime,
 
 //**************
 // wfp registers
-void set_wfp_data_shaping()
+void reset_wfp_burst_enable(void)
+{
+    /** This function resets the waveform picker burst_enable register.
+     *
+     * The burst bits [f2 f1 f0] and the enable bits [f3 f2 f1 f0] are set to 0.
+     *
+     */
+
+#ifdef VHDL_DEV
+    waveform_picker_regs->run_burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
+#else
+    waveform_picker_regs->burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
+#endif
+}
+
+void reset_wfp_status( void )
+{
+    /** This function resets the waveform picker status register.
+     *
+     * All status bits are set to 0 [new_err full_err full].
+     *
+     */
+
+#ifdef GSA
+#else
+    waveform_picker_regs->status = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
+#endif
+}
+
+void reset_waveform_picker_regs(void)
+{
+    /** This function resets the waveform picker module registers.
+    *
+    * The registers affected by this function are located at the following offset addresses:
+    * - 0x00 data_shaping
+    * - 0x04 run_burst_enable
+    * - 0x08 addr_data_f0
+    * - 0x0C addr_data_f1
+    * - 0x10 addr_data_f2
+    * - 0x14 addr_data_f3
+    * - 0x18 status
+    * - 0x1C delta_snapshot
+    * - 0x20 delta_f0
+    * - 0x24 delta_f0_2
+    * - 0x28 delta_f1
+    * - 0x2c delta_f2
+    * - 0x30 nb_data_by_buffer
+    * - 0x34 nb_snapshot_param
+    * - 0x38 start_date
+    * - 0x3c nb_word_in_buffer
+    *
+    */
+
+    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
+    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
+    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
+    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
+    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
+    waveform_picker_regs->status = 0x00; // 0x18
+    //
+    set_wfp_delta_snapshot();   // 0x1c
+    set_wfp_delta_f0_f0_2();    // 0x20, 0x24
+    set_wfp_delta_f1();         // 0x28
+    set_wfp_delta_f2();         // 0x2c
+    DEBUG_PRINTF1("delta_snapshot %x\n", waveform_picker_regs->delta_snapshot)
+    DEBUG_PRINTF1("delta_f0 %x\n", waveform_picker_regs->delta_f0)
+    DEBUG_PRINTF1("delta_f0_2 %x\n", waveform_picker_regs->delta_f0_2)
+    DEBUG_PRINTF1("delta_f1 %x\n", waveform_picker_regs->delta_f1)
+    DEBUG_PRINTF1("delta_f2 %x\n", waveform_picker_regs->delta_f2)
+    // 2352 = 7 * 336
+    waveform_picker_regs->nb_data_by_buffer = 0x92f;    // 0x30 *** 2352 - 1 => nb samples -1
+    waveform_picker_regs->snapshot_param = 0x930;       // 0x34 *** 2352 => nb samples
+    waveform_picker_regs->start_date = 0x00;            // 0x38
+    waveform_picker_regs->nb_word_in_buffer = 0x1b92;   // 0x3c *** 2352 * 3 + 2 = 7058
+}
+
+void set_wfp_data_shaping( void )
 {
     /** This function sets the data_shaping register of the waveform picker module.
      *
@@ -1112,56 +1189,14 @@ void set_wfp_data_shaping()
 
     data_shaping = parameter_dump_packet.bw_sp0_sp1_r0_r1;
 
-#ifdef GSA
-#else
     waveform_picker_regs->data_shaping =
               ( (data_shaping & 0x10) >> 4 )     // BW
             + ( (data_shaping & 0x08) >> 2 )     // SP0
             + ( (data_shaping & 0x04)      )     // SP1
             + ( (data_shaping & 0x02) << 2 )     // R0
             + ( (data_shaping & 0x01) << 4 );    // R1
-#endif
 }
 
-char set_wfp_delta_snapshot()
-{
-    /** This function sets the delta_snapshot register of the waveform picker module.
-     *
-     * The value is read from two (unsigned char) of the parameter_dump_packet structure:
-     * - sy_lfr_n_swf_p[0]
-     * - sy_lfr_n_swf_p[1]
-     *
-     */
-
-    char ret;
-    unsigned int delta_snapshot;
-    unsigned int aux;
-
-    aux = 0;
-    ret = LFR_DEFAULT;
-
-    delta_snapshot = parameter_dump_packet.sy_lfr_n_swf_p[0]*256
-            + parameter_dump_packet.sy_lfr_n_swf_p[1];
-
-#ifdef GSA
-#else
-    if ( delta_snapshot < MIN_DELTA_SNAPSHOT )
-    {
-        aux = MIN_DELTA_SNAPSHOT;
-        ret = LFR_DEFAULT;
-    }
-    else
-    {
-        aux = delta_snapshot ;
-        ret = LFR_SUCCESSFUL;
-    }
-    waveform_picker_regs->delta_snapshot = aux - 1;             // max 2 bytes
-#endif
-
-    return ret;
-}
-
-#ifdef VHDL_DEV
 void set_wfp_burst_enable_register( unsigned char mode )
 {
     /** This function sets the waveform picker burst_enable register depending on the mode.
@@ -1196,267 +1231,63 @@ void set_wfp_burst_enable_register( unsigned char mode )
         break;
     }
 }
-#else
-void set_wfp_burst_enable_register( unsigned char mode )
+
+void set_wfp_delta_snapshot( void )
 {
-    /** This function sets the waveform picker burst_enable register depending on the mode.
+    /** This function sets the delta_snapshot register of the waveform picker module.
      *
-     * @param mode is the LFR mode to launch.
-     *
-     * The burst bits shall be before the enable bits.
+     * The value is read from two (unsigned char) of the parameter_dump_packet structure:
+     * - sy_lfr_n_swf_p[0]
+     * - sy_lfr_n_swf_p[1]
      *
      */
 
-    // [0000 0000] burst f2, f1, f0 enable f3 f2 f1 f0
-    // the burst bits shall be set first, before the enable bits
-    switch(mode) {
-    case(LFR_MODE_NORMAL):
-        waveform_picker_regs->burst_enable = 0x00;  // [0000 0000] no burst enable
-        waveform_picker_regs->burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
-        break;
-    case(LFR_MODE_BURST):
-        waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x04; // [0100] enable f2
-        break;
-    case(LFR_MODE_SBM1):
-        waveform_picker_regs->burst_enable = 0x20;  // [0010 0000] f1 burst enabled
-        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
-        break;
-    case(LFR_MODE_SBM2):
-        waveform_picker_regs->burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-        waveform_picker_regs->burst_enable =  waveform_picker_regs->burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
-        break;
-    default:
-        waveform_picker_regs->burst_enable = 0x00;  // [0000 0000] no burst enabled, no waveform enabled
-        break;
-    }
-}
-#endif
+    unsigned int delta_snapshot;
+    unsigned int delta_snapshot_in_T2;
 
-void reset_wfp_burst_enable()
-{
-    /** This function resets the waveform picker burst_enable register.
-     *
-     * The burst bits [f2 f1 f0] and the enable bits [f3 f2 f1 f0] are set to 0.
-     *
-     */
+    delta_snapshot = parameter_dump_packet.sy_lfr_n_swf_p[0]*256
+            + parameter_dump_packet.sy_lfr_n_swf_p[1];
 
-#ifdef VHDL_DEV
-    waveform_picker_regs->run_burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
-#else
-    waveform_picker_regs->burst_enable = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
-#endif
+    delta_snapshot_in_T2 = delta_snapshot * 256;
+    waveform_picker_regs->delta_snapshot = delta_snapshot_in_T2;    // max 4 bytes
 }
 
-void reset_wfp_status()
+void set_wfp_delta_f0_f0_2( void )
 {
-    /** This function resets the waveform picker status register.
-     *
-     * All status bits are set to 0 [new_err full_err full].
-     *
-     */
+    unsigned int delta_snapshot;
+    unsigned int nb_samples_per_snapshot;
+    float delta_f0_in_float;
 
-#ifdef GSA
-#else
-    waveform_picker_regs->status = 0x00;              // burst f2, f1, f0     enable f3, f2, f1, f0
-#endif
+    delta_snapshot = waveform_picker_regs->delta_snapshot;
+    nb_samples_per_snapshot = parameter_dump_packet.sy_lfr_n_swf_l[0] * 256 + parameter_dump_packet.sy_lfr_n_swf_l[1];
+    delta_f0_in_float =nb_samples_per_snapshot / 2. * ( 1. / 256. - 1. / 24576.) * 256.;
+
+    waveform_picker_regs->delta_f0      =  delta_snapshot - floor( delta_f0_in_float );
+    waveform_picker_regs->delta_f0_2    = 0x7;         // max 7 bits
 }
 
-void reset_waveform_picker_regs_vhdl_dev()
+void set_wfp_delta_f1( void )
 {
-    /** This function resets the waveform picker module registers.
-    *
-    * The registers affected by this function are located at the following offset addresses:
-    * - 0x00 data_shaping
-    * - 0x04 run_burst_enable
-    * - 0x08 addr_data_f0
-    * - 0x0C addr_data_f1
-    * - 0x10 addr_data_f2
-    * - 0x14 addr_data_f3
-    * - 0x18 status
-    * - 0x1C delta_snapshot
-    * - 0x20 delta_f0
-    * - 0x24 delta_f0_2
-    * - 0x28 delta_f1
-    * - 0x2c delta_f2
-    * - 0x30 nb_data_by_buffer
-    * - 0x34 nb_snapshot_param
-    * - 0x38 start_date
-    * - 0x3c nb_word_in_buffer
-    *
-    */
-    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
-    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
-    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
-    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
-    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
-    waveform_picker_regs->status = 0x00; // 0x18
-    //
-    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
-    waveform_picker_regs->delta_f0 = 0xc0b;         // 0x20 *** 3083 = 4096 - 1013
-    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-    waveform_picker_regs->delta_f1 = 0xc40;         // 0x28 *** 3136 = 4096 - 960
-    waveform_picker_regs->delta_f2 = 0xc00;         // 0x2c *** 3072 =   12 * 256
-    //
-//    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
-//    waveform_picker_regs->delta_f0 = 0x1;           // 0x20 ***
-//    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-//    waveform_picker_regs->delta_f1 = 0x1;           // 0x28 ***
-//    waveform_picker_regs->delta_f2 = 0x1;           // 0x2c ***
-    //
-//    waveform_picker_regs->delta_snapshot = 0x1000;  // 0x1c *** 4096 =   16 * 256
-//    waveform_picker_regs->delta_f0 = 0x0fff;        // 0x20 ***
-//    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-//    waveform_picker_regs->delta_f1 = 0x0fff;        // 0x28 ***
-//    waveform_picker_regs->delta_f2 = 0x1;           // 0x2c ***
-    // 2048
-//    waveform_picker_regs->nb_data_by_buffer = 0x7ff;    // 0x30 *** 2048 -1 => nb samples -1
-//    waveform_picker_regs->snapshot_param = 0x800;       // 0x34 *** 2048 => nb samples
-//    waveform_picker_regs->start_date = 0x00;            // 0x38
-//    waveform_picker_regs->nb_word_in_buffer = 0x1802;   // 0x3c *** 2048 * 3 + 2 = 6146
-    // 2352 = 7 * 336
-//    waveform_picker_regs->nb_data_by_buffer = 0x92f;    // 0x30 *** 2352 - 1 => nb samples -1
-//    waveform_picker_regs->snapshot_param = 0x930;       // 0x34 *** 2352 => nb samples
-//    waveform_picker_regs->start_date = 0x00;            // 0x38
-//    waveform_picker_regs->nb_word_in_buffer = 0x1b92;   // 0x3c *** 2352 * 3 + 2 = 7058
-    // 128
-    waveform_picker_regs->nb_data_by_buffer = 0x7f;     // 0x30 *** 128 - 1 => nb samples -1
-    waveform_picker_regs->snapshot_param = 0x80;        // 0x34 *** 128 => nb samples
-    waveform_picker_regs->start_date = 0x00;            // 0x38
-    waveform_picker_regs->nb_word_in_buffer = 0x182;    // 0x3c *** 128 * 3 + 2 = 386
+    unsigned int delta_snapshot;
+    unsigned int nb_samples_per_snapshot;
+    float delta_f1_in_float;
+
+    delta_snapshot = waveform_picker_regs->delta_snapshot;
+    nb_samples_per_snapshot = parameter_dump_packet.sy_lfr_n_swf_l[0] * 256 + parameter_dump_packet.sy_lfr_n_swf_l[1];
+    delta_f1_in_float = nb_samples_per_snapshot / 2. * ( 1. / 256. - 1. / 4096.) * 256.;
+
+    waveform_picker_regs->delta_f1 = delta_snapshot - floor( delta_f1_in_float );
 }
 
-void reset_waveform_picker_regs_vhdl_dev_debug()
+void set_wfp_delta_f2()
 {
-    /** This function resets the waveform picker module registers.
-    *
-    * The registers affected by this function are located at the following offset addresses:
-    * - 0x00 data_shaping
-    * - 0x04 run_burst_enable
-    * - 0x08 addr_data_f0
-    * - 0x0C addr_data_f1
-    * - 0x10 addr_data_f2
-    * - 0x14 addr_data_f3
-    * - 0x18 status
-    * - 0x1C delta_snapshot
-    * - 0x20 delta_f0
-    * - 0x24 delta_f0_2
-    * - 0x28 delta_f1
-    * - 0x2c delta_f2
-    * - 0x30 nb_data_by_buffer
-    * - 0x34 nb_snapshot_param
-    * - 0x38 start_date
-    * - 0x3c nb_word_in_buffer
-    *
-    */
-    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
-    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
-    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
-    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
-    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
-    waveform_picker_regs->status = 0x00; // 0x18
-    //
-    waveform_picker_regs->delta_snapshot = 0x100;   // 0x1c *** 256
-    waveform_picker_regs->delta_f0 = 0xc1;          // 0x20 *** 256 - 63
-    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-    waveform_picker_regs->delta_f1 = 0xc4;          // 0x28 *** 256 - 60
-    waveform_picker_regs->delta_f2 = 0xc0;          // 0x2c *** 192
-    // 128
-    waveform_picker_regs->nb_data_by_buffer = 0x7f;     // 0x30 *** 128 - 1 => nb samples -1
-    waveform_picker_regs->snapshot_param = 0x80;        // 0x34 *** 128 => nb samples
-    waveform_picker_regs->start_date = 0x00;            // 0x38
-    waveform_picker_regs->nb_word_in_buffer = 0x182;    // 0x3c *** 128 * 3 + 2 = 386
-}
+    unsigned int delta_snapshot;
+    unsigned int nb_samples_per_snapshot;
 
-void reset_waveform_picker_regs_vhdl_dev_debug_64()
-{
-    /** This function resets the waveform picker module registers.
-    *
-    * The registers affected by this function are located at the following offset addresses:
-    * - 0x00 data_shaping
-    * - 0x04 run_burst_enable
-    * - 0x08 addr_data_f0
-    * - 0x0C addr_data_f1
-    * - 0x10 addr_data_f2
-    * - 0x14 addr_data_f3
-    * - 0x18 status
-    * - 0x1C delta_snapshot
-    * - 0x20 delta_f0
-    * - 0x24 delta_f0_2
-    * - 0x28 delta_f1
-    * - 0x2c delta_f2
-    * - 0x30 nb_data_by_buffer
-    * - 0x34 nb_snapshot_param
-    * - 0x38 start_date
-    * - 0x3c nb_word_in_buffer
-    *
-    */
-    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
-    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    //waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0); // 0x08
-    waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
-    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
-    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
-    waveform_picker_regs->status = 0x00; // 0x18
-    //
-    waveform_picker_regs->delta_snapshot = 0x80;    // 0x1c *** 128
-    waveform_picker_regs->delta_f0 = 0x60;          // 0x20 *** 128 - 32 = 96
-    waveform_picker_regs->delta_f0_2 = 0x7;         // 0x24 *** 7 [7 bits]
-    waveform_picker_regs->delta_f1 = 0x62;          // 0x28 *** 128 - 30 = 90
-    waveform_picker_regs->delta_f2 = 0x60;          // 0x2c *** 192
-    // 128
-    waveform_picker_regs->nb_data_by_buffer = 0x3f;     // 0x30 *** 64 - 1 => nb samples -1
-    waveform_picker_regs->snapshot_param = 0x40;        // 0x34 *** 64 => nb samples
-    waveform_picker_regs->start_date = 0x00;            // 0x38
-    waveform_picker_regs->nb_word_in_buffer = 0xc2;    // 0x3c *** 64 * 3 + 2 = 194
-}
+    delta_snapshot = waveform_picker_regs->delta_snapshot;
+    nb_samples_per_snapshot = parameter_dump_packet.sy_lfr_n_swf_l[0] * 256 + parameter_dump_packet.sy_lfr_n_swf_l[1];
 
-void reset_waveform_picker_regs()
-{
-    /** This function resets the waveform picker module registers.
-     *
-     * The registers affected by this function are located at the following offset addresses:
-     * - 0x00 data_shaping
-     * - 0x04 burst_enable
-     * - 0x08 addr_data_f0
-     * - 0x0C addr_data_f1
-     * - 0x10 addr_data_f2
-     * - 0x14 addr_data_f3
-     * - 0x18 status
-     * - 0x1C delta_snapshot
-     * - 0x20 delta_f2_f1
-     * - 0x24 delta_f2_f0
-     * - 0x28 nb_burst
-     * - 0x2C nb_snapshot
-     *
-     */
-
-#ifdef VHDL_DEV
-#else
-    reset_wfp_burst_enable();
-    reset_wfp_status();
-    // set buffer addresses
-    waveform_picker_regs->addr_data_f0 = (int) (wf_snap_f0);
-    waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
-    waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);
-    // set other parameters
-    set_wfp_data_shaping();
-    set_wfp_delta_snapshot();                           // time in seconds between two snapshots
-    waveform_picker_regs->delta_f2_f1 = 0xffff;         // 0x16800 => 92160 (max 4 bytes)
-    waveform_picker_regs->delta_f2_f0 = 0x17c00;        // 97 280 (max 5 bytes)
-//    waveform_picker_regs->nb_burst_available = 0x180;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
-//                                                        // 3 * 2048 / 16 = 384
-//    waveform_picker_regs->nb_snapshot_param = 0x7ff;    // max 3 octets, 2048 - 1
-    waveform_picker_regs->nb_burst_available = 0x1b9;   // max 3 bytes, size of the buffer in burst (1 burst = 16 x 4 octets)
-                                                        // 3 * 2352 / 16 = 441
-    waveform_picker_regs->nb_snapshot_param = 0x944;    // max 3 octets, 2372 - 1
-#endif
+    waveform_picker_regs->delta_f2 = delta_snapshot - nb_samples_per_snapshot / 2;
 }
 
 //*****************
