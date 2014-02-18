@@ -73,7 +73,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     }
 
     //***************
-    // SY_LFR_N_ASM_P
+    // sy_lfr_n_asm_p
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_asm_p( TC, queue_id );
@@ -84,7 +84,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     }
 
     //***************
-    // SY_LFR_N_BP_P0
+    // sy_lfr_n_bp_p0
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_bp_p0( TC, queue_id );
@@ -457,6 +457,7 @@ void init_parameter_dump( void )
     parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (SY_LFR_N_ASM_P     );
     parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) SY_LFR_N_BP_P0;
     parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) SY_LFR_N_BP_P1;
+    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = (unsigned char) SY_LFR_N_CWF_LONG_F3;
 
     //*****************
     // BURST PARAMETERS

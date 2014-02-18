@@ -33,13 +33,8 @@ int action_update_time(ccsdsTelecommandPacket_t *TC);
 
 // mode transition
 int transition_validation(unsigned char requestedMode);
-int stop_current_mode();
+int stop_current_mode( void );
 int enter_mode(unsigned char mode);
-int enter_standby_mode();
-int enter_normal_mode();
-int enter_burst_mode();
-int enter_sbm1_mode();
-int enter_sbm2_mode();
 int restart_science_tasks();
 int suspend_science_tasks();
 void launch_waveform_picker( unsigned char mode );

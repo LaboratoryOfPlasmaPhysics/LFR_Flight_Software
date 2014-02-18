@@ -51,12 +51,7 @@ volatile int sm_f2[ NB_RING_NODES_ASM_F2 ][ SM_HEADER + TOTAL_SIZE_SM ];
 // APB CONFIGURATION REGISTERS
 time_management_regs_t      *time_management_regs   = (time_management_regs_t*)     REGS_ADDR_TIME_MANAGEMENT;
 gptimer_regs_t              *gptimer_regs           = (gptimer_regs_t *)            REGS_ADDR_GPTIMER;
-
-#ifdef VHDL_DEV
 waveform_picker_regs_new_t  *waveform_picker_regs   = (waveform_picker_regs_new_t*) REGS_ADDR_WAVEFORM_PICKER;
-#else
-waveform_picker_regs_t      *waveform_picker_regs   = (waveform_picker_regs_t*)     REGS_ADDR_WAVEFORM_PICKER;
-#endif
 spectral_matrix_regs_t      *spectral_matrix_regs   = (spectral_matrix_regs_t*)     REGS_ADDR_SPECTRAL_MATRIX;
 
 // MODE PARAMETERS

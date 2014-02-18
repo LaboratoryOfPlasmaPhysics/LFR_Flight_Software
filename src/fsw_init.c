@@ -79,16 +79,17 @@ rtems_task Init( rtems_task_argument ignored )
     send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
     enable_apbuart_transmitter();
-    PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
+    DEBUG_PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 
-    BOOT_PRINTF("\n\n\n\n\n")
-    BOOT_PRINTF("***************************\n")
-    BOOT_PRINTF("** START Flight Software **\n")
-#ifdef VHDL_DEV
-    PRINTF("/!\\ this is the VHDL_DEV flight software /!\\ \n")
-#endif
-    BOOT_PRINTF("***************************\n")
-    BOOT_PRINTF("\n\n")
+    PRINTF("\n\n\n\n\n")
+    PRINTF("*************************\n")
+    PRINTF("** LFR Flight Software **\n")
+    PRINTF1("** %d.", SW_VERSION_N1)
+    PRINTF1("%d.", SW_VERSION_N2)
+    PRINTF1("%d.", SW_VERSION_N3)
+    PRINTF1("%d\n", SW_VERSION_N4)
+    PRINTF("*************************\n")
+    PRINTF("\n\n")
 
     reset_wfp_burst_enable();       // stop the waveform picker if it was running
     init_waveform_rings();          // initialize the waveform rings
@@ -364,7 +365,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
         status = rtems_task_create(
             Task_name[TASKID_CWF3], TASK_PRIORITY_CWF3, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF3]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF3]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // CWF2
@@ -372,7 +373,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
         status = rtems_task_create(
             Task_name[TASKID_CWF2], TASK_PRIORITY_CWF2, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF2]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF2]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // CWF1
@@ -380,7 +381,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
         status = rtems_task_create(
             Task_name[TASKID_CWF1], TASK_PRIORITY_CWF1, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_CWF1]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF1]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // SEND

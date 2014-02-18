@@ -379,7 +379,7 @@ int transition_validation(unsigned char requestedMode)
     return status;
 }
 
-int stop_current_mode()
+int stop_current_mode(void)
 {
     /** This function stops the current mode by masking interrupt lines and suspending science tasks.
      *
@@ -438,128 +438,39 @@ int enter_mode(unsigned char mode )
     housekeeping_packet.lfr_status_word[0] = (unsigned char) ((mode << 4) + 0x0d);
     updateLFRCurrentMode();
 
-    switch(mode){
-    case LFR_MODE_STANDBY:
-        status = enter_standby_mode( );
-        break;
-    case LFR_MODE_NORMAL:
-        status = enter_normal_mode( );
-        break;
-    case LFR_MODE_BURST:
-        status = enter_burst_mode( );
-        break;
-    case LFR_MODE_SBM1:
-        status = enter_sbm1_mode( );
-        break;
-    case LFR_MODE_SBM2:
-        status = enter_sbm2_mode( );
-        break;
-    default:
+    if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
+         || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
+    {
+        status = restart_science_tasks();
+        launch_waveform_picker( mode );
+//        launch_spectral_matrix( mode );
+    }
+    else if ( mode == LFR_MODE_STANDBY )
+    {
+        status = stop_current_mode();
+    }
+    else
+    {
         status = RTEMS_UNSATISFIED;
+    }
+
+    if (mode == LFR_MODE_STANDBY)
+    {
+        PRINTF1("maxCount = %d\n", maxCount)
+#ifdef PRINT_TASK_STATISTICS
+        rtems_cpu_usage_report();
+#endif
+
+#ifdef PRINT_STACK_REPORT
+        rtems_stack_checker_report_usage();
+#endif
     }
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in enter_mode *** ERR\n")
+        PRINTF1("in enter_mode *** ERR = %d\n", status)
         status = RTEMS_UNSATISFIED;
     }
-
-    return status;
-}
-
-int enter_standby_mode()
-{
-    /** This function is used to enter the STANDBY mode.
-     *
-     * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
-     *
-     */
-
-    PRINTF1("maxCount = %d\n", maxCount)
-
-#ifdef PRINT_TASK_STATISTICS
-    rtems_cpu_usage_report();
-#endif
-
-#ifdef PRINT_STACK_REPORT
-    rtems_stack_checker_report_usage();
-#endif
-
-    return LFR_SUCCESSFUL;
-}
-
-int enter_normal_mode()
-{
-    rtems_status_code status;
-
-    status = restart_science_tasks();
-
-    launch_waveform_picker( LFR_MODE_NORMAL );
-//    launch_spectral_matrix( LFR_MODE_NORMAL );
-
-    return status;
-}
-
-int enter_burst_mode()
-{
-    /** This function is used to enter the STANDBY mode.
-     *
-     * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
-     * - RTEMS_INVALID_ID - task id invalid
-     * - RTEMS_INCORRECT_STATE - task never started
-     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
-     *
-     */
-
-    rtems_status_code status;
-
-    status = restart_science_tasks();
-
-    launch_waveform_picker( LFR_MODE_BURST );
-
-    return status;
-}
-
-int enter_sbm1_mode()
-{
-    /** This function is used to enter the SBM1 mode.
-     *
-     * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
-     * - RTEMS_INVALID_ID - task id invalid
-     * - RTEMS_INCORRECT_STATE - task never started
-     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
-     *
-     */
-
-    rtems_status_code status;
-
-    status = restart_science_tasks();
-
-    launch_waveform_picker( LFR_MODE_SBM1 );
-
-    return status;
-}
-
-int enter_sbm2_mode()
-{
-    /** This function is used to enter the SBM2 mode.
-     *
-     * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
-     * - RTEMS_INVALID_ID - task id invalid
-     * - RTEMS_INCORRECT_STATE - task never started
-     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
-     *
-     */
-
-    rtems_status_code status;
-
-    status = restart_science_tasks();
-
-    launch_waveform_picker( LFR_MODE_SBM2 );
 
     return status;
 }

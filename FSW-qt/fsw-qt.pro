@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
-# CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** gsa *** vhdl_dev
-CONFIG += console verbose debug_messages vhdl_dev cpu_usage_report
+# CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -38,16 +38,6 @@ contains( CONFIG, boot_messages ) {
 #QMAKE_EXTRA_TARGETS += doxygen
 
 TARGET = fsw
-contains( CONFIG, gsa ) {
-    DEFINES += GSA
-    TARGET = fsw-gsa
-}
-
-TARGET = fsw
-contains( CONFIG, vhdl_dev ) {
-    DEFINES += VHDL_DEV
-    TARGET = fsw-vhdl-dev
-}
 
 INCLUDEPATH += \
     ../src \

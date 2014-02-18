@@ -29,8 +29,9 @@ typedef struct ring_node_sm
 // flight software version
 // this parameters is handled by the Qt project options
 
-//#define NB_SAMPLES_PER_SNAPSHOT 2048
-#define NB_SAMPLES_PER_SNAPSHOT 2352    // 336 * 7 = 2352
+#define NB_PACKETS_PER_GROUP_OF_CWF         8   // 8 packets containing 336 blk
+#define NB_PACKETS_PER_GROUP_OF_CWF_LIGHT   4   // 4 packets containing 672 blk
+#define NB_SAMPLES_PER_SNAPSHOT 2688    // 336 * 8 = 672 * 4 = 2688
 #define TIME_OFFSET 2
 #define TIME_OFFSET_IN_BYTES 8
 #define WAVEFORM_EXTENDED_HEADER_OFFSET 22
@@ -75,6 +76,7 @@ typedef struct ring_node_sm
 #define SY_LFR_N_ASM_P 3600 // sec
 #define SY_LFR_N_BP_P0 4    // sec
 #define SY_LFR_N_BP_P1 20   // sec
+#define SY_LFR_N_CWF_LONG_F3 0      // 0 => production of light continuous waveforms at f3
 #define MIN_DELTA_SNAPSHOT 16       // sec
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
@@ -98,19 +100,15 @@ typedef struct ring_node_sm
 
 //*****************************
 // APB REGISTERS BASE ADDRESSES
-#define REGS_ADDR_APBUART 0x80000100
-#define REGS_ADDR_GPTIMER 0x80000300
-#define REGS_ADDR_GRSPW 0x80000500
-#define REGS_ADDR_TIME_MANAGEMENT 0x80000600
-#define REGS_ADDR_SPECTRAL_MATRIX 0x80000f00
+#define REGS_ADDR_APBUART           0x80000100
+#define REGS_ADDR_GPTIMER           0x80000300
+#define REGS_ADDR_GRSPW             0x80000500
+#define REGS_ADDR_TIME_MANAGEMENT   0x80000600
+#define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
+#define REGS_ADDR_WAVEFORM_PICKER   0x80000f20
 
-#ifdef GSA
-#else
-    #define REGS_ADDR_WAVEFORM_PICKER 0x80000f20
-#endif
-
-#define APBUART_CTRL_REG_MASK_DB 0xfffff7ff
-#define APBUART_CTRL_REG_MASK_TE 0x00000002
+#define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
+#define APBUART_CTRL_REG_MASK_TE    0x00000002
 #define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400 (0x50)
 
 //**********

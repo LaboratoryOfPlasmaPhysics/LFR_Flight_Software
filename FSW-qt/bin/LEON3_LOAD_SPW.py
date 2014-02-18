@@ -7,7 +7,7 @@ proxy.loadSysDriverToParent("dsu3plugin","RMAPplugin0");
 BUTTON_selectGRESB.click()
 
 BUTTON_rmapOpenCommunication.click()
-dsu3plugin0.openFile("/opt/DEV_PLE/FSW-qt/bin/fsw-vhdl-dev")
+dsu3plugin0.openFile("/opt/DEV_PLE/FSW-qt/bin/fsw")
 dsu3plugin0.loadFile()
 dsu3plugin0.run()
 

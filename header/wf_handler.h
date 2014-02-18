@@ -27,11 +27,7 @@ extern volatile int wf_cont_f3_a[ ];
 extern volatile int wf_cont_f3_b[ ];
 extern char wf_cont_f3_light[ ];
 
-#ifdef VHDL_DEV
 extern waveform_picker_regs_new_t *waveform_picker_regs;
-#else
-extern waveform_picker_regs_t *waveform_picker_regs;
-#endif
 extern time_management_regs_t *time_management_regs;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
@@ -66,7 +62,8 @@ int send_waveform_CWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_
 int send_waveform_CWF3( volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
 int send_waveform_CWF3_light( volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
 //
-void compute_acquisition_time(unsigned int *coarseTime, unsigned int *fineTime, unsigned int sid, unsigned char pa_lfr_pkt_nr );
+void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
+                              unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
 //
 rtems_id get_pkts_queue_id( void );
 
