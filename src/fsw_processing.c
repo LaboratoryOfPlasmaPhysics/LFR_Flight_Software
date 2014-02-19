@@ -26,6 +26,8 @@ float averaged_sm_f0[ TOTAL_SIZE_SM ];
 char averaged_sm_f0_char[ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_f0[ TOTAL_SIZE_COMPRESSED_MATRIX_f0 ];
 
+unsigned int nb_sm_f0;
+
 void init_sm_rings( void )
 {
     unsigned char i;
@@ -48,6 +50,8 @@ void init_sm_rings( void )
 
     DEBUG_PRINTF1("asm_ring_f0 @%x\n", (unsigned int) sm_ring_f0)
 
+    spectral_matrix_regs->matrixF0_Address0 = sm_ring_f0[0].buffer_address;
+    DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->matrixF0_Address0)
 }
 
 void reset_current_sm_ring_nodes( void )
@@ -58,64 +62,71 @@ void reset_current_sm_ring_nodes( void )
 
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
+void reset_nb_sm_f0( void )
+{
+    nb_sm_f0 = 0;
+}
+
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
-    unsigned char status;
-    unsigned char i;
-    static unsigned int nb_interrupt_f0 = 0;
+//    unsigned char status;
+//    unsigned char i;
 
-    status = spectral_matrix_regs->status; //[f2 f1 f0_1 f0_0]
-    for (i=0; i<4; i++)
-    {
-        if ( ( (status >> i) & 0x01) == 1)  // (1) buffer rotation
-        {
-            switch(i)
-            {
-            case 0:
-                current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-                spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
-                nb_interrupt_f0 = nb_interrupt_f0 + 1;
-                if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 ){
-                    ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-                    if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-                    {
-                        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-                    }
-                    nb_interrupt_f0 = 0;
-                }
-                break;
-            case 1:
-                break;
-            case 2:
-                break;
-            default:
-                break;
-            }
-        }
-    }
+//    status = spectral_matrix_regs->status; //[f2 f1 f0_1 f0_0]
+//    for (i=0; i<4; i++)
+//    {
+//        if ( ( (status >> i) & 0x01) == 1)  // (1) buffer rotation
+//        {
+//            switch(i)
+//            {
+//            case 0:
+//                current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+//                spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+//                spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
+//                nb_interrupt_f0 = nb_interrupt_f0 + 1;
+//                if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 ){
+//                    ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+//                    if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//                    {
+//                        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//                    }
+//                    nb_interrupt_f0 = 0;
+//                }
+//                break;
+//            case 1:
+//                break;
+//            case 2:
+//                break;
+//            default:
+//                break;
+//            }
+//        }
+//    }
 
-    // reset error codes to 0
-    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf; // [1100 1111]
+//    // reset error codes to 0
+//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf; // [1100 1111]
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 {
-    static unsigned int nb_interrupt_f0 = 0;
-
     current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
     spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
     spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
-    nb_interrupt_f0 = nb_interrupt_f0 + 1;
-    if (nb_interrupt_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 )
-    {
-        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_interrupt_f0 = 0;
-    }
+
+    rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 );
+//    if (nb_sm_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 )
+//    {
+//        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+//        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//        {
+//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//        }
+//        nb_sm_f0 = 0;
+//    }
+//    else
+//    {
+//        nb_sm_f0 = nb_sm_f0 + 1;
+//    }
 }
 
 //************
@@ -150,6 +161,7 @@ rtems_task avf0_task(rtems_task_argument argument)
     static int nb_average;
     rtems_event_set event_out;
     rtems_status_code status;
+    ring_node *ring_node_tab[8];
 
     nb_average = 0;
 
@@ -157,19 +169,23 @@ rtems_task avf0_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        for (i=0; i<NB_SM_TO_RECEIVE_BEFORE_AVF0; i++)
+        PRINTF("avf0\n")
+        ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-1] = ring_node_for_averaging_sm_f0;
+        for (i=0; i<NB_SM_TO_RECEIVE_BEFORE_AVF0-1; i++)
         {
             ring_node_for_averaging_sm_f0 = ring_node_for_averaging_sm_f0->previous;
+            ring_node_tab[i] = ring_node_for_averaging_sm_f0;
         }
-        for(i=0; i<TOTAL_SIZE_SM; i++){
-            averaged_sm_f0[i] = ( (int *) (ring_node_for_averaging_sm_f0[0].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[1].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[2].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[3].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[4].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[5].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[6].buffer_address) )[i]
-                    + ( (int *) (ring_node_for_averaging_sm_f0[7].buffer_address) )[i];
+        for(i=0; i<TOTAL_SIZE_SM; i++)
+        {
+            averaged_sm_f0[i] = ( (int *) (ring_node_tab[0]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[1]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[2]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[3]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[4]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[5]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[6]->buffer_address) ) [i]
+                    + ( (int *) (ring_node_tab[7]->buffer_address) ) [i];
         }
         nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
         if (nb_average == NB_AVERAGE_NORMAL_f0) {
@@ -468,16 +484,16 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header)
     // AUXILIARY DATA HEADER
     header->sid = 0x00;
     header->biaStatusInfo = 0x00;
-    header->cntASM = 0x00;
-    header->nrASM = 0x00;
+    header->pa_lfr_pkt_cnt_asm = 0x00;
+    header->pa_lfr_pkt_nr_asm = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
-    header->blkNr[0] = 0x00;  // BLK_NR MSB
-    header->blkNr[1] = 0x00;  // BLK_NR LSB
+    header->pa_lfr_asm_blk_nr[0] = 0x00;  // BLK_NR MSB
+    header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
 }
 
 void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
@@ -487,40 +503,53 @@ void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_ma
     unsigned int length = 0;
     rtems_status_code status;
 
-    header->sid = (unsigned char) sid;
-
     for (i=0; i<2; i++)
     {
-        // BUILD THE DATA
-        spw_ioctl_send->dlen = TOTAL_SIZE_SM;
-        spw_ioctl_send->data = &spectral_matrix[ i * TOTAL_SIZE_SM];
+        // (1) BUILD THE DATA
+        switch(sid)
+        {
+        case SID_NORM_ASM_F0:
+            spw_ioctl_send->dlen = TOTAL_SIZE_ASM_F0 / 2;
+            spw_ioctl_send->data = &spectral_matrix[ ASM_F0_INDICE_START + i * (TOTAL_SIZE_ASM_F0/2)];
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_ASM_F0/2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_ASM_F0/2);        // BLK_NR LSB
+            break;
+        case SID_NORM_ASM_F1:
+            break;
+        case SID_NORM_ASM_F2:
+            break;
+        default:
+            PRINTF1("ERR *** in send_spectral_matrix *** unexpected sid %d\n", sid)
+            break;
+        }
         spw_ioctl_send->hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM + CCSDS_PROTOCOLE_EXTRA_BYTES;
         spw_ioctl_send->hdr = (char *) header;
         spw_ioctl_send->options = 0;
 
-        // BUILD THE HEADER
-        length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM;
+        // (2) BUILD THE HEADER
         header->packetLength[0] = (unsigned char) (length>>8);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
-        header->cntASM = 2;
-        header->nrASM = (unsigned char) (i+1);
-        header->blkNr[0] =(unsigned char)  ( (NB_BINS_PER_SM/2) >> 8 ); // BLK_NR MSB
-        header->blkNr[1] = (unsigned char)   (NB_BINS_PER_SM/2);        // BLK_NR LSB
-        // SET PACKET TIME
+        header->pa_lfr_pkt_cnt_asm = 2;
+        header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
+
+        // (3) SET PACKET TIME
         header->time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
         header->time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
         header->time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
         header->time[3] = (unsigned char) (time_management_regs->coarse_time);
         header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->time[5] = (unsigned char) (time_management_regs->fine_time);
+        //
         header->acquisitionTime[0] = (unsigned char) (time_management_regs->coarse_time>>24);
         header->acquisitionTime[1] = (unsigned char) (time_management_regs->coarse_time>>16);
         header->acquisitionTime[2] = (unsigned char) (time_management_regs->coarse_time>>8);
         header->acquisitionTime[3] = (unsigned char) (time_management_regs->coarse_time);
         header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
-        // SEND PACKET
+
+        // (4) SEND PACKET
         status =  rtems_message_queue_send( queue_id, spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
             printf("in send_spectral_matrix *** ERR %d\n", (int) status);

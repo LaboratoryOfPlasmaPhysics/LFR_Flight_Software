@@ -87,7 +87,7 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF1("** %d.", SW_VERSION_N1)
     PRINTF1("%d.", SW_VERSION_N2)
     PRINTF1("%d.", SW_VERSION_N3)
-    PRINTF1("%d\n", SW_VERSION_N4)
+    PRINTF1("%d             **\n", SW_VERSION_N4)
     PRINTF("*************************\n")
     PRINTF("\n\n")
 
@@ -167,12 +167,11 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
-
     //******************************
     // <SPECTRAL MATRICES SIMULATOR>
-    LEON_Mask_interrupt( IRQ_SM );
+    LEON_Mask_interrupt( IRQ_SM_SIMULATOR );
     configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
-                    IRQ_SPARC_SM, spectral_matrices_isr_simu );
+                    IRQ_SPARC_SM_SIMULATOR, spectral_matrices_isr_simu );
     // </SPECTRAL MATRICES SIMULATOR>
     //*******************************
 

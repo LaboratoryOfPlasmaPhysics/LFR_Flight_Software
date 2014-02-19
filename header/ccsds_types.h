@@ -1,6 +1,8 @@
 #ifndef CCSDS_TYPES_H_INCLUDED
 #define CCSDS_TYPES_H_INCLUDED
 
+#include "fsw_params_processing.h"
+
 #define CCSDS_PROTOCOLE_EXTRA_BYTES 4
 #define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
 #define CCSDS_TM_PKT_MAX_SIZE 4412
@@ -198,9 +200,11 @@ enum apid_destid{
 #define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED    (24 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_ERROR              (24 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_CORRUPTED          (32 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_HK                        (126 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_PARAMETER_DUMP            (34 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM        (TOTAL_SIZE_SM + HEADER_LENGTH_TM_LFR_SCIENCE_ASM - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_HK                        (124 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP            (36 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0     (TOTAL_SIZE_ASM_F0 + HEADER_LENGTH_TM_LFR_SCIENCE_ASM - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1     (TOTAL_SIZE_ASM_F1 + HEADER_LENGTH_TM_LFR_SCIENCE_ASM - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2     (TOTAL_SIZE_ASM_F2 + HEADER_LENGTH_TM_LFR_SCIENCE_ASM - CCSDS_TC_TM_PACKET_OFFSET)
 
 #define SPARE1_PUSVERSION_SPARE2 0x10
 
@@ -438,10 +442,10 @@ typedef struct {
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
-    unsigned char cntASM;
-    unsigned char nrASM;
+    unsigned char pa_lfr_pkt_cnt_asm;
+    unsigned char pa_lfr_pkt_nr_asm;
     unsigned char acquisitionTime[6];
-    unsigned char blkNr[2];
+    unsigned char pa_lfr_asm_blk_nr[2];
 } Header_TM_LFR_SCIENCE_ASM_t;
 
 typedef struct {
@@ -599,6 +603,9 @@ typedef struct {
     // SBM2 PARAMETERS
     unsigned char sy_lfr_s2_bp_p0;
     unsigned char sy_lfr_s2_bp_p1;
+
+    // SPARE
+    unsigned char source_data_spare;
 } Packet_TM_LFR_PARAMETER_DUMP_t;
 
 

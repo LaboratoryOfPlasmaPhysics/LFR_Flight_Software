@@ -174,14 +174,6 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
     {
         printf("in action_enter_mode *** enter mode %d\n", requestedMode);
 
-#ifdef PRINT_TASK_STATISTICS
-        if (requestedMode != LFR_MODE_STANDBY)
-        {
-            rtems_cpu_usage_reset();
-            maxCount = 0;
-        }
-#endif
-
         status = transition_validation(requestedMode);
 
         if ( status == LFR_SUCCESSFUL ) {
@@ -394,18 +386,24 @@ int stop_current_mode(void)
 
     status = RTEMS_SUCCESSFUL;
 
-    // mask interruptions
+    // (1) mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     //LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
-    LEON_Mask_interrupt( IRQ_SM );                  // mask spectral matrix interrupt simulator
-    // reset registers
-    reset_wfp_burst_enable();                       // reset burst and enable bits
-    reset_wfp_status();                             // reset all the status bits
-    // clear interruptions
+
+    // (2) clear interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     //LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
-    LEON_Clear_interrupt( IRQ_SM );                 // clear spectral matrix interrupt simulator
-    //**********************
+
+    // (3) reset registers
+    reset_wfp_burst_enable();                       // reset burst and enable bits
+    reset_wfp_status();                             // reset all the status bits
+
+    // <Spectral Matrices simulator>
+    LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
+    timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );                 // clear spectral matrix interrupt simulator
+    // </Spectral Matrices simulator>
+
     // suspend several tasks
     if (lfrCurrentMode != LFR_MODE_STANDBY) {
         status = suspend_science_tasks();
@@ -441,22 +439,16 @@ int enter_mode(unsigned char mode )
     if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
          || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
     {
+#ifdef PRINT_TASK_STATISTICS
+        rtems_cpu_usage_reset();
+        maxCount = 0;
+#endif
         status = restart_science_tasks();
         launch_waveform_picker( mode );
-//        launch_spectral_matrix( mode );
+        launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
-        status = stop_current_mode();
-    }
-    else
-    {
-        status = RTEMS_UNSATISFIED;
-    }
-
-    if (mode == LFR_MODE_STANDBY)
-    {
-        PRINTF1("maxCount = %d\n", maxCount)
 #ifdef PRINT_TASK_STATISTICS
         rtems_cpu_usage_report();
 #endif
@@ -464,6 +456,12 @@ int enter_mode(unsigned char mode )
 #ifdef PRINT_STACK_REPORT
         rtems_stack_checker_report_usage();
 #endif
+        status = stop_current_mode();
+        PRINTF1("maxCount = %d\n", maxCount)
+    }
+    else
+    {
+        status = RTEMS_UNSATISFIED;
     }
 
     if (status != RTEMS_SUCCESSFUL)
@@ -622,13 +620,15 @@ void launch_waveform_picker( unsigned char mode )
 
 void launch_spectral_matrix( unsigned char mode )
 {
+    reset_nb_sm_f0();
     reset_current_sm_ring_nodes();
     reset_spectral_matrix_regs();
+
     // Spectral Matrices simulator
     timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
+    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
     set_local_nb_interrupt_f0_MAX();
-    LEON_Clear_interrupt( IRQ_SM );
-    LEON_Unmask_interrupt( IRQ_SM );
 }
 
 //****************

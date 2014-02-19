@@ -17,14 +17,6 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
-typedef struct ring_node_sm
-{
-    struct ring_node *previous;
-    volatile int *buffer_address;
-    struct ring_node *next;
-    unsigned int status;
-} ring_node_sm;
-
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -113,14 +105,8 @@ typedef struct ring_node_sm
 
 //**********
 // IRQ LINES
-#define IRQ_SM 9
-#define IRQ_SPARC_SM 0x19               // see sparcv8.pdf p.76 for interrupt levels
-#define IRQ_WF 10
-#define IRQ_SPARC_WF 0x1a               // see sparcv8.pdf p.76 for interrupt levels
-#define IRQ_TIME1 12
-#define IRQ_SPARC_TIME1 0x1c            // see sparcv8.pdf p.76 for interrupt levels
-#define IRQ_TIME2 13
-#define IRQ_SPARC_TIME2 0x1d            // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_SM_SIMULATOR 9
+#define IRQ_SPARC_SM_SIMULATOR 0x19     // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WAVEFORM_PICKER 14
 #define IRQ_SPARC_WAVEFORM_PICKER 0x1e  // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_SPECTRAL_MATRIX 6
@@ -129,9 +115,7 @@ typedef struct ring_node_sm
 //*****
 // TIME
 #define CLKDIV_SM_SIMULATOR (10000 - 1)     // 10 ms
-#define CLKDIV_WF_SIMULATOR (10000000 - 1)  // 10 000 000 * 1 us = 10 s
 #define TIMER_SM_SIMULATOR 1
-#define TIMER_WF_SIMULATOR 2
 #define HK_PERIOD 100 // 100 * 10ms => 1sec
 
 //**********

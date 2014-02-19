@@ -26,11 +26,11 @@ extern spectral_matrix_regs_t *spectral_matrix_regs;
 extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
 
-//
 void init_sm_rings( void );
 void reset_current_sm_ring_nodes( void );
 
 // ISR
+void reset_nb_sm_f0( void );
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
