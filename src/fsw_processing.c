@@ -109,24 +109,23 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 {
-    current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-    spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
+    //current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+    //spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+    //spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;
 
-    rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 );
-//    if (nb_sm_f0 == NB_SM_TO_RECEIVE_BEFORE_AVF0 )
-//    {
-//        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-//        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-//        {
-//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-//        }
-//        nb_sm_f0 = 0;
-//    }
-//    else
-//    {
-//        nb_sm_f0 = nb_sm_f0 + 1;
-//    }
+    if (nb_sm_f0 == (NB_SM_TO_RECEIVE_BEFORE_AVF0-1) )
+    {
+        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
+        nb_sm_f0 = 0;
+    }
+    else
+    {
+        nb_sm_f0 = nb_sm_f0 + 1;
+    }
 }
 
 //************
@@ -169,12 +168,12 @@ rtems_task avf0_task(rtems_task_argument argument)
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        PRINTF("avf0\n")
+        ring_node_for_averaging_sm_f0 = &sm_ring_f0[NB_SM_TO_RECEIVE_BEFORE_AVF0-1];
         ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-1] = ring_node_for_averaging_sm_f0;
-        for (i=0; i<NB_SM_TO_RECEIVE_BEFORE_AVF0-1; i++)
+        for (i=2; i<NB_SM_TO_RECEIVE_BEFORE_AVF0+1; i++)
         {
             ring_node_for_averaging_sm_f0 = ring_node_for_averaging_sm_f0->previous;
-            ring_node_tab[i] = ring_node_for_averaging_sm_f0;
+            ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-i] = ring_node_for_averaging_sm_f0;
         }
         for(i=0; i<TOTAL_SIZE_SM; i++)
         {
@@ -509,11 +508,11 @@ void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_ma
         switch(sid)
         {
         case SID_NORM_ASM_F0:
-            spw_ioctl_send->dlen = TOTAL_SIZE_ASM_F0 / 2;
-            spw_ioctl_send->data = &spectral_matrix[ ASM_F0_INDICE_START + i * (TOTAL_SIZE_ASM_F0/2)];
+            spw_ioctl_send->dlen = TOTAL_SIZE_ASM_F0_IN_BYTES / 2;
+            spw_ioctl_send->data = &spectral_matrix[ ( (ASM_F0_INDICE_START+ (i*NB_BINS_PER_PKT_ASM_F0)) * NB_VALUES_PER_SM) * 2 ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_ASM_F0/2) >> 8 ); // BLK_NR MSB
-            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_ASM_F0/2);        // BLK_NR LSB
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0);        // BLK_NR LSB
             break;
         case SID_NORM_ASM_F1:
             break;

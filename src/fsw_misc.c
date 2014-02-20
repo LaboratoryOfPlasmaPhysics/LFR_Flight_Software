@@ -25,6 +25,8 @@ void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned
     rtems_status_code status;
     rtems_isr_entry old_isr_handler;
 
+    gptimer_regs->timer[timer].ctrl = 0x00;  // reset the control register
+
     status = rtems_interrupt_catch( timer_isr, interrupt_level, &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
     if (status!=RTEMS_SUCCESSFUL)
     {
