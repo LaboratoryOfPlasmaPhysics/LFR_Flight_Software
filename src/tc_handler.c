@@ -445,7 +445,7 @@ int enter_mode(unsigned char mode )
 #endif
         status = restart_science_tasks();
         launch_waveform_picker( mode );
-        launch_spectral_matrix( mode );
+        //launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -498,12 +498,6 @@ int restart_science_tasks()
         PRINTF1("in restart_science_task *** 0 ERR %d\n", status[0])
     }
 
-    status[1] = rtems_task_restart( Task_id[TASKID_BPF0],1 );
-    if (status[1] != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in restart_science_task *** 1 ERR %d\n", status[1])
-    }
-
     status[2] = rtems_task_restart( Task_id[TASKID_WFRM],1 );
     if (status[2] != RTEMS_SUCCESSFUL)
     {
@@ -528,7 +522,7 @@ int restart_science_tasks()
         PRINTF1("in restart_science_task *** 5 ERR %d\n", status[5])
     }
 
-    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
+    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
          (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
@@ -554,15 +548,6 @@ int suspend_science_tasks()
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
-    }
-
-    if (status == RTEMS_SUCCESSFUL)        // suspend BPF0
-    {
-        status = rtems_task_suspend( Task_id[TASKID_BPF0] );
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF1("in suspend_science_task *** BPF0 ERR %d\n", status)
-        }
     }
 
     if (status == RTEMS_SUCCESSFUL)        // suspend WFRM

@@ -131,7 +131,7 @@ typedef struct ring_node
 #define TASKID_SMIQ 4
 #define TASKID_STAT 5
 #define TASKID_AVF0 6
-#define TASKID_BPF0 7
+//#define TASKID_BPF0 7
 #define TASKID_WFRM 8
 #define TASKID_DUMB 9
 #define TASKID_HOUS 10

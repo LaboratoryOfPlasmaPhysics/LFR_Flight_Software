@@ -35,21 +35,19 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
 // RTEMS TASKS
-rtems_task spw_bppr_task(rtems_task_argument argument);
 rtems_task avf0_task(rtems_task_argument argument);
-rtems_task bpf0_task(rtems_task_argument argument);
 rtems_task smiq_task(rtems_task_argument argument); // added to test the spectral matrix simulator
 rtems_task matr_task(rtems_task_argument argument);
 
-void matrix_compression(volatile float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat);
 void matrix_reset(volatile float *averaged_spec_mat);
 void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1);
 void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat);
 //
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
-void send_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
-                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
+void compress_averaged_spectral_matrix( float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat );
 void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output_matrix);
+void send_averaged_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
+                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 void fill_averaged_spectral_matrix( void );
 void reset_spectral_matrix_regs();
 

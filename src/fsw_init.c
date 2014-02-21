@@ -236,7 +236,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_SMIQ] = rtems_build_name( 'S', 'M', 'I', 'Q' );
     Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
     Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
-    Task_name[TASKID_BPF0] = rtems_build_name( 'B', 'P', 'F', '0' );
+//    Task_name[TASKID_BPF0] = rtems_build_name( 'B', 'P', 'F', '0' );
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -317,14 +317,6 @@ int create_all_tasks( void ) // create all tasks which run in the software
             Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
-        );
-    }
-    if (status == RTEMS_SUCCESSFUL) // BPF0
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_BPF0], TASK_PRIORITY_BPF0, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_BPF0]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // WFRM
@@ -481,14 +473,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n")
-        }
-    }
-
-    if (status == RTEMS_SUCCESSFUL)     // BPF0
-    {
-        status = rtems_task_start( Task_id[TASKID_BPF0], bpf0_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_BPF0\n")
         }
     }
 

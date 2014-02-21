@@ -1016,15 +1016,19 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
         deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_304 * 65536. / 4096. ;
         break;
 
-    case SID_SBM1_CWF_F1:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 4096. ;
-        break;
-
     case SID_NORM_SWF_F2:
         deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_304 * 65536. / 256. ;
         break;
 
+    case SID_SBM1_CWF_F1:
+        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 4096. ;
+        break;
+
     case SID_SBM2_CWF_F2:
+        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 256. ;
+        break;
+
+    case SID_BURST_CWF_F2:
         deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 256. ;
         break;
 
@@ -1037,6 +1041,7 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
         break;
 
     default:
+        PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d", sid)
         deltaT = 0.;
         break;
     }

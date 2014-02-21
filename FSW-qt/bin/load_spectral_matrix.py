@@ -11,6 +11,10 @@ for frequencyBin in range(128):
 	for component in range (25):
 		dataToWrite.append( component )
 
+#for frequencyBin in range(64):
+#	for component in range (25):
+#		dataToWrite.append( 2 * component )
+
 # WRITE THE DATA
 print len(dataToWrite)
 RMAPPlugin0.Write( matrixF0_Address0, dataToWrite )
