@@ -12,9 +12,9 @@
 #include "fsw_spacewire.h"
 #include "basic_parameters.h"
 
-extern volatile int sm_f0[ ][ SM_HEADER + TOTAL_SIZE_SM ];
-extern volatile int sm_f1[ ][ SM_HEADER + TOTAL_SIZE_SM ];
-extern volatile int sm_f2[ ][ SM_HEADER + TOTAL_SIZE_SM ];
+extern volatile int sm_f0[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
+extern volatile int sm_f1[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
+extern volatile int sm_f2[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
 
 // parameters
 extern struct param_local_str param_local;
@@ -44,9 +44,10 @@ void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_s
 void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat);
 //
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
-void compress_averaged_spectral_matrix( float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat );
-void convert_averaged_spectral_matrix(volatile float *input_matrix, char *output_matrix);
-void send_averaged_spectral_matrix(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
+void ASM_reorganize( float *averaged_spec_mat, float *averaged_spec_mat_reorganized );
+void ASM_compress( float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat );
+void ASM_convert(volatile float *input_matrix, char *output_matrix);
+void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
                     unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 void fill_averaged_spectral_matrix( void );
 void reset_spectral_matrix_regs();

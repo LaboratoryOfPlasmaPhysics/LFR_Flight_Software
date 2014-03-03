@@ -179,6 +179,10 @@ rtems_task Init( rtems_task_argument ignored )
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
+    // configure IRQ handling for the spectral matrices unit
+    status = rtems_interrupt_catch( spectral_matrices_isr,
+                                   IRQ_SPARC_SPECTRAL_MATRIX,
+                                   &old_isr_handler) ;
 
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )

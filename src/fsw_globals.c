@@ -46,9 +46,9 @@ volatile int wf_cont_f3_b    [ (NB_SAMPLES_PER_SNAPSHOT) * NB_WORDS_SWF_BLK     
 char         wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK + TIME_OFFSET_IN_BYTES ] __attribute__((aligned(0x100)));
 
 // SPECTRAL MATRICES GLOBAL VARIABLES
-volatile int sm_f0[ NB_RING_NODES_ASM_F0 ][ SM_HEADER + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
-volatile int sm_f1[ NB_RING_NODES_ASM_F1 ][ SM_HEADER + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
-volatile int sm_f2[ NB_RING_NODES_ASM_F2 ][ SM_HEADER + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
+volatile int sm_f0[ NB_RING_NODES_ASM_F0 ][ TIME_OFFSET + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
+volatile int sm_f1[ NB_RING_NODES_ASM_F1 ][ TIME_OFFSET + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
+volatile int sm_f2[ NB_RING_NODES_ASM_F2 ][ TIME_OFFSET + TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
 
 // APB CONFIGURATION REGISTERS
 time_management_regs_t      *time_management_regs   = (time_management_regs_t*)     REGS_ADDR_TIME_MANAGEMENT;

@@ -388,15 +388,16 @@ int stop_current_mode(void)
 
     // (1) mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-    //LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
     // (2) clear interruptions
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
-    //LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
     // (3) reset registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
+    disable_irq_on_new_ready_matrix();              // stop the spectral matrices
 
     // <Spectral Matrices simulator>
     LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
@@ -445,7 +446,7 @@ int enter_mode(unsigned char mode )
 #endif
         status = restart_science_tasks();
         launch_waveform_picker( mode );
-        //launch_spectral_matrix( mode );
+        launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -604,6 +605,29 @@ void launch_waveform_picker( unsigned char mode )
 }
 
 void launch_spectral_matrix( unsigned char mode )
+{
+    reset_nb_sm_f0();
+    reset_current_sm_ring_nodes();
+    reset_spectral_matrix_regs();
+
+    enable_irq_on_new_ready_matrix();
+
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
+    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
+}
+
+void enable_irq_on_new_ready_matrix( void )
+{
+    spectral_matrix_regs->config = spectral_matrix_regs->config | 0x01;
+}
+
+void disable_irq_on_new_ready_matrix( void )
+{
+    spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffe;   // 1110
+}
+
+
+void launch_spectral_matrix_simu( unsigned char mode )
 {
     reset_nb_sm_f0();
     reset_current_sm_ring_nodes();

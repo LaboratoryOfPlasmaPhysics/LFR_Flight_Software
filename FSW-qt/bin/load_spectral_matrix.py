@@ -7,13 +7,14 @@ print hex(matrixF0_Address0)
 
 # BUILD THE DATA
 dataToWrite = []
-for frequencyBin in range(128):
-	for component in range (25):
-		dataToWrite.append( component )
+dataToWrite.append( 0x1234abcd )
+dataToWrite.append( 0x4321dcba )
 
-#for frequencyBin in range(64):
-#	for component in range (25):
-#		dataToWrite.append( 2 * component )
+for component in range(25):
+	for frequencyBin in range (64):
+		dataToWrite.append( component + frequencyBin )
+	for frequencyBin in range (64):
+		dataToWrite.append( - (component + frequencyBin) )
 
 # WRITE THE DATA
 print len(dataToWrite)

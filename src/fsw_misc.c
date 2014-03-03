@@ -232,21 +232,23 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[8] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
+    char *DumbMessages[9] = {"in DUMB *** default",                                             // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                         "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                         "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
                         "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
                         "ERR HK",                                                               // RTEMS_EVENT_6
-                         "ready for dump"                                                       // RTEMS_EVENT_7
+                        "ready for dump",                                                       // RTEMS_EVENT_7
+                        "in DUMB *** spectral_matrices_isr"                                     // RTEMS_EVENT_8
     };
 
     BOOT_PRINTF("in DUMB *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
-                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7,
+                            | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7
+                            | RTEMS_EVENT_8,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -256,7 +258,6 @@ rtems_task dumb_task( rtems_task_argument unused )
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
                 printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
-                PRINTF1("status = %x\n", waveform_picker_regs->status)
             }
         }
     }

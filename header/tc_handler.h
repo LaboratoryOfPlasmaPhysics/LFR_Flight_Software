@@ -39,6 +39,9 @@ int restart_science_tasks();
 int suspend_science_tasks();
 void launch_waveform_picker( unsigned char mode );
 void launch_spectral_matrix( unsigned char mode );
+void enable_irq_on_new_ready_matrix( void );
+void disable_irq_on_new_ready_matrix( void );
+void launch_spectral_matrix_simu( unsigned char mode );
 
 // other functions
 void updateLFRCurrentMode();
