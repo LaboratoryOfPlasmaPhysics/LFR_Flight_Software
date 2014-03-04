@@ -70,6 +70,7 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
+    reset_local_time();
 
     rtems_status_code status;
     rtems_status_code status_spw;
@@ -222,6 +223,11 @@ void init_local_mode_parameters( void )
     }
     sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
     sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
+}
+
+void reset_local_time( void )
+{
+
 }
 
 void create_names( void ) // create all names for tasks and queues

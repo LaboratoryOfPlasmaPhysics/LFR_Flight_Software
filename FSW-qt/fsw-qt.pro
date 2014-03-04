@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report
-CONFIG += console verbose
+CONFIG += console verbose debug_messages
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -69,7 +69,6 @@ HEADERS += \
     ../header/ccsds_types.h \
     ../header/fsw_params_processing.h \
     ../header/fsw_spacewire.h \
-    ../header/tm_byte_positions.h \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \

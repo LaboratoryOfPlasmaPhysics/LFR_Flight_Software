@@ -46,7 +46,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
 
     if ( (lfrCurrentMode == LFR_MODE_NORMAL) ||
          (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) ) {
-        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         flag = LFR_DEFAULT;
     }
 
@@ -136,7 +136,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( lfrMode == LFR_MODE_BURST ) {
-        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -165,7 +165,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
     if ( (lfrMode == LFR_MODE_SBM1) || (lfrMode == LFR_MODE_SBM2) ) {
-        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -194,8 +194,8 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_SBM2) || (lfrMode == LFR_MODE_SBM2) ) {
-        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+    if ( (lfrMode == LFR_MODE_SBM1) || (lfrMode == LFR_MODE_SBM2) ) {
+        status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         result = LFR_DEFAULT;
     }
     else {
@@ -271,7 +271,7 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
 
     if ( (tmp < 16) || (tmp > 2048) )   // the snapshot period is a multiple of 16
     {                                   // 2048 is the maximum limit due to the size of the buffers
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb, time );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb );
         result = WRONG_APP_DATA;
     }
     else if (tmp != 2048)
@@ -311,7 +311,7 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
 
     if ( tmp < 16 )
     {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb, time );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb );
         result = WRONG_APP_DATA;
     }
     else
@@ -409,6 +409,62 @@ int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
 //*********************
 // SBM2 MODE PARAMETERS
+
+//*******************
+// TC_LFR_UPDATE_INFO
+unsigned int check_update_info_hk_lfr_mode( unsigned char mode )
+{
+    unsigned int status;
+
+    if ( (mode == LFR_MODE_STANDBY) || (mode == LFR_MODE_NORMAL)
+         || (mode = LFR_MODE_BURST)
+         || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2))
+    {
+        status = LFR_SUCCESSFUL;
+    }
+    else
+    {
+        status = LFR_DEFAULT;
+    }
+
+    return status;
+}
+
+unsigned int check_update_info_hk_tds_mode( unsigned char mode )
+{
+    unsigned int status;
+
+    if ( (mode == TDS_MODE_STANDBY) || (mode == TDS_MODE_NORMAL)
+         || (mode = TDS_MODE_BURST)
+         || (mode == TDS_MODE_SBM1) || (mode == TDS_MODE_SBM2)
+         || (mode == TDS_MODE_LFM))
+    {
+        status = LFR_SUCCESSFUL;
+    }
+    else
+    {
+        status = LFR_DEFAULT;
+    }
+
+    return status;
+}
+
+unsigned int check_update_info_hk_thr_mode( unsigned char mode )
+{
+    unsigned int status;
+
+    if ( (mode == THR_MODE_STANDBY) || (mode == THR_MODE_NORMAL)
+         || (mode = THR_MODE_BURST))
+    {
+        status = LFR_SUCCESSFUL;
+    }
+    else
+    {
+        status = LFR_DEFAULT;
+    }
+
+    return status;
+}
 
 //**********
 // init dump

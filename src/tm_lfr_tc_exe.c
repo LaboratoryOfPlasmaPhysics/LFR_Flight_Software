@@ -15,7 +15,7 @@
 
 #include "tm_lfr_tc_exe.h"
 
-int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
+int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     /** This function sends a TM_LFR_TC_EXE_SUCCESS packet in the dedicated RTEMS message queue.
      *
@@ -51,12 +51,12 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_OK;
     TM.destinationID = TC->sourceID;
-    TM.time[0] = time[0];
-    TM.time[1] = time[1];
-    TM.time[2] = time[2];
-    TM.time[3] = time[3];
-    TM.time[4] = time[4];
-    TM.time[5] = time[5];
+    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
     //
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -75,8 +75,7 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
 }
 
 int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
-                                    unsigned char byte_position, unsigned char rcv_value,
-                                     unsigned char *time)
+                                    unsigned char byte_position, unsigned char rcv_value )
 {
     /** This function sends a TM_LFR_TC_EXE_INCONSISTENT packet in the dedicated RTEMS message queue.
      *
@@ -143,7 +142,7 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     return status;
 }
 
-int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
+int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     /** This function sends a TM_LFR_TC_EXE_NOT_EXECUTABLE packet in the dedicated RTEMS message queue.
      *
@@ -336,7 +335,7 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
 
 int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id,
                                  unsigned char *computed_CRC, unsigned char *currentTC_LEN_RCV,
-                                 unsigned char destinationID, unsigned char *time)
+                                 unsigned char destinationID )
 {
     /** This function sends a TM_LFR_TC_EXE_CORRUPTED packet in the dedicated RTEMS message queue.
      *
@@ -473,16 +472,8 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
         break;
     }
 
-    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
-    sequence_cnt                = sequenceCounters_TC_EXE[ i ] & 0x3fff;
-
-    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
-
-    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
-    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
-
-    // increment the sequence counter for the next packet
-    if ( sequenceCounters_TC_EXE[ i ] < SEQ_CNT_MAX)
+    // increment the sequence counter
+    if ( sequenceCounters_TC_EXE[ i ] < SEQ_CNT_MAX )
     {
         sequenceCounters_TC_EXE[ i ] = sequenceCounters_TC_EXE[ i ] + 1;
     }
@@ -490,5 +481,13 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
     {
         sequenceCounters_TC_EXE[ i ] = 0;
     }
+
+    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequence_cnt                = sequenceCounters_TC_EXE[ i ] & 0x3fff;
+
+    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
+
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 
 }

@@ -123,7 +123,7 @@
 #define CCSDS_TM_VALID      7
 
 // TC SID
-#define SID_TC_GROUND       0
+#define SID_TC_GROUND                   0
 #define SID_TC_MISSION_TIMELINE         110
 #define SID_TC_TC_SEQUENCES             111
 #define SID_TC_RECOVERY_ACTION_CMD      112

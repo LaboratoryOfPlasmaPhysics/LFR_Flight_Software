@@ -68,62 +68,62 @@ rtems_task actn_task( rtems_task_argument unused )
             {
                 case TC_SUBTYPE_RESET:
                     result = action_reset( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_COMM:
                     result = action_load_common_par( &TC );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_NORM:
                     result = action_load_normal_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_BURST:
                     result = action_load_burst_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM1:
                     result = action_load_sbm1_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM2:
                     result = action_load_sbm2_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DUMP:
                     result = action_dump_par( queue_snd_id );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_ENTER:
                     result = action_enter_mode( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_INFO:
                     result = action_update_info( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_EN_CAL:
                     result = action_enable_calibration( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DIS_CAL:
                     result = action_disable_calibration( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_UPDT_TIME:
                     result = action_update_time( &TC );
-                    close_action( &TC, result, queue_snd_id, time );
+                    close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 default:
@@ -168,7 +168,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
          && (requestedMode != LFR_MODE_SBM1) && (requestedMode != LFR_MODE_SBM2) )
     {
         status = RTEMS_UNSATISFIED;
-        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode, time );
+        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
     }
     else
     {
@@ -190,7 +190,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
         else
         {
             PRINTF("ERR *** in action_enter *** transition rejected\n")
-            send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
+            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         }
     }
 
@@ -212,14 +212,32 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     unsigned int val;
     int result;
+    unsigned int status;
+    unsigned char mode;
 
-    result = LFR_SUCCESSFUL;
+    // check LFR MODE
+    mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET5 ] & 0x1e) >> 1;
+    status = check_update_info_hk_lfr_mode( mode );
+    if (status != LFR_DEFAULT)  // check TDS mode
+    {
+        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0xf0) >> 4;
+        status = check_update_info_hk_tds_mode( mode );
+    }
+    if (status != LFR_DEFAULT)  // check THR mode
+    {
+        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0x0f);
+        status = check_update_info_hk_thr_mode( mode );
+    }
+    if (status != LFR_DEFAULT)  // if the parameter check is successful
+    {
+        val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
+                + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
+        val++;
+        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
+    }
 
-    val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
-            + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
-    val++;
-    housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
-    housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
+    result = status;
 
     return result;
 }
@@ -239,14 +257,9 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
-        result = LFR_DEFAULT;
-    }
-    else {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
-        result = LFR_DEFAULT;
-    }
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+    result = LFR_DEFAULT;
+
     return result;
 }
 
@@ -265,14 +278,9 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, 
     result = LFR_DEFAULT;
     lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    if ( (lfrMode == LFR_MODE_STANDBY) || (lfrMode == LFR_MODE_BURST) || (lfrMode == LFR_MODE_SBM2) ) {
-        send_tm_lfr_tc_exe_not_executable( TC, queue_id, time );
-        result = LFR_DEFAULT;
-    }
-    else {
-        send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
-        result = LFR_DEFAULT;
-    }
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+    result = LFR_DEFAULT;
+
     return result;
 }
 
@@ -642,7 +650,7 @@ void launch_spectral_matrix_simu( unsigned char mode )
 
 //****************
 // CLOSING ACTIONS
-void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)
 {
     /** This function is used to update the HK packets statistics after a successful TC execution.
      *
@@ -657,15 +665,15 @@ void update_last_TC_exe(ccsdsTelecommandPacket_t *TC, unsigned char *time)
     housekeeping_packet.hk_lfr_last_exe_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = time[5];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC )
 {
     /** This function is used to update the HK packets statistics after a TC rejection.
      *
@@ -680,15 +688,15 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char *time)
     housekeeping_packet.hk_lfr_last_rej_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = time[5];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
-void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, unsigned char *time)
+void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
 {
     /** This function is the last step of the TC execution workflow.
      *
@@ -708,9 +716,9 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, u
              !( (TC->serviceType==TC_TYPE_GEN) && (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
              )
         {
-            send_tm_lfr_tc_exe_success( TC, queue_id, time );
+            send_tm_lfr_tc_exe_success( TC, queue_id );
         }
-        update_last_TC_exe( TC, time );
+        update_last_TC_exe( TC );
         val = housekeeping_packet.hk_lfr_exe_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
         val++;
         housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> 8);
@@ -718,7 +726,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id, u
     }
     else
     {
-        update_last_TC_rej( TC, time );
+        update_last_TC_rej( TC );
         val = housekeeping_packet.hk_lfr_rej_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
         val++;
         housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> 8);

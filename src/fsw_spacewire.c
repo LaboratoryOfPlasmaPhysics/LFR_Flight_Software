@@ -174,10 +174,10 @@ rtems_task recv_task( rtems_task_argument unused )
                             destinationID = currentTC.sourceID;
                         }
                         getTime( time );
-                        close_action( &currentTC, LFR_DEFAULT, queue_send_id, time);
+                        close_action( &currentTC, LFR_DEFAULT, queue_send_id );
                         send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
                                                       computed_CRC, currentTC_LEN_RCV,
-                                                      destinationID, time );
+                                                      destinationID );
                     }
                 }
                 else

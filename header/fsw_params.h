@@ -3,6 +3,7 @@
 
 #include "grlib_regs.h"
 #include "fsw_params_processing.h"
+#include "fsw_params_nb_bytes.h"
 #include "tm_byte_positions.h"
 #include "ccsds_types.h"
 
@@ -40,12 +41,22 @@ typedef struct ring_node
 
 //**********
 // LFR MODES
-#define LFR_MODE_STANDBY 0
-#define LFR_MODE_NORMAL 1
-#define LFR_MODE_BURST 2
-#define LFR_MODE_SBM1 3
-#define LFR_MODE_SBM2 4
-#define LFR_MODE_NORMAL_CWF_F3 5
+#define LFR_MODE_STANDBY    0
+#define LFR_MODE_NORMAL     1
+#define LFR_MODE_BURST      2
+#define LFR_MODE_SBM1       3
+#define LFR_MODE_SBM2       4
+
+#define TDS_MODE_LFM        5
+#define TDS_MODE_STANDBY    0
+#define TDS_MODE_NORMAL     1
+#define TDS_MODE_BURST      2
+#define TDS_MODE_SBM1       3
+#define TDS_MODE_SBM2       4
+
+#define THR_MODE_STANDBY    0
+#define THR_MODE_NORMAL      1
+#define THR_MODE_BURST      2
 
 #define RTEMS_EVENT_MODE_STANDBY        RTEMS_EVENT_0
 #define RTEMS_EVENT_MODE_NORMAL         RTEMS_EVENT_1
@@ -116,7 +127,9 @@ typedef struct ring_node
 // TIME
 #define CLKDIV_SM_SIMULATOR (10000 - 1)     // 10 ms
 #define TIMER_SM_SIMULATOR 1
-#define HK_PERIOD 100 // 100 * 10ms => 1sec
+#define HK_PERIOD                           100     // 100 * 10ms => 1s
+#define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
+#define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
 
 //**********
 // LPP CODES

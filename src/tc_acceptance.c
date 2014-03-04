@@ -160,7 +160,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     }
     if (status == CCSDS_TM_VALID)   // CHECK THE SUBTYPE
     {
-        status = tc_check_subtype( packetSubtype );
+        status = tc_check_type_subtype( packetType, packetSubtype );
     }
     if (status == CCSDS_TM_VALID)   // CHECK THE SID
     {
@@ -203,10 +203,11 @@ int tc_check_type( unsigned char packetType )
     return status;
 }
 
-int tc_check_subtype( unsigned char packetSubType )
+int tc_check_type_subtype( unsigned char packetType, unsigned char packetSubType )
 {
-    /** This function checks that the subtype of a TeleCommand is valid.
+    /** This function checks that the subtype of a TeleCommand is valid and coherent with the type.
      *
+     * @param packetType is the type of the TC.
      * @param packetSubType is the subtype to check.
      *
      * @return Status code CCSDS_TM_VALID or ILL_SUBTYPE.
@@ -215,20 +216,40 @@ int tc_check_subtype( unsigned char packetSubType )
 
     int status;
 
-    if ( (packetSubType == TC_SUBTYPE_RESET)
-         || (packetSubType == TC_SUBTYPE_LOAD_COMM)
-         || (packetSubType == TC_SUBTYPE_LOAD_NORM) || (packetSubType == TC_SUBTYPE_LOAD_BURST)
-         || (packetSubType == TC_SUBTYPE_LOAD_SBM1) || (packetSubType == TC_SUBTYPE_LOAD_SBM2)
-         || (packetSubType == TC_SUBTYPE_DUMP)
-         || (packetSubType == TC_SUBTYPE_ENTER)
-         || (packetSubType == TC_SUBTYPE_UPDT_INFO) || (packetSubType == TC_SUBTYPE_UPDT_TIME)
-         || (packetSubType == TC_SUBTYPE_EN_CAL)    || (packetSubType == TC_SUBTYPE_DIS_CAL) )
+    switch(packetType)
     {
-        status = CCSDS_TM_VALID;
-    }
-    else
-    {
+    case TC_TYPE_GEN:
+        if ( (packetSubType == TC_SUBTYPE_RESET)
+             || (packetSubType == TC_SUBTYPE_LOAD_COMM)
+             || (packetSubType == TC_SUBTYPE_LOAD_NORM) || (packetSubType == TC_SUBTYPE_LOAD_BURST)
+             || (packetSubType == TC_SUBTYPE_LOAD_SBM1) || (packetSubType == TC_SUBTYPE_LOAD_SBM2)
+             || (packetSubType == TC_SUBTYPE_DUMP)
+             || (packetSubType == TC_SUBTYPE_ENTER)
+             || (packetSubType == TC_SUBTYPE_UPDT_INFO)
+             || (packetSubType == TC_SUBTYPE_EN_CAL)    || (packetSubType == TC_SUBTYPE_DIS_CAL) )
+        {
+            status = CCSDS_TM_VALID;
+        }
+        else
+        {
+            status = ILL_SUBTYPE;
+        }
+        break;
+
+    case TC_TYPE_TIME:
+        if (packetSubType == TC_SUBTYPE_UPDT_TIME)
+        {
+            status = CCSDS_TM_VALID;
+        }
+        else
+        {
+            status = ILL_SUBTYPE;
+        }
+        break;
+
+    default:
         status = ILL_SUBTYPE;
+        break;
     }
 
     return status;
@@ -246,8 +267,7 @@ int tc_check_sid( unsigned char sid )
 
     int status;
 
-    if ( (sid == SID_TC_GROUND)
-         || (sid == SID_TC_MISSION_TIMELINE) || (sid == SID_TC_TC_SEQUENCES)   || (sid == SID_TC_RECOVERY_ACTION_CMD)
+    if ( (sid == SID_TC_MISSION_TIMELINE) || (sid == SID_TC_TC_SEQUENCES)   || (sid == SID_TC_RECOVERY_ACTION_CMD)
          || (sid == SID_TC_BACKUP_MISSION_TIMELINE)
          || (sid == SID_TC_DIRECT_CMD)       || (sid == SID_TC_SPARE_GRD_SRC1) || (sid == SID_TC_SPARE_GRD_SRC2)
          || (sid == SID_TC_OBCP)             || (sid == SID_TC_SYSTEM_CONTROL) || (sid == SID_TC_AOCS)

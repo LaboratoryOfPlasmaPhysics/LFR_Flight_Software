@@ -30,6 +30,7 @@ rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 int start_recv_send_tasks( void );
 //
 void init_local_mode_parameters( void );
+void reset_local_time( void );
 
 extern int rtems_cpu_usage_report( void );
 extern int rtems_cpu_usage_reset( void );

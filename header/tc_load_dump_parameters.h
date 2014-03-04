@@ -23,6 +23,11 @@ int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int set_sy_lfr_n_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 
+// TC_LFR_UPDATE_INFO
+unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
+unsigned int check_update_info_hk_tds_mode( unsigned char mode );
+unsigned int check_update_info_hk_thr_mode( unsigned char mode );
+
 void init_parameter_dump( void );
 
 #endif // TC_LOAD_DUMP_PARAMETERS_H

@@ -186,6 +186,9 @@ rtems_task avf0_task(rtems_task_argument argument)
             ring_node_for_averaging_sm_f0 = ring_node_for_averaging_sm_f0->previous;
             ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-i] = ring_node_for_averaging_sm_f0;
         }
+
+        averaged_sm_f0[0] = ( (int *) (ring_node_tab[7]->buffer_address) ) [0];
+        averaged_sm_f0[1] = ( (int *) (ring_node_tab[7]->buffer_address) ) [1];
         for(i=0; i<TOTAL_SIZE_SM; i++)
         {
             averaged_sm_f0[i] = ( (int *) (ring_node_tab[0]->buffer_address) ) [i + TIME_OFFSET]
