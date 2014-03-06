@@ -144,7 +144,7 @@ typedef struct ring_node
 #define TASKID_SMIQ 4
 #define TASKID_STAT 5
 #define TASKID_AVF0 6
-//#define TASKID_BPF0 7
+#define TASKID_SWBD 7
 #define TASKID_WFRM 8
 #define TASKID_DUMB 9
 #define TASKID_HOUS 10
@@ -163,6 +163,7 @@ typedef struct ring_node
 #define TASK_PRIORITY_CWF2 35   //
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
+#define TASK_PRIORITY_SWBD 40
 #define TASK_PRIORITY_SEND 45
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50

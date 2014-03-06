@@ -246,7 +246,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_SMIQ] = rtems_build_name( 'S', 'M', 'I', 'Q' );
     Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
     Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
-//    Task_name[TASKID_BPF0] = rtems_build_name( 'B', 'P', 'F', '0' );
+    Task_name[TASKID_SWBD] = rtems_build_name( 'S', 'W', 'B', 'D' );
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -282,13 +282,30 @@ int create_all_tasks( void ) // create all tasks which run in the software
 
     rtems_status_code status;
 
+    //**********
+    // SPACEWIRE
     // RECV
     status = rtems_task_create(
         Task_name[TASKID_RECV], TASK_PRIORITY_RECV, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,
         RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_RECV]
     );
-
+    if (status == RTEMS_SUCCESSFUL) // SEND
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
+        );
+    }
+    if (status == RTEMS_SUCCESSFUL) // WTDG
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_WTDG], TASK_PRIORITY_WTDG, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
+        );
+    }
     if (status == RTEMS_SUCCESSFUL) // ACTN
     {
         status = rtems_task_create(
@@ -305,20 +322,15 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]
         );
     }
+
+    //******************
+    // SPECTRAL MATRICES
     if (status == RTEMS_SUCCESSFUL) // SMIQ
     {
         status = rtems_task_create(
             Task_name[TASKID_SMIQ], TASK_PRIORITY_SMIQ, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SMIQ]
-        );
-    }
-    if (status == RTEMS_SUCCESSFUL) // STAT
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // AVF0
@@ -329,36 +341,23 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // WFRM
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
-        );
-    }
-    if (status == RTEMS_SUCCESSFUL) // DUMB
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
-        );
-    }
-    if (status == RTEMS_SUCCESSFUL) // HOUS
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
-        );
-    }
     if (status == RTEMS_SUCCESSFUL) // MATR
     {
         status = rtems_task_create(
             Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
+        );
+    }
+
+    //****************
+    // WAVEFORM PICKER
+    if (status == RTEMS_SUCCESSFUL) // WFRM
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // CWF3
@@ -385,20 +384,39 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF1]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // SEND
+    if (status == RTEMS_SUCCESSFUL) // SWBD
     {
         status = rtems_task_create(
-            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SEND]
+            Task_name[TASKID_SWBD], TASK_PRIORITY_SWBD, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SWBD]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // WTDG
+
+    //*****
+    // MISC
+    if (status == RTEMS_SUCCESSFUL) // STAT
     {
         status = rtems_task_create(
-            Task_name[TASKID_WTDG], TASK_PRIORITY_WTDG, RTEMS_MINIMUM_STACK_SIZE,
+            Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
+        );
+    }
+    if (status == RTEMS_SUCCESSFUL) // DUMB
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
+        );
+    }
+    if (status == RTEMS_SUCCESSFUL) // HOUS
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
         );
     }
 
@@ -441,6 +459,8 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
 
     rtems_status_code status;
 
+    //**********
+    // SPACEWIRE
     status = rtems_task_start( Task_id[TASKID_SPIQ], spiq_task, 1 );
     if (status!=RTEMS_SUCCESSFUL) {
         BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n")
@@ -454,14 +474,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         }
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // SMIQ
-    {
-        status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_BPPR\n")
-        }
-    }
-
     if (status == RTEMS_SUCCESSFUL)     // ACTN
     {
         status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
@@ -470,11 +482,13 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         }
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // STAT
+    //******************
+    // SPECTRAL MATRICES
+    if (status == RTEMS_SUCCESSFUL)     // SMIQ
     {
-        status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
+        status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_BPPR\n")
         }
     }
 
@@ -486,35 +500,21 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         }
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // WFRM
-    {
-        status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n")
-        }
-    }
-
-    if (status == RTEMS_SUCCESSFUL)     // DUMB
-    {
-        status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
-        }
-    }
-
-    if (status == RTEMS_SUCCESSFUL)     // HOUS
-    {
-        status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
-        }
-    }
-
     if (status == RTEMS_SUCCESSFUL)     // MATR
     {
         status = rtems_task_start( Task_id[TASKID_MATR], matr_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_MATR\n")
+        }
+    }
+
+    //****************
+    // WAVEFORM PICKER
+    if (status == RTEMS_SUCCESSFUL)     // WFRM
+    {
+        status = rtems_task_start( Task_id[TASKID_WFRM], wfrm_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n")
         }
     }
 
@@ -541,6 +541,41 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n")
         }
     }
+
+    if (status == RTEMS_SUCCESSFUL)     // SWBD
+    {
+        status = rtems_task_start( Task_id[TASKID_SWBD], swbd_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_SWBD\n")
+        }
+    }
+
+    //*****
+    // MISC
+    if (status == RTEMS_SUCCESSFUL)     // HOUS
+    {
+        status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)     // DUMB
+    {
+        status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)     // STAT
+    {
+        status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
+        }
+    }
+
     return status;
 }
 

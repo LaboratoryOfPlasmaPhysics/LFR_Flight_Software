@@ -36,6 +36,10 @@ ring_node *current_ring_node_f2;
 ring_node *ring_node_to_send_swf_f2;
 ring_node *ring_node_to_send_cwf_f2;
 
+bool extractSWF = false;
+
+int wf_snap_f1_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET ];
+
 rtems_isr waveforms_isr( rtems_vector_number vector )
 {
     /** This is the interrupt sub routine called by the waveform picker core.
@@ -135,175 +139,34 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         // SBM1
         case(LFR_MODE_SBM1):
         if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
+            // (0) launch snapshot extraction if needed
+            if (extractSWF == true)
+            {
+                ring_node_to_send_swf_f1 = current_ring_node_f1;
+                if (rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
+                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+                }
+                extractSWF = false;
+            }
             // (1) change the receiving buffer for the waveform picker
             ring_node_to_send_cwf_f1 = current_ring_node_f1;
             current_ring_node_f1 = current_ring_node_f1->next;
             waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
-            // (2) send an event for the waveforms transmission
+            // (2) send an event for the the CWF1 task for transmission
             if (rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_SBM1 ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bit = 0
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bits = 0
         }
         if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
-            ring_node_to_send_swf_f1 = current_ring_node_f1->previous;
+            extractSWF = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffeee; // [1111 1110 1110 1110] f0 bits = 0
         }
         if ( (waveform_picker_regs->status & 0x04) == 0x04 ) { // [0100] check the f2 full bit
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM1 ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffaaa; // [1111 1010 1010 1010] f2 and f0 bits = 0
-        }
-        break;
-
-        //*****
-        // SBM2
-        case(LFR_MODE_SBM2):
-        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
-            // (1) change the receiving buffer for the waveform picker
-            ring_node_to_send_cwf_f2 = current_ring_node_f2;
-            current_ring_node_f2 = current_ring_node_f2->next;
-            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
-            // (2) send an event for the waveforms transmission
-            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_SBM2 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
-        }
-        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
-            ring_node_to_send_swf_f2 = current_ring_node_f2->previous;
-        }
-        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffccc; // [1111 1100 1100 1100] f1, f0 bits = 0
-        }
-        break;
-
-        //********
-        // DEFAULT
-        default:
-        break;
-    }
-}
-
-rtems_isr waveforms_isr_alt( rtems_vector_number vector )
-{
-    /** This is the interrupt sub routine called by the waveform picker core.
-     *
-     * This ISR launch different actions depending mainly on two pieces of information:
-     * 1. the values read in the registers of the waveform picker.
-     * 2. the current LFR mode.
-     *
-     */
-
-    if ( (lfrCurrentMode == LFR_MODE_NORMAL)
-         || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
-    { // in modes other than STANDBY and BURST, send the CWF_F3 data
-        if ((waveform_picker_regs->status & 0x08) == 0x08){     // [1000] f3 is full
-            // (1) change the receiving buffer for the waveform picker
-            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
-                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_b);
-            }
-            else {
-                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);
-            }
-            // (2) send an event for the waveforms transmission
-            if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff777; // reset f3 bits to 0, [1111 0111 0111 0111]
-        }
-    }
-
-    switch(lfrCurrentMode)
-    {
-        //********
-        // STANDBY
-        case(LFR_MODE_STANDBY):
-        break;
-
-        //******
-        // NORMAL
-        case(LFR_MODE_NORMAL):
-        if ( (waveform_picker_regs->status & 0xff8) != 0x00)    // [1000] check the error bits
-        {
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-        }
-        if ( (waveform_picker_regs->status & 0x01) == 0x01)    // [0001] check the f0 full bit
-        {
-            // change F0 ring node
-            ring_node_to_send_swf_f0 = current_ring_node_f0;
-            current_ring_node_f0 = current_ring_node_f0->next;
-            waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffeee; // [1110 1110 1110]
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F0 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-        }
-        if ( (waveform_picker_regs->status & 0x02) == 0x02)    // [0010] check the f1 full bit
-        {
-            // change F1 ring node
-            ring_node_to_send_swf_f1 = current_ring_node_f1;
-            current_ring_node_f1 = current_ring_node_f1->next;
-            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1101 1101 1101]
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F1 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-        }
-        if ( (waveform_picker_regs->status & 0x04) == 0x04)    // [0100] check the f2 full bit
-        {
-            // change F2 ring node
-            ring_node_to_send_swf_f2 = current_ring_node_f2;
-            current_ring_node_f2 = current_ring_node_f2->next;
-            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1011 1011 1011]
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL_SWF_F2 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-        }
-        break;
-
-        //******
-        // BURST
-        case(LFR_MODE_BURST):
-        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
-            // (1) change the receiving buffer for the waveform picker
-            ring_node_to_send_cwf_f2 = current_ring_node_f2;
-            current_ring_node_f2 = current_ring_node_f2->next;
-            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
-            // (2) send an event for the waveforms transmission
-            if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
-        }
-        break;
-
-        //*****
-        // SBM1
-        case(LFR_MODE_SBM1):
-        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
-            // (1) change the receiving buffer for the waveform picker
-            ring_node_to_send_cwf_f1 = current_ring_node_f1;
-            current_ring_node_f1 = current_ring_node_f1->next;
-            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
-            // (2) send an event for the waveforms transmission
-            if (rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_SBM1 ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bit = 0
-        }
-        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
-            ring_node_to_send_swf_f1 = current_ring_node_f1->previous;
-        }
-        if ( (waveform_picker_regs->status & 0x04) == 0x04 ) { // [0100] check the f2 full bit
-            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-            }
-            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffaaa; // [1111 1010 1010 1010] f2 and f0 bits = 0
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bits = 0
         }
         break;
 
@@ -373,27 +236,20 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive(RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1
-                            | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM
-                            | RTEMS_EVENT_MODE_NORMAL_SWF_F0
-                            | RTEMS_EVENT_MODE_NORMAL_SWF_F1
-                            | RTEMS_EVENT_MODE_NORMAL_SWF_F2,
+                            | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
+            PRINTF("WFRM received RTEMS_EVENT_MODE_NORMAL\n")
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f0->buffer_address, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f1->buffer_address, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f2->buffer_address, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
         }
-        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F0) == RTEMS_EVENT_MODE_NORMAL_SWF_F0)
+        if (event_out == RTEMS_EVENT_MODE_SBM1)
         {
+            PRINTF("WFRM received RTEMS_EVENT_MODE_SBM1\n")
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f0->buffer_address, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
-        }
-        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F1) == RTEMS_EVENT_MODE_NORMAL_SWF_F1)
-        {
-            send_waveform_SWF((volatile int*) ring_node_to_send_swf_f1->buffer_address, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
-        }
-        if ( (event_out & RTEMS_EVENT_MODE_NORMAL_SWF_F2) == RTEMS_EVENT_MODE_NORMAL_SWF_F2)
-        {
+            send_waveform_SWF((volatile int*) wf_snap_f1_extracted                    , SID_NORM_SWF_F1, headerSWF_F1, queue_id);
             send_waveform_SWF((volatile int*) ring_node_to_send_swf_f2->buffer_address, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
         }
     }
@@ -534,6 +390,26 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         send_waveform_CWF( (volatile int*) ring_node_to_send_cwf_f1->buffer_address, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
+    }
+}
+
+rtems_task swbd_task(rtems_task_argument argument)
+{
+    /** This RTEMS task is dedicated to the building of snapshots from different continuous waveforms buffers.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     */
+
+    rtems_event_set event_out;
+
+    BOOT_PRINTF("in SWBD ***\n")
+
+    while(1){
+        // wait for an RTEMS_EVENT
+        rtems_event_receive( RTEMS_EVENT_0,
+                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        build_snapshot_from_ring();
     }
 }
 
@@ -990,7 +866,9 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
 {
     unsigned long long int acquisitionTimeAsLong;
     unsigned char localAcquisitionTime[6];
-    double deltaT = 0.;
+    double deltaT;
+
+    deltaT = 0.;
 
     localAcquisitionTime[0] = (unsigned char) ( coarseTime >>  8 );
     localAcquisitionTime[1] = (unsigned char) ( coarseTime       );
@@ -1054,6 +932,59 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
     acquisitionTime[3] = (unsigned char) (acquisitionTimeAsLong >> 16);
     acquisitionTime[4] = (unsigned char) (acquisitionTimeAsLong >> 8 );
     acquisitionTime[5] = (unsigned char) (acquisitionTimeAsLong      );
+
+}
+
+void build_snapshot_from_ring( void )
+{
+    unsigned int i;
+    unsigned long long int centerTime_asLong;
+    unsigned long long int acquisitionTimeF0_asLong;
+    unsigned long long int acquisitionTimeF1_asLong;
+    unsigned char *acquisitionTimeF0;
+    unsigned char *acquisitionTimeF1;
+    unsigned char *ptr1;
+    unsigned char *ptr2;
+
+    unsigned int deltaT;
+
+    deltaT = 2731;  // (2048. / 24576. / 2.) * 65536. = 2730.667;
+
+    acquisitionTimeF0 = (unsigned char*) current_ring_node_f0->buffer_address;
+    acquisitionTimeF1 = (unsigned char*) ring_node_to_send_cwf_f1->buffer_address;
+
+    acquisitionTimeF0_asLong = 0x00;
+    acquisitionTimeF1_asLong = 0x00;
+    acquisitionTimeF0_asLong = ( acquisitionTimeF0[0] << 24 )
+            + ( acquisitionTimeF0[1] << 16 )
+            + ( (unsigned long long int) acquisitionTimeF0[2] << 40 )
+            + ( (unsigned long long int) acquisitionTimeF0[3] << 32 )
+            + ( acquisitionTimeF0[4] << 8  )
+            + ( acquisitionTimeF0[5]       );
+
+    acquisitionTimeF1_asLong = ( acquisitionTimeF1[0] << 24 )
+            + ( acquisitionTimeF1[1] << 16 )
+            + ( (unsigned long long int) acquisitionTimeF1[2] << 40 )
+            + ( (unsigned long long int) acquisitionTimeF1[3] << 32 )
+            + ( acquisitionTimeF1[4] << 8  )
+            + ( acquisitionTimeF1[5]       );
+
+    centerTime_asLong = acquisitionTimeF0_asLong + deltaT;
+
+    ptr1 = (unsigned char*) &acquisitionTimeF1_asLong;
+    ptr2 = (unsigned char*) wf_snap_f1_extracted;
+
+    ptr2[0] = ptr1[ 2 + 2 ];
+    ptr2[1] = ptr1[ 3 + 2 ];
+    ptr2[2] = ptr1[ 0 + 2 ];
+    ptr2[3] = ptr1[ 1 + 2 ];
+    ptr2[4] = ptr1[ 4 + 2 ];
+    ptr2[5] = ptr1[ 5 + 2 ];
+
+    for (i=0; i<(NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK); i++ )
+    {
+        wf_snap_f1_extracted[i + TIME_OFFSET] = ((int*)(ring_node_to_send_cwf_f1->buffer_address))[i + TIME_OFFSET];
+    }
 }
 
 //**************

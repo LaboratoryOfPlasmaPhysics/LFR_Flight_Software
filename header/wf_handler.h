@@ -19,9 +19,9 @@ extern int fdSPW;
 // F0
 //extern volatile int wf_snap_f0[ ];
 // F1 F2
-extern volatile int wf_snap_f0[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
-extern volatile int wf_snap_f1[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
-extern volatile int wf_snap_f2[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 46 ];
+extern volatile int wf_snap_f0[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
+extern volatile int wf_snap_f1[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
+extern volatile int wf_snap_f2[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
 // F3
 extern volatile int wf_cont_f3_a[ ];
 extern volatile int wf_cont_f3_b[ ];
@@ -40,12 +40,17 @@ extern rtems_id    Task_id[20];         /* array of task ids */
 
 extern unsigned char lfrCurrentMode;
 
+//**********
+// RTEMS_ISR
 rtems_isr waveforms_isr( rtems_vector_number vector );
-rtems_isr waveforms_isr_alt( rtems_vector_number vector );
+
+//***********
+// RTEMS_TASK
 rtems_task wfrm_task( rtems_task_argument argument );
 rtems_task cwf3_task( rtems_task_argument argument );
 rtems_task cwf2_task( rtems_task_argument argument );
 rtems_task cwf1_task( rtems_task_argument argument );
+rtems_task swbd_task( rtems_task_argument argument );
 
 //******************
 // general functions
@@ -64,6 +69,7 @@ int send_waveform_CWF3_light( volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_
 //
 void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
+void build_snapshot_from_ring( void );
 //
 rtems_id get_pkts_queue_id( void );
 
