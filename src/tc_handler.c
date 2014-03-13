@@ -403,9 +403,13 @@ int stop_current_mode(void)
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
     // (3) reset registers
+    // waveform picker
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
-    disable_irq_on_new_ready_matrix();              // stop the spectral matrices
+    // spectral matrices
+    set_irq_on_new_ready_matrix( 0 );               // stop the spectral matrices
+    set_run_matrix_spectral( 0 );                   // run_matrix_spectral is set to 0
+    reset_extractSWF();                             // reset the extractSWF flag to false
 
     // <Spectral Matrices simulator>
     LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
@@ -605,8 +609,10 @@ void launch_waveform_picker( unsigned char mode )
     reset_current_ring_nodes();
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
+
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+
     startDate = time_management_regs->coarse_time + 2;
     waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
     waveform_picker_regs->start_date = startDate;
@@ -618,22 +624,42 @@ void launch_spectral_matrix( unsigned char mode )
     reset_current_sm_ring_nodes();
     reset_spectral_matrix_regs();
 
-    enable_irq_on_new_ready_matrix();
-
+#ifdef VHDL_DEV
+    set_irq_on_new_ready_matrix( 1 );
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
+    set_run_matrix_spectral( 1 );
+#else
+    // Spectral Matrices simulator
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
+    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
+#endif
 }
 
-void enable_irq_on_new_ready_matrix( void )
+void set_irq_on_new_ready_matrix( unsigned char value )
 {
-    spectral_matrix_regs->config = spectral_matrix_regs->config | 0x01;
+    if (value == 1)
+    {
+        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x01;
+    }
+    else
+    {
+        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffe;   // 1110
+    }
 }
 
-void disable_irq_on_new_ready_matrix( void )
+void set_run_matrix_spectral( unsigned char value )
 {
-    spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffe;   // 1110
+    if (value == 1)
+    {
+        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x4;  // 0100 set run_matrix spectral to 1
+    }
+    else
+    {
+        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffb;  // 1011 set run_matrix spectral to 0
+    }
 }
-
 
 void launch_spectral_matrix_simu( unsigned char mode )
 {

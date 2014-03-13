@@ -1,10 +1,13 @@
 #ifndef FSW_PARAMS_PROCESSING_H
 #define FSW_PARAMS_PROCESSING_H
 
-#define NB_BINS_PER_SM      128     //
-#define NB_VALUES_PER_SM    25      //
-#define TOTAL_SIZE_SM       3200    // 25 * 128
-#define SM_HEADER           0       //
+#define NB_BINS_PER_SM          128
+#define NB_VALUES_PER_SM        25
+#define TOTAL_SIZE_SM           3200    // 25 * 128
+//
+#define NB_RING_NODES_ASM_F0 12 // AT LEAST 3
+#define NB_RING_NODES_ASM_F1 2  // AT LEAST 3
+#define NB_RING_NODES_ASM_F2 2  // AT LEAST 3
 //
 #define NB_BINS_PER_ASM_F0  88
 #define NB_BINS_PER_PKT_ASM_F0  44

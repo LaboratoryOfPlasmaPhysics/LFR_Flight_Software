@@ -35,9 +35,6 @@ typedef struct ring_node
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
-#define NB_RING_NODES_ASM_F0 12 // AT LEAST 3
-#define NB_RING_NODES_ASM_F1 2  // AT LEAST 3
-#define NB_RING_NODES_ASM_F2 2  // AT LEAST 3
 
 //**********
 // LFR MODES
@@ -107,8 +104,14 @@ typedef struct ring_node
 #define REGS_ADDR_GPTIMER           0x80000300
 #define REGS_ADDR_GRSPW             0x80000500
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
+
+#ifdef VHDL_DEV
+#define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
+#define REGS_ADDR_WAVEFORM_PICKER   0x80000f40
+#else
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f20
+#endif
 
 #define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
 #define APBUART_CTRL_REG_MASK_TE    0x00000002
@@ -161,9 +164,9 @@ typedef struct ring_node
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //
+#define TASK_PRIORITY_SWBD 37   // SWBD has a lower priority than WFRM, this is to extract the snapshot before sending it
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
-#define TASK_PRIORITY_SWBD 40
 #define TASK_PRIORITY_SEND 45
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50

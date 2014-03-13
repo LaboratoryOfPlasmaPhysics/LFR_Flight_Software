@@ -81,6 +81,15 @@ typedef struct {
     volatile int matrixFO_Address1;
     volatile int matrixF1_Address;
     volatile int matrixF2_Address;
+    volatile int coarse_time_F0_0;
+    volatile int coarse_time_F0_1;
+    volatile int coarse_time_F1;
+    volatile int coarse_time_F2;
+    volatile int fine_time_FO_0;
+    volatile int fine_time_F0_1;
+    volatile int fine_time_F1;
+    volatile int fine_time_F2;
+    volatile int debug;
 } spectral_matrix_regs_t;
 
 #endif // GRLIB_REGS_H_INCLUDED

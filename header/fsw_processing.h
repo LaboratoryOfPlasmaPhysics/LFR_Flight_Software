@@ -12,9 +12,9 @@
 #include "fsw_spacewire.h"
 #include "basic_parameters.h"
 
-extern volatile int sm_f0[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
-extern volatile int sm_f1[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
-extern volatile int sm_f2[ ][ TIME_OFFSET + TOTAL_SIZE_SM ];
+extern volatile int sm_f0[ ];
+extern volatile int sm_f1[ ];
+extern volatile int sm_f2[ ];
 
 // parameters
 extern struct param_local_str param_local;
