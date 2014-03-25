@@ -1015,11 +1015,9 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
 
     // get the f0 acquisition time
     build_acquisition_time( &acquisitionTimeF0_asLong, current_ring_node_f0 );
-    PRINTF1("acquisitionTimeF0_asLong %llx \n", acquisitionTimeF0_asLong)
 
     // compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
-    PRINTF1("centerTime_asLong %llx \n", centerTime_asLong)
 
     // compute the acquisition time of the current snapshot
     switch(frequencyChannel)
@@ -1042,7 +1040,6 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
         nbTicksPerSample_asLong = 256;
         break;
     }
-    PRINTF1("acquisitionTime_asLong %llx\n", acquisitionTime_asLong)
 
     //****************************************************************************
     // 1) search the ring_node with the acquisition time <= acquisitionTime_asLong
@@ -1064,12 +1061,10 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     // compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> 16;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
-    PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1 = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
 
     // compute the final acquisition time
     acquisitionTime_asLong = bufferAcquisitionTime_asLong +
             sampleOffset_asLong * nbTicksPerSample_asLong;
-    PRINTF1("FINAL acquisitionTime_asLong %llx\n\n", acquisitionTime_asLong)
 
     // copy the acquisition time at the beginning of the extrated snapshot
     ptr1 = (unsigned char*) &acquisitionTime_asLong;
@@ -1162,7 +1157,7 @@ void reset_waveform_picker_regs(void)
     *
     */
 
-    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
+//    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
     waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
     waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
     waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c

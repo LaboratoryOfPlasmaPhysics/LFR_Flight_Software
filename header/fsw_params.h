@@ -104,6 +104,7 @@ typedef struct ring_node
 #define REGS_ADDR_GPTIMER           0x80000300
 #define REGS_ADDR_GRSPW             0x80000500
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
+#define REGS_ADDR_GRGPIO            0x80000b00
 
 #ifdef VHDL_DEV
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00

@@ -11,11 +11,16 @@ struct apbuart_regs_str{
     volatile unsigned int fifoDebug;
 };
 
-struct ahbuart_regs_str{
-    volatile unsigned int unused;
-    volatile unsigned int status;
-    volatile unsigned int ctrl;
-    volatile unsigned int scaler;
+struct grgpio_regs_str{
+    volatile int io_port_data_register;
+    int io_port_output_register;
+    int io_port_direction_register;
+    int interrupt_mak_register;
+    int interrupt_polarity_register;
+    int interrupt_edge_register;
+    int bypass_register;
+    int reserved;
+    // 0x20-0x3c interrupt map register(s)
 };
 
 typedef struct {

@@ -10,7 +10,7 @@
  *
  */
 
-#include "tc_handler.h"
+#include "timegen_tc_handler.h"
 
 //***********
 // RTEMS TASK
@@ -67,37 +67,37 @@ rtems_task actn_task( rtems_task_argument unused )
             switch(subtype)
             {
                 case TC_SUBTYPE_RESET:
-                    result = action_reset( &TC, queue_snd_id, time );
+//                    result = action_reset( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_COMM:
-                    result = action_load_common_par( &TC );
+//                    result = action_load_common_par( &TC );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_NORM:
-                    result = action_load_normal_par( &TC, queue_snd_id, time );
+//                    result = action_load_normal_par( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_BURST:
-                    result = action_load_burst_par( &TC, queue_snd_id, time );
+//                    result = action_load_burst_par( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM1:
-                    result = action_load_sbm1_par( &TC, queue_snd_id, time );
+//                    result = action_load_sbm1_par( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_LOAD_SBM2:
-                    result = action_load_sbm2_par( &TC, queue_snd_id, time );
+//                    result = action_load_sbm2_par( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DUMP:
-                    result = action_dump_par( queue_snd_id );
+//                    result = action_dump_par( queue_snd_id );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
@@ -107,17 +107,17 @@ rtems_task actn_task( rtems_task_argument unused )
                     break;
                     //
                 case TC_SUBTYPE_UPDT_INFO:
-                    result = action_update_info( &TC, queue_snd_id );
+//                    result = action_update_info( &TC, queue_snd_id );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_EN_CAL:
-                    result = action_enable_calibration( &TC, queue_snd_id, time );
+//                    result = action_enable_calibration( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
                 case TC_SUBTYPE_DIS_CAL:
-                    result = action_disable_calibration( &TC, queue_snd_id, time );
+//                    result = action_disable_calibration( &TC, queue_snd_id, time );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
@@ -199,45 +199,47 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
 
 int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 {
-    /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
-     *
-     * @param TC points to the TeleCommand packet that is being processed
-     * @param queue_id is the id of the queue which handles TM transmission by the SpaceWire driver
-     *
-     * @return LFR directive status code:
-     * - LFR_DEFAULT
-     * - LFR_SUCCESSFUL
-     *
-     */
+//    /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
+//     *
+//     * @param TC points to the TeleCommand packet that is being processed
+//     * @param queue_id is the id of the queue which handles TM transmission by the SpaceWire driver
+//     *
+//     * @return LFR directive status code:
+//     * - LFR_DEFAULT
+//     * - LFR_SUCCESSFUL
+//     *
+//     */
 
-    unsigned int val;
+//    unsigned int val;
     int result;
-    unsigned int status;
-    unsigned char mode;
 
-    // check LFR mode
-    mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET5 ] & 0x1e) >> 1;
-    status = check_update_info_hk_lfr_mode( mode );
-    if (status == LFR_SUCCESSFUL)  // check TDS mode
-    {
-        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0xf0) >> 4;
-        status = check_update_info_hk_tds_mode( mode );
-    }
-    if (status == LFR_SUCCESSFUL)  // check THR mode
-    {
-        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0x0f);
-        status = check_update_info_hk_thr_mode( mode );
-    }
-    if (status == LFR_SUCCESSFUL)  // if the parameter check is successful
-    {
-        val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
-                + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
-        val++;
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
-    }
+    result = LFR_DEFAULT;
+//    unsigned int status;
+//    unsigned char mode;
 
-    result = status;
+//    // check LFR MODE
+//    mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET5 ] & 0x1e) >> 1;
+//    status = check_update_info_hk_lfr_mode( mode );
+//    if (status != LFR_DEFAULT)  // check TDS mode
+//    {
+//        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0xf0) >> 4;
+//        status = check_update_info_hk_tds_mode( mode );
+//    }
+//    if (status != LFR_DEFAULT)  // check THR mode
+//    {
+//        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0x0f);
+//        status = check_update_info_hk_thr_mode( mode );
+//    }
+//    if (status != LFR_DEFAULT)  // if the parameter check is successful
+//    {
+//        val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
+//                + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
+//        val++;
+//        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
+//        housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
+//    }
+
+//    result = status;
 
     return result;
 }
@@ -404,12 +406,12 @@ int stop_current_mode(void)
 
     // (3) reset registers
     // waveform picker
-    reset_wfp_burst_enable();                       // reset burst and enable bits
-    reset_wfp_status();                             // reset all the status bits
+//    reset_wfp_burst_enable();                       // reset burst and enable bits
+//    reset_wfp_status();                             // reset all the status bits
     // spectral matrices
     set_irq_on_new_ready_matrix( 0 );               // stop the spectral matrices
     set_run_matrix_spectral( 0 );                   // run_matrix_spectral is set to 0
-    reset_extractSWF();                             // reset the extractSWF flag to false
+//    reset_extractSWF();                             // reset the extractSWF flag to false
 
     // <Spectral Matrices simulator>
     LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
@@ -457,8 +459,8 @@ int enter_mode(unsigned char mode )
         maxCount = 0;
 #endif
         status = restart_science_tasks();
-        launch_waveform_picker( mode );
-        launch_spectral_matrix( mode );
+//        launch_waveform_picker( mode );
+//        launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -604,37 +606,37 @@ int suspend_science_tasks()
 
 void launch_waveform_picker( unsigned char mode )
 {
-    int startDate;
+//    int startDate;
 
-    reset_current_ring_nodes();
-    reset_waveform_picker_regs();
-    set_wfp_burst_enable_register( mode );
+//    reset_current_ring_nodes();
+//    reset_waveform_picker_regs();
+//    set_wfp_burst_enable_register( mode );
 
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
-    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
+//    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
+//    LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
 
-    startDate = time_management_regs->coarse_time + 2;
-    waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
-    waveform_picker_regs->start_date = startDate;
+//    startDate = time_management_regs->coarse_time + 2;
+//    waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
+//    waveform_picker_regs->start_date = startDate;
 }
 
 void launch_spectral_matrix( unsigned char mode )
 {
-    reset_nb_sm_f0();
-    reset_current_sm_ring_nodes();
-    reset_spectral_matrix_regs();
+//    reset_nb_sm_f0();
+//    reset_current_sm_ring_nodes();
+//    reset_spectral_matrix_regs();
 
-#ifdef VHDL_DEV
-    set_irq_on_new_ready_matrix( 1 );
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
-    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
-    set_run_matrix_spectral( 1 );
-#else
-    // Spectral Matrices simulator
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
-    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
-#endif
+//#ifdef VHDL_DEV
+//    set_irq_on_new_ready_matrix( 1 );
+//    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
+//    LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
+//    set_run_matrix_spectral( 1 );
+//#else
+//    // Spectral Matrices simulator
+//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+//    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
+//    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
+//#endif
 }
 
 void set_irq_on_new_ready_matrix( unsigned char value )
@@ -653,30 +655,30 @@ void set_run_matrix_spectral( unsigned char value )
 {
     if (value == 1)
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x4;  // [0100] set run_matrix spectral to 1
+        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x4;  // 0100 set run_matrix spectral to 1
     }
     else
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffb;  // [1011] set run_matrix spectral to 0
+        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffb;  // 1011 set run_matrix spectral to 0
     }
 }
 
 void launch_spectral_matrix_simu( unsigned char mode )
 {
-    reset_nb_sm_f0();
-    reset_current_sm_ring_nodes();
-    reset_spectral_matrix_regs();
+//    reset_nb_sm_f0();
+//    reset_current_sm_ring_nodes();
+//    reset_spectral_matrix_regs();
 
-    // Spectral Matrices simulator
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
-    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
-    set_local_nb_interrupt_f0_MAX();
+//    // Spectral Matrices simulator
+//    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+//    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
+//    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
+//    set_local_nb_interrupt_f0_MAX();
 }
 
 //****************
 // CLOSING ACTIONS
-void update_last_TC_exe( ccsdsTelecommandPacket_t *TC, unsigned char * time )
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC)
 {
     /** This function is used to update the HK packets statistics after a successful TC execution.
      *
@@ -685,28 +687,21 @@ void update_last_TC_exe( ccsdsTelecommandPacket_t *TC, unsigned char * time )
      *
      */
 
-    unsigned int val;
-
     housekeeping_packet.hk_lfr_last_exe_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_exe_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_exe_tc_type[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = time[5];
-
-    val = housekeeping_packet.hk_lfr_exe_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
-    val++;
-    housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> 8);
-    housekeeping_packet.hk_lfr_exe_tc_cnt[1] = (unsigned char) (val);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char * time )
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC )
 {
     /** This function is used to update the HK packets statistics after a TC rejection.
      *
@@ -715,25 +710,18 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char * time )
      *
      */
 
-    unsigned int val;
-
     housekeeping_packet.hk_lfr_last_rej_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_rej_tc_id[1] = TC->packetID[1];
     housekeeping_packet.hk_lfr_last_rej_tc_type[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_type[1] = TC->serviceType;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = 0x00;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = time[5];
-
-    val = housekeeping_packet.hk_lfr_rej_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
-    val++;
-    housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> 8);
-    housekeeping_packet.hk_lfr_rej_tc_cnt[1] = (unsigned char) (val);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = (unsigned char) (time_management_regs->coarse_time);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
 void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
@@ -747,15 +735,30 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
      *
      */
 
+    unsigned int val = 0;
+
     if (result == LFR_SUCCESSFUL)
     {
-        if ( !( (TC->serviceType==TC_TYPE_TIME) & (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
-             &
-             !( (TC->serviceType==TC_TYPE_GEN) & (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
+        if ( !( (TC->serviceType==TC_TYPE_TIME) && (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
+             &&
+             !( (TC->serviceType==TC_TYPE_GEN) && (TC->serviceSubType==TC_SUBTYPE_UPDT_INFO))
              )
         {
             send_tm_lfr_tc_exe_success( TC, queue_id );
         }
+        update_last_TC_exe( TC );
+        val = housekeeping_packet.hk_lfr_exe_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
+        val++;
+        housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_exe_tc_cnt[1] = (unsigned char) (val);
+    }
+    else
+    {
+        update_last_TC_rej( TC );
+        val = housekeeping_packet.hk_lfr_rej_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
+        val++;
+        housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_rej_tc_cnt[1] = (unsigned char) (val);
     }
 }
 

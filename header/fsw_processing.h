@@ -10,7 +10,6 @@
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
-#include "basic_parameters.h"
 
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];

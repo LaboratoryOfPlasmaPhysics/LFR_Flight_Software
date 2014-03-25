@@ -4,6 +4,9 @@
 #define NB_BINS_PER_SM          128
 #define NB_VALUES_PER_SM        25
 #define TOTAL_SIZE_SM           3200    // 25 * 128
+#define TOTAL_SIZE_BP1_F0       99      // 11 * 9 = 99
+#define TOTAL_SIZE_BP1_F1       117     // 13 * 9 = 117
+#define TOTAL_SIZE_BP1_F2       108     // 12 * 9 = 108
 //
 #define NB_RING_NODES_ASM_F0 12 // AT LEAST 3
 #define NB_RING_NODES_ASM_F1 2  // AT LEAST 3

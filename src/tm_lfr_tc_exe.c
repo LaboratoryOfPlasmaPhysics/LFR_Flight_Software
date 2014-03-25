@@ -71,6 +71,9 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
         PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
     }
 
+    // UPDATE HK FIELDS
+    update_last_TC_exe( TC, TM.time );
+
     return status;
 }
 
@@ -139,6 +142,9 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
         PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n")
     }
 
+    // UPDATE HK FIELDS
+    update_last_TC_rej( TC, TM.time );
+
     return status;
 }
 
@@ -204,6 +210,9 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
         PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n")
     }
 
+    // UPDATE HK FIELDS
+    update_last_TC_rej( TC, TM.time );
+
     return status;
 }
 
@@ -267,6 +276,9 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
         PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
     }
 
+    // UPDATE HK FIELDS
+    update_last_TC_rej( TC, TM.time );
+
     return status;
 }
 
@@ -329,6 +341,9 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
     }
+
+    // UPDATE HK FIELDS
+    update_last_TC_rej( TC, TM.time );
 
     return status;
 }
@@ -409,6 +424,9 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     if (status != RTEMS_SUCCESSFUL) {
         PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
     }
+
+    // UPDATE HK FIELDS
+    update_last_TC_rej( TC, TM.time );
 
     return status;
 }

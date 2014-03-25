@@ -31,6 +31,7 @@
 #define TM_PACKET_CAT_HK                        4
 #define TM_PACKET_CAT_PARAMETER_DUMP            9
 #define TM_PACKET_CAT_SCIENCE                   12
+#define TC_PACKET_CAT                           12
 
 // PACKET SEQUENCE CONTROL
 #define TM_PACKET_SEQ_CTRL_CONTINUATION 0x00    // [0000 0000]

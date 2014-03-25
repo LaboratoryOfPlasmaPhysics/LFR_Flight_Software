@@ -1,5 +1,5 @@
-#ifndef TC_HANDLER_H_INCLUDED
-#define TC_HANDLER_H_INCLUDED
+#ifndef TIMEGEN_TC_HANDLER_H_INCLUDED
+#define TIMEGEN_TC_HANDLER_H_INCLUDED
 
 #include <rtems.h>
 #include <leon.h>
@@ -7,8 +7,6 @@
 #include "tc_load_dump_parameters.h"
 #include "tc_acceptance.h"
 #include "tm_lfr_tc_exe.h"
-#include "wf_handler.h"
-#include "fsw_processing.h"
 
 // MODE PARAMETERS
 extern unsigned int maxCount;
@@ -45,14 +43,14 @@ void launch_spectral_matrix_simu( unsigned char mode );
 
 // other functions
 void updateLFRCurrentMode();
-void update_last_TC_exe( ccsdsTelecommandPacket_t *TC , unsigned char *time );
-void update_last_TC_rej(ccsdsTelecommandPacket_t *TC , unsigned char *time );
-void close_action( ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id );
+void update_last_TC_exe(ccsdsTelecommandPacket_t *TC );
+void update_last_TC_rej(ccsdsTelecommandPacket_t *TC );
+void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id );
 
 extern rtems_status_code get_message_queue_id_send( rtems_id *queue_id );
 extern rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 
-#endif // TC_HANDLER_H_INCLUDED
+#endif // TIMEGEN_TC_HANDLER_H_INCLUDED
 
 
 

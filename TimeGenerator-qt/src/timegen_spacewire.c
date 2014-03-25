@@ -11,7 +11,7 @@
  *
  */
 
-#include "fsw_spacewire.h"
+#include "timegen_spacewire.h"
 
 rtems_name semq_name;
 rtems_id semq_id;
@@ -118,6 +118,7 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned char destinationID;
     unsigned int currentTC_LEN_RCV_AsUnsignedInt;
     unsigned int parserCode;
+    unsigned char time[6];
     rtems_status_code status;
     rtems_id queue_recv_id;
     rtems_id queue_send_id;
@@ -159,7 +160,6 @@ rtems_task recv_task( rtems_task_argument unused )
                      || (parserCode == ILL_SUBTYPE)     || (parserCode == WRONG_APP_DATA)
                      || (parserCode == WRONG_SRC_ID) )
                 { // send TM_LFR_TC_EXE_CORRUPTED
-                    PRINTF1("TC corrupted received, with code: %d\n", parserCode)
                     if ( !( (currentTC.serviceType==TC_TYPE_TIME) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_TIME) )
                          &&
                          !( (currentTC.serviceType==TC_TYPE_GEN) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_INFO))
@@ -173,6 +173,8 @@ rtems_task recv_task( rtems_task_argument unused )
                         {
                             destinationID = currentTC.sourceID;
                         }
+                        getTime( time );
+                        close_action( &currentTC, LFR_DEFAULT, queue_send_id );
                         send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
                                                       computed_CRC, currentTC_LEN_RCV,
                                                       destinationID );
@@ -204,7 +206,6 @@ rtems_task send_task( rtems_task_argument argument)
 
     rtems_status_code status;               // RTEMS status code
     char incomingData[ACTION_MSG_PKTS_MAX_SIZE];  // incoming data buffer
-    spw_ioctl_pkt_send *spw_ioctl_send;
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
     rtems_id queue_id;
@@ -228,20 +229,9 @@ rtems_task send_task( rtems_task_argument argument)
         }
         else
         {
-            if ( incomingData[0] == CCSDS_DESTINATION_ID) // the incoming message is a ccsds packet
-            {
-                status = write( fdSPW, incomingData, size );
-                if (status == -1){
-                    PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)
-                }
-            }
-            else // the incoming message is a spw_ioctl_pkt_send structure
-            {
-                spw_ioctl_send = (spw_ioctl_pkt_send*) incomingData;
-                status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
-                if (status == -1){
-                    PRINTF2("in SEND *** (2.b) ERRNO = %d, RTEMS = %d\n", errno, status)
-                }
+            status = write( fdSPW, incomingData, size );
+            if (status == -1){
+                PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)
             }
         }
 
@@ -392,7 +382,7 @@ int spacewire_configure_link( int fd )
     if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
+    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL\n")
 
     return status;
 }

@@ -24,8 +24,12 @@ ring_node *current_ring_node_sm_f2;
 BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];
 float averaged_sm_f0            [ TIME_OFFSET + TOTAL_SIZE_SM ];
 float averaged_sm_f0_reorganized[ TIME_OFFSET + TOTAL_SIZE_SM ];
-char averaged_sm_f0_char        [ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_SM * 2 ];
+char averaged_sm_f0_char        [ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_SM ];
 float compressed_sm_f0          [ TOTAL_SIZE_COMPRESSED_ASM_F0 ];
+
+unsigned char LFR_BP1_F0[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F0 * 2 ];
+unsigned char LFR_BP1_F1[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F1 ];
+unsigned char LFR_BP1_F2[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F2 ];
 
 unsigned int nb_sm_f0;
 
@@ -258,7 +262,7 @@ rtems_task matr_task(rtems_task_argument argument)
         // 1)  compress the matrix for Basic Parameters calculation
         ASM_compress( averaged_sm_f0, 0, compressed_sm_f0 );
         // 2)
-        //BP1_set(compressed_sm_f0, NB_BINS_COMPRESSED_SM_F0, LFR_BP1_F0);
+//        BP1_set( (float *) &compressed_sm_f0[TIME_OFFSET], NB_BINS_COMPRESSED_SM_F0, (unsigned char *) &LFR_BP1_F0[TIME_OFFSET_IN_BYTES] );
         // 3) convert the float array in a char array
         ASM_reorganize( averaged_sm_f0, averaged_sm_f0_reorganized );
         ASM_convert( averaged_sm_f0_reorganized, averaged_sm_f0_char);
@@ -311,11 +315,13 @@ void ASM_compress( float *averaged_spec_mat, unsigned char fChannel, float *comp
         {
             for( frequencyBin = 0; frequencyBin < NB_BINS_COMPRESSED_SM_F0; frequencyBin++ )
             {
-                offsetASM = asmComponent * NB_BINS_PER_SM
+                offsetCompressed = TIME_OFFSET
+                        + frequencyBin * NB_VALUES_PER_SM
+                        + asmComponent;
+                offsetASM = TIME_OFFSET
+                        + asmComponent * NB_BINS_PER_SM
                         + ASM_F0_INDICE_START
                         + frequencyBin * NB_BINS_TO_AVERAGE_ASM_F0;
-                offsetCompressed = frequencyBin * NB_VALUES_PER_SM
-                        + asmComponent;
                 compressed_spec_mat[ offsetCompressed ] = 0;
                 for ( k = 0; k < NB_BINS_TO_AVERAGE_ASM_F0; k++ )
                 {

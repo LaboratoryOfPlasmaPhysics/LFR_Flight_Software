@@ -417,7 +417,7 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode )
     unsigned int status;
 
     if ( (mode == LFR_MODE_STANDBY) || (mode == LFR_MODE_NORMAL)
-         || (mode = LFR_MODE_BURST)
+         || (mode == LFR_MODE_BURST)
          || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2))
     {
         status = LFR_SUCCESSFUL;
@@ -435,7 +435,7 @@ unsigned int check_update_info_hk_tds_mode( unsigned char mode )
     unsigned int status;
 
     if ( (mode == TDS_MODE_STANDBY) || (mode == TDS_MODE_NORMAL)
-         || (mode = TDS_MODE_BURST)
+         || (mode == TDS_MODE_BURST)
          || (mode == TDS_MODE_SBM1) || (mode == TDS_MODE_SBM2)
          || (mode == TDS_MODE_LFM))
     {
@@ -454,7 +454,7 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode )
     unsigned int status;
 
     if ( (mode == THR_MODE_STANDBY) || (mode == THR_MODE_NORMAL)
-         || (mode = THR_MODE_BURST))
+         || (mode == THR_MODE_BURST))
     {
         status = LFR_SUCCESSFUL;
     }
