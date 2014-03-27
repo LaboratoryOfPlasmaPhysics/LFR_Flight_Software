@@ -24,17 +24,18 @@ rtems_task actn_task( rtems_task_argument unused );
 
 //***********
 // TC ACTIONS
-int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
-int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
-int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
-int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
-int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
-int action_update_time(ccsdsTelecommandPacket_t *TC);
+int action_reset( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
+int action_enter_mode( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
+int action_update_info( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
+int action_enable_calibration( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
+int action_disable_calibration( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
+int action_update_time( ccsdsTelecommandPacket_t *TC);
 
 // mode transition
-int transition_validation(unsigned char requestedMode);
+int check_mode_value( unsigned char requestedMode );
+int check_mode_transition( unsigned char requestedMode );
 int stop_current_mode( void );
-int enter_mode(unsigned char mode);
+int enter_mode( unsigned char mode );
 int restart_science_tasks();
 int suspend_science_tasks();
 void launch_waveform_picker( unsigned char mode );

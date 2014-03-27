@@ -580,7 +580,7 @@ void spacewire_update_statistics( void )
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
-//    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_1 );
+//    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_9 );
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
 
     grgpio_regs->io_port_direction_register =
@@ -594,7 +594,6 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     {
         grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x08;
     }
-
 }
 
 rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )

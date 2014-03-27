@@ -163,33 +163,23 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
 
     requestedMode = TC->dataAndCRC[1];
 
-    if ( (requestedMode != LFR_MODE_STANDBY)
-         && (requestedMode != LFR_MODE_NORMAL) && (requestedMode != LFR_MODE_BURST)
-         && (requestedMode != LFR_MODE_SBM1) && (requestedMode != LFR_MODE_SBM2) )
+    status = check_mode_value( requestedMode );
+    if ( status != LFR_SUCCESSFUL )
     {
-        status = RTEMS_UNSATISFIED;
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
     }
     else
     {
-        printf("in action_enter_mode *** enter mode %d\n", requestedMode);
+        status = check_mode_transition(requestedMode);
 
-        status = transition_validation(requestedMode);
-
-        if ( status == LFR_SUCCESSFUL ) {
-            if ( lfrCurrentMode != LFR_MODE_STANDBY)
-            {
-                status = stop_current_mode();
-            }
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                PRINTF("ERR *** in action_enter *** stop_current_mode\n")
-            }
+        if ( status == LFR_SUCCESSFUL )
+        {
+            PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
             status = enter_mode( requestedMode );
         }
         else
         {
-            PRINTF("ERR *** in action_enter *** transition rejected\n")
+            PRINTF("ERR *** in action_enter_mode *** transition rejected\n")
             send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         }
     }
@@ -301,6 +291,9 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
                                                 + (TC->dataAndCRC[1] << 16)
                                                 + (TC->dataAndCRC[2] << 8)
                                                 + TC->dataAndCRC[3];
+
+    PRINTF1("time received: %x\n", time_management_regs->coarse_time_load)
+
     val = housekeeping_packet.hk_lfr_update_time_tc_cnt[0] * 256
             + housekeeping_packet.hk_lfr_update_time_tc_cnt[1];
     val++;
@@ -313,8 +306,25 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
 
 //*******************
 // ENTERING THE MODES
+int check_mode_value( unsigned char requestedMode )
+{
+    int status;
 
-int transition_validation(unsigned char requestedMode)
+    if ( (requestedMode != LFR_MODE_STANDBY)
+         && (requestedMode != LFR_MODE_NORMAL) && (requestedMode != LFR_MODE_BURST)
+         && (requestedMode != LFR_MODE_SBM1) && (requestedMode != LFR_MODE_SBM2) )
+    {
+        status = LFR_DEFAULT;
+    }
+    else
+    {
+        status = LFR_SUCCESSFUL;
+    }
+
+    return status;
+}
+
+int check_mode_transition( unsigned char requestedMode )
 {
     /** This function checks the validity of the transition requested by the TC_LFR_ENTER_MODE.
      *
@@ -379,7 +389,7 @@ int transition_validation(unsigned char requestedMode)
     return status;
 }
 
-int stop_current_mode(void)
+int stop_current_mode( void )
 {
     /** This function stops the current mode by masking interrupt lines and suspending science tasks.
      *
@@ -430,7 +440,7 @@ int stop_current_mode(void)
     return status;
 }
 
-int enter_mode(unsigned char mode )
+int enter_mode( unsigned char mode )
 {
     /** This function is launched after a mode transition validation.
      *
@@ -444,11 +454,16 @@ int enter_mode(unsigned char mode )
 
     rtems_status_code status;
 
-    status = RTEMS_UNSATISFIED;
+    //**********************
+    // STOP THE CURRENT MODE
+    status = stop_current_mode();
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("ERR *** in enter_mode *** stop_current_mode with mode = %d\n", mode)
+    }
 
-    housekeeping_packet.lfr_status_word[0] = (unsigned char) ((mode << 4) + 0x0d);
-    updateLFRCurrentMode();
-
+    //*************************
+    // ENTER THE REQUESTED MODE
     if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
          || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
     {
@@ -458,7 +473,7 @@ int enter_mode(unsigned char mode )
 #endif
         status = restart_science_tasks();
         launch_waveform_picker( mode );
-        launch_spectral_matrix( mode );
+//        launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -469,7 +484,6 @@ int enter_mode(unsigned char mode )
 #ifdef PRINT_STACK_REPORT
         rtems_stack_checker_report_usage();
 #endif
-        status = stop_current_mode();
         PRINTF1("maxCount = %d\n", maxCount)
     }
     else
@@ -479,7 +493,7 @@ int enter_mode(unsigned char mode )
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in enter_mode *** ERR = %d\n", status)
+        PRINTF1("ERR *** in enter_mode *** status = %d\n", status)
         status = RTEMS_UNSATISFIED;
     }
 
@@ -625,6 +639,10 @@ void launch_spectral_matrix( unsigned char mode )
     reset_spectral_matrix_regs();
 
 #ifdef VHDL_DEV
+    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
+    grgpio_regs->io_port_direction_register =
+            grgpio_regs->io_port_direction_register | 0x01; // [0001 1000], 0 = output disabled, 1 = output enabled
+    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x01; // set the bit 0 to 1
     set_irq_on_new_ready_matrix( 1 );
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
@@ -747,6 +765,8 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
      *
      */
 
+    unsigned char requestedMode;
+
     if (result == LFR_SUCCESSFUL)
     {
         if ( !( (TC->serviceType==TC_TYPE_TIME) & (TC->serviceSubType==TC_SUBTYPE_UPDT_TIME) )
@@ -755,6 +775,14 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
              )
         {
             send_tm_lfr_tc_exe_success( TC, queue_id );
+        }
+        if ( (TC->serviceType == TC_TYPE_GEN) & (TC->serviceSubType == TC_SUBTYPE_ENTER) )
+        {
+            //**********************************
+            // UPDATE THE LFRMODE LOCAL VARIABLE
+            requestedMode = TC->dataAndCRC[1];
+            housekeeping_packet.lfr_status_word[0] = (unsigned char) ((requestedMode << 4) + 0x0d);
+            updateLFRCurrentMode();
         }
     }
 }
