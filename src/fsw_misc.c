@@ -221,7 +221,7 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             // SEND PACKET
-            status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
+            status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL) {
                 PRINTF1("in HOUS *** ERR send: %d\n", status)
@@ -363,3 +363,52 @@ void getTime( unsigned char *time)
     time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
+void send_dumb_hk( void )
+{
+    Packet_TM_LFR_HK_t dummy_hk_packet;
+    unsigned char *parameters;
+    unsigned int i;
+    rtems_id queue_id;
+
+    dummy_hk_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    dummy_hk_packet.reserved = DEFAULT_RESERVED;
+    dummy_hk_packet.userApplication = CCSDS_USER_APP;
+    dummy_hk_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_HK >> 8);
+    dummy_hk_packet.packetID[1] = (unsigned char) (TM_PACKET_ID_HK);
+    dummy_hk_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    dummy_hk_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
+    dummy_hk_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
+    dummy_hk_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    dummy_hk_packet.serviceType = TM_TYPE_HK;
+    dummy_hk_packet.serviceSubType = TM_SUBTYPE_HK;
+    dummy_hk_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    dummy_hk_packet.sid = SID_HK;
+
+    // init status word
+    dummy_hk_packet.lfr_status_word[0] = 0xff;
+    dummy_hk_packet.lfr_status_word[1] = 0xff;
+    // init software version
+    dummy_hk_packet.lfr_sw_version[0] = SW_VERSION_N1;
+    dummy_hk_packet.lfr_sw_version[1] = SW_VERSION_N2;
+    dummy_hk_packet.lfr_sw_version[2] = SW_VERSION_N3;
+    dummy_hk_packet.lfr_sw_version[3] = SW_VERSION_N4;
+    // init fpga version
+    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xd0);
+    dummy_hk_packet.lfr_fpga_version[0] = parameters[1]; // n1
+    dummy_hk_packet.lfr_fpga_version[1] = parameters[2]; // n2
+    dummy_hk_packet.lfr_fpga_version[2] = parameters[3]; // n3
+
+    parameters = (unsigned char *) &dummy_hk_packet.hk_lfr_cpu_load;
+
+    for (i=0; i<100; i++)
+    {
+        parameters[i] = 0xff;
+    }
+
+    get_message_queue_id_send( &queue_id );
+
+    rtems_message_queue_urgent( queue_id, &dummy_hk_packet,
+                                PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
+}

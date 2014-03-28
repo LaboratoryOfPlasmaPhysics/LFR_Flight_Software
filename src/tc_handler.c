@@ -164,6 +164,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
     requestedMode = TC->dataAndCRC[1];
 
     status = check_mode_value( requestedMode );
+
     if ( status != LFR_SUCCESSFUL )
     {
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
@@ -412,11 +413,11 @@ int stop_current_mode( void )
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
-    // (3) reset registers
-    // waveform picker
+    // (3) reset waveform picker registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
-    // spectral matrices
+
+    // (4) reset spectral matrices registers
     set_irq_on_new_ready_matrix( 0 );               // stop the spectral matrices
     set_run_matrix_spectral( 0 );                   // run_matrix_spectral is set to 0
     reset_extractSWF();                             // reset the extractSWF flag to false
@@ -642,7 +643,7 @@ void launch_spectral_matrix( unsigned char mode )
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
     grgpio_regs->io_port_direction_register =
             grgpio_regs->io_port_direction_register | 0x01; // [0001 1000], 0 = output disabled, 1 = output enabled
-    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x01; // set the bit 0 to 1
+    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x00; // set the bit 0 to 1
     set_irq_on_new_ready_matrix( 1 );
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );

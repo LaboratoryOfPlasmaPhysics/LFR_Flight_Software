@@ -92,13 +92,16 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF("*************************\n")
     PRINTF("\n\n")
 
-    reset_wfp_burst_enable();       // stop the waveform picker if it was running
-    init_waveform_rings();          // initialize the waveform rings
-    init_sm_rings();
-
     init_parameter_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
+
+    init_waveform_rings();  // initialize the waveform rings
+    init_sm_rings();        // initialize spectral matrices rings
+
+    reset_wfp_burst_enable();
+    reset_wfp_status();
+    set_wfp_data_shaping();
 
     updateLFRCurrentMode();
 
@@ -161,7 +164,7 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n",  status )
     }
 
-    // suspend science tasks. they will be restarted later depending on the mode
+    // suspend science tasks, they will be restarted later depending on the mode
     status = suspend_science_tasks();   // suspend science tasks (not done in stop_current_mode if current mode = STANDBY)
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -195,6 +198,8 @@ rtems_task Init( rtems_task_argument ignored )
     }
 
     BOOT_PRINTF("delete INIT\n")
+
+    send_dumb_hk();
 
     status = rtems_task_delete(RTEMS_SELF);
 

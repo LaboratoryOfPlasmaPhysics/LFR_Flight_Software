@@ -1013,13 +1013,13 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     deltaT_F2 = 262144; // (2048. / 256.   / 2.) * 65536. = 262144;
     sampleOffset_asLong = 0x00;
 
-    // get the f0 acquisition time
+    // (1) get the f0 acquisition time
     build_acquisition_time( &acquisitionTimeF0_asLong, current_ring_node_f0 );
 
-    // compute the central reference time
+    // (2) compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
 
-    // compute the acquisition time of the current snapshot
+    // (3) compute the acquisition time of the current snapshot
     switch(frequencyChannel)
     {
     case 1: // 1 is for F1 = 4096 Hz
@@ -1042,7 +1042,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     }
 
     //****************************************************************************
-    // 1) search the ring_node with the acquisition time <= acquisitionTime_asLong
+    // (4) search the ring_node with the acquisition time <= acquisitionTime_asLong
     for (i=0; i<nb_ring_nodes; i++)
     {
         PRINTF1("%d ... ", i)
@@ -1055,18 +1055,16 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
         ring_node_to_send = ring_node_to_send->previous;
     }
 
-    //*************************************************
-    // (2) once the buffer is found, build the snapshot
-
-    // compute the number of samples to take in the current buffer
+    // (5) compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> 16;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
+    PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
 
-    // compute the final acquisition time
+    // (6) compute the final acquisition time
     acquisitionTime_asLong = bufferAcquisitionTime_asLong +
             sampleOffset_asLong * nbTicksPerSample_asLong;
 
-    // copy the acquisition time at the beginning of the extrated snapshot
+    // (7) copy the acquisition time at the beginning of the extrated snapshot
     ptr1 = (unsigned char*) &acquisitionTime_asLong;
     ptr2 = (unsigned char*) wf_snap_extracted;
     ptr2[0] = ptr1[ 2 + 2 ];
@@ -1157,13 +1155,13 @@ void reset_waveform_picker_regs(void)
     *
     */
 
-//    waveform_picker_regs->data_shaping = 0x01; // 0x00 *** R1 R0 SP1 SP0 BW
-    waveform_picker_regs->run_burst_enable = 0x00; // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    set_wfp_data_shaping();                                     // 0x00 *** R1 R0 SP1 SP0 BW
+    reset_wfp_burst_enable();                                   // 0x04 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
     waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
     waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
     waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a); // 0x14
-    waveform_picker_regs->status = 0x00; // 0x18
+    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);  // 0x14
+    reset_wfp_status();                                         // 0x18
     //
     set_wfp_delta_snapshot();   // 0x1c
     set_wfp_delta_f0_f0_2();    // 0x20, 0x24
