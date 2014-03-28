@@ -25,7 +25,7 @@ rtems_task actn_task( rtems_task_argument unused );
 //***********
 // TC ACTIONS
 int action_reset( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
-int action_enter_mode( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
+int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id);
 int action_update_info( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int action_enable_calibration( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
 int action_disable_calibration( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time );
@@ -34,11 +34,12 @@ int action_update_time( ccsdsTelecommandPacket_t *TC);
 // mode transition
 int check_mode_value( unsigned char requestedMode );
 int check_mode_transition( unsigned char requestedMode );
+int check_transition_date( unsigned int transitionCoarseTime );
 int stop_current_mode( void );
-int enter_mode( unsigned char mode );
+int enter_mode( unsigned char mode , unsigned int transitionCoarseTime );
 int restart_science_tasks();
 int suspend_science_tasks();
-void launch_waveform_picker( unsigned char mode );
+void launch_waveform_picker(unsigned char mode , unsigned int transitionCoarseTime);
 void launch_spectral_matrix( unsigned char mode );
 void set_irq_on_new_ready_matrix(unsigned char value );
 void set_run_matrix_spectral( unsigned char value );

@@ -102,7 +102,7 @@ rtems_task actn_task( rtems_task_argument unused )
                     break;
                     //
                 case TC_SUBTYPE_ENTER:
-                    result = action_enter_mode( &TC, queue_snd_id, time );
+                    result = action_enter_mode( &TC, queue_snd_id );
                     close_action( &TC, result, queue_snd_id );
                     break;
                     //
@@ -149,7 +149,7 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
     return LFR_DEFAULT;
 }
 
-int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     /** This function executes specific actions when a TC_LFR_ENTER_MODE TeleCommand has been received.
      *
@@ -160,8 +160,12 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
 
     rtems_status_code status;
     unsigned char requestedMode;
+    unsigned int *transitionCoarseTime_ptr;
+    unsigned int transitionCoarseTime;
 
     requestedMode = TC->dataAndCRC[1];
+    transitionCoarseTime_ptr = (unsigned int *) (&TC->dataAndCRC[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
+    transitionCoarseTime = (*transitionCoarseTime_ptr) & 0x7fffffff;
 
     status = check_mode_value( requestedMode );
 
@@ -169,20 +173,30 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned 
     {
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
     }
-    else
+    else                                // the mode value is consistent, check the transition
     {
         status = check_mode_transition(requestedMode);
-
-        if ( status == LFR_SUCCESSFUL )
+        if (status != LFR_SUCCESSFUL)
         {
-            PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
-            status = enter_mode( requestedMode );
-        }
-        else
-        {
-            PRINTF("ERR *** in action_enter_mode *** transition rejected\n")
+            PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n")
             send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         }
+    }
+
+    if ( status == LFR_SUCCESSFUL )     // the transition is valid, enter the mode
+    {
+        status = check_transition_date( transitionCoarseTime );
+        if (status != LFR_SUCCESSFUL)
+        {
+            PRINTF("ERR *** in action_enter_mode *** check_transition_date\n")
+            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+        }
+    }
+
+    if ( status == LFR_SUCCESSFUL )     // the date is valid, enter the mode
+    {
+        PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
+        status = enter_mode( requestedMode, transitionCoarseTime );
     }
 
     return status;
@@ -390,6 +404,42 @@ int check_mode_transition( unsigned char requestedMode )
     return status;
 }
 
+int check_transition_date( unsigned int transitionCoarseTime )
+{
+    int status;
+    unsigned int localCoarseTime;
+    unsigned int deltaCoarseTime;
+
+    status = LFR_SUCCESSFUL;
+
+    if (transitionCoarseTime == 0)  // transition time = 0 means an instant transition
+    {
+        status = LFR_SUCCESSFUL;
+    }
+    else
+    {
+        localCoarseTime = time_management_regs->coarse_time & 0x7fffffff;
+
+        if ( transitionCoarseTime < localCoarseTime )   // SSS-CP-EQS-322
+        {
+            status = LFR_DEFAULT;
+            PRINTF2("ERR *** in check_transition_date *** transition = %x, local = %x\n", transitionCoarseTime, localCoarseTime)
+        }
+
+        if (status == LFR_SUCCESSFUL)
+        {
+            deltaCoarseTime = transitionCoarseTime - localCoarseTime;
+            if ( deltaCoarseTime > 3 )                  // SSS-CP-EQS-323
+            {
+                status = LFR_DEFAULT;
+                PRINTF1("ERR *** in check_transition_date *** deltaCoarseTime = %x\n", deltaCoarseTime)
+            }
+        }
+    }
+
+    return status;
+}
+
 int stop_current_mode( void )
 {
     /** This function stops the current mode by masking interrupt lines and suspending science tasks.
@@ -441,7 +491,7 @@ int stop_current_mode( void )
     return status;
 }
 
-int enter_mode( unsigned char mode )
+int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 {
     /** This function is launched after a mode transition validation.
      *
@@ -473,7 +523,7 @@ int enter_mode( unsigned char mode )
         maxCount = 0;
 #endif
         status = restart_science_tasks();
-        launch_waveform_picker( mode );
+        launch_waveform_picker( mode, transitionCoarseTime );
 //        launch_spectral_matrix( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
@@ -617,10 +667,8 @@ int suspend_science_tasks()
     return status;
 }
 
-void launch_waveform_picker( unsigned char mode )
+void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
 {
-    int startDate;
-
     reset_current_ring_nodes();
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
@@ -628,9 +676,15 @@ void launch_waveform_picker( unsigned char mode )
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
 
-    startDate = time_management_regs->coarse_time + 2;
     waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
-    waveform_picker_regs->start_date = startDate;
+    if (transitionCoarseTime == 0)
+    {
+        waveform_picker_regs->start_date = time_management_regs->coarse_time;
+    }
+    else
+    {
+        waveform_picker_regs->start_date = transitionCoarseTime;
+    }
 }
 
 void launch_spectral_matrix( unsigned char mode )

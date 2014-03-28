@@ -87,7 +87,7 @@ rtems_task spiq_task(rtems_task_argument unused)
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR stop_current_mode *** code %d\n", status)
             }
-            status = enter_mode( LFR_MODE_STANDBY );
+            status = enter_mode( LFR_MODE_STANDBY, 0 );
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }
