@@ -52,7 +52,7 @@ typedef struct ring_node
 #define TDS_MODE_SBM2       4
 
 #define THR_MODE_STANDBY    0
-#define THR_MODE_NORMAL      1
+#define THR_MODE_NORMAL     1
 #define THR_MODE_BURST      2
 
 #define RTEMS_EVENT_MODE_STANDBY        RTEMS_EVENT_0
@@ -106,13 +106,8 @@ typedef struct ring_node
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
 #define REGS_ADDR_GRGPIO            0x80000b00
 
-#ifdef VHDL_DEV
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f40
-#else
-#define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
-#define REGS_ADDR_WAVEFORM_PICKER   0x80000f20
-#endif
 
 #define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
 #define APBUART_CTRL_REG_MASK_TE    0x00000002

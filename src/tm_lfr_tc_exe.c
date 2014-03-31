@@ -282,7 +282,7 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     return status;
 }
 
-int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
+int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     /** This function sends a TM_LFR_TC_EXE_ERROR packet in the dedicated RTEMS message queue.
      *

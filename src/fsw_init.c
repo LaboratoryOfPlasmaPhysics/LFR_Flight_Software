@@ -232,7 +232,7 @@ void init_local_mode_parameters( void )
 
 void reset_local_time( void )
 {
-
+    time_management_regs->coarse_time_load = 0x80000000;
 }
 
 void create_names( void ) // create all names for tasks and queues

@@ -116,7 +116,7 @@ rtems_task recv_task( rtems_task_argument unused )
     unsigned char computed_CRC[ 2 ];
     unsigned char currentTC_LEN_RCV[ 2 ];
     unsigned char destinationID;
-    unsigned int currentTC_LEN_RCV_AsUnsignedInt;
+    unsigned int estimatedPacketLength;
     unsigned int parserCode;
     rtems_status_code status;
     rtems_id queue_recv_id;
@@ -149,11 +149,11 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("in RECV *** packet lenght too short\n")
             }
             else {
-                currentTC_LEN_RCV_AsUnsignedInt = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
-                currentTC_LEN_RCV[ 0 ] = (unsigned char) (currentTC_LEN_RCV_AsUnsignedInt >> 8);
-                currentTC_LEN_RCV[ 1 ] = (unsigned char) (currentTC_LEN_RCV_AsUnsignedInt     );
+                estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
+                currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> 8);
+                currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
                 // CHECK THE TC
-                parserCode = tc_parser( &currentTC, currentTC_LEN_RCV_AsUnsignedInt, computed_CRC ) ;
+                parserCode = tc_parser( &currentTC, estimatedPacketLength, computed_CRC ) ;
                 if ( (parserCode == ILLEGAL_APID)       || (parserCode == WRONG_LEN_PKT)
                      || (parserCode == INCOR_CHECKSUM)  || (parserCode == ILL_TYPE)
                      || (parserCode == ILL_SUBTYPE)     || (parserCode == WRONG_APP_DATA)
@@ -181,7 +181,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 else
                 { // send valid TC to the action launcher
                     status =  rtems_message_queue_send( queue_recv_id, &currentTC,
-                                                        currentTC_LEN_RCV_AsUnsignedInt + CCSDS_TC_TM_PACKET_OFFSET + 3);
+                                                        estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + 3);
                 }
             }
         }

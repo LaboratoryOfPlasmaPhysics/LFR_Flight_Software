@@ -154,33 +154,13 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         // SBM1
         case(LFR_MODE_SBM1):
         if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
-            // (0) launch snapshot extraction if needed
-            if (extractSWF == true)
-            {
-                ring_node_to_send_swf_f1 = current_ring_node_f1;
-                // extract the snapshot
-                status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_SBM1 );
-                extractSWF = false;
-                swf_f1_ready = true;
-            }
             // (1) change the receiving buffer for the waveform picker
             ring_node_to_send_cwf_f1 = current_ring_node_f1;
             current_ring_node_f1 = current_ring_node_f1->next;
             waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
-            // (2) send an event for the the CWF1 task for transmission
+            // (2) send an event for the the CWF1 task for transmission (and snapshot extraction if needed)
             status = rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_SBM1 );
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bits = 0
-            if (swf_f0_ready == true)
-            {
-                extractSWF = true;
-                swf_f0_ready = false;
-            }
-            if ((swf_f1_ready == true) && (swf_f2_ready == true))
-            {
-                status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM1 );
-                swf_f1_ready = false;
-                swf_f2_ready = false;
-            }
         }
         if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
             swf_f0_ready = true;
@@ -196,16 +176,6 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         // SBM2
         case(LFR_MODE_SBM2):
         if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
-            // (0) launch snapshot extraction if needed
-            if (extractSWF == true)
-            {
-                ring_node_to_send_swf_f2 = current_ring_node_f2;
-                // extract the snapshot
-                status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_SBM2 );
-                // send the snapshot when build, SWBD priority < WFRM priority
-                status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
-                extractSWF = false;
-            }
             // (1) change the receiving buffer for the waveform picker
             ring_node_to_send_cwf_f2 = current_ring_node_f2;
             current_ring_node_f2 = current_ring_node_f2->next;
@@ -213,13 +183,6 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             // (2) send an event for the waveforms transmission
             status = rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_SBM2 );
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
-            // (3) check whether swf_fo and swf_f& are ready or not
-            if (swf_f0_ready && swf_f1_ready)
-            {
-                extractSWF = true;
-                swf_f0_ready = false;
-                swf_f1_ready = false;
-            }
         }
         if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
             swf_f0_ready = true;
@@ -402,6 +365,22 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
             send_waveform_CWF( (volatile int *) ring_node_to_send_cwf_f2->buffer_address, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
+            // launch snapshot extraction if needed
+            if (extractSWF == true)
+            {
+                ring_node_to_send_swf_f2 = ring_node_to_send_cwf_f2;
+                // extract the snapshot
+                build_snapshot_from_ring( ring_node_to_send_swf_f2, 2 );
+                // send the snapshot when built
+                status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
+                extractSWF = false;
+            }
+            if (swf_f0_ready && swf_f1_ready)
+            {
+                extractSWF = true;
+                swf_f0_ready = false;
+                swf_f1_ready = false;
+            }
         }
     }
 }
@@ -436,6 +415,25 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         send_waveform_CWF( (volatile int*) ring_node_to_send_cwf_f1->buffer_address, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
+        // launch snapshot extraction if needed
+        if (extractSWF == true)
+        {
+            ring_node_to_send_swf_f1 = ring_node_to_send_cwf_f1;
+            // launch the snapshot extraction
+            status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_SBM1 );
+            extractSWF = false;
+        }
+        if (swf_f0_ready == true)
+        {
+            extractSWF = true;
+            swf_f0_ready = false;   // this step shall be executed only one time
+        }
+        if ((swf_f1_ready == true) && (swf_f2_ready == true))   // swf_f1 is ready after the extraction
+        {
+            status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM1 );
+            swf_f1_ready = false;
+            swf_f2_ready = false;
+        }
     }
 }
 
@@ -458,10 +456,7 @@ rtems_task swbd_task(rtems_task_argument argument)
         if (event_out == RTEMS_EVENT_MODE_SBM1)
         {
             build_snapshot_from_ring( ring_node_to_send_swf_f1, 1 );
-        }
-        else if (event_out == RTEMS_EVENT_MODE_SBM2)
-        {
-            build_snapshot_from_ring( ring_node_to_send_swf_f2, 2 );
+            swf_f1_ready = true;    // the snapshot has been extracted and is ready to be sent
         }
         else
         {

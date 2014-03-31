@@ -162,16 +162,19 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned char requestedMode;
     unsigned int *transitionCoarseTime_ptr;
     unsigned int transitionCoarseTime;
+    unsigned char * bytePosPtr;
 
-    requestedMode = TC->dataAndCRC[1];
-    transitionCoarseTime_ptr = (unsigned int *) (&TC->dataAndCRC[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
+    bytePosPtr = (unsigned char *) &TC->packetID;
+
+    requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
+    transitionCoarseTime_ptr = (unsigned int *) ( &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
     transitionCoarseTime = (*transitionCoarseTime_ptr) & 0x7fffffff;
 
     status = check_mode_value( requestedMode );
 
-    if ( status != LFR_SUCCESSFUL )
+    if ( status != LFR_SUCCESSFUL )     // the mode value is inconsistent
     {
-        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_LFR_MODE, requestedMode );
+        send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode );
     }
     else                                // the mode value is consistent, check the transition
     {
@@ -189,7 +192,9 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         if (status != LFR_SUCCESSFUL)
         {
             PRINTF("ERR *** in action_enter_mode *** check_transition_date\n")
-            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+            send_tm_lfr_tc_exe_inconsistent( TC, queue_id,
+                                             BYTE_POS_CP_LFR_ENTER_MODE_TIME,
+                                             bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME + 3 ] );
         }
     }
 
@@ -219,18 +224,21 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     int result;
     unsigned int status;
     unsigned char mode;
+    unsigned char * bytePosPtr;
+
+    bytePosPtr = (unsigned char *) &TC->packetID;
 
     // check LFR mode
-    mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET5 ] & 0x1e) >> 1;
+    mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET5 ] & 0x1e) >> 1;
     status = check_update_info_hk_lfr_mode( mode );
     if (status == LFR_SUCCESSFUL)  // check TDS mode
     {
-        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0xf0) >> 4;
+        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & 0xf0) >> 4;
         status = check_update_info_hk_tds_mode( mode );
     }
     if (status == LFR_SUCCESSFUL)  // check THR mode
     {
-        mode = (TC->dataAndCRC[ BYTE_POS_HK_UPDATE_INFO_PAR_SET6 ] & 0x0f);
+        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & 0x0f);
         status = check_update_info_hk_thr_mode( mode );
     }
     if (status == LFR_SUCCESSFUL)  // if the parameter check is successful
@@ -420,7 +428,7 @@ int check_transition_date( unsigned int transitionCoarseTime )
     {
         localCoarseTime = time_management_regs->coarse_time & 0x7fffffff;
 
-        if ( transitionCoarseTime < localCoarseTime )   // SSS-CP-EQS-322
+        if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
         {
             status = LFR_DEFAULT;
             PRINTF2("ERR *** in check_transition_date *** transition = %x, local = %x\n", transitionCoarseTime, localCoarseTime)
@@ -839,6 +847,10 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
             housekeeping_packet.lfr_status_word[0] = (unsigned char) ((requestedMode << 4) + 0x0d);
             updateLFRCurrentMode();
         }
+    }
+    else
+    {
+        send_tm_lfr_tc_exe_error( TC, queue_id );
     }
 }
 

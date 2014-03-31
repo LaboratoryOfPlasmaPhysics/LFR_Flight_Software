@@ -93,12 +93,12 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsigned char *computed_CRC)
+int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int estimatedPacketLength, unsigned char *computed_CRC)
 {
     /** This function parses TeleCommands.
      *
      * @param TC points to the TeleCommand that will be parsed.
-     * @param TC_LEN_RCV is the received packet length.
+     * @param estimatedPacketLength is the PACKET_LENGTH field calculated from the effective length of the received packet.
      *
      * @return Status code of the parsing.
      *
@@ -116,7 +116,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     int status_crc;
     unsigned char pid;
     unsigned char category;
-    unsigned int length;
+    unsigned int packetLength;
     unsigned char packetType;
     unsigned char packetSubtype;
     unsigned char sid;
@@ -124,12 +124,12 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     status = CCSDS_TM_VALID;
 
     // APID check *** APID on 2 bytes
-    pid = ((TCPacket->packetID[0] & 0x07)<<4) + ( (TCPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
-    category = (TCPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
-    length = (TCPacket->packetLength[0] * 256) + TCPacket->packetLength[1];
-    packetType = TCPacket->serviceType;
-    packetSubtype = TCPacket->serviceSubType;
-    sid = TCPacket->sourceID;
+    pid             = ((TCPacket->packetID[0] & 0x07)<<4) + ( (TCPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
+    category        = (TCPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
+    packetLength    = (TCPacket->packetLength[0] * 256) + TCPacket->packetLength[1];
+    packetType      = TCPacket->serviceType;
+    packetSubtype   = TCPacket->serviceSubType;
+    sid             = TCPacket->sourceID;
 
     if ( pid != CCSDS_PROCESS_ID )  // CHECK THE PROCESS ID
     {
@@ -142,15 +142,15 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
             status = ILLEGAL_APID;
         }
     }
-    if (status == CCSDS_TM_VALID)   // CHECK THE PACKET LENGTH FIELD AND THE ACTUAL LENGTH COMPLIANCE
+    if (status == CCSDS_TM_VALID)   // CHECK THE PACKET_LENGTH FIELD AND THE ESTIMATED PACKET_LENGTH COMPLIANCE
     {
-        if (length != TC_LEN_RCV ) {
+        if (packetLength != estimatedPacketLength ) {
             status = WRONG_LEN_PKT;
         }
     }
     if (status == CCSDS_TM_VALID)   // CHECK THAT THE PACKET DOES NOT EXCEED THE MAX SIZE
     {
-        if ( length >= CCSDS_TC_PKT_MAX_SIZE ) {
+        if ( packetLength >= CCSDS_TC_PKT_MAX_SIZE ) {
             status = WRONG_LEN_PKT;
         }
     }
@@ -168,9 +168,9 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int TC_LEN_RCV, unsi
     }
     if (status == CCSDS_TM_VALID)   // CHECK THE SUBTYPE AND LENGTH COMPLIANCE
     {
-        status = tc_check_length( packetSubtype, length );
+        status = tc_check_length( packetSubtype, packetLength );
     }
-    status_crc = tc_check_crc( TCPacket, length, computed_CRC );
+    status_crc = tc_check_crc( TCPacket, estimatedPacketLength, computed_CRC );
     if (status == CCSDS_TM_VALID )  // CHECK CRC
     {
         status = status_crc;
