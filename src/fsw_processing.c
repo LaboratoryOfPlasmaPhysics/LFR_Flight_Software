@@ -13,19 +13,28 @@
 
 //************************
 // spectral matrices rings
-ring_node sm_ring_f0[NB_RING_NODES_ASM_F0];
-ring_node sm_ring_f1[NB_RING_NODES_ASM_F1];
-ring_node sm_ring_f2[NB_RING_NODES_ASM_F2];
-ring_node *current_ring_node_sm_f0;
-ring_node *ring_node_for_averaging_sm_f0;
-ring_node *current_ring_node_sm_f1;
-ring_node *current_ring_node_sm_f2;
+ring_node_sm sm_ring_f0[NB_RING_NODES_ASM_F0];
+ring_node_sm sm_ring_f1[NB_RING_NODES_ASM_F1];
+ring_node_sm sm_ring_f2[NB_RING_NODES_ASM_F2];
+ring_node_sm *current_ring_node_sm_f0;
+ring_node_sm *ring_node_for_averaging_sm_f0;
+ring_node_sm *current_ring_node_sm_f1;
+ring_node_sm *current_ring_node_sm_f2;
 
 BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];
+
+//*****
+// NORM
+// F0
 float averaged_sm_f0            [ TIME_OFFSET + TOTAL_SIZE_SM ];
 float averaged_sm_f0_reorganized[ TIME_OFFSET + TOTAL_SIZE_SM ];
-char averaged_sm_f0_char        [ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_SM ];
+char averaged_sm_f0_char        [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_f0          [ TOTAL_SIZE_COMPRESSED_ASM_F0 ];
+
+//*****
+// SBM1
+float averaged_sm_sbm1            [ TIME_OFFSET + TOTAL_SIZE_SM    ];
+float compressed_sm_sbm1          [ TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
 
 unsigned char LFR_BP1_F0[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F0 * 2 ];
 unsigned char LFR_BP1_F1[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F1 ];
@@ -38,58 +47,58 @@ void init_sm_rings( void )
     unsigned char i;
 
     // F0 RING
-    sm_ring_f0[0].next            = (ring_node*) &sm_ring_f0[1];
-    sm_ring_f0[0].previous        = (ring_node*) &sm_ring_f0[NB_RING_NODES_ASM_F0-1];
+    sm_ring_f0[0].next            = (ring_node_sm*) &sm_ring_f0[1];
+    sm_ring_f0[0].previous        = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_ASM_F0-1];
     sm_ring_f0[0].buffer_address  =
             (int) &sm_f0[ 0 ];
 
-    sm_ring_f0[NB_RING_NODES_ASM_F0-1].next           = (ring_node*) &sm_ring_f0[0];
-    sm_ring_f0[NB_RING_NODES_ASM_F0-1].previous       = (ring_node*) &sm_ring_f0[NB_RING_NODES_ASM_F0-2];
+    sm_ring_f0[NB_RING_NODES_ASM_F0-1].next           = (ring_node_sm*) &sm_ring_f0[0];
+    sm_ring_f0[NB_RING_NODES_ASM_F0-1].previous       = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_ASM_F0-2];
     sm_ring_f0[NB_RING_NODES_ASM_F0-1].buffer_address =
             (int) &sm_f0[ (NB_RING_NODES_ASM_F0-1) * TOTAL_SIZE_SM ];
 
     for(i=1; i<NB_RING_NODES_ASM_F0-1; i++)
     {
-        sm_ring_f0[i].next            = (ring_node*) &sm_ring_f0[i+1];
-        sm_ring_f0[i].previous        = (ring_node*) &sm_ring_f0[i-1];
+        sm_ring_f0[i].next            = (ring_node_sm*) &sm_ring_f0[i+1];
+        sm_ring_f0[i].previous        = (ring_node_sm*) &sm_ring_f0[i-1];
         sm_ring_f0[i].buffer_address  =
                 (int) &sm_f0[ i * TOTAL_SIZE_SM ];
     }
 
     // F1 RING
-    sm_ring_f1[0].next            = (ring_node*) &sm_ring_f1[1];
-    sm_ring_f1[0].previous        = (ring_node*) &sm_ring_f1[NB_RING_NODES_ASM_F1-1];
+    sm_ring_f1[0].next            = (ring_node_sm*) &sm_ring_f1[1];
+    sm_ring_f1[0].previous        = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_ASM_F1-1];
     sm_ring_f1[0].buffer_address  =
             (int) &sm_f1[ 0 ];
 
-    sm_ring_f1[NB_RING_NODES_ASM_F1-1].next           = (ring_node*) &sm_ring_f1[0];
-    sm_ring_f1[NB_RING_NODES_ASM_F1-1].previous       = (ring_node*) &sm_ring_f1[NB_RING_NODES_ASM_F1-2];
+    sm_ring_f1[NB_RING_NODES_ASM_F1-1].next           = (ring_node_sm*) &sm_ring_f1[0];
+    sm_ring_f1[NB_RING_NODES_ASM_F1-1].previous       = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_ASM_F1-2];
     sm_ring_f1[NB_RING_NODES_ASM_F1-1].buffer_address =
             (int) &sm_f1[ (NB_RING_NODES_ASM_F1-1) * TOTAL_SIZE_SM ];
 
     for(i=1; i<NB_RING_NODES_ASM_F1-1; i++)
     {
-        sm_ring_f1[i].next            = (ring_node*) &sm_ring_f1[i+1];
-        sm_ring_f1[i].previous        = (ring_node*) &sm_ring_f1[i-1];
+        sm_ring_f1[i].next            = (ring_node_sm*) &sm_ring_f1[i+1];
+        sm_ring_f1[i].previous        = (ring_node_sm*) &sm_ring_f1[i-1];
         sm_ring_f1[i].buffer_address  =
                 (int) &sm_f1[ i * TOTAL_SIZE_SM ];
     }
 
     // F2 RING
-    sm_ring_f2[0].next            = (ring_node*) &sm_ring_f2[1];
-    sm_ring_f2[0].previous        = (ring_node*) &sm_ring_f2[NB_RING_NODES_ASM_F2-1];
+    sm_ring_f2[0].next            = (ring_node_sm*) &sm_ring_f2[1];
+    sm_ring_f2[0].previous        = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_ASM_F2-1];
     sm_ring_f2[0].buffer_address  =
             (int) &sm_f2[ 0 ];
 
-    sm_ring_f2[NB_RING_NODES_ASM_F2-1].next           = (ring_node*) &sm_ring_f2[0];
-    sm_ring_f2[NB_RING_NODES_ASM_F2-1].previous       = (ring_node*) &sm_ring_f2[NB_RING_NODES_ASM_F2-2];
+    sm_ring_f2[NB_RING_NODES_ASM_F2-1].next           = (ring_node_sm*) &sm_ring_f2[0];
+    sm_ring_f2[NB_RING_NODES_ASM_F2-1].previous       = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_ASM_F2-2];
     sm_ring_f2[NB_RING_NODES_ASM_F2-1].buffer_address =
             (int) &sm_f2[ (NB_RING_NODES_ASM_F2-1) * TOTAL_SIZE_SM ];
 
     for(i=1; i<NB_RING_NODES_ASM_F2-1; i++)
     {
-        sm_ring_f2[i].next            = (ring_node*) &sm_ring_f2[i+1];
-        sm_ring_f2[i].previous        = (ring_node*) &sm_ring_f2[i-1];
+        sm_ring_f2[i].next            = (ring_node_sm*) &sm_ring_f2[i+1];
+        sm_ring_f2[i].previous        = (ring_node_sm*) &sm_ring_f2[i-1];
         sm_ring_f2[i].buffer_address  =
                 (int) &sm_f2[ i * TOTAL_SIZE_SM ];
     }
@@ -194,44 +203,61 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
 rtems_task avf0_task(rtems_task_argument argument)
 {
     int i;
-    static int nb_average;
+    static unsigned int nb_average_norm;
+    static unsigned int nb_average_sbm1;
     rtems_event_set event_out;
     rtems_status_code status;
-    ring_node *ring_node_tab[8];
+    ring_node_sm *ring_node_tab[8];
 
-    nb_average = 0;
+    nb_average_norm = 0;
+    nb_average_sbm1 = 0;
 
     BOOT_PRINTF("in AVFO *** \n")
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
         ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-1] = ring_node_for_averaging_sm_f0;
-        for (i=2; i<NB_SM_TO_RECEIVE_BEFORE_AVF0+1; i++)
+        for ( i = 2; i < (NB_SM_TO_RECEIVE_BEFORE_AVF0+1); i++ )
         {
             ring_node_for_averaging_sm_f0 = ring_node_for_averaging_sm_f0->previous;
             ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-i] = ring_node_for_averaging_sm_f0;
         }
 
-        averaged_sm_f0[0] = ( (int *) (ring_node_tab[7]->buffer_address) ) [0];
-        averaged_sm_f0[1] = ( (int *) (ring_node_tab[7]->buffer_address) ) [1];
-        for(i=0; i<TOTAL_SIZE_SM; i++)
-        {
-            averaged_sm_f0[i] = ( (int *) (ring_node_tab[0]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[1]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[2]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[3]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[4]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[5]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[6]->buffer_address) ) [i + TIME_OFFSET]
-                    + ( (int *) (ring_node_tab[7]->buffer_address) ) [i + TIME_OFFSET];
-        }
+        // copy time information in the averaged_sm_f0 buffer
+        averaged_sm_f0[0] = ring_node_tab[7]->coarseTime;
+        averaged_sm_f0[1] = ring_node_tab[7]->fineTime;
+        averaged_sm_f1[0] = ring_node_tab[7]->coarseTime;
+        averaged_sm_f1[1] = ring_node_tab[7]->fineTime;
 
-        nb_average = nb_average + NB_SM_TO_RECEIVE_BEFORE_AVF0;
-        if (nb_average == NB_AVERAGE_NORMAL_f0) {
-            nb_average = 0;
-            status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_0 ); // sending an event to the task 7, BPF0
-            if (status != RTEMS_SUCCESSFUL) {
-                printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+        // compute the average and store it in the averaged_sm_f1 buffer
+        ASM_average( averaged_sm_f0, averaged_sm_f1,
+                     ring_node_tab,
+                     nb_average_norm, nb_average_sbm1 );
+
+
+        // update nb_average
+        nb_average_norm = nb_average_norm + NB_SM_TO_RECEIVE_BEFORE_AVF0;
+        nb_average_sbm1 = nb_average_sbm1 + NB_SM_TO_RECEIVE_BEFORE_AVF0;
+
+        // launch actions depending on the current mode
+        if (lfrCurrentMode == LFR_MODE_SBM1)
+        {
+            if (nb_average_sbm1 == NB_AVERAGE_SBM1_f0) {
+                nb_average_sbm1 = 0;
+                status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_MODE_SBM1 ); // sending an event to the task 7, BPF0
+                if (status != RTEMS_SUCCESSFUL) {
+                    printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+                }
+            }
+        }
+        if (lfrCurrentMode == LFR_MODE_NORMAL)
+        {
+            if (nb_average_norm == NB_AVERAGE_NORMAL_f0) {
+                nb_average_norm = 0;
+                status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_MODE_NORMAL ); // sending an event to the task 7, BPF0
+                if (status != RTEMS_SUCCESSFUL) {
+                    printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+                }
             }
         }
     }
@@ -258,16 +284,33 @@ rtems_task matr_task(rtems_task_argument argument)
     fill_averaged_spectral_matrix( );
 
     while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-        // 1)  compress the matrix for Basic Parameters calculation
-        ASM_compress( averaged_sm_f0, 0, compressed_sm_f0 );
-        // 2)
-//        BP1_set( (float *) &compressed_sm_f0[TIME_OFFSET], NB_BINS_COMPRESSED_SM_F0, (unsigned char *) &LFR_BP1_F0[TIME_OFFSET_IN_BYTES] );
-        // 3) convert the float array in a char array
-        ASM_reorganize( averaged_sm_f0, averaged_sm_f0_reorganized );
-        ASM_convert( averaged_sm_f0_reorganized, averaged_sm_f0_char);
-        // 4) send the spectral matrix packets
-        ASM_send( &headerASM, averaged_sm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
+        rtems_event_receive( RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1,
+                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        if (event_out==RTEMS_EVENT_MODE_NORMAL)
+        {
+            // 1)  compress the matrix for Basic Parameters calculation
+            ASM_compress( averaged_sm_f0, 0, compressed_sm_f0 );
+            // 2) compute the BP1 set
+
+            // 3) convert the float array in a char array
+            ASM_reorganize( averaged_sm_f0, averaged_sm_f0_reorganized );
+            ASM_convert( averaged_sm_f0_reorganized, averaged_sm_f0_char);
+            // 4) send the spectral matrix packets
+            ASM_send( &headerASM, averaged_sm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
+        }
+        else if (event_out==RTEMS_EVENT_MODE_SBM1)
+        {
+            // 1)  compress the matrix for Basic Parameters calculation
+            ASM_compress( averaged_sm_f1, 0, compressed_sm_f1 );
+            // 2) compute the BP1 set
+
+            // 4) send the basic parameters set 1 packet
+            BP1_send( );
+        }
+        else
+        {
+            PRINTF1("ERR *** in MATR *** unexect event = %x\n", (unsigned int) event_out)
+        }
     }
 }
 
@@ -279,6 +322,47 @@ void matrix_reset(volatile float *averaged_spec_mat)
     int i;
     for(i=0; i<TOTAL_SIZE_SM; i++){
         averaged_spec_mat[i] = 0;
+    }
+}
+
+void ASM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+                  ring_node_sm *ring_node_tab[],
+                  unsigned int firstTimeF0, unsigned int firstTimeF1 )
+{
+    float sum;
+    unsigned int i;
+
+    for(i=0; i<TOTAL_SIZE_SM; i++)
+    {
+        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
+
+        if ( (firstTimeF0 == 0) && (firstTimeF1 == 0) )
+        {
+            averaged_spec_mat_f0[ i ] = averaged_spec_mat_f0[ i ] + sum;
+            averaged_spec_mat_f1[ i ] = averaged_spec_mat_f1[ i ] + sum;
+        }
+        else if ( (firstTimeF0 == 0) && (firstTimeF1 != 0) )
+        {
+            averaged_spec_mat_f0[ i ] = averaged_spec_mat_f0[ i ] + sum;
+            averaged_spec_mat_f1[ i ] = sum;
+        }
+        else if ( (firstTimeF0 != 0) && (firstTimeF1 == 0) )
+        {
+            averaged_spec_mat_f0[ i ] = sum;
+            averaged_spec_mat_f1[ i ] = averaged_spec_mat_f1[ i ] + sum;
+        }
+        else
+        {
+            averaged_spec_mat_f0[ i ] = sum;
+            averaged_spec_mat_f1[ i ] = sum;
+        }
     }
 }
 
@@ -438,6 +522,11 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
             printf("in ASM_send *** ERR %d\n", (int) status);
         }
     }
+}
+
+void BP1_send()
+{
+
 }
 
 void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1){
@@ -653,6 +742,36 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->time[0] = 0x00;
     header->pa_lfr_asm_blk_nr[0] = 0x00;  // BLK_NR MSB
     header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
+}
+
+void init_header_bp( Header_TM_LFR_SCIENCE_BP_t *header)
+{
+    header->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    header->protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    header->reserved = 0x00;
+    header->userApplication = CCSDS_USER_APP;
+//    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
+//    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+    header->packetSequenceControl[0] = 0xc0;
+    header->packetSequenceControl[1] = 0x00;
+    header->packetLength[0] = 0x00;
+    header->packetLength[1] = 0x00;
+    // DATA FIELD HEADER
+    header->spare1_pusVersion_spare2 = 0x10;
+    header->serviceType = TM_TYPE_LFR_SCIENCE; // service type
+    header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    header->destinationID = TM_DESTINATION_ID_GROUND;
+    // AUXILIARY DATA HEADER
+    header->sid = 0x00;
+    header->biaStatusInfo = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
+    header->pa_lfr_bp_blk_nr[1] = 0x00;  // BLK_NR LSB
 }
 
 void fill_averaged_spectral_matrix(void)

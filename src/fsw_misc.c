@@ -310,7 +310,7 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
     housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
     // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xd0);
+    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xb0);
     housekeeping_packet.lfr_fpga_version[0] = parameters[1]; // n1
     housekeeping_packet.lfr_fpga_version[1] = parameters[2]; // n2
     housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3
@@ -384,6 +384,12 @@ void send_dumb_hk( void )
     dummy_hk_packet.serviceType = TM_TYPE_HK;
     dummy_hk_packet.serviceSubType = TM_SUBTYPE_HK;
     dummy_hk_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    dummy_hk_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    dummy_hk_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    dummy_hk_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    dummy_hk_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    dummy_hk_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    dummy_hk_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
     dummy_hk_packet.sid = SID_HK;
 
     // init status word
@@ -395,7 +401,7 @@ void send_dumb_hk( void )
     dummy_hk_packet.lfr_sw_version[2] = SW_VERSION_N3;
     dummy_hk_packet.lfr_sw_version[3] = SW_VERSION_N4;
     // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xd0);
+    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xb0);
     dummy_hk_packet.lfr_fpga_version[0] = parameters[1]; // n1
     dummy_hk_packet.lfr_fpga_version[1] = parameters[2]; // n2
     dummy_hk_packet.lfr_fpga_version[2] = parameters[3]; // n3

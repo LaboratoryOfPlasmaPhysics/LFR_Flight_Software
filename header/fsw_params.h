@@ -18,6 +18,16 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
+typedef struct ring_node_sm
+{
+    struct ring_node_sm *previous;
+    int buffer_address;
+    struct ring_node_sm *next;
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+} ring_node_sm;
+
 //************************
 // flight software version
 // this parameters is handled by the Qt project options

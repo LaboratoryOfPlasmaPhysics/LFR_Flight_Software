@@ -38,11 +38,14 @@ rtems_task avf0_task(rtems_task_argument argument);
 rtems_task smiq_task(rtems_task_argument argument); // added to test the spectral matrix simulator
 rtems_task matr_task(rtems_task_argument argument);
 
-void matrix_reset(volatile float *averaged_spec_mat);
 void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1);
 void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat);
 //
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
+void matrix_reset(volatile float *averaged_spec_mat);
+void ASM_average(float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+                  ring_node_sm *ring_node_tab[],
+                  unsigned int firstTimeF0, unsigned int firstTimeF1 );
 void ASM_reorganize( float *averaged_spec_mat, float *averaged_spec_mat_reorganized );
 void ASM_compress( float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat );
 void ASM_convert(volatile float *input_matrix, char *output_matrix);

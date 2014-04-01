@@ -262,8 +262,8 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
     unsigned char lsb;
     rtems_status_code status;
 
-    msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_L ];
-    lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_L+1 ];
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L+1 ];
 
     tmp = ( unsigned int ) floor(
                 ( ( msb*256 ) + lsb ) / 16
@@ -271,7 +271,7 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
 
     if ( (tmp < 16) || (tmp > 2048) )   // the snapshot period is a multiple of 16
     {                                   // 2048 is the maximum limit due to the size of the buffers
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_L+10, lsb );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L+10, lsb );
         result = WRONG_APP_DATA;
     }
     else if (tmp != 2048)
@@ -304,14 +304,14 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
     unsigned char lsb;
     rtems_status_code status;
 
-    msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P ];
-    lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_SWF_P+1 ];
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P+1 ];
 
     tmp = msb * 256  + lsb;
 
     if ( tmp < 16 )
     {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_SY_LFR_N_SWF_P+10, lsb );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, lsb );
         result = WRONG_APP_DATA;
     }
     else
@@ -337,8 +337,8 @@ int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned char msb;
     unsigned char lsb;
 
-    msb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_ASM_P ];
-    lsb = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_ASM_P+1 ];
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P+1 ];
 
     parameter_dump_packet.sy_lfr_n_asm_p[0] = msb;
     parameter_dump_packet.sy_lfr_n_asm_p[1] = lsb;
@@ -360,7 +360,7 @@ int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_BP_P0 ];
+    parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
 
     return status;
 }
@@ -378,7 +378,7 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_BP_P1 ];
+    parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
 
     return status;
 }
@@ -396,7 +396,7 @@ int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = TC->dataAndCRC[ BYTE_POS_SY_LFR_N_CWF_LONG_F3 ];
+    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_CWF_LONG_F3 ];
 
     return status;
 }

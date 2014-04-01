@@ -447,6 +447,28 @@ typedef struct {
 } Header_TM_LFR_SCIENCE_ASM_t;
 
 typedef struct {
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    // AUXILIARY HEADER
+    unsigned char sid;
+    unsigned char biaStatusInfo;
+    unsigned char acquisitionTime[6];
+    unsigned char spare_source_data;
+    unsigned char pa_lfr_bp_blk_nr[2];
+} Header_TM_LFR_SCIENCE_BP_t;
+
+typedef struct {
     //targetLogicalAddress is removed by the grspw module
     unsigned char protocolIdentifier;
     unsigned char reserved;

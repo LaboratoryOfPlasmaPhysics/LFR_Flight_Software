@@ -532,7 +532,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
         status = restart_science_tasks();
         launch_waveform_picker( mode, transitionCoarseTime );
-//        launch_spectral_matrix( mode );
+        launch_spectral_matrix_simu( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -701,7 +701,6 @@ void launch_spectral_matrix( unsigned char mode )
     reset_current_sm_ring_nodes();
     reset_spectral_matrix_regs();
 
-#ifdef VHDL_DEV
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
     grgpio_regs->io_port_direction_register =
             grgpio_regs->io_port_direction_register | 0x01; // [0001 1000], 0 = output disabled, 1 = output enabled
@@ -710,12 +709,7 @@ void launch_spectral_matrix( unsigned char mode )
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
     set_run_matrix_spectral( 1 );
-#else
-    // Spectral Matrices simulator
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
-    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
-#endif
+
 }
 
 void set_irq_on_new_ready_matrix( unsigned char value )

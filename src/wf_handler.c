@@ -748,12 +748,12 @@ int send_waveform_SWF( volatile int *waveform, unsigned int sid,
         // SET PACKET TIME
         compute_acquisition_time( coarseTime, fineTime, sid, i, headerSWF[ i ].acquisitionTime );
         //
-        headerSWF[ i ].time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-        headerSWF[ i ].time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-        headerSWF[ i ].time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-        headerSWF[ i ].time[3] = (unsigned char) (time_management_regs->coarse_time);
-        headerSWF[ i ].time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-        headerSWF[ i ].time[5] = (unsigned char) (time_management_regs->fine_time);
+        headerSWF[ i ].time[0] = headerSWF[ i ].acquisitionTime[0];
+        headerSWF[ i ].time[1] = headerSWF[ i ].acquisitionTime[1];
+        headerSWF[ i ].time[2] = headerSWF[ i ].acquisitionTime[2];
+        headerSWF[ i ].time[3] = headerSWF[ i ].acquisitionTime[3];
+        headerSWF[ i ].time[4] = headerSWF[ i ].acquisitionTime[4];
+        headerSWF[ i ].time[5] = headerSWF[ i ].acquisitionTime[5];
         // SEND PACKET
         status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_SWF, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
         if (status != RTEMS_SUCCESSFUL) {
@@ -807,12 +807,12 @@ int send_waveform_CWF(volatile int *waveform, unsigned int sid,
         // SET PACKET TIME
         compute_acquisition_time( coarseTime, fineTime, sid, i, headerCWF[ i ].acquisitionTime);
         //
-        headerCWF[ i ].time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-        headerCWF[ i ].time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-        headerCWF[ i ].time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-        headerCWF[ i ].time[3] = (unsigned char) (time_management_regs->coarse_time);
-        headerCWF[ i ].time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-        headerCWF[ i ].time[5] = (unsigned char) (time_management_regs->fine_time);
+        headerCWF[ i ].time[0] = headerCWF[ i ].acquisitionTime[0];
+        headerCWF[ i ].time[1] = headerCWF[ i ].acquisitionTime[1];
+        headerCWF[ i ].time[2] = headerCWF[ i ].acquisitionTime[2];
+        headerCWF[ i ].time[3] = headerCWF[ i ].acquisitionTime[3];
+        headerCWF[ i ].time[4] = headerCWF[ i ].acquisitionTime[4];
+        headerCWF[ i ].time[5] = headerCWF[ i ].acquisitionTime[5];
         // SEND PACKET
         if (sid == SID_NORM_CWF_LONG_F3)
         {
@@ -892,12 +892,12 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
         // SET PACKET TIME
         compute_acquisition_time( coarseTime, fineTime, SID_NORM_CWF_F3, i, headerCWF[ i ].acquisitionTime );
         //
-        headerCWF[ i ].time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-        headerCWF[ i ].time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-        headerCWF[ i ].time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-        headerCWF[ i ].time[3] = (unsigned char) (time_management_regs->coarse_time);
-        headerCWF[ i ].time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-        headerCWF[ i ].time[5] = (unsigned char) (time_management_regs->fine_time);
+        headerCWF[ i ].time[0] = headerCWF[ i ].acquisitionTime[0];
+        headerCWF[ i ].time[1] = headerCWF[ i ].acquisitionTime[1];
+        headerCWF[ i ].time[2] = headerCWF[ i ].acquisitionTime[2];
+        headerCWF[ i ].time[3] = headerCWF[ i ].acquisitionTime[3];
+        headerCWF[ i ].time[4] = headerCWF[ i ].acquisitionTime[4];
+        headerCWF[ i ].time[5] = headerCWF[ i ].acquisitionTime[5];
         // SEND PACKET
         status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
         if (status != RTEMS_SUCCESSFUL) {
