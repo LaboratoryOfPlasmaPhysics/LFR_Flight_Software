@@ -203,14 +203,14 @@ rtems_task smiq_task(rtems_task_argument argument) // process the Spectral Matri
 rtems_task avf0_task(rtems_task_argument argument)
 {
     int i;
-    static unsigned int nb_average_norm;
-    static unsigned int nb_average_sbm1;
+    static unsigned int nb_average_norm_f0;
+    static unsigned int nb_average_sbm1_f0;
     rtems_event_set event_out;
     rtems_status_code status;
     ring_node_sm *ring_node_tab[8];
 
-    nb_average_norm = 0;
-    nb_average_sbm1 = 0;
+    nb_average_norm_f0 = 0;
+    nb_average_sbm1_f0 = 0;
 
     BOOT_PRINTF("in AVFO *** \n")
 
@@ -226,38 +226,39 @@ rtems_task avf0_task(rtems_task_argument argument)
         // copy time information in the averaged_sm_f0 buffer
         averaged_sm_f0[0] = ring_node_tab[7]->coarseTime;
         averaged_sm_f0[1] = ring_node_tab[7]->fineTime;
-        averaged_sm_f1[0] = ring_node_tab[7]->coarseTime;
-        averaged_sm_f1[1] = ring_node_tab[7]->fineTime;
+        averaged_sm_sbm1[0] = ring_node_tab[7]->coarseTime;
+        averaged_sm_sbm1[1] = ring_node_tab[7]->fineTime;
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        ASM_average( averaged_sm_f0, averaged_sm_f1,
+        ASM_average( averaged_sm_f0, averaged_sm_sbm1,
                      ring_node_tab,
-                     nb_average_norm, nb_average_sbm1 );
+                     nb_average_norm_f0, nb_average_sbm1_f0 );
 
 
         // update nb_average
-        nb_average_norm = nb_average_norm + NB_SM_TO_RECEIVE_BEFORE_AVF0;
-        nb_average_sbm1 = nb_average_sbm1 + NB_SM_TO_RECEIVE_BEFORE_AVF0;
+        nb_average_norm_f0 = nb_average_norm_f0 + NB_SM_TO_RECEIVE_BEFORE_AVF0;
+        nb_average_sbm1_f0 = nb_average_sbm1_f0 + NB_SM_TO_RECEIVE_BEFORE_AVF0;
 
         // launch actions depending on the current mode
-        if (lfrCurrentMode == LFR_MODE_SBM1)
+
+        if (nb_average_sbm1_f0 == NB_AVERAGE_SBM1_F0)
         {
-            if (nb_average_sbm1 == NB_AVERAGE_SBM1_f0) {
-                nb_average_sbm1 = 0;
+            nb_average_sbm1_f0 = 0;
+            if (lfrCurrentMode == LFR_MODE_SBM1)
+            {
                 status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_MODE_SBM1 ); // sending an event to the task 7, BPF0
-                if (status != RTEMS_SUCCESSFUL) {
-                    printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+                if (status != RTEMS_SUCCESSFUL)
+                {
+                    printf("in AVF0 *** Error sending RTEMS_EVENT_MODE_SBM1, code %d\n", status);
                 }
             }
         }
-        if (lfrCurrentMode == LFR_MODE_NORMAL)
-        {
-            if (nb_average_norm == NB_AVERAGE_NORMAL_f0) {
-                nb_average_norm = 0;
-                status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_MODE_NORMAL ); // sending an event to the task 7, BPF0
-                if (status != RTEMS_SUCCESSFUL) {
-                    printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
-                }
+
+        if (nb_average_norm_f0 == NB_AVERAGE_NORMAL_F0) {
+            nb_average_norm_f0 = 0;
+            status = rtems_event_send( Task_id[TASKID_MATR], RTEMS_EVENT_MODE_NORMAL ); // sending an event to the task 7, BPF0
+            if (status != RTEMS_SUCCESSFUL) {
+                printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
             }
         }
     }
@@ -292,20 +293,22 @@ rtems_task matr_task(rtems_task_argument argument)
             ASM_compress( averaged_sm_f0, 0, compressed_sm_f0 );
             // 2) compute the BP1 set
 
-            // 3) convert the float array in a char array
+            // 3) send the BP1 set
+
+            // 4) convert the float array in a char array
             ASM_reorganize( averaged_sm_f0, averaged_sm_f0_reorganized );
             ASM_convert( averaged_sm_f0_reorganized, averaged_sm_f0_char);
-            // 4) send the spectral matrix packets
+            // 5) send the spectral matrix packets
             ASM_send( &headerASM, averaged_sm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
         }
         else if (event_out==RTEMS_EVENT_MODE_SBM1)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress( averaged_sm_f1, 0, compressed_sm_f1 );
+            ASM_compress( averaged_sm_sbm1, 0, compressed_sm_sbm1 );
             // 2) compute the BP1 set
 
-            // 4) send the basic parameters set 1 packet
-            BP1_send( );
+            // 3) send the basic parameters set 1 packet
+
         }
         else
         {
@@ -327,7 +330,7 @@ void matrix_reset(volatile float *averaged_spec_mat)
 
 void ASM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                   ring_node_sm *ring_node_tab[],
-                  unsigned int firstTimeF0, unsigned int firstTimeF1 )
+                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
 {
     float sum;
     unsigned int i;
@@ -343,25 +346,24 @@ void ASM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                 + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
                 + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
 
-        if ( (firstTimeF0 == 0) && (firstTimeF1 == 0) )
+        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
         {
-            averaged_spec_mat_f0[ i ] = averaged_spec_mat_f0[ i ] + sum;
-            averaged_spec_mat_f1[ i ] = averaged_spec_mat_f1[ i ] + sum;
+            averaged_spec_mat_f0[ TIME_OFFSET + i ] = sum;
+            averaged_spec_mat_f1[ TIME_OFFSET + i ] = sum;
         }
-        else if ( (firstTimeF0 == 0) && (firstTimeF1 != 0) )
+        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
         {
-            averaged_spec_mat_f0[ i ] = averaged_spec_mat_f0[ i ] + sum;
-            averaged_spec_mat_f1[ i ] = sum;
+            averaged_spec_mat_f0[ TIME_OFFSET + i ] = ( averaged_spec_mat_f0[ TIME_OFFSET + i ] + sum );
+            averaged_spec_mat_f1[ TIME_OFFSET + i ] = ( averaged_spec_mat_f1[ TIME_OFFSET + i ] + sum );
         }
-        else if ( (firstTimeF0 != 0) && (firstTimeF1 == 0) )
+        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
         {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = averaged_spec_mat_f1[ i ] + sum;
+            averaged_spec_mat_f0[ TIME_OFFSET + i ] = ( averaged_spec_mat_f0[ TIME_OFFSET + i ] + sum );
+            averaged_spec_mat_f1[ TIME_OFFSET + i ] = sum;
         }
         else
         {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = sum;
+            PRINTF2("ERR *** in ASM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
         }
     }
 }
@@ -379,8 +381,8 @@ void ASM_reorganize( float *averaged_spec_mat, float *averaged_spec_mat_reorgani
     {
         for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
         {
-            averaged_spec_mat_reorganized[ frequencyBin * NB_VALUES_PER_SM + asmComponent + TIME_OFFSET ] =
-                    averaged_spec_mat[ asmComponent * NB_BINS_PER_SM + frequencyBin + TIME_OFFSET];
+            averaged_spec_mat_reorganized[ TIME_OFFSET + frequencyBin * NB_VALUES_PER_SM + asmComponent ] =
+                    averaged_spec_mat[ TIME_OFFSET + asmComponent * NB_BINS_PER_SM + frequencyBin ];
         }
     }
 }

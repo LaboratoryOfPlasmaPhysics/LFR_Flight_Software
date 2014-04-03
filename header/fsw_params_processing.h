@@ -42,8 +42,8 @@
 #define TOTAL_SIZE_COMPRESSED_ASM_F1    325 // 13 * 25 WORDS
 #define TOTAL_SIZE_COMPRESSED_ASM_F2    300 // 12 * 25 WORDS
 #define TOTAL_SIZE_COMPRESSED_ASM_SBM1  550 // 22 * 25 WORDS
-#define NB_AVERAGE_NORMAL_f0    384 // 96 * 4
-#define NB_AVERAGE_SBM1_f0      24  // 24 matrices at f0 = 0.25 second
+#define NB_AVERAGE_NORMAL_F0    384 // 96 * 4
+#define NB_AVERAGE_SBM1_F0      24  // 24 matrices at f0 = 0.25 second
 #define NB_SM_TO_RECEIVE_BEFORE_AVF0 8
 
 typedef struct {
