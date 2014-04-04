@@ -28,6 +28,26 @@ typedef struct ring_node_sm
     unsigned int fineTime;
 } ring_node_sm;
 
+typedef struct ring_node_bp
+{
+    struct ring_node_bp *previous;
+    struct ring_node_bp *next;
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+    Header_TM_LFR_SCIENCE_BP_SBM_t header;
+    unsigned char data[ 9 * 22 ];
+} ring_node_bp;
+
+typedef struct
+{
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+    Header_TM_LFR_SCIENCE_BP_NORM_t header;
+    unsigned char data[ 9 * 22 ];
+} ring_node_norm_bp;
+
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -142,8 +162,9 @@ typedef struct ring_node_sm
 
 //**********
 // LPP CODES
-#define LFR_SUCCESSFUL 0
-#define LFR_DEFAULT 1
+#define LFR_SUCCESSFUL  0
+#define LFR_DEFAULT     1
+#define LFR_EXE_ERROR   2
 
 //******
 // RTEMS
@@ -184,7 +205,8 @@ typedef struct ring_node_sm
 
 #define ACTION_MSG_QUEUE_COUNT 10
 #define ACTION_MSG_PKTS_COUNT 50
-#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
+//#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
+#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0 + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE 24                   // hlen *hdr dlen *data sent options
 
 #define QUEUE_RECV 0

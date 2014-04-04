@@ -532,7 +532,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
         status = restart_science_tasks();
         launch_waveform_picker( mode, transitionCoarseTime );
-//        launch_spectral_matrix_simu( mode );
+        launch_spectral_matrix_simu( mode );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -842,7 +842,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
             updateLFRCurrentMode();
         }
     }
-    else
+    else if (result == LFR_EXE_ERROR)
     {
         send_tm_lfr_tc_exe_error( TC, queue_id );
     }

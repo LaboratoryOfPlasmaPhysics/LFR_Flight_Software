@@ -195,17 +195,19 @@ enum apid_destid{
 #define TM_HEADER_LEN 16
 #define HEADER_LENGTH_TM_LFR_SCIENCE_ASM 28
 // PACKET_LENGTH
-#define PACKET_LENGTH_TC_EXE_SUCCESS            (20 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_EXE_INCONSISTENT       (26 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     (26 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED    (24 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_EXE_ERROR              (24 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_EXE_CORRUPTED          (32 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_HK                        (124 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_PARAMETER_DUMP            (36 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0     2221  // 44 * 25 * 2 + 28 - 7
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1     2621  // 52 * 25 * 2 + 28 - 7
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2     2421  // 48 * 25 * 2 + 28 - 7
+#define PACKET_LENGTH_TC_EXE_SUCCESS                (20   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_INCONSISTENT           (26   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE         (26   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED        (24   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_ERROR                  (24   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_EXE_CORRUPTED              (32   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_HK                            (124  - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP                (36   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0         (2228 - CCSDS_TC_TM_PACKET_OFFSET)  // 44 * 25 * 2 + 28 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1         (2628 - CCSDS_TC_TM_PACKET_OFFSET)  // 52 * 25 * 2 + 28 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2         (2428 - CCSDS_TC_TM_PACKET_OFFSET)  // 48 * 25 * 2 + 28 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0    (126  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 9      + 27 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0    (224  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 9      + 26 - 7
 
 #define SPARE1_PUSVERSION_SPARE2 0x10
 
@@ -466,7 +468,28 @@ typedef struct {
     unsigned char acquisitionTime[6];
     unsigned char spare_source_data;
     unsigned char pa_lfr_bp_blk_nr[2];
-} Header_TM_LFR_SCIENCE_BP_t;
+} Header_TM_LFR_SCIENCE_BP_NORM_t;
+
+typedef struct {
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    // AUXILIARY HEADER
+    unsigned char sid;
+    unsigned char biaStatusInfo;
+    unsigned char acquisitionTime[6];
+    unsigned char pa_lfr_bp_blk_nr[2];
+} Header_TM_LFR_SCIENCE_BP_SBM_t;
 
 typedef struct {
     //targetLogicalAddress is removed by the grspw module

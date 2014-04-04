@@ -13,32 +13,35 @@
 
 //************************
 // spectral matrices rings
-ring_node_sm sm_ring_f0[NB_RING_NODES_ASM_F0];
-ring_node_sm sm_ring_f1[NB_RING_NODES_ASM_F1];
-ring_node_sm sm_ring_f2[NB_RING_NODES_ASM_F2];
+ring_node_sm sm_ring_f0[ NB_RING_NODES_ASM_F0 ];
+ring_node_sm sm_ring_f1[ NB_RING_NODES_ASM_F1 ];
+ring_node_sm sm_ring_f2[ NB_RING_NODES_ASM_F2 ];
 ring_node_sm *current_ring_node_sm_f0;
 ring_node_sm *ring_node_for_averaging_sm_f0;
 ring_node_sm *current_ring_node_sm_f1;
 ring_node_sm *current_ring_node_sm_f2;
 
-BP1_t data_BP1[ NB_BINS_COMPRESSED_SM_F0 ];
+//**********************
+// basic parameter rings
+ring_node_bp *current_node_sbm1_bp1_f0;
+ring_node_bp bp_ring_sbm1[ NB_RING_NODES_BP1_SBM1 ];
 
 //*****
 // NORM
 // F0
-float averaged_sm_f0            [ TIME_OFFSET + TOTAL_SIZE_SM ];
-float averaged_sm_f0_reorganized[ TIME_OFFSET + TOTAL_SIZE_SM ];
-char averaged_sm_f0_char        [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
-float compressed_sm_f0          [ TOTAL_SIZE_COMPRESSED_ASM_F0 ];
+float asm_f0            [ TIME_OFFSET + TOTAL_SIZE_SM ];
+float asm_f0_reorganized[ TIME_OFFSET + TOTAL_SIZE_SM ];
+char asm_f0_char        [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
+float compressed_sm_f0          [ TIME_OFFSET + TOTAL_SIZE_COMPRESSED_ASM_F0 ];
 
 //*****
 // SBM1
-float averaged_sm_sbm1            [ TIME_OFFSET + TOTAL_SIZE_SM    ];
-float compressed_sm_sbm1          [ TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
+float averaged_sm_sbm1          [ TIME_OFFSET + TOTAL_SIZE_SM    ];
+float compressed_sm_sbm1        [ TIME_OFFSET + TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
 
-unsigned char LFR_BP1_F0[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F0 * 2 ];
-unsigned char LFR_BP1_F1[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F1 ];
-unsigned char LFR_BP1_F2[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_BP1_F2 ];
+unsigned char LFR_BP1_F0[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F0 * 2 ];
+unsigned char LFR_BP1_F1[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F1 ];
+unsigned char LFR_BP1_F2[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F2 ];
 
 unsigned int nb_sm_f0;
 
@@ -118,6 +121,11 @@ void reset_current_sm_ring_nodes( void )
     current_ring_node_sm_f2 = sm_ring_f2;
 
     ring_node_for_averaging_sm_f0   = sm_ring_f0;
+}
+
+void reset_current_node_sbm1_bp1_f0( void )
+{
+    current_node_sbm1_bp1_f0 = bp_ring_sbm1;
 }
 
 //***********************************************************
@@ -223,14 +231,14 @@ rtems_task avf0_task(rtems_task_argument argument)
             ring_node_tab[NB_SM_TO_RECEIVE_BEFORE_AVF0-i] = ring_node_for_averaging_sm_f0;
         }
 
-        // copy time information in the averaged_sm_f0 buffer
-        averaged_sm_f0[0] = ring_node_tab[7]->coarseTime;
-        averaged_sm_f0[1] = ring_node_tab[7]->fineTime;
+        // copy time information in the asm_f0 buffer
+        asm_f0[0] = ring_node_tab[7]->coarseTime;
+        asm_f0[1] = ring_node_tab[7]->fineTime;
         averaged_sm_sbm1[0] = ring_node_tab[7]->coarseTime;
         averaged_sm_sbm1[1] = ring_node_tab[7]->fineTime;
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        ASM_average( averaged_sm_f0, averaged_sm_sbm1,
+        ASM_average( asm_f0, averaged_sm_sbm1,
                      ring_node_tab,
                      nb_average_norm_f0, nb_average_sbm1_f0 );
 
@@ -271,8 +279,10 @@ rtems_task matr_task(rtems_task_argument argument)
     rtems_status_code status;
     rtems_id queue_id;
     Header_TM_LFR_SCIENCE_ASM_t headerASM;
+    ring_node_norm_bp current_node_norm_bp1_f0;
 
     init_header_asm( &headerASM );
+//    init_header_bp( &current_node_norm_bp1_f0.header );
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -282,33 +292,40 @@ rtems_task matr_task(rtems_task_argument argument)
 
     BOOT_PRINTF("in MATR *** \n")
 
-    fill_averaged_spectral_matrix( );
-
     while(1){
         rtems_event_receive( RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out==RTEMS_EVENT_MODE_NORMAL)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress( averaged_sm_f0, 0, compressed_sm_f0 );
+            ASM_compress_reorganize_and_divide( asm_f0, compressed_sm_f0,
+                                         NB_AVERAGE_NORMAL_F0,
+                                         NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
+                                         ASM_F0_INDICE_START );
             // 2) compute the BP1 set
 
             // 3) send the BP1 set
-
-            // 4) convert the float array in a char array
-            ASM_reorganize( averaged_sm_f0, averaged_sm_f0_reorganized );
-            ASM_convert( averaged_sm_f0_reorganized, averaged_sm_f0_char);
-            // 5) send the spectral matrix packets
-            ASM_send( &headerASM, averaged_sm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
+            BP1_send( &current_node_norm_bp1_f0, SID_NORM_BP1_F0, queue_id );
+            // 4) reorganize the ASM and divide
+            ASM_reorganize_and_divide( asm_f0, asm_f0_reorganized, NB_AVERAGE_NORMAL_F0 );
+            // 5) convert the float array in a char array
+            ASM_convert( asm_f0_reorganized, asm_f0_char);
+            // 6) send the spectral matrix packets
+            ASM_send( &headerASM, asm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
         }
         else if (event_out==RTEMS_EVENT_MODE_SBM1)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress( averaged_sm_sbm1, 0, compressed_sm_sbm1 );
+            ASM_compress_reorganize_and_divide( averaged_sm_sbm1, compressed_sm_sbm1,
+                                         NB_AVERAGE_SBM1_F0,
+                                         NB_BINS_COMPRESSED_SM_SBM1_F0, NB_BINS_TO_AVERAGE_ASM_SBM1_F0,
+                                         ASM_F0_INDICE_START);
             // 2) compute the BP1 set
 
             // 3) send the basic parameters set 1 packet
-
+            BP1_send( current_node_sbm1_bp1_f0, SID_SBM1_BP1_F0, queue_id );
+            // 4) update current_node_sbm1_bp1_f0
+            current_node_sbm1_bp1_f0 = current_node_sbm1_bp1_f0->next;
         }
         else
         {
@@ -319,14 +336,6 @@ rtems_task matr_task(rtems_task_argument argument)
 
 //*****************************
 // Spectral matrices processing
-
-void matrix_reset(volatile float *averaged_spec_mat)
-{
-    int i;
-    for(i=0; i<TOTAL_SIZE_SM; i++){
-        averaged_spec_mat[i] = 0;
-    }
-}
 
 void ASM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                   ring_node_sm *ring_node_tab[],
@@ -368,7 +377,7 @@ void ASM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
     }
 }
 
-void ASM_reorganize( float *averaged_spec_mat, float *averaged_spec_mat_reorganized )
+void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )
 {
     int frequencyBin;
     int asmComponent;
@@ -382,12 +391,13 @@ void ASM_reorganize( float *averaged_spec_mat, float *averaged_spec_mat_reorgani
         for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
         {
             averaged_spec_mat_reorganized[ TIME_OFFSET + frequencyBin * NB_VALUES_PER_SM + asmComponent ] =
-                    averaged_spec_mat[ TIME_OFFSET + asmComponent * NB_BINS_PER_SM + frequencyBin ];
+                    averaged_spec_mat[ TIME_OFFSET + asmComponent * NB_BINS_PER_SM + frequencyBin ] / divider;
         }
     }
 }
 
-void ASM_compress( float *averaged_spec_mat, unsigned char fChannel, float *compressed_spec_mat )
+void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat , float divider,
+                                 unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage, unsigned char ASMIndexStart )
 {
     int frequencyBin;
     int asmComponent;
@@ -395,40 +405,25 @@ void ASM_compress( float *averaged_spec_mat, unsigned char fChannel, float *comp
     int offsetCompressed;
     int k;
 
-    switch (fChannel){
-    case 0:
-        for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
+    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
+    {
+        for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
         {
-            for( frequencyBin = 0; frequencyBin < NB_BINS_COMPRESSED_SM_F0; frequencyBin++ )
+            offsetCompressed = TIME_OFFSET
+                    + frequencyBin * NB_VALUES_PER_SM
+                    + asmComponent;
+            offsetASM = TIME_OFFSET
+                    + asmComponent * NB_BINS_PER_SM
+                    + ASMIndexStart
+                    + frequencyBin * nbBinsToAverage;
+            compressed_spec_mat[ offsetCompressed ] = 0;
+            for ( k = 0; k < nbBinsToAverage; k++ )
             {
-                offsetCompressed = TIME_OFFSET
-                        + frequencyBin * NB_VALUES_PER_SM
-                        + asmComponent;
-                offsetASM = TIME_OFFSET
-                        + asmComponent * NB_BINS_PER_SM
-                        + ASM_F0_INDICE_START
-                        + frequencyBin * NB_BINS_TO_AVERAGE_ASM_F0;
-                compressed_spec_mat[ offsetCompressed ] = 0;
-                for ( k = 0; k < NB_BINS_TO_AVERAGE_ASM_F0; k++ )
-                {
-                    compressed_spec_mat[offsetCompressed ] =
-                            compressed_spec_mat[ offsetCompressed ]
-                            + averaged_spec_mat[ offsetASM + k ];
-                }
+                compressed_spec_mat[offsetCompressed ] =
+                        ( compressed_spec_mat[ offsetCompressed ]
+                        + averaged_spec_mat[ offsetASM + k ] ) / (divider * nbBinsToAverage);
             }
         }
-        break;
-
-    case 1:
-            // case fChannel = f1 to be completed later
-        break;
-
-    case 2:
-            // case fChannel = f1 to be completed later
-        break;
-
-    default:
-        break;
     }
 }
 
@@ -526,191 +521,65 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
     }
 }
 
-void BP1_send()
+void BP1_send( ring_node_bp *ring_node_to_send, unsigned int sid, rtems_id queue_id )
 {
+    unsigned int length = 0;
+    rtems_status_code status;
+    unsigned char nbBytesTosend;
 
-}
-
-void BP1_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * LFR_BP1){
-    int i;
-    int j;
-    unsigned char tmp_u_char;
-    unsigned char * pt_char = NULL;
-    float PSDB, PSDE;
-    float NVEC_V0;
-    float NVEC_V1;
-    float NVEC_V2;
-    //float significand;
-    //int exponent;
-    float aux;
-    float tr_SB_SB;
-    float tmp;
-    float sx_re;
-    float sx_im;
-    float nebx_re = 0;
-    float nebx_im = 0;
-    float ny = 0;
-    float nz = 0;
-    float bx_bx_star = 0;
-    for(i=0; i<nb_bins_compressed_spec_mat; i++){
-        //==============================================
-        // BP1 PSD == B PAR_LFR_SC_BP1_PE_FL0 == 16 bits
-        PSDB = compressed_spec_mat[i*30]      // S11
-            + compressed_spec_mat[(i*30) + 10]    // S22
-            + compressed_spec_mat[(i*30) + 18];   // S33
-        //significand = frexp(PSDB, &exponent);
-        pt_char = (unsigned char*) &PSDB;
-        LFR_BP1[(i*9) + 2] = pt_char[0]; // bits 31 downto 24 of the float
-        LFR_BP1[(i*9) + 3] = pt_char[1];  // bits 23 downto 16 of the float
-        //==============================================
-        // BP1 PSD == E PAR_LFR_SC_BP1_PB_FL0 == 16 bits
-        PSDE = compressed_spec_mat[(i*30) + 24] * K44_pe     // S44
-            + compressed_spec_mat[(i*30) + 28] * K55_pe      // S55
-            + compressed_spec_mat[(i*30) + 26] * K45_pe_re   // S45
-            - compressed_spec_mat[(i*30) + 27] * K45_pe_im;  // S45
-        pt_char = (unsigned char*) &PSDE;
-        LFR_BP1[(i*9) + 0] = pt_char[0]; // bits 31 downto 24 of the float
-        LFR_BP1[(i*9) + 1] = pt_char[1]; // bits 23 downto 16 of the float
-        //==============================================================================
-        // BP1 normal wave vector == PAR_LFR_SC_BP1_NVEC_V0_F0 == 8 bits
-                               // == PAR_LFR_SC_BP1_NVEC_V1_F0 == 8 bits
-                               // == PAR_LFR_SC_BP1_NVEC_V2_F0 == 1 bits
-        tmp = sqrt(
-                    compressed_spec_mat[(i*30) + 3]*compressed_spec_mat[(i*30) + 3]     //Im S12
-                    +compressed_spec_mat[(i*30) + 5]*compressed_spec_mat[(i*30) + 5]    //Im S13
-                    +compressed_spec_mat[(i*30) + 13]*compressed_spec_mat[(i*30) + 13]   //Im S23
-                    );
-        NVEC_V0 = compressed_spec_mat[(i*30) + 13] / tmp;  // Im S23
-        NVEC_V1 = -compressed_spec_mat[(i*30) + 5] / tmp;  // Im S13
-        NVEC_V2 = compressed_spec_mat[(i*30) + 3] / tmp;   // Im S12
-        LFR_BP1[(i*9) + 4] = (char) (NVEC_V0*127);
-        LFR_BP1[(i*9) + 5] = (char) (NVEC_V1*127);
-        pt_char = (unsigned char*) &NVEC_V2;
-        LFR_BP1[(i*9) + 6] = pt_char[0] & 0x80;  // extract the sign of NVEC_V2
-        //=======================================================
-        // BP1 ellipticity == PAR_LFR_SC_BP1_ELLIP_F0   == 4 bits
-        aux = 2*tmp / PSDB;                                             // compute the ellipticity
-        tmp_u_char = (unsigned char) (aux*(16-1));                      // convert the ellipticity
-        LFR_BP1[i*9+6] = LFR_BP1[i*9+6] | ((tmp_u_char&0x0f)<<3); // keeps 4 bits of the resulting unsigned char
-        //==============================================================
-        // BP1 degree of polarization == PAR_LFR_SC_BP1_DOP_F0 == 3 bits
-        for(j = 0; j<NB_VALUES_PER_SM;j++){
-            tr_SB_SB = compressed_spec_mat[i*30] * compressed_spec_mat[i*30]
-                    + compressed_spec_mat[(i*30) + 10] * compressed_spec_mat[(i*30) + 10]
-                    + compressed_spec_mat[(i*30) + 18] * compressed_spec_mat[(i*30) + 18]
-                    + 2 * compressed_spec_mat[(i*30) + 2] * compressed_spec_mat[(i*30) + 2]
-                    + 2 * compressed_spec_mat[(i*30) + 3] * compressed_spec_mat[(i*30) + 3]
-                    + 2 * compressed_spec_mat[(i*30) + 4] * compressed_spec_mat[(i*30) + 4]
-                    + 2 * compressed_spec_mat[(i*30) + 5] * compressed_spec_mat[(i*30) + 5]
-                    + 2 * compressed_spec_mat[(i*30) + 12] * compressed_spec_mat[(i*30) + 12]
-                    + 2 * compressed_spec_mat[(i*30) + 13] * compressed_spec_mat[(i*30) + 13];
-        }
-        aux = PSDB*PSDB;
-        tmp = sqrt( abs( ( 3*tr_SB_SB - aux ) / ( 2 * aux ) ) );
-        tmp_u_char = (unsigned char) (NVEC_V0*(8-1));
-        LFR_BP1[(i*9) + 6] = LFR_BP1[(i*9) + 6] | (tmp_u_char & 0x07); // keeps 3 bits of the resulting unsigned char
-        //=======================================================================================
-        // BP1 x-component of the normalized Poynting flux == PAR_LFR_SC_BP1_SZ_F0 == 8 bits (7+1)
-        sx_re = compressed_spec_mat[(i*30) + 20] * K34_sx_re
-                        + compressed_spec_mat[(i*30) + 6] * K14_sx_re
-                        + compressed_spec_mat[(i*30) + 8] * K15_sx_re
-                        + compressed_spec_mat[(i*30) + 14] * K24_sx_re
-                        + compressed_spec_mat[(i*30) + 16] * K25_sx_re
-                        + compressed_spec_mat[(i*30) + 22] * K35_sx_re;
-        sx_im = compressed_spec_mat[(i*30) + 21] * K34_sx_im
-                        + compressed_spec_mat[(i*30) + 7] * K14_sx_im
-                        + compressed_spec_mat[(i*30) + 9] * K15_sx_im
-                        + compressed_spec_mat[(i*30) + 15] * K24_sx_im
-                        + compressed_spec_mat[(i*30) + 17] * K25_sx_im
-                        + compressed_spec_mat[(i*30) + 23] * K35_sx_im;
-        LFR_BP1[(i*9) + 7] = ((unsigned char) (sx_re * 128)) & 0x7f; // cf DOC for the compression
-        if ( abs(sx_re) > abs(sx_im) ) {
-            LFR_BP1[(i*9) + 7] = LFR_BP1[(i*9) + 1] | (0x80);  // extract the sector of sx
-        }
-        else {
-            LFR_BP1[(i*9) + 7] = LFR_BP1[(i*9) + 1] & (0x7f);  // extract the sector of sx
-        }
-        //======================================================================
-        // BP1 phase velocity estimator == PAR_LFR_SC_BP1_VPHI_F0 == 8 bits (7+1)
-        ny = sin(Alpha_M)*NVEC_V1 + cos(Alpha_M)*NVEC_V2;
-        nz = NVEC_V0;
-        bx_bx_star = cos(Alpha_M) * cos(Alpha_M) * compressed_spec_mat[i*30+10]            // re S22
-                        + sin(Alpha_M) * sin(Alpha_M) * compressed_spec_mat[i*30+18]       // re S33
-                        - 2 * sin(Alpha_M) * cos(Alpha_M) * compressed_spec_mat[i*30+12];  // re S23
-        nebx_re = ny * (compressed_spec_mat[(i*30) + 14] * K24_ny_re
-                                        +compressed_spec_mat[(i*30) + 16] * K25_ny_re
-                                        +compressed_spec_mat[(i*30) + 20] * K34_ny_re
-                                        +compressed_spec_mat[(i*30) + 22] * K35_ny_re)
-                                + nz * (compressed_spec_mat[(i*30) + 14] * K24_nz_re
-                                        +compressed_spec_mat[(i*30) + 16] * K25_nz_re
-                                        +compressed_spec_mat[(i*30) + 20] * K34_nz_re
-                                        +compressed_spec_mat[(i*30) + 22] * K35_nz_re);
-        nebx_im = ny * (compressed_spec_mat[(i*30) + 15]*K24_ny_re
-                                        +compressed_spec_mat[(i*30) + 17] * K25_ny_re
-                                        +compressed_spec_mat[(i*30) + 21] * K34_ny_re
-                                        +compressed_spec_mat[(i*30) + 23] * K35_ny_re)
-                                + nz * (compressed_spec_mat[(i*30) + 15] * K24_nz_im
-                                        +compressed_spec_mat[(i*30) + 17] * K25_nz_im
-                                        +compressed_spec_mat[(i*30) + 21] * K34_nz_im
-                                        +compressed_spec_mat[(i*30) + 23] * K35_nz_im);
-        tmp = nebx_re / bx_bx_star;
-        LFR_BP1[(i*9) + 8] = ((unsigned char) (tmp * 128)) & 0x7f; // cf DOC for the compression
-        if ( abs(nebx_re) > abs(nebx_im) ) {
-            LFR_BP1[(i*9) + 8] = LFR_BP1[(i*9) + 8] | (0x80);  // extract the sector of nebx
-        }
-        else {
-            LFR_BP1[(i*9) + 8] = LFR_BP1[(i*9) + 8] & (0x7f);  // extract the sector of nebx
-        }
+    // (1) BUILD THE DATA
+    switch(sid)
+    {
+    case SID_NORM_BP1_F0:
+        length = PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0;
+        ring_node_to_send->header.packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
+        ring_node_to_send->header.packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+        ring_node_to_send->header.pa_lfr_bp_blk_nr[0] = (unsigned char)  ( (NB_BINS_COMPRESSED_SM_F0) >> 8 ); // BLK_NR MSB
+        ring_node_to_send->header.pa_lfr_bp_blk_nr[1] = (unsigned char)    (NB_BINS_COMPRESSED_SM_F0);        // BLK_NR LSB
+        nbBytesTosend = PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0
+                + CCSDS_TC_TM_PACKET_OFFSET
+                + CCSDS_PROTOCOLE_EXTRA_BYTES;
+    case SID_SBM1_BP1_F0:
+        length = PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0;
+        ring_node_to_send->header.packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2 >> 8);
+        ring_node_to_send->header.packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2);
+        ring_node_to_send->header.pa_lfr_bp_blk_nr[0] = (unsigned char)  ( (NB_BINS_COMPRESSED_SM_SBM1_F0) >> 8 ); // BLK_NR MSB
+        ring_node_to_send->header.pa_lfr_bp_blk_nr[1] = (unsigned char)    (NB_BINS_COMPRESSED_SM_SBM1_F0);        // BLK_NR LSB
+        nbBytesTosend = PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0
+                + CCSDS_TC_TM_PACKET_OFFSET
+                + CCSDS_PROTOCOLE_EXTRA_BYTES;
+        break;
+    default:
+        nbBytesTosend = 0;
+        PRINTF1("ERR *** in BP1_send *** unexpected sid %d\n", sid)
+        break;
     }
 
-}
+    // (2) BUILD THE HEADER
+    ring_node_to_send->header.packetLength[0] = (unsigned char) (length>>8);
+    ring_node_to_send->header.packetLength[1] = (unsigned char) (length);
+    ring_node_to_send->header.sid = sid;
 
-void BP2_set_old(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat){
-    // BP2 autocorrelation
-    int i;
-    int aux = 0;
+    // (3) SET PACKET TIME
+    ring_node_to_send->header.time[0] = (unsigned char) (ring_node_to_send->coarseTime>>24);
+    ring_node_to_send->header.time[1] = (unsigned char) (ring_node_to_send->coarseTime>>16);
+    ring_node_to_send->header.time[2] = (unsigned char) (ring_node_to_send->coarseTime>>8);
+    ring_node_to_send->header.time[3] = (unsigned char) (ring_node_to_send->coarseTime);
+    ring_node_to_send->header.time[4] = (unsigned char) (ring_node_to_send->fineTime>>8);
+    ring_node_to_send->header.time[5] = (unsigned char) (ring_node_to_send->fineTime);
+    //
+    ring_node_to_send->header.acquisitionTime[0] = (unsigned char) (ring_node_to_send->coarseTime>>24);
+    ring_node_to_send->header.acquisitionTime[1] = (unsigned char) (ring_node_to_send->coarseTime>>16);
+    ring_node_to_send->header.acquisitionTime[2] = (unsigned char) (ring_node_to_send->coarseTime>>8);
+    ring_node_to_send->header.acquisitionTime[3] = (unsigned char) (ring_node_to_send->coarseTime);
+    ring_node_to_send->header.acquisitionTime[4] = (unsigned char) (ring_node_to_send->fineTime>>8);
+    ring_node_to_send->header.acquisitionTime[5] = (unsigned char) (ring_node_to_send->fineTime);
 
-    for(i = 0; i<nb_bins_compressed_spec_mat; i++){
-        // S12
-        aux = sqrt(compressed_spec_mat[i*30]*compressed_spec_mat[(i*30) + 10]);
-        compressed_spec_mat[(i*30) + 2] = compressed_spec_mat[(i*30) + 2] / aux;
-        compressed_spec_mat[(i*30) + 3] = compressed_spec_mat[(i*30) + 3] / aux;
-        // S13
-        aux = sqrt(compressed_spec_mat[i*30]*compressed_spec_mat[(i*30) + 18]);
-        compressed_spec_mat[(i*30) + 4] = compressed_spec_mat[(i*30) + 4] / aux;
-        compressed_spec_mat[(i*30) + 5] = compressed_spec_mat[(i*30) + 5] / aux;
-        // S23
-        aux = sqrt(compressed_spec_mat[i*30+12]*compressed_spec_mat[(i*30) + 18]);
-        compressed_spec_mat[(i*30) + 12] = compressed_spec_mat[(i*30) + 12] / aux;
-        compressed_spec_mat[(i*30) + 13] = compressed_spec_mat[(i*30) + 13] / aux;
-        // S45
-        aux = sqrt(compressed_spec_mat[i*30+24]*compressed_spec_mat[(i*30) + 28]);
-        compressed_spec_mat[(i*30) + 26] = compressed_spec_mat[(i*30) + 26] / aux;
-        compressed_spec_mat[(i*30) + 27] = compressed_spec_mat[(i*30) + 27] / aux;
-        // S14
-        aux = sqrt(compressed_spec_mat[i*30]*compressed_spec_mat[(i*30)  +24]);
-        compressed_spec_mat[(i*30) + 6] = compressed_spec_mat[(i*30) + 6] / aux;
-        compressed_spec_mat[(i*30) + 7] = compressed_spec_mat[(i*30) + 7] / aux;
-        // S15
-        aux = sqrt(compressed_spec_mat[i*30]*compressed_spec_mat[(i*30) + 28]);
-        compressed_spec_mat[(i*30) + 8] = compressed_spec_mat[(i*30) + 8] / aux;
-        compressed_spec_mat[(i*30) + 9] = compressed_spec_mat[(i*30) + 9] / aux;
-        // S24
-        aux = sqrt(compressed_spec_mat[i*10]*compressed_spec_mat[(i*30) + 24]);
-        compressed_spec_mat[(i*30) + 14] = compressed_spec_mat[(i*30) + 14] / aux;
-        compressed_spec_mat[(i*30) + 15] = compressed_spec_mat[(i*30) + 15] / aux;
-        // S25
-        aux = sqrt(compressed_spec_mat[i*10]*compressed_spec_mat[(i*30) + 28]);
-        compressed_spec_mat[(i*30) + 16] = compressed_spec_mat[(i*30) + 16] / aux;
-        compressed_spec_mat[(i*30) + 17] = compressed_spec_mat[(i*30) + 17] / aux;
-        // S34
-        aux = sqrt(compressed_spec_mat[i*18]*compressed_spec_mat[(i*30) + 24]);
-        compressed_spec_mat[(i*30) + 20] = compressed_spec_mat[(i*30) + 20] / aux;
-        compressed_spec_mat[(i*30) + 21] = compressed_spec_mat[(i*30) + 21] / aux;
-        // S35
-        aux = sqrt(compressed_spec_mat[i*18]*compressed_spec_mat[(i*30) + 28]);
-        compressed_spec_mat[(i*30) + 22] = compressed_spec_mat[(i*30) + 22] / aux;
-        compressed_spec_mat[(i*30) + 23] = compressed_spec_mat[(i*30) + 23] / aux;
+    // (4) SEND PACKET
+    status =  rtems_message_queue_send( queue_id, &ring_node_to_send->header, nbBytesTosend);
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        printf("ERR *** in BP1_send *** ERR %d\n", (int) status);
     }
 }
 
@@ -746,14 +615,41 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
 }
 
-void init_header_bp( Header_TM_LFR_SCIENCE_BP_t *header)
+void init_bp_ring_sbm1()
+{
+    unsigned int i;
+
+    //********
+    // F0 RING
+    bp_ring_sbm1[0].next            = (ring_node_bp*) &bp_ring_sbm1[1];
+    bp_ring_sbm1[0].previous        = (ring_node_bp*) &bp_ring_sbm1[NB_RING_NODES_BP1_SBM1-1];
+
+    bp_ring_sbm1[NB_RING_NODES_BP1_SBM1-1].next           = (ring_node_bp*) &bp_ring_sbm1[0];
+    bp_ring_sbm1[NB_RING_NODES_BP1_SBM1-1].previous       = (ring_node_bp*) &bp_ring_sbm1[NB_RING_NODES_ASM_F0-2];
+
+    for(i=1; i<NB_RING_NODES_BP1_SBM1-1; i++)
+    {
+        bp_ring_sbm1[i].next            = (ring_node_bp*) &bp_ring_sbm1[i+1];
+        bp_ring_sbm1[i].previous        = (ring_node_bp*) &bp_ring_sbm1[i-1];
+    }
+    //
+    //********
+
+    for (i=0; i<NB_RING_NODES_BP1_SBM1; i++)
+    {
+        init_header_bp( (Header_TM_LFR_SCIENCE_BP_SBM_t*) &bp_ring_sbm1[ i ] );
+        bp_ring_sbm1[ i ].status = 0;
+    }
+}
+
+void init_header_bp(Header_TM_LFR_SCIENCE_BP_SBM_t *header )
 {
     header->targetLogicalAddress = CCSDS_DESTINATION_ID;
     header->protocolIdentifier = CCSDS_PROTOCOLE_ID;
     header->reserved = 0x00;
     header->userApplication = CCSDS_USER_APP;
-//    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
-//    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+    header->packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2 >> 8);
+    header->packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2);
     header->packetSequenceControl[0] = 0xc0;
     header->packetSequenceControl[1] = 0x00;
     header->packetLength[0] = 0x00;
@@ -776,86 +672,7 @@ void init_header_bp( Header_TM_LFR_SCIENCE_BP_t *header)
     header->pa_lfr_bp_blk_nr[1] = 0x00;  // BLK_NR LSB
 }
 
-void fill_averaged_spectral_matrix(void)
-{
-    /** This function fills spectral matrices related buffers with arbitrary data.
-     *
-     *  This function is for testing purpose only.
-     *
-     */
-
-    float offset;
-    float coeff;
-
-    offset = 10.;
-    coeff = 100000.;
-    averaged_sm_f0[ 0 + 25 * 0  ] = 0. + offset;
-    averaged_sm_f0[ 0 + 25 * 1  ] = 1. + offset;
-    averaged_sm_f0[ 0 + 25 * 2  ] = 2. + offset;
-    averaged_sm_f0[ 0 + 25 * 3  ] = 3. + offset;
-    averaged_sm_f0[ 0 + 25 * 4  ] = 4. + offset;
-    averaged_sm_f0[ 0 + 25 * 5  ] = 5. + offset;
-    averaged_sm_f0[ 0 + 25 * 6  ] = 6. + offset;
-    averaged_sm_f0[ 0 + 25 * 7  ] = 7. + offset;
-    averaged_sm_f0[ 0 + 25 * 8  ] = 8. + offset;
-    averaged_sm_f0[ 0 + 25 * 9  ] = 9. + offset;
-    averaged_sm_f0[ 0 + 25 * 10 ] = 10. + offset;
-    averaged_sm_f0[ 0 + 25 * 11 ] = 11. + offset;
-    averaged_sm_f0[ 0 + 25 * 12 ] = 12. + offset;
-    averaged_sm_f0[ 0 + 25 * 13 ] = 13. + offset;
-    averaged_sm_f0[ 0 + 25 * 14 ] = 14. + offset;
-    averaged_sm_f0[ 9 + 25 * 0  ] = -(0. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 1  ] = -(1. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 2  ] = -(2. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 3  ] = -(3. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 4  ] = -(4. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 5  ] = -(5. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 6  ] = -(6. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 7  ] = -(7. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 8  ] = -(8. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 9  ] = -(9. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 10 ] = -(10. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 11 ] = -(11. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 12 ] = -(12. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 13 ] = -(13. + offset)* coeff;
-    averaged_sm_f0[ 9 + 25 * 14 ] = -(14. + offset)* coeff;
-
-    offset = 10000000;
-    averaged_sm_f0[ 16 + 25 * 0  ] = (0. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 1  ] = (1. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 2  ] = (2. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 3  ] = (3. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 4  ] = (4. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 5  ] = (5. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 6  ] = (6. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 7  ] = (7. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 8  ] = (8. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 9  ] = (9. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 10 ] = (10. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 11 ] = (11. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 12 ] = (12. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 13 ] = (13. + offset)* coeff;
-    averaged_sm_f0[ 16 + 25 * 14 ] = (14. + offset)* coeff;
-
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 0 ] = averaged_sm_f0[ 0 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 1 ] = averaged_sm_f0[ 1 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 2 ] = averaged_sm_f0[ 2 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 3 ] = averaged_sm_f0[ 3 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 4 ] = averaged_sm_f0[ 4 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 5 ] = averaged_sm_f0[ 5 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 6 ] = averaged_sm_f0[ 6 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 7 ] = averaged_sm_f0[ 7 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 8 ] = averaged_sm_f0[ 8 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 9 ] = averaged_sm_f0[ 9 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 10 ] = averaged_sm_f0[ 10 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 11 ] = averaged_sm_f0[ 11 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 12 ] = averaged_sm_f0[ 12 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 13 ] = averaged_sm_f0[ 13 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 14 ] = averaged_sm_f0[ 14 ];
-    averaged_sm_f0[ (TOTAL_SIZE_SM/2) + 15 ] = averaged_sm_f0[ 15 ];
-}
-
-void reset_spectral_matrix_regs()
+void reset_spectral_matrix_regs( void )
 {
     /** This function resets the spectral matrices module registers.
      *
