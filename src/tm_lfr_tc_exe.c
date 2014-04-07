@@ -41,8 +41,8 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS     );
@@ -106,8 +106,8 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT     );
@@ -174,8 +174,8 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     );
@@ -242,8 +242,8 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED     );
@@ -308,8 +308,8 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR     );
@@ -383,8 +383,8 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (TM_PACKET_ID_TC_EXE >> 8);
-    TM.packetID[1] = (unsigned char) (TM_PACKET_ID_TC_EXE     );
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
     TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED >> 8);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED     );

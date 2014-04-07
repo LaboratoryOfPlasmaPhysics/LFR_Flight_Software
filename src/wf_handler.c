@@ -581,8 +581,8 @@ int init_header_snapshot_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t
         headerSWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
         headerSWF[ i ].reserved = DEFAULT_RESERVED;
         headerSWF[ i ].userApplication = CCSDS_USER_APP;
-        headerSWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
-        headerSWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+        headerSWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+        headerSWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
         headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
         if (i == 6)
         {
@@ -631,13 +631,13 @@ int init_header_continuous_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_CWF
         headerCWF[ i ].userApplication = CCSDS_USER_APP;
         if ( (sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2) )
         {
-            headerCWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2 >> 8);
-            headerCWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_SBM1_SBM2);
+            headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2 >> 8);
+            headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2);
         }
         else
         {
-            headerCWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
-            headerCWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+            headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+            headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
         }
         headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
         headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
@@ -674,8 +674,8 @@ int init_header_continuous_cwf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *header
         headerCWF[ i ].reserved = DEFAULT_RESERVED;
         headerCWF[ i ].userApplication = CCSDS_USER_APP;
 
-        headerCWF[ i ].packetID[0] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST >> 8);
-        headerCWF[ i ].packetID[1] = (unsigned char) (TM_PACKET_ID_SCIENCE_NORMAL_BURST);
+        headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+        headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
 
         headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
         headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);

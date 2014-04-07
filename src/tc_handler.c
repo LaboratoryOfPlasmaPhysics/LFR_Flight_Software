@@ -699,6 +699,7 @@ void launch_spectral_matrix( unsigned char mode )
 {
     reset_nb_sm_f0();
     reset_current_sm_ring_nodes();
+    reset_current_bp_ring_nodes();
     reset_spectral_matrix_regs();
 
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
@@ -740,6 +741,7 @@ void launch_spectral_matrix_simu( unsigned char mode )
 {
     reset_nb_sm_f0();
     reset_current_sm_ring_nodes();
+    reset_current_bp_ring_nodes();
     reset_spectral_matrix_regs();
 
     // Spectral Matrices simulator

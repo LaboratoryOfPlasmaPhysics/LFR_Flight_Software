@@ -4,12 +4,12 @@
 #include "fsw_params_processing.h"
 
 #define CCSDS_PROTOCOLE_EXTRA_BYTES 4
+#define CCSDS_TC_TM_PACKET_OFFSET 7
 #define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH 10+4
 #define CCSDS_TC_PKT_MAX_SIZE 256
 #define CCSDS_TC_PKT_MIN_SIZE 16
-#define CCSDS_TC_TM_PACKET_OFFSET 7
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
 #define CCSDS_NODE_ADDRESS 0xfe
@@ -20,18 +20,18 @@
 #define DEFAULT_HKBIA 0x1e  // 0001 1110
 
 // PACKET ID
-#define TM_PACKET_ID_TC_EXE                     0x0cc1 // PID 76 CAT 1
-#define TM_PACKET_ID_HK                         0x0cc4 // PID 76 CAT 4
-#define TM_PACKET_ID_PARAMETER_DUMP             0x0cc9 // PID 76 CAT 9
-#define TM_PACKET_ID_SCIENCE_NORMAL_BURST       0x0ccc // PID 76 CAT 12
-#define TM_PACKET_ID_SCIENCE_SBM1_SBM2          0x0cfc // PID 79 CAT 12
-#define TM_PACKET_PID_DEFAULT                   76
-#define TM_PACKET_PID_BURST_SBM1_SBM2           79
-#define TM_PACKET_CAT_TC_EXE                    1
-#define TM_PACKET_CAT_HK                        4
-#define TM_PACKET_CAT_PARAMETER_DUMP            9
-#define TM_PACKET_CAT_SCIENCE                   12
-#define TC_PACKET_CAT                           12
+#define APID_TM_TC_EXE                  0x0cc1 // PID 76 CAT 1
+#define APID_TM_HK                      0x0cc4 // PID 76 CAT 4
+#define APID_TM_PARAMETER_DUMP          0x0cc9 // PID 76 CAT 9
+#define APID_TM_SCIENCE_NORMAL_BURST    0x0ccc // PID 76 CAT 12
+#define APID_TM_SCIENCE_SBM1_SBM2       0x0cfc // PID 79 CAT 12
+#define TM_PACKET_PID_DEFAULT           76
+#define TM_PACKET_PID_BURST_SBM1_SBM2   79
+#define TM_PACKET_CAT_TC_EXE            1
+#define TM_PACKET_CAT_HK                4
+#define TM_PACKET_CAT_PARAMETER_DUMP    9
+#define TM_PACKET_CAT_SCIENCE           12
+#define TC_PACKET_CAT                   12
 
 // PACKET SEQUENCE CONTROL
 #define TM_PACKET_SEQ_CTRL_CONTINUATION 0x00    // [0000 0000]
@@ -207,7 +207,12 @@ enum apid_destid{
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1         (2628 - CCSDS_TC_TM_PACKET_OFFSET)  // 52 * 25 * 2 + 28 - 7
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2         (2428 - CCSDS_TC_TM_PACKET_OFFSET)  // 48 * 25 * 2 + 28 - 7
 #define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0    (126  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 9      + 27 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0    (356  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 30     + 25 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_BURST_BP2_F1   (806  - CCSDS_TC_TM_PACKET_OFFSET)  // 26 * 30     + 26 - 7
 #define PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0    (224  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 9      + 26 - 7
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP2_F0    (686  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 30     + 26 - 7
+
+#define PACKET_LENGTH_DELTA                         11                                  // 7 + 4
 
 #define SPARE1_PUSVERSION_SPARE2 0x10
 
@@ -466,9 +471,9 @@ typedef struct {
     unsigned char sid;
     unsigned char biaStatusInfo;
     unsigned char acquisitionTime[6];
-    unsigned char spare_source_data;
+    unsigned char source_data_spare[2];
     unsigned char pa_lfr_bp_blk_nr[2];
-} Header_TM_LFR_SCIENCE_BP_NORM_t;
+} Header_TM_LFR_SCIENCE_BP_with_spare_t;
 
 typedef struct {
     unsigned char targetLogicalAddress;
@@ -489,7 +494,7 @@ typedef struct {
     unsigned char biaStatusInfo;
     unsigned char acquisitionTime[6];
     unsigned char pa_lfr_bp_blk_nr[2];
-} Header_TM_LFR_SCIENCE_BP_SBM_t;
+} Header_TM_LFR_SCIENCE_BP_t;
 
 typedef struct {
     //targetLogicalAddress is removed by the grspw module

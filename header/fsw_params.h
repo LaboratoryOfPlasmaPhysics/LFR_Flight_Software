@@ -18,36 +18,6 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
-typedef struct ring_node_sm
-{
-    struct ring_node_sm *previous;
-    int buffer_address;
-    struct ring_node_sm *next;
-    unsigned int status;
-    unsigned int coarseTime;
-    unsigned int fineTime;
-} ring_node_sm;
-
-typedef struct ring_node_bp
-{
-    struct ring_node_bp *previous;
-    struct ring_node_bp *next;
-    unsigned int status;
-    unsigned int coarseTime;
-    unsigned int fineTime;
-    Header_TM_LFR_SCIENCE_BP_SBM_t header;
-    unsigned char data[ 9 * 22 ];
-} ring_node_bp;
-
-typedef struct
-{
-    unsigned int status;
-    unsigned int coarseTime;
-    unsigned int fineTime;
-    Header_TM_LFR_SCIENCE_BP_NORM_t header;
-    unsigned char data[ 9 * 22 ];
-} ring_node_norm_bp;
-
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -85,15 +55,17 @@ typedef struct
 #define THR_MODE_NORMAL     1
 #define THR_MODE_BURST      2
 
-#define RTEMS_EVENT_MODE_STANDBY        RTEMS_EVENT_0
-#define RTEMS_EVENT_MODE_NORMAL         RTEMS_EVENT_1
-#define RTEMS_EVENT_MODE_BURST          RTEMS_EVENT_2
-#define RTEMS_EVENT_MODE_SBM1           RTEMS_EVENT_3
-#define RTEMS_EVENT_MODE_SBM2           RTEMS_EVENT_4
-#define RTEMS_EVENT_MODE_SBM2_WFRM      RTEMS_EVENT_5
-#define RTEMS_EVENT_MODE_NORMAL_SWF_F0  RTEMS_EVENT_6
-#define RTEMS_EVENT_MODE_NORMAL_SWF_F1  RTEMS_EVENT_7
-#define RTEMS_EVENT_MODE_NORMAL_SWF_F2  RTEMS_EVENT_8
+#define RTEMS_EVENT_MODE_STANDBY    RTEMS_EVENT_0
+#define RTEMS_EVENT_MODE_NORMAL     RTEMS_EVENT_1
+#define RTEMS_EVENT_MODE_BURST      RTEMS_EVENT_2
+#define RTEMS_EVENT_MODE_SBM1       RTEMS_EVENT_3
+#define RTEMS_EVENT_MODE_SBM2       RTEMS_EVENT_4
+#define RTEMS_EVENT_MODE_SBM2_WFRM  RTEMS_EVENT_5
+#define RTEMS_EVENT_NORM_BP1_F0     RTEMS_EVENT_6
+#define RTEMS_EVENT_NORM_BP2_F0     RTEMS_EVENT_7
+#define RTEMS_EVENT_NORM_ASM_F0     RTEMS_EVENT_8
+#define RTEMS_EVENT_SBM1_BP1_F0     RTEMS_EVENT_9
+#define RTEMS_EVENT_SBM1_BP2_F0     RTEMS_EVENT_10
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -203,11 +175,11 @@ typedef struct
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
-#define ACTION_MSG_QUEUE_COUNT 10
-#define ACTION_MSG_PKTS_COUNT 50
+#define ACTION_MSG_QUEUE_COUNT          10
+#define ACTION_MSG_PKTS_COUNT           50
 //#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
-#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_TM_LFR_SCIENCE_SBM1_BP1_F0 + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
-#define ACTION_MSG_SPW_IOCTL_SEND_SIZE 24                   // hlen *hdr dlen *data sent options
+#define ACTION_MSG_PKTS_MAX_SIZE        810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
+#define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1

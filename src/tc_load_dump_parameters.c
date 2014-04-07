@@ -479,8 +479,8 @@ void init_parameter_dump( void )
     parameter_dump_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     parameter_dump_packet.reserved = CCSDS_RESERVED;
     parameter_dump_packet.userApplication = CCSDS_USER_APP;
-    parameter_dump_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_PARAMETER_DUMP >> 8);
-    parameter_dump_packet.packetID[1] = (unsigned char) TM_PACKET_ID_PARAMETER_DUMP;
+    parameter_dump_packet.packetID[0] = (unsigned char) (APID_TM_PARAMETER_DUMP >> 8);
+    parameter_dump_packet.packetID[1] = (unsigned char) APID_TM_PARAMETER_DUMP;
     parameter_dump_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
     parameter_dump_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     parameter_dump_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_PARAMETER_DUMP >> 8);

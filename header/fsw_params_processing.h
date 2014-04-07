@@ -12,7 +12,8 @@
 #define NB_RING_NODES_ASM_F0    12  // AT LEAST 3
 #define NB_RING_NODES_ASM_F1    2   // AT LEAST 3
 #define NB_RING_NODES_ASM_F2    2   // AT LEAST 3
-#define NB_RING_NODES_BP1_SBM1  10  // AT LEAST 3
+#define NB_RING_NODES_SBM1_BP1  10  // AT LEAST 3
+#define NB_RING_NODES_SBM1_BP2  5   // AT LEAST 3
 //
 #define NB_BINS_PER_ASM_F0  88
 #define NB_BINS_PER_PKT_ASM_F0  44
@@ -42,12 +43,15 @@
 #define NB_BINS_TO_AVERAGE_ASM_F2 8
 #define NB_BINS_TO_AVERAGE_ASM_SBM1_F0  4
 //
-#define TOTAL_SIZE_COMPRESSED_ASM_F0    275 // 11 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_F1    325 // 13 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_F2    300 // 12 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_SBM1  550 // 22 * 25 WORDS
-#define NB_AVERAGE_NORMAL_F0            384 // 96 * 4
-#define NB_AVERAGE_SBM1_F0              24  // 24 matrices at f0 = 0.25 second
-#define NB_SM_TO_RECEIVE_BEFORE_AVF0    8
+#define TOTAL_SIZE_COMPRESSED_ASM_F0    275     // 11 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_F1    325     // 13 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_F2    300     // 12 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_SBM1  550     // 22 * 25 WORDS
+#define NB_SM_BEFORE_NORM_BP1_F0        384     // 96 * 4
+#define NB_SM_BEFORE_NORM_BP2_F0        1920    // 96 * 20
+#define NB_SM_BEFORE_NORM_ASM_F0        384     // 384 matrices at f0 = 4.00 second
+#define NB_SM_BEFORE_SBM1_BP1_F0        24      // 24 matrices at f0 = 0.25 second
+#define NB_SM_BEFORE_SBM1_BP2_F0        96      // 96 matrices at f0 = 1.00 second
+#define NB_SM_BEFORE_AVF0               8
 
 #endif // FSW_PARAMS_PROCESSING_H

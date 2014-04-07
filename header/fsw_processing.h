@@ -11,6 +11,38 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
+typedef struct ring_node_sm
+{
+    struct ring_node_sm *previous;
+    int buffer_address;
+    struct ring_node_sm *next;
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+} ring_node_sm;
+
+typedef struct ring_node_bp
+{
+    struct ring_node_bp *previous;
+    struct ring_node_bp *next;
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+    Header_TM_LFR_SCIENCE_BP_t header;
+    unsigned char data[ 30 * 22 ];   // MAX size is 22 * 30 TM_LFR_SCIENCE_BURST_BP2_F1
+} ring_node_bp;
+
+typedef struct ring_node_bp_with_spare
+{
+    struct ring_node_bp_with_spare *previous;
+    struct ring_node_bp_with_spare *next;
+    unsigned int status;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+    Header_TM_LFR_SCIENCE_BP_with_spare_t header;
+    unsigned char data[ 9 * 22 ];
+} ring_node_bp_with_spare;
+
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];
 extern volatile int sm_f2[ ];
@@ -27,6 +59,7 @@ extern rtems_id    Task_id[20];         /* array of task ids */
 
 void init_sm_rings( void );
 void reset_current_sm_ring_nodes( void );
+void reset_current_bp_ring_nodes( void );
 
 // ISR
 void reset_nb_sm_f0( void );
@@ -41,7 +74,7 @@ rtems_task matr_task(rtems_task_argument argument);
 //*****************************
 // Spectral matrices processing
 
-void ASM_average(float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+void SM_average(float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                   ring_node_sm *ring_node_tab[],
                   unsigned int firstTimeF0, unsigned int firstTimeF1 );
 void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
@@ -53,12 +86,23 @@ void ASM_convert(volatile float *input_matrix, char *output_matrix);
 void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
                     unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 
-void BP1_send( ring_node_bp *ring_node_to_send, unsigned int sid, rtems_id queue_id );
+void BP_send(char *data,
+               rtems_id queue_id ,
+               unsigned int nbBytesToSend );
 
 void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header);
-void init_headers_bp_ring_sbm1();
-void init_header_bp( Header_TM_LFR_SCIENCE_BP_SBM_t *header);
+void init_bp_ring_sbm1_bp1( void );
+void init_bp_ring_sbm1_bp2( void );
+void init_headers_bp_ring_sbm1_bp1();
+void init_header_bp(Header_TM_LFR_SCIENCE_BP_t *header,
+                    unsigned int apid, unsigned char sid,
+                    unsigned int packetLength , unsigned char blkNr);
+void init_header_bp_with_spare(Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
+                               unsigned int apid, unsigned char sid,
+                               unsigned int packetLength, unsigned char blkNr );
 
 void reset_spectral_matrix_regs( void );
+
+void set_time( unsigned char *time, unsigned int coarseTime, unsigned int fineTime );
 
 #endif // FSW_PROCESSING_H_INCLUDED

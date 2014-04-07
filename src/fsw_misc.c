@@ -164,8 +164,8 @@ rtems_task hous_task(rtems_task_argument argument)
     housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     housekeeping_packet.reserved = DEFAULT_RESERVED;
     housekeeping_packet.userApplication = CCSDS_USER_APP;
-    housekeeping_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_HK >> 8);
-    housekeeping_packet.packetID[1] = (unsigned char) (TM_PACKET_ID_HK);
+    housekeeping_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
+    housekeeping_packet.packetID[1] = (unsigned char) (APID_TM_HK);
     housekeeping_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
     housekeeping_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
@@ -374,8 +374,8 @@ void send_dumb_hk( void )
     dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     dummy_hk_packet.reserved = DEFAULT_RESERVED;
     dummy_hk_packet.userApplication = CCSDS_USER_APP;
-    dummy_hk_packet.packetID[0] = (unsigned char) (TM_PACKET_ID_HK >> 8);
-    dummy_hk_packet.packetID[1] = (unsigned char) (TM_PACKET_ID_HK);
+    dummy_hk_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
+    dummy_hk_packet.packetID[1] = (unsigned char) (APID_TM_HK);
     dummy_hk_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
     dummy_hk_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
     dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
