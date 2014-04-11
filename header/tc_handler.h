@@ -37,7 +37,7 @@ int check_mode_transition( unsigned char requestedMode );
 int check_transition_date( unsigned int transitionCoarseTime );
 int stop_current_mode( void );
 int enter_mode( unsigned char mode , unsigned int transitionCoarseTime );
-int restart_science_tasks();
+int restart_science_tasks(unsigned char lfrRequestedMode );
 int suspend_science_tasks();
 void launch_waveform_picker(unsigned char mode , unsigned int transitionCoarseTime);
 void launch_spectral_matrix( unsigned char mode );

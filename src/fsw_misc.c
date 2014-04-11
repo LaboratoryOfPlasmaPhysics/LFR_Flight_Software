@@ -363,6 +363,19 @@ void getTime( unsigned char *time)
     time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
+unsigned long long int getTimeAsUnsignedLongLongInt( )
+{
+    /** This function write the current local time in the time buffer passed in argument.
+     *
+     */
+    unsigned long long int time;
+
+    time = ( (unsigned long long int) (time_management_regs->coarse_time & 0x7fffffff) << 16 )
+            + time_management_regs->fine_time;
+
+    return time;
+}
+
 void send_dumb_hk( void )
 {
     Packet_TM_LFR_HK_t dummy_hk_packet;

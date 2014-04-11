@@ -18,6 +18,29 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
+typedef struct {
+    unsigned int f0;
+    unsigned int norm_bp1_f0;
+    unsigned int norm_bp2_f0;
+    unsigned int norm_asm_f0;
+    unsigned int sbm_bp1_f0;
+    unsigned int sbm_bp2_f0;
+} nb_sm_t;
+
+typedef struct {
+    unsigned int norm_bp1_f0;
+    unsigned int norm_bp2_f0;
+    unsigned int norm_asm_f0;
+    unsigned int burst_sbm_bp1_f0;
+    unsigned int burst_sbm_bp2_f0;
+    unsigned int burst_bp1_f0;
+    unsigned int burst_bp2_f0;
+    unsigned int sbm1_bp1_f0;
+    unsigned int sbm1_bp2_f0;
+    unsigned int sbm2_bp1_f0;
+    unsigned int sbm2_bp2_f0;
+} nb_sm_before_bp_t;
+
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -55,17 +78,17 @@ typedef struct ring_node
 #define THR_MODE_NORMAL     1
 #define THR_MODE_BURST      2
 
-#define RTEMS_EVENT_MODE_STANDBY    RTEMS_EVENT_0
-#define RTEMS_EVENT_MODE_NORMAL     RTEMS_EVENT_1
-#define RTEMS_EVENT_MODE_BURST      RTEMS_EVENT_2
-#define RTEMS_EVENT_MODE_SBM1       RTEMS_EVENT_3
-#define RTEMS_EVENT_MODE_SBM2       RTEMS_EVENT_4
-#define RTEMS_EVENT_MODE_SBM2_WFRM  RTEMS_EVENT_5
-#define RTEMS_EVENT_NORM_BP1_F0     RTEMS_EVENT_6
-#define RTEMS_EVENT_NORM_BP2_F0     RTEMS_EVENT_7
-#define RTEMS_EVENT_NORM_ASM_F0     RTEMS_EVENT_8
-#define RTEMS_EVENT_SBM1_BP1_F0     RTEMS_EVENT_9
-#define RTEMS_EVENT_SBM1_BP2_F0     RTEMS_EVENT_10
+#define RTEMS_EVENT_MODE_STANDBY        RTEMS_EVENT_0
+#define RTEMS_EVENT_MODE_NORMAL         RTEMS_EVENT_1
+#define RTEMS_EVENT_MODE_BURST          RTEMS_EVENT_2
+#define RTEMS_EVENT_MODE_SBM1           RTEMS_EVENT_3
+#define RTEMS_EVENT_MODE_SBM2           RTEMS_EVENT_4
+#define RTEMS_EVENT_MODE_SBM2_WFRM      RTEMS_EVENT_5
+#define RTEMS_EVENT_NORM_BP1_F0         RTEMS_EVENT_6
+#define RTEMS_EVENT_NORM_BP2_F0         RTEMS_EVENT_7
+#define RTEMS_EVENT_NORM_ASM_F0         RTEMS_EVENT_8
+#define RTEMS_EVENT_BURST_SBM_BP1_F0    RTEMS_EVENT_9
+#define RTEMS_EVENT_BURST_SBM_BP2_F0    RTEMS_EVENT_10
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -126,7 +149,7 @@ typedef struct ring_node
 
 //*****
 // TIME
-#define CLKDIV_SM_SIMULATOR (10000 - 1)     // 10 ms
+#define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
 #define TIMER_SM_SIMULATOR 1
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000

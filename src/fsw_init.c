@@ -97,9 +97,8 @@ rtems_task Init( rtems_task_argument ignored )
     init_housekeeping_parameters();
 
     init_waveform_rings();      // initialize the waveform rings
-    init_sm_rings();            // initialize spectral matrices rings
-    init_bp_ring_sbm1_bp1();    // initialize basic parameter ring for SBM1 BP1 set
-    init_bp_ring_sbm1_bp2();    // initialize basic parameter ring for SBM1 BP2 set
+    SM_init_rings();            // initialize spectral matrices rings
+    ASM_init_ring();            // initialize the average spectral matrix ring (just for burst, sbm1 and sbm2 asm @ f0 storage)
 
     reset_wfp_burst_enable();
     reset_wfp_status();

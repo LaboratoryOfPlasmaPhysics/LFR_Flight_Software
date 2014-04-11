@@ -530,7 +530,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
         rtems_cpu_usage_reset();
         maxCount = 0;
 #endif
-        status = restart_science_tasks();
+        status = restart_science_tasks( mode );
         launch_waveform_picker( mode, transitionCoarseTime );
         launch_spectral_matrix_simu( mode );
     }
@@ -559,7 +559,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
     return status;
 }
 
-int restart_science_tasks()
+int restart_science_tasks(unsigned char lfrRequestedMode )
 {
     /** This function is used to restart all science tasks.
      *
@@ -573,12 +573,12 @@ int restart_science_tasks()
      *
      */
 
-    rtems_status_code status[6];
+    rtems_status_code status[7];
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
 
-    status[0] = rtems_task_restart( Task_id[TASKID_AVF0], 1 );
+    status[0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
     if (status[0] != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in restart_science_task *** 0 ERR %d\n", status[0])
@@ -608,8 +608,15 @@ int restart_science_tasks()
         PRINTF1("in restart_science_task *** 5 ERR %d\n", status[5])
     }
 
+    status[6] = rtems_task_restart( Task_id[TASKID_MATR], lfrRequestedMode );
+    if (status[6] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** 6 ERR %d\n", status[6])
+    }
+
     if ( (status[0] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
-         (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
+         (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) ||
+         (status[5] != RTEMS_SUCCESSFUL) || (status[6] != RTEMS_SUCCESSFUL)    )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -697,9 +704,8 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
 
 void launch_spectral_matrix( unsigned char mode )
 {
-    reset_nb_sm_f0();
-    reset_current_sm_ring_nodes();
-    reset_current_bp_ring_nodes();
+    SM_reset_current_ring_nodes();
+    ASM_reset_current_ring_node();
     reset_spectral_matrix_regs();
 
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
@@ -739,9 +745,8 @@ void set_run_matrix_spectral( unsigned char value )
 
 void launch_spectral_matrix_simu( unsigned char mode )
 {
-    reset_nb_sm_f0();
-    reset_current_sm_ring_nodes();
-    reset_current_bp_ring_nodes();
+    SM_reset_current_ring_nodes();
+    ASM_reset_current_ring_node();
     reset_spectral_matrix_regs();
 
     // Spectral Matrices simulator
