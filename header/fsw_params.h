@@ -198,14 +198,17 @@ typedef struct {
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
-#define ACTION_MSG_QUEUE_COUNT          10
-#define ACTION_MSG_PKTS_COUNT           50
-//#define ACTION_MSG_PKTS_MAX_SIZE (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
-#define ACTION_MSG_PKTS_MAX_SIZE        810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
+#define MSG_QUEUE_COUNT_RECV  10
+#define MSG_QUEUE_COUNT_SEND   50
+#define MSG_QUEUE_COUNT_MATR    10
+//#define MSG_QUEUE_SIZE_SEND (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
+#define MSG_QUEUE_SIZE_SEND        810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
+#define MSG_QUEUE_SIZE_MATR             20  // two pointers and one rtems_event + 2 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1
+#define QUEUE_MATR 2
 
 //*******
 // MACROS

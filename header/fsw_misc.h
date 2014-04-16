@@ -37,4 +37,6 @@ void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
 
+extern int sched_yield( void );
+
 #endif // FSW_MISC_H_INCLUDED

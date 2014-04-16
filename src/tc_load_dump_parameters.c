@@ -43,6 +43,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     rtems_status_code status;
     unsigned char sy_lfr_n_bp_p0;
     unsigned char sy_lfr_n_bp_p1;
+    unsigned int sy_lfr_n_asm_p;
     float aux;
 
     flag = LFR_SUCCESSFUL;
@@ -69,17 +70,6 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_swf_p( TC, queue_id, time );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_n_asm_p
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_n_asm_p( TC, queue_id );
         if (result != LFR_SUCCESSFUL)
         {
             flag = LFR_DEFAULT;
@@ -116,6 +106,33 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     if (flag == LFR_SUCCESSFUL)
     {
         result = set_sy_lfr_n_bp_p1( TC, queue_id );
+        if (result != LFR_SUCCESSFUL)
+        {
+            flag = LFR_DEFAULT;
+        }
+    }
+
+    //****************************************************************
+    // check the consistency between sy_lfr_n_asm_p and sy_lfr_n_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
+        sy_lfr_n_asm_p =
+                TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P ] * 256
+                + TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P + 1 ];
+        aux = ( (float ) sy_lfr_n_asm_p / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_asm_p / sy_lfr_n_bp_p0);
+        if (aux != 0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P+10, sy_lfr_n_asm_p );
+            flag = LFR_DEFAULT;
+        }
+    }
+
+    //***************
+    // sy_lfr_n_asm_p
+    if (flag == LFR_SUCCESSFUL)
+    {
+        result = set_sy_lfr_n_asm_p( TC, queue_id );
         if (result != LFR_SUCCESSFUL)
         {
             flag = LFR_DEFAULT;

@@ -50,7 +50,7 @@ TARGET = fsw
 INCLUDEPATH += \
     ../src \
     ../header \
-    ../../LFR_basic-parameters
+    ../src/basic_parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -63,7 +63,7 @@ SOURCES += \
     ../src/tc_load_dump_parameters.c \
     ../src/tm_lfr_tc_exe.c \
     ../src/tc_acceptance.c \
-    ../../LFR_basic-parameters/basic_parameters.c
+    ../src/basic_parameters/basic_parameters.c
 
 
 HEADERS += \
@@ -81,5 +81,5 @@ HEADERS += \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
     ../header/fsw_params_nb_bytes.h \
-    ../../LFR_basic-parameters/basic_parameters.h
+    ../src/basic_parameters/basic_parameters.h
 

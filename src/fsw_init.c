@@ -35,7 +35,7 @@
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 2
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 3
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
 #endif
@@ -98,7 +98,7 @@ rtems_task Init( rtems_task_argument ignored )
 
     init_waveform_rings();      // initialize the waveform rings
     SM_init_rings();            // initialize spectral matrices rings
-    ASM_init_ring();            // initialize the average spectral matrix ring (just for burst, sbm1 and sbm2 asm @ f0 storage)
+    ASM_init_rings();           // initialize the average spectral matrix ring (just for burst, sbm1 and sbm2 asm @ f0 storage)
 
     reset_wfp_burst_enable();
     reset_wfp_status();
@@ -268,6 +268,7 @@ void create_names( void ) // create all names for tasks and queues
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
+    misc_name[QUEUE_MATR] = rtems_build_name( 'Q', '_', 'M', 'R' );
 }
 
 int create_all_tasks( void ) // create all tasks which run in the software
@@ -350,7 +351,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // MATR
     {
         status = rtems_task_create(
-            Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE,
+            Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE * 2,
             RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
         );
@@ -589,32 +590,48 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 {
     rtems_status_code status_recv;
     rtems_status_code status_send;
+    rtems_status_code status_matr;
     rtems_status_code ret;
     rtems_id queue_id;
 
+    //****************************************
     // create the queue for handling valid TCs
     status_recv = rtems_message_queue_create( misc_name[QUEUE_RECV],
-                                              ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                              MSG_QUEUE_COUNT_RECV, CCSDS_TC_PKT_MAX_SIZE,
                                          RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if ( status_recv != RTEMS_SUCCESSFUL ) {
         PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
     }
 
+    //************************************************
     // create the queue for handling TM packet sending
     status_send = rtems_message_queue_create( misc_name[QUEUE_SEND],
-                                              ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_MAX_SIZE,
+                                              MSG_QUEUE_COUNT_SEND, MSG_QUEUE_SIZE_SEND,
                                       RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if ( status_send != RTEMS_SUCCESSFUL ) {
         PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
+    }
+
+    //************************************************************************
+    // create the queue for handling averaged spectral matrices for processing
+    status_matr = rtems_message_queue_create( misc_name[QUEUE_MATR],
+                                              MSG_QUEUE_COUNT_MATR, MSG_QUEUE_SIZE_MATR,
+                                      RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    if ( status_send != RTEMS_SUCCESSFUL ) {
+        PRINTF1("in create_message_queues *** ERR creating MATR queue, %d\n", status_matr)
     }
 
     if ( status_recv != RTEMS_SUCCESSFUL )
     {
         ret = status_recv;
     }
-    else
+    else if( status_send != RTEMS_SUCCESSFUL )
     {
         ret = status_send;
+    }
+    else
+    {
+        ret = status_matr;
     }
 
     return ret;
@@ -638,6 +655,18 @@ rtems_status_code get_message_queue_id_recv( rtems_id *queue_id )
     rtems_name queue_name;
 
     queue_name = rtems_build_name( 'Q', '_', 'R', 'V' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}
+
+rtems_status_code get_message_queue_id_matr( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'M', 'R' );
 
     status =  rtems_message_queue_ident( queue_name, 0, queue_id );
 

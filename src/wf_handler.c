@@ -65,7 +65,6 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
      */
 
     rtems_status_code status;
-    static unsigned char nb_swf = 0;
 
     if ( (lfrCurrentMode == LFR_MODE_NORMAL)
          || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
@@ -115,23 +114,12 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             current_ring_node_f2 = current_ring_node_f2->next;
             waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
             //
-//            if (nb_swf < 2)
-            if (true)
+            if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL)
             {
-                if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL) {
-                    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
-                }
-                 waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
-                nb_swf = nb_swf + 1;
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
-            else
-            {
-                 reset_wfp_burst_enable();
-                 nb_swf = 0;
-            }
-
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
         }
-
         break;
 
         //******

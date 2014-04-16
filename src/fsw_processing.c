@@ -22,25 +22,15 @@ ring_node_sm *current_ring_node_sm_f1;
 ring_node_sm *current_ring_node_sm_f2;
 
 ring_node_asm asm_ring_burst_sbm_f0[ NB_RING_NODES_ASM_BURST_SBM_F0 ];
+ring_node_asm asm_ring_norm_f0     [ NB_RING_NODES_ASM_BURST_SBM_F0 ];
 ring_node_asm *current_ring_node_asm_burst_sbm_f0;
-ring_node_asm *ring_node_for_processing_asm_burst_sbm_f0;
+ring_node_asm *current_ring_node_asm_norm_f0;
 
-//*****
-// NORM
-// F0
-float asm_norm_f0          [ TIME_OFFSET + TOTAL_SIZE_SM ];
-float asm_f0_reorganized   [ TIME_OFFSET + TOTAL_SIZE_SM ];
+float asm_norm_f0          [ TOTAL_SIZE_SM ];
+float asm_f0_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f0_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
-float compressed_sm_norm_f0[ TIME_OFFSET + TOTAL_SIZE_COMPRESSED_ASM_F0 ];
-
-//*****
-// SBM1
-float asm_sbm_f0       [ TIME_OFFSET + TOTAL_SIZE_SM    ];
-float compressed_sm_sbm[ TIME_OFFSET + TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
-
-unsigned char LFR_BP1_F0[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F0 * 2 ];
-unsigned char LFR_BP1_F1[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F1 ];
-unsigned char LFR_BP1_F2[ TIME_OFFSET_IN_BYTES + TOTAL_SIZE_NORM_BP1_F2 ];
+float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_F0   ];
+float compressed_sm_sbm    [ TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
 
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
@@ -87,44 +77,42 @@ void reset_nb_sm_f0( unsigned char lfrMode )
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
+    ring_node_sm *previous_ring_node_sm_f0;
+
 //    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
 
-//    if ( (spectral_matrix_regs->status & 0x1) == 0x01)
-//    {
-//        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-//        spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;   // 1110
-//        nb_sm_f0 = nb_sm_f0 + 1;
-//    }
-//    else if ( (spectral_matrix_regs->status & 0x2) == 0x02)
-//    {
-//        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-//        spectral_matrix_regs->matrixFO_Address1 = current_ring_node_sm_f0->buffer_address;
-//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
-//        nb_sm_f0 = nb_sm_f0 + 1;
-//    }
+    previous_ring_node_sm_f0 = current_ring_node_sm_f0;
 
-//    if ( (spectral_matrix_regs->status & 0x30) != 0x00)
-//    {
-//        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf;   // 1100 1111
-//    }
+    if ( (spectral_matrix_regs->status & 0x2) == 0x02)  // check ready matrix bit f0_1
+    {
+        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+        spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
+        nb_sm.f0 = nb_sm.f0 + 1;
+    }
 
-//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff3;   // 0011
+    //************************
+    // reset status error bits
+    if ( (spectral_matrix_regs->status & 0x30) != 0x00)
+    {
+        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf;   // 1100 1111
+    }
 
-//    if (nb_sm_f0 == (NB_SM_BEFORE_AVF0-1) )
-//    {
-//        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-//        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-//        {
-//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-//        }
-//        nb_sm_f0 = 0;
-//    }
-//    else
-//    {
-//        nb_sm.nb_sm_f0 = nb_sm.nb_sm_f0 + 1;
-//    }
+    //**************************************
+    // reset ready matrix bits for f0_0, f1 and f2
+    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff2;       // 0010
+
+    if (nb_sm.f0 == NB_SM_BEFORE_AVF0)
+    {
+        ring_node_for_averaging_sm_f0 = previous_ring_node_sm_f0;
+        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
+        nb_sm.f0 = 0;
+    }
+
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
@@ -163,14 +151,20 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     int i;
 
     rtems_event_set event_out;
-    rtems_event_set event_for_matr;
     rtems_status_code status;
+    rtems_id queue_id_matr;
+    asm_msg msgForMATR;
     ring_node_sm *ring_node_tab[8];
-    unsigned long long int localTime;
 
     reset_nb_sm_f0( lfrRequestedMode );   // reset the sm counters that drive the BP and ASM computations / transmissions
 
     BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", lfrRequestedMode)
+
+    status = get_message_queue_id_matr( &queue_id_matr );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in MATR *** ERR get_message_queue_id_matr %d\n", status)
+    }
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
@@ -181,14 +175,11 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             ring_node_tab[NB_SM_BEFORE_AVF0-i] = ring_node_for_averaging_sm_f0;
         }
 
-        localTime = getTimeAsUnsignedLongLongInt( );
-
         // compute the average and store it in the averaged_sm_f1 buffer
-        SM_average( asm_norm_f0, current_ring_node_asm_burst_sbm_f0->asm_burst_sbm_f0,
-                     ring_node_tab,
-                     nb_sm.norm_bp1_f0, nb_sm.sbm_bp1_f0 );
-
-        localTime = getTimeAsUnsignedLongLongInt( ) - localTime;
+        SM_average( current_ring_node_asm_norm_f0->matrix,
+                    current_ring_node_asm_burst_sbm_f0->matrix,
+                    ring_node_tab,
+                    nb_sm.norm_bp1_f0, nb_sm.sbm_bp1_f0 );
 
         // update nb_average
         nb_sm.norm_bp1_f0 = nb_sm.norm_bp1_f0 + NB_SM_BEFORE_AVF0;
@@ -197,21 +188,23 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         nb_sm.sbm_bp1_f0 = nb_sm.sbm_bp1_f0   + NB_SM_BEFORE_AVF0;
         nb_sm.sbm_bp2_f0 = nb_sm.sbm_bp2_f0   + NB_SM_BEFORE_AVF0;
 
-        //***********************************************************
-        // build a composite event that will be sent to the MATR task
-        event_for_matr = 0x00;
+        //****************************************
+        // initialize the mesage for the MATR task
+        msgForMATR.event       = 0x00;  // this composite event will be sent to the MATR task
+        msgForMATR.burst_sbmf0 = current_ring_node_asm_burst_sbm_f0;
+        msgForMATR.norm_f0     = current_ring_node_asm_norm_f0;
+        msgForMATR.coarseTime  = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
+        msgForMATR.fineTime    = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
 
         if (nb_sm.sbm_bp1_f0 == nb_sm_before_bp.burst_sbm_bp1_f0)
         {
             nb_sm.sbm_bp1_f0 = 0;
-            // the ring node is ready for BP calculations
-            ring_node_for_processing_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0;
             // set another ring for the ASM storage
             current_ring_node_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0->next;
             if ( (lfrCurrentMode == LFR_MODE_BURST)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                event_for_matr = event_for_matr | RTEMS_EVENT_BURST_SBM_BP1_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP1_F0;
             }
         }
 
@@ -221,16 +214,18 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             if ( (lfrCurrentMode == LFR_MODE_BURST)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                event_for_matr = event_for_matr | RTEMS_EVENT_BURST_SBM_BP2_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP2_F0;
             }
         }
 
         if (nb_sm.norm_bp1_f0 == nb_sm_before_bp.norm_bp1_f0)
         {
             nb_sm.norm_bp1_f0 = 0;
+            // set another ring for the ASM storage
+            current_ring_node_asm_norm_f0 = current_ring_node_asm_norm_f0->next;
             if (lfrCurrentMode == LFR_MODE_NORMAL)
             {
-                event_for_matr = event_for_matr | RTEMS_EVENT_NORM_BP1_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
             }
         }
 
@@ -240,7 +235,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                event_for_matr = event_for_matr | RTEMS_EVENT_NORM_BP2_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F0;
             }
         }
 
@@ -251,30 +246,39 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
 //                PRINTF1("%lld\n", localTime)
-                event_for_matr = event_for_matr | RTEMS_EVENT_NORM_ASM_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F0;
             }
         }
 
-        //*********************************
-        // send the composite event to MATR
-        status = rtems_event_send( Task_id[TASKID_MATR], event_for_matr );
+        //*************************
+        // send the message to MATR
+        if (msgForMATR.event != 0x00)
+        {
+            status =  rtems_message_queue_send( queue_id_matr, (char *) & msgForMATR, MSG_QUEUE_SIZE_MATR);
+        }
+
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in AVF0 *** Error sending RTEMS_EVENT_0, code %d\n", status);
+            printf("in AVF0 *** Error sending message to MATR, code %d\n", status);
         }
     }
 }
 
 rtems_task matr_task( rtems_task_argument lfrRequestedMode )
 {
+    char incomingData[MSG_QUEUE_SIZE_SEND];  // incoming data buffer
+    size_t size;                            // size of the incoming TC packet
+    asm_msg *incomingMsg;
+    //
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
-    rtems_event_set event_out;
     rtems_status_code status;
     rtems_id queue_id;
+    rtems_id queue_id_matr;
     Header_TM_LFR_SCIENCE_ASM_t headerASM;
     bp_packet_with_spare current_node_norm_bp1_f0;
     bp_packet            current_node_norm_bp2_f0;
     bp_packet            current_node_sbm_bp1_f0;
     bp_packet            current_node_sbm_bp2_f0;
+
     unsigned long long int localTime;
 
     ASM_init_header( &headerASM );
@@ -328,41 +332,48 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
     {
         PRINTF1("in MATR *** ERR get_message_queue_id_send %d\n", status)
     }
+    status = get_message_queue_id_matr( &queue_id_matr);
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in MATR *** ERR get_message_queue_id_matr %d\n", status)
+    }
 
     BOOT_PRINTF1("in MATR *** lfrRequestedMode = %d\n", lfrRequestedMode)
 
     while(1){
-        rtems_event_receive( RTEMS_EVENT_NORM_BP1_F0 | RTEMS_EVENT_NORM_BP2_F0 | RTEMS_EVENT_NORM_ASM_F0
-                             | RTEMS_EVENT_BURST_SBM_BP1_F0 | RTEMS_EVENT_BURST_SBM_BP2_F0,
-                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        status = rtems_message_queue_receive( queue_id_matr, incomingData, &size,   //************************************
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );        // wait for a message coming from AVF0
+
+        incomingMsg = (asm_msg*) incomingData;
+
         localTime = getTimeAsUnsignedLongLongInt( );
         //****************
         //****************
         // BURST SBM1 SBM2
         //****************
         //****************
-        if ( event_out & RTEMS_EVENT_BURST_SBM_BP1_F0 )
+        if (incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP1_F0 )
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( current_ring_node_asm_burst_sbm_f0->asm_burst_sbm_f0, compressed_sm_sbm,
+            ASM_compress_reorganize_and_divide( incomingMsg->burst_sbmf0->matrix, compressed_sm_sbm,
                                          nb_sm_before_bp.burst_sbm_bp1_f0,
                                          NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,
                                          ASM_F0_INDICE_START);
             // 2) compute the BP1 set
 
             // 3) send the BP1 set
-            set_time( current_node_sbm_bp1_f0.header.time,            (unsigned char *) &compressed_sm_sbm );
-            set_time( current_node_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &compressed_sm_sbm );
+            set_time( current_node_sbm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( current_node_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
             BP_send( (char *) &current_node_sbm_bp1_f0.header, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA);
             // 4) compute the BP2 set if needed
-            if ( event_out & RTEMS_EVENT_BURST_SBM_BP2_F0 )
+            if ( incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP2_F0 )
             {
                 // 1) compute the BP2 set
 
                 // 2) send the BP2 set
-                set_time( current_node_sbm_bp2_f0.header.time,            (unsigned char *) &compressed_sm_sbm );
-                set_time( current_node_sbm_bp2_f0.header.acquisitionTime, (unsigned char *) &compressed_sm_sbm );
+                set_time( current_node_sbm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( current_node_sbm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
                 BP_send( (char *) &current_node_sbm_bp2_f0.header, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA);
             }
@@ -373,42 +384,42 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
         // NORM
         //*****
         //*****
-        if (event_out & RTEMS_EVENT_NORM_BP1_F0)
+        if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F0)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( asm_norm_f0, compressed_sm_norm_f0,
+            ASM_compress_reorganize_and_divide( incomingMsg->norm_f0->matrix, compressed_sm_norm_f0,
                                          nb_sm_before_bp.norm_bp1_f0,
                                          NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
                                          ASM_F0_INDICE_START );
             // 2) compute the BP1 set
 
             // 3) send the BP1 set
-            set_time( current_node_norm_bp1_f0.header.time,            (unsigned char *) &compressed_sm_norm_f0 );
-            set_time( current_node_norm_bp1_f0.header.acquisitionTime, (unsigned char *) &compressed_sm_norm_f0 );
+            set_time( current_node_norm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( current_node_norm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
             BP_send( (char *) &current_node_norm_bp1_f0.header, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0 + PACKET_LENGTH_DELTA);
-            if (event_out & RTEMS_EVENT_NORM_BP2_F0)
+            if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F0)
             {
                 // 1) compute the BP2 set
 
                 // 2) send the BP2 set
-                set_time( current_node_norm_bp2_f0.header.time,            (unsigned char *) &compressed_sm_norm_f0 );
-                set_time( current_node_norm_bp2_f0.header.acquisitionTime, (unsigned char *) &compressed_sm_norm_f0 );
+                set_time( current_node_norm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( current_node_norm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
                 BP_send( (char *) &current_node_norm_bp2_f0.header, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0 + PACKET_LENGTH_DELTA);
             }
         }
 
-        if (event_out & RTEMS_EVENT_NORM_ASM_F0)
+        if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F0)
         {
             // 1) reorganize the ASM and divide
-            ASM_reorganize_and_divide( asm_norm_f0, asm_f0_reorganized, NB_SM_BEFORE_NORM_BP1_F0 );
+            ASM_reorganize_and_divide( incomingMsg->norm_f0->matrix, asm_f0_reorganized, NB_SM_BEFORE_NORM_BP1_F0 );
             // 2) convert the float array in a char array
             ASM_convert( asm_f0_reorganized, asm_f0_char);
             // 3) send the spectral matrix packets
+            set_time( headerASM.time           , (unsigned char *) &incomingMsg->coarseTime );
+            set_time( headerASM.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
             ASM_send( &headerASM, asm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
-//            localTime = getTimeAsUnsignedLongLongInt( ) - localTime;
-//            PRINTF1("in MATR *** %lld\n", localTime)
         }
 
     }
@@ -486,10 +497,12 @@ void SM_init_rings( void )
     DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->matrixF0_Address0)
 }
 
-void ASM_init_ring( void )
+void ASM_init_rings( void )
 {
     unsigned char i;
 
+    //*************
+    // BURST_SBM_F0
     asm_ring_burst_sbm_f0[0].next            = (ring_node_asm*) &asm_ring_burst_sbm_f0[1];
     asm_ring_burst_sbm_f0[0].previous        = (ring_node_asm*) &asm_ring_burst_sbm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1];
 
@@ -502,6 +515,22 @@ void ASM_init_ring( void )
     {
         asm_ring_burst_sbm_f0[i].next            = (ring_node_asm*) &asm_ring_burst_sbm_f0[i+1];
         asm_ring_burst_sbm_f0[i].previous        = (ring_node_asm*) &asm_ring_burst_sbm_f0[i-1];
+    }
+
+    //*************
+    // NORM_F0
+    asm_ring_norm_f0[0].next            = (ring_node_asm*) &asm_ring_norm_f0[1];
+    asm_ring_norm_f0[0].previous        = (ring_node_asm*) &asm_ring_norm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1];
+
+    asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-1].next
+            = (ring_node_asm*) &asm_ring_norm_f0[0];
+    asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-1].previous
+            = (ring_node_asm*) &asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-2];
+
+    for(i=1; i<NB_RING_NODES_ASM_NORM_F0-1; i++)
+    {
+        asm_ring_norm_f0[i].next            = (ring_node_asm*) &asm_ring_norm_f0[i+1];
+        asm_ring_norm_f0[i].previous        = (ring_node_asm*) &asm_ring_norm_f0[i-1];
     }
 }
 
@@ -516,8 +545,8 @@ void SM_reset_current_ring_nodes( void )
 
 void ASM_reset_current_ring_node( void )
 {
-    current_ring_node_asm_burst_sbm_f0        = asm_ring_burst_sbm_f0;
-    ring_node_for_processing_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
+    current_ring_node_asm_norm_f0      = asm_ring_norm_f0;
+    current_ring_node_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
 }
 
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)
@@ -558,7 +587,6 @@ void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
 {
     float sum;
     unsigned int i;
-    unsigned char *ptr;
 
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
@@ -573,44 +601,23 @@ void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
 
         if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
         {
-            averaged_spec_mat_f0[ TIME_OFFSET + i ] = sum;
-            averaged_spec_mat_f1[ TIME_OFFSET + i ] = sum;
+            averaged_spec_mat_f0[ i ] = sum;
+            averaged_spec_mat_f1[ i ] = sum;
         }
         else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
         {
-            averaged_spec_mat_f0[ TIME_OFFSET + i ] = ( averaged_spec_mat_f0[ TIME_OFFSET + i ] + sum );
-            averaged_spec_mat_f1[ TIME_OFFSET + i ] = ( averaged_spec_mat_f1[ TIME_OFFSET + i ] + sum );
+            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
+            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
         }
         else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
         {
-            averaged_spec_mat_f0[ TIME_OFFSET + i ] = ( averaged_spec_mat_f0[ TIME_OFFSET + i ] + sum );
-            averaged_spec_mat_f1[ TIME_OFFSET + i ] = sum;
+            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
+            averaged_spec_mat_f1[ i ] = sum;
         }
         else
         {
             PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
         }
-    }
-    if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
-    {
-        ptr = (unsigned char *) averaged_spec_mat_f0;
-        ptr[0] = (unsigned char) (time_management_regs->coarse_time >> 24);
-        ptr[1] = (unsigned char) (time_management_regs->coarse_time >> 16);
-        ptr[2] = (unsigned char) (time_management_regs->coarse_time >> 8 );
-        ptr[3] = (unsigned char) (time_management_regs->coarse_time      );
-        ptr[4] = (unsigned char) (time_management_regs->fine_time >> 24);
-        ptr[5] = (unsigned char) (time_management_regs->fine_time >> 16);
-        ptr[6] = (unsigned char) (time_management_regs->fine_time >> 8 );
-        ptr[7] = (unsigned char) (time_management_regs->fine_time      );
-        ptr = (unsigned char *) averaged_spec_mat_f1;
-        ptr[0] = (unsigned char) (time_management_regs->coarse_time >> 24);
-        ptr[1] = (unsigned char) (time_management_regs->coarse_time >> 16);
-        ptr[2] = (unsigned char) (time_management_regs->coarse_time >> 8 );
-        ptr[3] = (unsigned char) (time_management_regs->coarse_time      );
-        ptr[4] = (unsigned char) (time_management_regs->fine_time >> 24);
-        ptr[5] = (unsigned char) (time_management_regs->fine_time >> 16);
-        ptr[6] = (unsigned char) (time_management_regs->fine_time >> 8 );
-        ptr[7] = (unsigned char) (time_management_regs->fine_time      );
     }
 }
 
@@ -618,17 +625,21 @@ void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_m
 {
     int frequencyBin;
     int asmComponent;
-
-    // copy the time information
-    averaged_spec_mat_reorganized[ 0 ] = averaged_spec_mat[ 0 ];
-    averaged_spec_mat_reorganized[ 1 ] = averaged_spec_mat[ 1 ];
+    unsigned int offsetAveragedSpecMatReorganized;
+    unsigned int offsetAveragedSpecMat;
 
     for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
     {
         for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
         {
-            averaged_spec_mat_reorganized[ TIME_OFFSET + frequencyBin * NB_VALUES_PER_SM + asmComponent ] =
-                    averaged_spec_mat[ TIME_OFFSET + asmComponent * NB_BINS_PER_SM + frequencyBin ] / divider;
+            offsetAveragedSpecMatReorganized =
+                    frequencyBin * NB_VALUES_PER_SM
+                    + asmComponent;
+            offsetAveragedSpecMat            =
+                    asmComponent * NB_BINS_PER_SM
+                    + frequencyBin;
+            averaged_spec_mat_reorganized[offsetAveragedSpecMatReorganized  ] =
+                    averaged_spec_mat[ offsetAveragedSpecMat ] / divider;
         }
     }
 }
@@ -642,20 +653,16 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compres
     int offsetCompressed;
     int k;
 
-    // copy the time information
-    compressed_spec_mat[ 0 ] = averaged_spec_mat[ 0 ];
-    compressed_spec_mat[ 1 ] = averaged_spec_mat[ 1 ];
-
     // build data
     for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
     {
         for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
         {
-            offsetCompressed = TIME_OFFSET
-                    + frequencyBin * NB_VALUES_PER_SM
+            offsetCompressed =  // NO TIME OFFSET
+                    frequencyBin * NB_VALUES_PER_SM
                     + asmComponent;
-            offsetASM = TIME_OFFSET
-                    + asmComponent * NB_BINS_PER_SM
+            offsetASM =         // NO TIME OFFSET
+                    asmComponent * NB_BINS_PER_SM
                     + ASMIndexStart
                     + frequencyBin * nbBinsToAverage;
             compressed_spec_mat[ offsetCompressed ] = 0;
@@ -671,28 +678,25 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compres
 
 void ASM_convert( volatile float *input_matrix, char *output_matrix)
 {
-    unsigned int i;
     unsigned int frequencyBin;
     unsigned int asmComponent;
     char * pt_char_input;
     char * pt_char_output;
+    unsigned int offsetInput;
+    unsigned int offsetOutput;
 
     pt_char_input = (char*) &input_matrix;
     pt_char_output = (char*) &output_matrix;
-
-    // copy the time information
-    for (i=0; i<TIME_OFFSET_IN_BYTES; i++)
-    {
-        pt_char_output[ i ] = pt_char_output[ i ];
-    }
 
     // convert all other data
     for( frequencyBin=0; frequencyBin<NB_BINS_PER_SM; frequencyBin++)
     {
         for ( asmComponent=0; asmComponent<NB_VALUES_PER_SM; asmComponent++)
         {
-            pt_char_input =  (char*) &input_matrix [       (frequencyBin*NB_VALUES_PER_SM) + asmComponent   + TIME_OFFSET ];
-            pt_char_output = (char*) &output_matrix[ 2 * ( (frequencyBin*NB_VALUES_PER_SM) + asmComponent ) + TIME_OFFSET_IN_BYTES ];
+            offsetInput  =       (frequencyBin*NB_VALUES_PER_SM) + asmComponent   ;
+            offsetOutput = 2 * ( (frequencyBin*NB_VALUES_PER_SM) + asmComponent ) ;
+            pt_char_input =  (char*) &input_matrix [ offsetInput  ];
+            pt_char_output = (char*) &output_matrix[ offsetOutput ];
             pt_char_output[0] = pt_char_input[0];   // bits 31 downto 24 of the float
             pt_char_output[1] = pt_char_input[1];   // bits 23 downto 16 of the float
         }
@@ -715,7 +719,6 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
             spw_ioctl_send->dlen = TOTAL_SIZE_ASM_F0_IN_BYTES / 2;
             spw_ioctl_send->data = &spectral_matrix[
                     ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0) ) * NB_VALUES_PER_SM ) * 2
-                    + TIME_OFFSET_IN_BYTES
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0;
             header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0) >> 8 ); // BLK_NR MSB

@@ -202,8 +202,8 @@ rtems_task send_task( rtems_task_argument argument)
      *
      */
 
-    rtems_status_code status;               // RTEMS status code
-    char incomingData[ACTION_MSG_PKTS_MAX_SIZE];  // incoming data buffer
+    rtems_status_code status;                // RTEMS status code
+    char incomingData[MSG_QUEUE_SIZE_SEND];  // incoming data buffer
     spw_ioctl_pkt_send *spw_ioctl_send;
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;

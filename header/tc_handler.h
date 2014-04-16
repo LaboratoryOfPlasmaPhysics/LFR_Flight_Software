@@ -40,10 +40,10 @@ int enter_mode( unsigned char mode , unsigned int transitionCoarseTime );
 int restart_science_tasks(unsigned char lfrRequestedMode );
 int suspend_science_tasks();
 void launch_waveform_picker(unsigned char mode , unsigned int transitionCoarseTime);
-void launch_spectral_matrix( unsigned char mode );
+void launch_spectral_matrix( void );
+void launch_spectral_matrix_simu( void );
 void set_irq_on_new_ready_matrix(unsigned char value );
 void set_run_matrix_spectral( unsigned char value );
-void launch_spectral_matrix_simu( unsigned char mode );
 
 // other functions
 void updateLFRCurrentMode();

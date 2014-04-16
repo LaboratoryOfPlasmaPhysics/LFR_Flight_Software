@@ -13,6 +13,7 @@
 #define NB_RING_NODES_SM_F1             3   // AT LEAST 3
 #define NB_RING_NODES_SM_F2             3   // AT LEAST 3
 #define NB_RING_NODES_ASM_BURST_SBM_F0  10  // AT LEAST 3
+#define NB_RING_NODES_ASM_NORM_F0  10  // AT LEAST 3
 //
 #define NB_BINS_PER_ASM_F0  88
 #define NB_BINS_PER_PKT_ASM_F0  44

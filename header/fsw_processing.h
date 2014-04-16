@@ -25,7 +25,7 @@ typedef struct ring_node_asm
 {
     struct ring_node_asm *previous;
     struct ring_node_asm *next;
-    float  asm_burst_sbm_f0[ TIME_OFFSET + TOTAL_SIZE_SM ];
+    float  matrix[ TOTAL_SIZE_SM ];
     unsigned int status;
 } ring_node_asm;
 
@@ -40,6 +40,15 @@ typedef struct bp_packet_with_spare
     Header_TM_LFR_SCIENCE_BP_with_spare_t header;
     unsigned char data[ 9 * 13 ];   // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 } bp_packet_with_spare;
+
+typedef struct asm_msg
+{
+    ring_node_asm *norm_f0;
+    ring_node_asm *burst_sbmf0;
+    rtems_event_set event;
+    unsigned int coarseTime;
+    unsigned int fineTime;
+} asm_msg;
 
 extern nb_sm_t nb_sm;
 extern nb_sm_before_bp_t nb_sm_before_bp;
@@ -71,7 +80,7 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode );
 //******************
 // Spectral Matrices
 void SM_init_rings( void );
-void ASM_init_ring( void );
+void ASM_init_rings( void );
 void SM_reset_current_ring_nodes( void );
 void ASM_reset_current_ring_node( void );
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header);
@@ -105,5 +114,7 @@ void BP_send(char *data,
 // general functions
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
+
+extern rtems_status_code get_message_queue_id_matr( rtems_id *queue_id );
 
 #endif // FSW_PROCESSING_H_INCLUDED

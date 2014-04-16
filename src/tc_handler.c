@@ -532,7 +532,8 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
         status = restart_science_tasks( mode );
         launch_waveform_picker( mode, transitionCoarseTime );
-        launch_spectral_matrix_simu( mode );
+//        launch_spectral_matrix( );
+//        launch_spectral_matrix_simu( );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -541,6 +542,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
 
 #ifdef PRINT_STACK_REPORT
+        PRINTF("stack report selected\n")
         rtems_stack_checker_report_usage();
 #endif
         PRINTF1("maxCount = %d\n", maxCount)
@@ -702,7 +704,7 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
     }
 }
 
-void launch_spectral_matrix( unsigned char mode )
+void launch_spectral_matrix( void )
 {
     SM_reset_current_ring_nodes();
     ASM_reset_current_ring_node();
@@ -710,13 +712,26 @@ void launch_spectral_matrix( unsigned char mode )
 
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
     grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x01; // [0001 1000], 0 = output disabled, 1 = output enabled
-    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x00; // set the bit 0 to 1
+            grgpio_regs->io_port_direction_register | 0x01; // [0000 0001], 0 = output disabled, 1 = output enabled
+    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfffffffe; // set the bit 0 to 0
     set_irq_on_new_ready_matrix( 1 );
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
     set_run_matrix_spectral( 1 );
 
+}
+
+void launch_spectral_matrix_simu( void )
+{
+    SM_reset_current_ring_nodes();
+    ASM_reset_current_ring_node();
+    reset_spectral_matrix_regs();
+
+    // Spectral Matrices simulator
+    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
+    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
+    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
+    set_local_nb_interrupt_f0_MAX();
 }
 
 void set_irq_on_new_ready_matrix( unsigned char value )
@@ -741,19 +756,6 @@ void set_run_matrix_spectral( unsigned char value )
     {
         spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffb;  // [1011] set run_matrix spectral to 0
     }
-}
-
-void launch_spectral_matrix_simu( unsigned char mode )
-{
-    SM_reset_current_ring_nodes();
-    ASM_reset_current_ring_node();
-    reset_spectral_matrix_regs();
-
-    // Spectral Matrices simulator
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
-    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
-    set_local_nb_interrupt_f0_MAX();
 }
 
 //****************
