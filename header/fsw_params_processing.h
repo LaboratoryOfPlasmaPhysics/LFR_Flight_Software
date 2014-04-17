@@ -63,5 +63,6 @@
 #define NB_SM_BEFORE_SBM2_BP2_F0        480     // 480 matrices at f0 = 5.00 second
 // GENERAL
 #define NB_SM_BEFORE_AVF0               8
+#define NB_SM_BEFORE_AVF1               8
 
 #endif // FSW_PARAMS_PROCESSING_H

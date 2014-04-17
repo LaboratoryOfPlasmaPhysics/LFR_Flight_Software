@@ -49,7 +49,9 @@ char         wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_B
 // SPECTRAL MATRICES GLOBAL VARIABLES
 
 nb_sm_t nb_sm;
-nb_sm_before_bp_t nb_sm_before_bp;
+nb_sm_before_bp_asm_f0 nb_sm_before_f0;
+nb_sm_before_bp_asm_f1 nb_sm_before_f1;
+nb_sm_before_bp_asm_f2 nb_sm_before_f2;
 
 // alignment constraints for the spectral matrices buffers => the first data after the time (8 bytes) shall be aligned on 0x00
 volatile int sm_f0[ NB_RING_NODES_SM_F0 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));

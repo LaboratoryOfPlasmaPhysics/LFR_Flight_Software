@@ -610,7 +610,7 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
         PRINTF1("in restart_science_task *** 5 ERR %d\n", status[5])
     }
 
-    status[6] = rtems_task_restart( Task_id[TASKID_MATR], lfrRequestedMode );
+    status[6] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
     if (status[6] != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in restart_science_task *** 6 ERR %d\n", status[6])

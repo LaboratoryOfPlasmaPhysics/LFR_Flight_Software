@@ -43,15 +43,17 @@ typedef struct bp_packet_with_spare
 
 typedef struct asm_msg
 {
-    ring_node_asm *norm_f0;
-    ring_node_asm *burst_sbmf0;
+    ring_node_asm *norm;
+    ring_node_asm *burst_sbm;
     rtems_event_set event;
     unsigned int coarseTime;
     unsigned int fineTime;
 } asm_msg;
 
 extern nb_sm_t nb_sm;
-extern nb_sm_before_bp_t nb_sm_before_bp;
+extern nb_sm_before_bp_asm_f0 nb_sm_before_f0;
+extern nb_sm_before_bp_asm_f1 nb_sm_before_f1;
+extern nb_sm_before_bp_asm_f2 nb_sm_before_f2;
 
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];
@@ -75,7 +77,7 @@ rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 // RTEMS TASKS
 rtems_task smiq_task( rtems_task_argument argument ); // added to test the spectral matrix simulator
 rtems_task avf0_task( rtems_task_argument lfrRequestedMode );
-rtems_task matr_task( rtems_task_argument lfrRequestedMode );
+rtems_task prc0_task( rtems_task_argument lfrRequestedMode );
 
 //******************
 // Spectral Matrices
@@ -115,6 +117,7 @@ void BP_send(char *data,
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 
-extern rtems_status_code get_message_queue_id_matr( rtems_id *queue_id );
+extern rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );
+extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 
 #endif // FSW_PROCESSING_H_INCLUDED
