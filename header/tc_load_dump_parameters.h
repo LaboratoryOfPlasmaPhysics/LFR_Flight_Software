@@ -10,9 +10,7 @@
 #include "fsw_misc.h"
 
 extern nb_sm_t nb_sm;
-extern nb_sm_before_bp_asm_f0 nb_sm_before_f0;
-extern nb_sm_before_bp_asm_f1 nb_sm_before_f1;
-extern nb_sm_before_bp_asm_f2 nb_sm_before_f2;
+extern nb_sm_before_bp_t nb_sm_before_bp;
 
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
