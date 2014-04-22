@@ -11,22 +11,28 @@
 
 #include "fsw_processing_globals.c"
 
+unsigned int nb_sm_f0;
+
 //************************
 // spectral matrices rings
 ring_node_sm sm_ring_f0[ NB_RING_NODES_SM_F0 ];
 ring_node_sm sm_ring_f1[ NB_RING_NODES_SM_F1 ];
 ring_node_sm sm_ring_f2[ NB_RING_NODES_SM_F2 ];
 ring_node_sm *current_ring_node_sm_f0;
-ring_node_sm *ring_node_for_averaging_sm_f0;
 ring_node_sm *current_ring_node_sm_f1;
 ring_node_sm *current_ring_node_sm_f2;
+ring_node_sm *ring_node_for_averaging_sm_f0;
+ring_node_sm *ring_node_for_averaging_sm_f1;
 
+ring_node_asm asm_ring_norm_f0     [ NB_RING_NODES_ASM_NORM_F0      ];
 ring_node_asm asm_ring_burst_sbm_f0[ NB_RING_NODES_ASM_BURST_SBM_F0 ];
-ring_node_asm asm_ring_norm_f0     [ NB_RING_NODES_ASM_BURST_SBM_F0 ];
+ring_node_asm asm_ring_norm_f1     [ NB_RING_NODES_ASM_NORM_F1      ];
+ring_node_asm asm_ring_burst_sbm_f1[ NB_RING_NODES_ASM_BURST_SBM_F1 ];
 ring_node_asm *current_ring_node_asm_burst_sbm_f0;
 ring_node_asm *current_ring_node_asm_norm_f0;
+ring_node_asm *current_ring_node_asm_burst_sbm_f1;
+ring_node_asm *current_ring_node_asm_norm_f1;
 
-float asm_norm_f0          [ TOTAL_SIZE_SM ];
 float asm_f0_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f0_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_F0   ];
@@ -34,44 +40,94 @@ float compressed_sm_sbm    [ TOTAL_SIZE_COMPRESSED_ASM_SBM1 ];
 
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
+
 void reset_nb_sm_f0( unsigned char lfrMode )
 {
-    nb_sm.f0 = 0;
-    nb_sm.norm_bp1_f0 = 0;
-    nb_sm.norm_bp2_f0 = 0;
-    nb_sm.norm_asm_f0 = 0;
-    nb_sm.sbm_bp1_f0 = 0;
-    nb_sm.sbm_bp2_f0 = 0;
+    nb_sm_f0 = 0;
 
-    nb_sm_before_bp.norm_bp1_f0 = parameter_dump_packet.sy_lfr_n_bp_p0 * 96;
-    nb_sm_before_bp.norm_bp2_f0 = parameter_dump_packet.sy_lfr_n_bp_p1 * 96;
-    nb_sm_before_bp.norm_asm_f0 = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 96;
-    nb_sm_before_bp.sbm1_bp1_f0 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;
-    nb_sm_before_bp.sbm1_bp2_f0 =  parameter_dump_packet.sy_lfr_s1_bp_p1 * 96;
-    nb_sm_before_bp.sbm2_bp1_f0 =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 96;
-    nb_sm_before_bp.sbm2_bp2_f0 =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 96;
-    nb_sm_before_bp.burst_bp1_f0 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 96;
-    nb_sm_before_bp.burst_bp2_f0 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 96;
+    nb_sm_before_f0.norm_bp1_f0 = parameter_dump_packet.sy_lfr_n_bp_p0 * 96;
+    nb_sm_before_f0.norm_bp2_f0 = parameter_dump_packet.sy_lfr_n_bp_p1 * 96;
+    nb_sm_before_f0.norm_asm_f0 = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 96;
+    nb_sm_before_f0.sbm1_bp1_f0 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;
+    nb_sm_before_f0.sbm1_bp2_f0 =  parameter_dump_packet.sy_lfr_s1_bp_p1 * 96;
+    nb_sm_before_f0.sbm2_bp1_f0 =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 96;
+    nb_sm_before_f0.sbm2_bp2_f0 =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 96;
+    nb_sm_before_f0.burst_bp1_f0 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 96;
+    nb_sm_before_f0.burst_bp2_f0 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 96;
 
     if (lfrMode == LFR_MODE_SBM1)
     {
-        nb_sm_before_bp.burst_sbm_bp1_f0 =  nb_sm_before_bp.sbm1_bp1_f0;
-        nb_sm_before_bp.burst_sbm_bp2_f0 =  nb_sm_before_bp.sbm1_bp2_f0;
+        nb_sm_before_f0.burst_sbm_bp1_f0 =  nb_sm_before_f0.sbm1_bp1_f0;
+        nb_sm_before_f0.burst_sbm_bp2_f0 =  nb_sm_before_f0.sbm1_bp2_f0;
     }
     else if (lfrMode == LFR_MODE_SBM2)
     {
-        nb_sm_before_bp.burst_sbm_bp1_f0 =  nb_sm_before_bp.sbm2_bp1_f0;
-        nb_sm_before_bp.burst_sbm_bp2_f0 =  nb_sm_before_bp.sbm2_bp2_f0;
+        nb_sm_before_f0.burst_sbm_bp1_f0 =  nb_sm_before_f0.sbm2_bp1_f0;
+        nb_sm_before_f0.burst_sbm_bp2_f0 =  nb_sm_before_f0.sbm2_bp2_f0;
     }
     else if (lfrMode == LFR_MODE_BURST)
     {
-        nb_sm_before_bp.burst_sbm_bp1_f0 =  nb_sm_before_bp.burst_bp1_f0;
-        nb_sm_before_bp.burst_sbm_bp2_f0 =  nb_sm_before_bp.burst_bp2_f0;
+        nb_sm_before_f0.burst_sbm_bp1_f0 =  nb_sm_before_f0.burst_bp1_f0;
+        nb_sm_before_f0.burst_sbm_bp2_f0 =  nb_sm_before_f0.burst_bp2_f0;
     }
     else
     {
-        nb_sm_before_bp.burst_sbm_bp1_f0 =  nb_sm_before_bp.burst_bp1_f0;
-        nb_sm_before_bp.burst_sbm_bp2_f0 =  nb_sm_before_bp.burst_bp2_f0;
+        nb_sm_before_f0.burst_sbm_bp1_f0 =  nb_sm_before_f0.burst_bp1_f0;
+        nb_sm_before_f0.burst_sbm_bp2_f0 =  nb_sm_before_f0.burst_bp2_f0;
+    }
+}
+
+void reset_nb_sm_f1( unsigned char lfrMode )
+{
+    nb_sm_before_f1.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0 * 16;
+    nb_sm_before_f1.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1 * 16;
+    nb_sm_before_f1.norm_asm  = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 16;
+    nb_sm_before_f1.sbm2_bp1  =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 16;
+    nb_sm_before_f1.sbm2_bp2  =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 16;
+    nb_sm_before_f1.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 16;
+    nb_sm_before_f1.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 16;
+
+    if (lfrMode == LFR_MODE_SBM2)
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.sbm2_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.sbm2_bp2;
+    }
+    else if (lfrMode == LFR_MODE_BURST)
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
+    }
+    else
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
+    }
+}
+
+void reset_nb_sm_f2( unsigned char lfrMode )
+{
+    nb_sm_before_f2.norm_bp1_f2  = parameter_dump_packet.sy_lfr_n_bp_p0;
+    nb_sm_before_f2.norm_bp2_f2  = parameter_dump_packet.sy_lfr_n_bp_p1;
+    nb_sm_before_f2.norm_asm_f2  = parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1];
+    nb_sm_before_f2.sbm2_bp1_f2  =  parameter_dump_packet.sy_lfr_s2_bp_p0;
+    nb_sm_before_f2.sbm2_bp2_f2  =  parameter_dump_packet.sy_lfr_s2_bp_p1;
+    nb_sm_before_f2.burst_bp1_f2 =  parameter_dump_packet.sy_lfr_b_bp_p0;
+    nb_sm_before_f2.burst_bp2_f2 =  parameter_dump_packet.sy_lfr_b_bp_p1;
+
+    if (lfrMode == LFR_MODE_SBM2)
+    {
+        nb_sm_before_f2.burst_sbm_bp1_f2 =  nb_sm_before_f2.sbm2_bp1_f2;
+        nb_sm_before_f2.burst_sbm_bp2_f2 =  nb_sm_before_f2.sbm2_bp2_f2;
+    }
+    else if (lfrMode == LFR_MODE_BURST)
+    {
+        nb_sm_before_f2.burst_sbm_bp1_f2 =  nb_sm_before_f2.burst_bp1_f2;
+        nb_sm_before_f2.burst_sbm_bp2_f2 =  nb_sm_before_f2.burst_bp2_f2;
+    }
+    else
+    {
+        nb_sm_before_f2.burst_sbm_bp1_f2 =  nb_sm_before_f2.burst_bp1_f2;
+        nb_sm_before_f2.burst_sbm_bp2_f2 =  nb_sm_before_f2.burst_bp2_f2;
     }
 }
 
@@ -88,7 +144,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
         spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
         spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
-        nb_sm.f0 = nb_sm.f0 + 1;
+        nb_sm_f0 = nb_sm_f0 + 1;
     }
 
     //************************
@@ -103,48 +159,40 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     // reset ready matrix bits for f0_0, f1 and f2
     spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff2;       // 0010
 
-    if (nb_sm.f0 == NB_SM_BEFORE_AVF0)
+    if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
     {
         ring_node_for_averaging_sm_f0 = previous_ring_node_sm_f0;
         if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
         {
             rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
         }
-        nb_sm.f0 = 0;
+        nb_sm_f0 = 0;
     }
 
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 {
-    if (nb_sm.f0 == (NB_SM_BEFORE_AVF0-1) )
+    if (nb_sm_f0 == (NB_SM_BEFORE_AVF0-1) )
     {
         ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
         if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
         {
             rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
         }
-        nb_sm.f0 = 0;
+        nb_sm_f0 = 0;
     }
     else
     {
-        nb_sm.f0 = nb_sm.f0 + 1;
+        nb_sm_f0 = nb_sm_f0 + 1;
     }
 }
 
 //************
 // RTEMS TASKS
 
-rtems_task smiq_task( rtems_task_argument argument ) // process the Spectral Matrices IRQ
-{
-    rtems_event_set event_out;
-
-    BOOT_PRINTF("in SMIQ *** \n")
-
-    while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
-    }
-}
+//*****************
+// PROCESSING AT F0
 
 rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
 {
@@ -152,18 +200,30 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
 
     rtems_event_set event_out;
     rtems_status_code status;
-    rtems_id queue_id_matr;
+    rtems_id queue_id_prc0;
     asm_msg msgForMATR;
     ring_node_sm *ring_node_tab[8];
 
+    static unsigned int nb_norm_bp1;
+    static unsigned int nb_norm_bp2;
+    static unsigned int nb_norm_asm;
+    static unsigned int nb_sbm_bp1;
+    static unsigned int nb_sbm_bp2;
+
+    nb_norm_bp1 = 0;
+    nb_norm_bp2 = 0;
+    nb_norm_asm = 0;
+    nb_sbm_bp1  = 0;
+    nb_sbm_bp2  = 0;
+
     reset_nb_sm_f0( lfrRequestedMode );   // reset the sm counters that drive the BP and ASM computations / transmissions
 
-    BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", lfrRequestedMode)
+    BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
 
-    status = get_message_queue_id_matr( &queue_id_matr );
+    status = get_message_queue_id_prc0( &queue_id_prc0 );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in MATR *** ERR get_message_queue_id_matr %d\n", status)
+        PRINTF1("in MATR *** ERR get_message_queue_id_prc0 %d\n", status)
     }
 
     while(1){
@@ -179,26 +239,26 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         SM_average( current_ring_node_asm_norm_f0->matrix,
                     current_ring_node_asm_burst_sbm_f0->matrix,
                     ring_node_tab,
-                    nb_sm.norm_bp1_f0, nb_sm.sbm_bp1_f0 );
+                    nb_norm_bp1, nb_sbm_bp1 );
 
         // update nb_average
-        nb_sm.norm_bp1_f0 = nb_sm.norm_bp1_f0 + NB_SM_BEFORE_AVF0;
-        nb_sm.norm_bp2_f0 = nb_sm.norm_bp2_f0 + NB_SM_BEFORE_AVF0;
-        nb_sm.norm_asm_f0 = nb_sm.norm_asm_f0 + NB_SM_BEFORE_AVF0;
-        nb_sm.sbm_bp1_f0 = nb_sm.sbm_bp1_f0   + NB_SM_BEFORE_AVF0;
-        nb_sm.sbm_bp2_f0 = nb_sm.sbm_bp2_f0   + NB_SM_BEFORE_AVF0;
+        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0;
+        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF0;
+        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF0;
+        nb_sbm_bp1 = nb_sbm_bp1   + NB_SM_BEFORE_AVF0;
+        nb_sbm_bp2 = nb_sbm_bp2   + NB_SM_BEFORE_AVF0;
 
         //****************************************
         // initialize the mesage for the MATR task
-        msgForMATR.event       = 0x00;  // this composite event will be sent to the MATR task
-        msgForMATR.burst_sbmf0 = current_ring_node_asm_burst_sbm_f0;
-        msgForMATR.norm_f0     = current_ring_node_asm_norm_f0;
-        msgForMATR.coarseTime  = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
-        msgForMATR.fineTime    = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
+        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f0;
+        msgForMATR.norm       = current_ring_node_asm_norm_f0;
+        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
+        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
 
-        if (nb_sm.sbm_bp1_f0 == nb_sm_before_bp.burst_sbm_bp1_f0)
+        if (nb_sbm_bp1 == nb_sm_before_f0.burst_sbm_bp1_f0)
         {
-            nb_sm.sbm_bp1_f0 = 0;
+            nb_sbm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0->next;
             if ( (lfrCurrentMode == LFR_MODE_BURST)
@@ -208,9 +268,9 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             }
         }
 
-        if (nb_sm.sbm_bp2_f0 == nb_sm_before_bp.burst_sbm_bp2_f0)
+        if (nb_sbm_bp2 == nb_sm_before_f0.burst_sbm_bp2_f0)
         {
-            nb_sm.sbm_bp2_f0 = 0;
+            nb_sbm_bp2 = 0;
             if ( (lfrCurrentMode == LFR_MODE_BURST)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
@@ -218,20 +278,21 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             }
         }
 
-        if (nb_sm.norm_bp1_f0 == nb_sm_before_bp.norm_bp1_f0)
+        if (nb_norm_bp1 == nb_sm_before_f0.norm_bp1_f0)
         {
-            nb_sm.norm_bp1_f0 = 0;
+            nb_norm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_norm_f0 = current_ring_node_asm_norm_f0->next;
-            if (lfrCurrentMode == LFR_MODE_NORMAL)
+            if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
                 msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
             }
         }
 
-        if (nb_sm.norm_bp2_f0 == nb_sm_before_bp.norm_bp2_f0)
+        if (nb_norm_bp2 == nb_sm_before_f0.norm_bp2_f0)
         {
-            nb_sm.norm_bp2_f0 = 0;
+            nb_norm_bp2 = 0;
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
@@ -239,9 +300,9 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             }
         }
 
-        if (nb_sm.norm_asm_f0 == nb_sm_before_bp.norm_asm_f0)
+        if (nb_norm_asm == nb_sm_before_f0.norm_asm_f0)
         {
-            nb_sm.norm_asm_f0 = 0;
+            nb_norm_asm = 0;
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
@@ -254,7 +315,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         // send the message to MATR
         if (msgForMATR.event != 0x00)
         {
-            status =  rtems_message_queue_send( queue_id_matr, (char *) & msgForMATR, MSG_QUEUE_SIZE_MATR);
+            status =  rtems_message_queue_send( queue_id_prc0, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC0);
         }
 
         if (status != RTEMS_SUCCESSFUL) {
@@ -263,7 +324,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     }
 }
 
-rtems_task matr_task( rtems_task_argument lfrRequestedMode )
+rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
 {
     char incomingData[MSG_QUEUE_SIZE_SEND];  // incoming data buffer
     size_t size;                            // size of the incoming TC packet
@@ -272,12 +333,12 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
     rtems_status_code status;
     rtems_id queue_id;
-    rtems_id queue_id_matr;
+    rtems_id queue_id_q_p0;
     Header_TM_LFR_SCIENCE_ASM_t headerASM;
-    bp_packet_with_spare current_node_norm_bp1_f0;
-    bp_packet            current_node_norm_bp2_f0;
-    bp_packet            current_node_sbm_bp1_f0;
-    bp_packet            current_node_sbm_bp2_f0;
+    bp_packet_with_spare packet_norm_bp1_f0;
+    bp_packet            packet_norm_bp2_f0;
+    bp_packet            packet_sbm_bp1_f0;
+    bp_packet            packet_sbm_bp2_f0;
 
     unsigned long long int localTime;
 
@@ -285,64 +346,63 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
 
     //*************
     // NORM headers
-    BP_init_header_with_spare( &current_node_norm_bp1_f0.header,
+    BP_init_header_with_spare( &packet_norm_bp1_f0.header,
                                APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP1_F0,
                                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0, NB_BINS_COMPRESSED_SM_F0 );
-    BP_init_header( &current_node_norm_bp2_f0.header,
+    BP_init_header( &packet_norm_bp2_f0.header,
                     APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP2_F0,
                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0, NB_BINS_COMPRESSED_SM_F0);
 
     //****************************
     // BURST SBM1 and SBM2 headers
-    if ( (lfrRequestedMode == LFR_MODE_BURST)
-         || (lfrRequestedMode == LFR_MODE_NORMAL) || (lfrRequestedMode == LFR_MODE_STANDBY) )
+    if ( lfrRequestedMode == LFR_MODE_BURST )
     {
-        BP_init_header( &current_node_sbm_bp1_f0.header,
+        BP_init_header( &packet_sbm_bp1_f0.header,
                         APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP1_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
-        BP_init_header( &current_node_sbm_bp2_f0.header,
+        BP_init_header( &packet_sbm_bp2_f0.header,
                         APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP2_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
     }
     else if ( lfrRequestedMode == LFR_MODE_SBM1 )
     {
-        BP_init_header( &current_node_sbm_bp1_f0.header,
+        BP_init_header( &packet_sbm_bp1_f0.header,
                         APID_TM_SCIENCE_SBM1_SBM2, SID_SBM1_BP1_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
-        BP_init_header( &current_node_sbm_bp2_f0.header,
+        BP_init_header( &packet_sbm_bp2_f0.header,
                         APID_TM_SCIENCE_SBM1_SBM2, SID_SBM1_BP2_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
     }
     else if ( lfrRequestedMode == LFR_MODE_SBM2 )
     {
-        BP_init_header( &current_node_sbm_bp1_f0.header,
+        BP_init_header( &packet_sbm_bp1_f0.header,
                         APID_TM_SCIENCE_SBM1_SBM2, SID_SBM2_BP1_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
-        BP_init_header( &current_node_sbm_bp2_f0.header,
+        BP_init_header( &packet_sbm_bp2_f0.header,
                         APID_TM_SCIENCE_SBM1_SBM2, SID_SBM2_BP2_F0,
                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0, NB_BINS_COMPRESSED_SM_SBM_F0);
     }
     else
     {
-        PRINTF1("ERR *** in MATR *** unexpected lfrRequestedMode passed as argument = %d\n", (unsigned int) lfrRequestedMode)
+        PRINTF1("in PRC0 *** lfrRequestedMode is %d, several headers not initialized\n", (unsigned int) lfrRequestedMode)
     }
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in MATR *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF1("in PRC0 *** ERR get_message_queue_id_send %d\n", status)
     }
-    status = get_message_queue_id_matr( &queue_id_matr);
+    status = get_message_queue_id_prc0( &queue_id_q_p0);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in MATR *** ERR get_message_queue_id_matr %d\n", status)
+        PRINTF1("in PRC0 *** ERR get_message_queue_id_prc0 %d\n", status)
     }
 
-    BOOT_PRINTF1("in MATR *** lfrRequestedMode = %d\n", lfrRequestedMode)
+    BOOT_PRINTF1("in PRC0 *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
 
     while(1){
-        status = rtems_message_queue_receive( queue_id_matr, incomingData, &size,   //************************************
-                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );        // wait for a message coming from AVF0
+        status = rtems_message_queue_receive( queue_id_q_p0, incomingData, &size, //************************************
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );      // wait for a message coming from AVF0
 
         incomingMsg = (asm_msg*) incomingData;
 
@@ -355,16 +415,16 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP1_F0 )
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( incomingMsg->burst_sbmf0->matrix, compressed_sm_sbm,
-                                         nb_sm_before_bp.burst_sbm_bp1_f0,
+            ASM_compress_reorganize_and_divide( incomingMsg->burst_sbm->matrix, compressed_sm_sbm,
+                                         nb_sm_before_f0.burst_sbm_bp1_f0,
                                          NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,
                                          ASM_F0_INDICE_START);
             // 2) compute the BP1 set
 
             // 3) send the BP1 set
-            set_time( current_node_sbm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( current_node_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-            BP_send( (char *) &current_node_sbm_bp1_f0.header, queue_id,
+            set_time( packet_sbm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( packet_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            BP_send( (char *) &packet_sbm_bp1_f0.header, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA);
             // 4) compute the BP2 set if needed
             if ( incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP2_F0 )
@@ -372,9 +432,9 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
                 // 1) compute the BP2 set
 
                 // 2) send the BP2 set
-                set_time( current_node_sbm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( current_node_sbm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-                BP_send( (char *) &current_node_sbm_bp2_f0.header, queue_id,
+                set_time( packet_sbm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( packet_sbm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                BP_send( (char *) &packet_sbm_bp2_f0.header, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA);
             }
         }
@@ -387,25 +447,25 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F0)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( incomingMsg->norm_f0->matrix, compressed_sm_norm_f0,
-                                         nb_sm_before_bp.norm_bp1_f0,
+            ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f0,
+                                         nb_sm_before_f0.norm_bp1_f0,
                                          NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
                                          ASM_F0_INDICE_START );
             // 2) compute the BP1 set
 
             // 3) send the BP1 set
-            set_time( current_node_norm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( current_node_norm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-            BP_send( (char *) &current_node_norm_bp1_f0.header, queue_id,
+            set_time( packet_norm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( packet_norm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            BP_send( (char *) &packet_norm_bp1_f0.header, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0 + PACKET_LENGTH_DELTA);
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F0)
             {
                 // 1) compute the BP2 set
 
                 // 2) send the BP2 set
-                set_time( current_node_norm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( current_node_norm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-                BP_send( (char *) &current_node_norm_bp2_f0.header, queue_id,
+                set_time( packet_norm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( packet_norm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                BP_send( (char *) &packet_norm_bp2_f0.header, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0 + PACKET_LENGTH_DELTA);
             }
         }
@@ -413,7 +473,289 @@ rtems_task matr_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F0)
         {
             // 1) reorganize the ASM and divide
-            ASM_reorganize_and_divide( incomingMsg->norm_f0->matrix, asm_f0_reorganized, NB_SM_BEFORE_NORM_BP1_F0 );
+            ASM_reorganize_and_divide( incomingMsg->norm->matrix, asm_f0_reorganized, NB_SM_BEFORE_NORM_BP1_F0 );
+            // 2) convert the float array in a char array
+            ASM_convert( asm_f0_reorganized, asm_f0_char);
+            // 3) send the spectral matrix packets
+            set_time( headerASM.time           , (unsigned char *) &incomingMsg->coarseTime );
+            set_time( headerASM.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
+            ASM_send( &headerASM, asm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
+        }
+
+    }
+}
+
+//*****************
+// PROCESSING AT F1
+
+rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
+{
+    int i;
+
+    rtems_event_set event_out;
+    rtems_status_code status;
+    rtems_id queue_id_prc1;
+    asm_msg msgForMATR;
+    ring_node_sm *ring_node_tab[8];
+
+    static unsigned int nb_norm_bp1;
+    static unsigned int nb_norm_bp2;
+    static unsigned int nb_norm_asm;
+    static unsigned int nb_sbm_bp1;
+    static unsigned int nb_sbm_bp2;
+
+    nb_norm_bp1 = 0;
+    nb_norm_bp2 = 0;
+    nb_norm_asm = 0;
+    nb_sbm_bp1  = 0;
+    nb_sbm_bp2  = 0;
+
+    reset_nb_sm_f1( lfrRequestedMode );   // reset the sm counters that drive the BP and ASM computations / transmissions
+
+    BOOT_PRINTF1("in AVF1 *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
+
+    status = get_message_queue_id_prc1( &queue_id_prc1 );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in AVF1 *** ERR get_message_queue_id_prc1 %d\n", status)
+    }
+
+    while(1){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        ring_node_tab[NB_SM_BEFORE_AVF1-1] = ring_node_for_averaging_sm_f1;
+        for ( i = 2; i < (NB_SM_BEFORE_AVF1+1); i++ )
+        {
+            ring_node_for_averaging_sm_f1 = ring_node_for_averaging_sm_f1->previous;
+            ring_node_tab[NB_SM_BEFORE_AVF1-i] = ring_node_for_averaging_sm_f1;
+        }
+
+        // compute the average and store it in the averaged_sm_f1 buffer
+        SM_average( current_ring_node_asm_norm_f1->matrix,
+                    current_ring_node_asm_burst_sbm_f1->matrix,
+                    ring_node_tab,
+                    nb_norm_bp1, nb_sbm_bp1 );
+
+        // update nb_average
+        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF1;
+        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF1;
+        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF1;
+        nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF1;
+        nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF1;
+
+        //****************************************
+        // initialize the mesage for the MATR task
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC1 task
+        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
+        msgForMATR.norm       = current_ring_node_asm_norm_f1;
+        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
+        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
+
+        if (nb_sbm_bp1 == nb_sm_before_f1.burst_sbm_bp1)
+        {
+            nb_sbm_bp1 = 0;
+            // set another ring for the ASM storage
+            current_ring_node_asm_burst_sbm_f1 = current_ring_node_asm_burst_sbm_f1->next;
+            if ( (lfrCurrentMode == LFR_MODE_BURST) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP1_F1;
+            }
+        }
+
+        if (nb_sbm_bp2 == nb_sm_before_f1.burst_sbm_bp2)
+        {
+            nb_sbm_bp2 = 0;
+            if ( (lfrCurrentMode == LFR_MODE_BURST) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP2_F1;
+            }
+        }
+
+        if (nb_norm_bp1 == nb_sm_before_f1.norm_bp1)
+        {
+            nb_norm_bp1 = 0;
+            // set another ring for the ASM storage
+            current_ring_node_asm_norm_f1 = current_ring_node_asm_norm_f1->next;
+            if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
+            }
+        }
+
+        if (nb_norm_bp2 == nb_sm_before_f1.norm_bp2)
+        {
+            nb_norm_bp2 = 0;
+            if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F1;
+            }
+        }
+
+        if (nb_norm_asm == nb_sm_before_f1.norm_asm)
+        {
+            nb_norm_asm = 0;
+            if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F1;
+            }
+        }
+
+        //*************************
+        // send the message to MATR
+        if (msgForMATR.event != 0x00)
+        {
+            status =  rtems_message_queue_send( queue_id_prc1, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC1);
+        }
+
+        if (status != RTEMS_SUCCESSFUL) {
+            printf("in AVF1 *** Error sending message to PRC1, code %d\n", status);
+        }
+    }
+}
+
+rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
+{
+    char incomingData[MSG_QUEUE_SIZE_SEND];  // incoming data buffer
+    size_t size;                             // size of the incoming TC packet
+    asm_msg *incomingMsg;
+    //
+    spw_ioctl_pkt_send spw_ioctl_send_ASM;
+    rtems_status_code status;
+    rtems_id queue_id;
+    rtems_id queue_id_q_p1;
+    Header_TM_LFR_SCIENCE_ASM_t headerASM;
+    bp_packet_with_spare packet_norm_bp1;
+    bp_packet            packet_norm_bp2;
+    bp_packet            packet_sbm_bp1;
+    bp_packet            packet_sbm_bp2;
+
+    unsigned long long int localTime;
+
+    ASM_init_header( &headerASM );
+
+    //*************
+    // NORM headers
+    BP_init_header_with_spare( &packet_norm_bp1.header,
+                               APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP1_F1,
+                               PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1, NB_BINS_COMPRESSED_SM_F1 );
+    BP_init_header( &packet_norm_bp2.header,
+                    APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP2_F1,
+                    PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1, NB_BINS_COMPRESSED_SM_F1);
+
+    //***********************
+    // BURST and SBM2 headers
+    if ( lfrRequestedMode == LFR_MODE_BURST )
+    {
+        BP_init_header( &packet_sbm_bp1.header,
+                        APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP1_F1,
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0, NB_BINS_COMPRESSED_SM_SBM_F1);
+        BP_init_header( &packet_sbm_bp2.header,
+                        APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP2_F1,
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0, NB_BINS_COMPRESSED_SM_SBM_F1);
+    }
+    else if ( lfrRequestedMode == LFR_MODE_SBM2 )
+    {
+        BP_init_header( &packet_sbm_bp1.header,
+                        APID_TM_SCIENCE_SBM1_SBM2, SID_SBM2_BP1_F1,
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1, NB_BINS_COMPRESSED_SM_SBM_F1);
+        BP_init_header( &packet_sbm_bp2.header,
+                        APID_TM_SCIENCE_SBM1_SBM2, SID_SBM2_BP2_F1,
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1, NB_BINS_COMPRESSED_SM_SBM_F1);
+    }
+    else
+    {
+        PRINTF1("ERR *** in PRC1 *** unexpected lfrRequestedMode passed as argument = %d\n", (unsigned int) lfrRequestedMode)
+    }
+
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in PRC1 *** ERR get_message_queue_id_send %d\n", status)
+    }
+    status = get_message_queue_id_prc1( &queue_id_q_p1);
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in PRC1 *** ERR get_message_queue_id_prc1 %d\n", status)
+    }
+
+    BOOT_PRINTF1("in PRC1 *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
+
+    while(1){
+        status = rtems_message_queue_receive( queue_id_q_p1, incomingData, &size, //************************************
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );      // wait for a message coming from AVF0
+
+        incomingMsg = (asm_msg*) incomingData;
+
+        localTime = getTimeAsUnsignedLongLongInt( );
+        //***********
+        //***********
+        // BURST SBM2
+        //***********
+        //***********
+        if (incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP1_F1 )
+        {
+            // 1)  compress the matrix for Basic Parameters calculation
+            ASM_compress_reorganize_and_divide( incomingMsg->burst_sbm->matrix, compressed_sm_sbm,
+                                         nb_sm_before_f1.burst_sbm_bp1,
+                                         NB_BINS_COMPRESSED_SM_SBM_F1, NB_BINS_TO_AVERAGE_ASM_SBM_F1,
+                                         ASM_F1_INDICE_START);
+            // 2) compute the BP1 set
+
+            // 3) send the BP1 set
+            set_time( packet_sbm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( packet_sbm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            BP_send( (char *) &packet_sbm_bp1.header, queue_id,
+                      PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1 + PACKET_LENGTH_DELTA);
+            // 4) compute the BP2 set if needed
+            if ( incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP2_F1 )
+            {
+                // 1) compute the BP2 set
+
+                // 2) send the BP2 set
+                set_time( packet_sbm_bp2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( packet_sbm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                BP_send( (char *) &packet_sbm_bp2.header, queue_id,
+                          PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1 + PACKET_LENGTH_DELTA);
+            }
+        }
+
+        //*****
+        //*****
+        // NORM
+        //*****
+        //*****
+        if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
+        {
+            // 1)  compress the matrix for Basic Parameters calculation
+            ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f0,
+                                         nb_sm_before_f0.norm_bp1_f0,
+                                         NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
+                                         ASM_F0_INDICE_START );
+            // 2) compute the BP1 set
+
+            // 3) send the BP1 set
+            set_time( packet_norm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+            set_time( packet_norm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            BP_send( (char *) &packet_norm_bp1.header, queue_id,
+                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1 + PACKET_LENGTH_DELTA);
+            if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F1)
+            {
+                // 1) compute the BP2 set
+
+                // 2) send the BP2 set
+                set_time( packet_norm_bp2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
+                set_time( packet_norm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                BP_send( (char *) &packet_norm_bp2.header, queue_id,
+                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1 + PACKET_LENGTH_DELTA);
+            }
+        }
+
+        if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1)
+        {
+            // 1) reorganize the ASM and divide
+            ASM_reorganize_and_divide( incomingMsg->norm->matrix, asm_f0_reorganized, NB_SM_BEFORE_NORM_BP1_F0 );
             // 2) convert the float array in a char array
             ASM_convert( asm_f0_reorganized, asm_f0_char);
             // 3) send the spectral matrix packets
@@ -499,38 +841,32 @@ void SM_init_rings( void )
 
 void ASM_init_rings( void )
 {
+    //***
+    // F0
+    // NORM
+    ASM_generic_init_ring( asm_ring_norm_f0, NB_RING_NODES_ASM_NORM_F0 );
+    // BURST_SBM
+    ASM_generic_init_ring( asm_ring_burst_sbm_f0, NB_RING_NODES_ASM_BURST_SBM_F0 );
+
+    //***
+    // F1
+    //*****
+    // NORM
+    ASM_generic_init_ring( asm_ring_norm_f1, NB_RING_NODES_ASM_NORM_F1 );
+    // BURST_SBM
+    ASM_generic_init_ring( asm_ring_burst_sbm_f1, NB_RING_NODES_ASM_BURST_SBM_F1 );
+}
+
+void ASM_generic_init_ring( ring_node_asm *ring, unsigned char nbNodes )
+{
     unsigned char i;
 
-    //*************
-    // BURST_SBM_F0
-    asm_ring_burst_sbm_f0[0].next            = (ring_node_asm*) &asm_ring_burst_sbm_f0[1];
-    asm_ring_burst_sbm_f0[0].previous        = (ring_node_asm*) &asm_ring_burst_sbm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1];
+    ring[ nbNodes - 1 ].next
+            = (ring_node_asm*) &ring[ 0 ];
 
-    asm_ring_burst_sbm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1].next
-            = (ring_node_asm*) &asm_ring_burst_sbm_f0[0];
-    asm_ring_burst_sbm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1].previous
-            = (ring_node_asm*) &asm_ring_burst_sbm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-2];
-
-    for(i=1; i<NB_RING_NODES_ASM_BURST_SBM_F0-1; i++)
+    for(i=0; i<nbNodes-1; i++)
     {
-        asm_ring_burst_sbm_f0[i].next            = (ring_node_asm*) &asm_ring_burst_sbm_f0[i+1];
-        asm_ring_burst_sbm_f0[i].previous        = (ring_node_asm*) &asm_ring_burst_sbm_f0[i-1];
-    }
-
-    //*************
-    // NORM_F0
-    asm_ring_norm_f0[0].next            = (ring_node_asm*) &asm_ring_norm_f0[1];
-    asm_ring_norm_f0[0].previous        = (ring_node_asm*) &asm_ring_norm_f0[NB_RING_NODES_ASM_BURST_SBM_F0-1];
-
-    asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-1].next
-            = (ring_node_asm*) &asm_ring_norm_f0[0];
-    asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-1].previous
-            = (ring_node_asm*) &asm_ring_norm_f0[NB_RING_NODES_ASM_NORM_F0-2];
-
-    for(i=1; i<NB_RING_NODES_ASM_NORM_F0-1; i++)
-    {
-        asm_ring_norm_f0[i].next            = (ring_node_asm*) &asm_ring_norm_f0[i+1];
-        asm_ring_norm_f0[i].previous        = (ring_node_asm*) &asm_ring_norm_f0[i-1];
+        ring[ i ].next            = (ring_node_asm*) &ring[ i + 1 ];
     }
 }
 
@@ -543,10 +879,13 @@ void SM_reset_current_ring_nodes( void )
     ring_node_for_averaging_sm_f0   = sm_ring_f0;
 }
 
-void ASM_reset_current_ring_node( void )
+void ASM_reset_current_ring_nodes( void )
 {
     current_ring_node_asm_norm_f0      = asm_ring_norm_f0;
     current_ring_node_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
+
+    current_ring_node_asm_norm_f1      = asm_ring_norm_f1;
+    current_ring_node_asm_burst_sbm_f1 = asm_ring_burst_sbm_f1;
 }
 
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)

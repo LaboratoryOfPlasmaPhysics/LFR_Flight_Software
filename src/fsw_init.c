@@ -35,7 +35,7 @@
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 3
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 4
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
 #endif
@@ -86,8 +86,8 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF("*************************\n")
     PRINTF("** LFR Flight Software **\n")
     PRINTF1("** %d.", SW_VERSION_N1)
-    PRINTF1("%d.", SW_VERSION_N2)
-    PRINTF1("%d.", SW_VERSION_N3)
+    PRINTF1("%d."   , SW_VERSION_N2)
+    PRINTF1("%d."   , SW_VERSION_N3)
     PRINTF1("%d             **\n", SW_VERSION_N4)
     PRINTF("*************************\n")
     PRINTF("\n\n")
@@ -249,26 +249,28 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
     Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
-    Task_name[TASKID_SMIQ] = rtems_build_name( 'S', 'M', 'I', 'Q' );
     Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
     Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
     Task_name[TASKID_SWBD] = rtems_build_name( 'S', 'W', 'B', 'D' );
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
-    Task_name[TASKID_MATR] = rtems_build_name( 'M', 'A', 'T', 'R' );
+    Task_name[TASKID_PRC0] = rtems_build_name( 'P', 'R', 'C', '0' );
     Task_name[TASKID_CWF3] = rtems_build_name( 'C', 'W', 'F', '3' );
     Task_name[TASKID_CWF2] = rtems_build_name( 'C', 'W', 'F', '2' );
     Task_name[TASKID_CWF1] = rtems_build_name( 'C', 'W', 'F', '1' );
     Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
     Task_name[TASKID_WTDG] = rtems_build_name( 'W', 'T', 'D', 'G' );
+    Task_name[TASKID_AVF1] = rtems_build_name( 'A', 'V', 'F', '1' );
+    Task_name[TASKID_PRC1] = rtems_build_name( 'P', 'R', 'C', '1' );
 
     // rate monotonic period names
     name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
-    misc_name[QUEUE_MATR] = rtems_build_name( 'Q', '_', 'M', 'R' );
+    misc_name[QUEUE_PRC0] = rtems_build_name( 'Q', '_', 'P', '0' );
+    misc_name[QUEUE_PRC1] = rtems_build_name( 'Q', '_', 'P', '1' );
 }
 
 int create_all_tasks( void ) // create all tasks which run in the software
@@ -332,14 +334,6 @@ int create_all_tasks( void ) // create all tasks which run in the software
 
     //******************
     // SPECTRAL MATRICES
-    if (status == RTEMS_SUCCESSFUL) // SMIQ
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_SMIQ], TASK_PRIORITY_SMIQ, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SMIQ]
-        );
-    }
     if (status == RTEMS_SUCCESSFUL) // AVF0
     {
         status = rtems_task_create(
@@ -348,12 +342,28 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // MATR
+    if (status == RTEMS_SUCCESSFUL) // PRC0
     {
         status = rtems_task_create(
-            Task_name[TASKID_MATR], TASK_PRIORITY_MATR, RTEMS_MINIMUM_STACK_SIZE * 2,
+            Task_name[TASKID_PRC0], TASK_PRIORITY_PRC0, RTEMS_MINIMUM_STACK_SIZE * 2,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_MATR]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC0]
+        );
+    }
+    if (status == RTEMS_SUCCESSFUL) // AVF1
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_AVF1], TASK_PRIORITY_AVF1, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF1]
+        );
+    }
+    if (status == RTEMS_SUCCESSFUL) // PRC1
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_PRC1], TASK_PRIORITY_PRC1, RTEMS_MINIMUM_STACK_SIZE * 2,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC1]
         );
     }
 
@@ -491,27 +501,32 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
 
     //******************
     // SPECTRAL MATRICES
-    if (status == RTEMS_SUCCESSFUL)     // SMIQ
-    {
-        status = rtems_task_start( Task_id[TASKID_SMIQ], smiq_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_BPPR\n")
-        }
-    }
-
     if (status == RTEMS_SUCCESSFUL)     // AVF0
     {
-        status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, 1 );
+        status = rtems_task_start( Task_id[TASKID_AVF0], avf0_task, LFR_MODE_STANDBY );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n")
         }
     }
-
-    if (status == RTEMS_SUCCESSFUL)     // MATR
+    if (status == RTEMS_SUCCESSFUL)     // PRC0
     {
-        status = rtems_task_start( Task_id[TASKID_MATR], matr_task, 1 );
+        status = rtems_task_start( Task_id[TASKID_PRC0], prc0_task, LFR_MODE_STANDBY );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_MATR\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_PRC0\n")
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)     // AVF1
+    {
+        status = rtems_task_start( Task_id[TASKID_AVF1], avf1_task, LFR_MODE_STANDBY );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVF1\n")
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)     // PRC1
+    {
+        status = rtems_task_start( Task_id[TASKID_PRC1], prc1_task, LFR_MODE_STANDBY );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_PRC1\n")
         }
     }
 
@@ -524,7 +539,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // CWF3
     {
         status = rtems_task_start( Task_id[TASKID_CWF3], cwf3_task, 1 );
@@ -532,7 +546,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_CWF3\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // CWF2
     {
         status = rtems_task_start( Task_id[TASKID_CWF2], cwf2_task, 1 );
@@ -540,7 +553,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_CWF2\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // CWF1
     {
         status = rtems_task_start( Task_id[TASKID_CWF1], cwf1_task, 1 );
@@ -548,7 +560,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // SWBD
     {
         status = rtems_task_start( Task_id[TASKID_SWBD], swbd_task, 1 );
@@ -566,7 +577,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // DUMB
     {
         status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
@@ -574,7 +584,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // STAT
     {
         status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
@@ -590,7 +599,8 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 {
     rtems_status_code status_recv;
     rtems_status_code status_send;
-    rtems_status_code status_matr;
+    rtems_status_code status_q_p0;
+    rtems_status_code status_q_p1;
     rtems_status_code ret;
     rtems_id queue_id;
 
@@ -612,13 +622,22 @@ rtems_status_code create_message_queues( void ) // create the two message queues
         PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
     }
 
-    //************************************************************************
-    // create the queue for handling averaged spectral matrices for processing
-    status_matr = rtems_message_queue_create( misc_name[QUEUE_MATR],
-                                              MSG_QUEUE_COUNT_MATR, MSG_QUEUE_SIZE_MATR,
+    //*****************************************************************************
+    // create the queue for handling averaged spectral matrices for processing @ f0
+    status_q_p0 = rtems_message_queue_create( misc_name[QUEUE_PRC0],
+                                              MSG_QUEUE_COUNT_PRC0, MSG_QUEUE_SIZE_PRC0,
                                       RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
-    if ( status_send != RTEMS_SUCCESSFUL ) {
-        PRINTF1("in create_message_queues *** ERR creating MATR queue, %d\n", status_matr)
+    if ( status_q_p0 != RTEMS_SUCCESSFUL ) {
+        PRINTF1("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0)
+    }
+
+    //*****************************************************************************
+    // create the queue for handling averaged spectral matrices for processing @ f1
+    status_q_p1 = rtems_message_queue_create( misc_name[QUEUE_PRC1],
+                                              MSG_QUEUE_COUNT_PRC1, MSG_QUEUE_SIZE_PRC1,
+                                      RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
+    if ( status_q_p1 != RTEMS_SUCCESSFUL ) {
+        PRINTF1("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1)
     }
 
     if ( status_recv != RTEMS_SUCCESSFUL )
@@ -629,9 +648,13 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     {
         ret = status_send;
     }
+    else if( status_q_p0 != RTEMS_SUCCESSFUL )
+    {
+        ret = status_q_p0;
+    }
     else
     {
-        ret = status_matr;
+        ret = status_q_p1;
     }
 
     return ret;
@@ -661,12 +684,24 @@ rtems_status_code get_message_queue_id_recv( rtems_id *queue_id )
     return status;
 }
 
-rtems_status_code get_message_queue_id_matr( rtems_id *queue_id )
+rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id )
 {
     rtems_status_code status;
     rtems_name queue_name;
 
-    queue_name = rtems_build_name( 'Q', '_', 'M', 'R' );
+    queue_name = rtems_build_name( 'Q', '_', 'P', '0' );
+
+    status =  rtems_message_queue_ident( queue_name, 0, queue_id );
+
+    return status;
+}
+
+rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id )
+{
+    rtems_status_code status;
+    rtems_name queue_name;
+
+    queue_name = rtems_build_name( 'Q', '_', 'P', '1' );
 
     status =  rtems_message_queue_ident( queue_name, 0, queue_id );
 

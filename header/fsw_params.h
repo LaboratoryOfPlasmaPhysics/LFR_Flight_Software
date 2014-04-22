@@ -19,15 +19,6 @@ typedef struct ring_node
 } ring_node;
 
 typedef struct {
-    unsigned int f0;
-    unsigned int norm_bp1_f0;
-    unsigned int norm_bp2_f0;
-    unsigned int norm_asm_f0;
-    unsigned int sbm_bp1_f0;
-    unsigned int sbm_bp2_f0;
-} nb_sm_t;
-
-typedef struct {
     unsigned int norm_bp1_f0;
     unsigned int norm_bp2_f0;
     unsigned int norm_asm_f0;
@@ -39,7 +30,31 @@ typedef struct {
     unsigned int sbm1_bp2_f0;
     unsigned int sbm2_bp1_f0;
     unsigned int sbm2_bp2_f0;
-} nb_sm_before_bp_t;
+} nb_sm_before_bp_asm_f0;
+
+typedef struct {
+    unsigned int norm_bp1;
+    unsigned int norm_bp2;
+    unsigned int norm_asm;
+    unsigned int burst_sbm_bp1;
+    unsigned int burst_sbm_bp2;
+    unsigned int burst_bp1;
+    unsigned int burst_bp2;
+    unsigned int sbm2_bp1;
+    unsigned int sbm2_bp2;
+} nb_sm_before_bp_asm_f1;
+
+typedef struct {
+    unsigned int norm_bp1_f2;
+    unsigned int norm_bp2_f2;
+    unsigned int norm_asm_f2;
+    unsigned int burst_sbm_bp1_f2;
+    unsigned int burst_sbm_bp2_f2;
+    unsigned int burst_bp1_f2;
+    unsigned int burst_bp2_f2;
+    unsigned int sbm2_bp1_f2;
+    unsigned int sbm2_bp2_f2;
+} nb_sm_before_bp_asm_f2;
 
 //************************
 // flight software version
@@ -87,8 +102,18 @@ typedef struct {
 #define RTEMS_EVENT_NORM_BP1_F0         RTEMS_EVENT_6
 #define RTEMS_EVENT_NORM_BP2_F0         RTEMS_EVENT_7
 #define RTEMS_EVENT_NORM_ASM_F0         RTEMS_EVENT_8
-#define RTEMS_EVENT_BURST_SBM_BP1_F0    RTEMS_EVENT_9
-#define RTEMS_EVENT_BURST_SBM_BP2_F0    RTEMS_EVENT_10
+#define RTEMS_EVENT_NORM_BP1_F1         RTEMS_EVENT_9
+#define RTEMS_EVENT_NORM_BP2_F1         RTEMS_EVENT_10
+#define RTEMS_EVENT_NORM_ASM_F1         RTEMS_EVENT_11
+#define RTEMS_EVENT_NORM_BP1_F2         RTEMS_EVENT_12
+#define RTEMS_EVENT_NORM_BP2_F2         RTEMS_EVENT_13
+#define RTEMS_EVENT_NORM_ASM_F2         RTEMS_EVENT_14
+#define RTEMS_EVENT_BURST_SBM_BP1_F0    RTEMS_EVENT_15
+#define RTEMS_EVENT_BURST_SBM_BP2_F0    RTEMS_EVENT_16
+#define RTEMS_EVENT_BURST_SBM_BP1_F1    RTEMS_EVENT_17
+#define RTEMS_EVENT_BURST_SBM_BP2_F1    RTEMS_EVENT_18
+#define RTEMS_EVENT_BURST_SBM_BP1_F2    RTEMS_EVENT_19
+#define RTEMS_EVENT_BURST_SBM_BP2_F2    RTEMS_EVENT_20
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -166,22 +191,23 @@ typedef struct {
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
 #define TASKID_SPIQ 3
-#define TASKID_SMIQ 4
-#define TASKID_STAT 5
-#define TASKID_AVF0 6
-#define TASKID_SWBD 7
-#define TASKID_WFRM 8
-#define TASKID_DUMB 9
-#define TASKID_HOUS 10
-#define TASKID_MATR 11
-#define TASKID_CWF3 12
-#define TASKID_CWF2 13
-#define TASKID_CWF1 14
-#define TASKID_SEND 15
-#define TASKID_WTDG 16
+#define TASKID_STAT 4
+#define TASKID_AVF0 5
+#define TASKID_SWBD 6
+#define TASKID_WFRM 7
+#define TASKID_DUMB 8
+#define TASKID_HOUS 9
+#define TASKID_PRC0 10
+#define TASKID_CWF3 11
+#define TASKID_CWF2 12
+#define TASKID_CWF1 13
+#define TASKID_SEND 14
+#define TASKID_WTDG 15
+#define TASKID_AVF1 16
+#define TASKID_PRC1 17
 
 #define TASK_PRIORITY_SPIQ 5
-#define TASK_PRIORITY_SMIQ 10
+//#define TASK_PRIORITY_SMIQ 10
 #define TASK_PRIORITY_WTDG 20
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
@@ -193,22 +219,25 @@ typedef struct {
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50
 #define TASK_PRIORITY_AVF0 60
-#define TASK_PRIORITY_BPF0 60
-#define TASK_PRIORITY_MATR 100
+#define TASK_PRIORITY_PRC0 100
+#define TASK_PRIORITY_PRC1 100
+#define TASK_PRIORITY_AVF1 60
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
 #define MSG_QUEUE_COUNT_RECV  10
-#define MSG_QUEUE_COUNT_SEND   50
-#define MSG_QUEUE_COUNT_MATR    10
-//#define MSG_QUEUE_SIZE_SEND (PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES)
-#define MSG_QUEUE_SIZE_SEND        810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
+#define MSG_QUEUE_COUNT_SEND  50
+#define MSG_QUEUE_COUNT_PRC0  10
+#define MSG_QUEUE_COUNT_PRC1  10
+#define MSG_QUEUE_SIZE_SEND             810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
-#define MSG_QUEUE_SIZE_MATR             20  // two pointers and one rtems_event + 2 integers
+#define MSG_QUEUE_SIZE_PRC0             20  // two pointers and one rtems_event + 2 integers
+#define MSG_QUEUE_SIZE_PRC1             20  // two pointers and one rtems_event + 2 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1
-#define QUEUE_MATR 2
+#define QUEUE_PRC0 2
+#define QUEUE_PRC1 3
 
 //*******
 // MACROS

@@ -571,11 +571,11 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
      * - RTEMS_INCORRECT_STATE - task never started
      * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
      *
-     * Science tasks are AVF0, BPF0, WFRM, CWF3, CW2, CWF1
+     * Science tasks are AVF0, PRC0, WFRM, CWF3, CW2, CWF1
      *
      */
 
-    rtems_status_code status[7];
+    rtems_status_code status[8];
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
@@ -583,42 +583,55 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
     status[0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
     if (status[0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 0 ERR %d\n", status[0])
+        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[0])
+    }
+
+    status[1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
+    if (status[1] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[1])
     }
 
     status[2] = rtems_task_restart( Task_id[TASKID_WFRM],1 );
     if (status[2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 2 ERR %d\n", status[2])
+        PRINTF1("in restart_science_task *** WFRM ERR %d\n", status[2])
     }
 
     status[3] = rtems_task_restart( Task_id[TASKID_CWF3],1 );
     if (status[3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 3 ERR %d\n", status[3])
+        PRINTF1("in restart_science_task *** CWF3 ERR %d\n", status[3])
     }
 
     status[4] = rtems_task_restart( Task_id[TASKID_CWF2],1 );
     if (status[4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 4 ERR %d\n", status[4])
+        PRINTF1("in restart_science_task *** CWF2 ERR %d\n", status[4])
     }
 
     status[5] = rtems_task_restart( Task_id[TASKID_CWF1],1 );
     if (status[5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 5 ERR %d\n", status[5])
+        PRINTF1("in restart_science_task *** CWF1 ERR %d\n", status[5])
     }
 
-    status[6] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
+    status[6] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
     if (status[6] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** 6 ERR %d\n", status[6])
+        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[6])
     }
 
-    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[2] != RTEMS_SUCCESSFUL) ||
-         (status[3] != RTEMS_SUCCESSFUL) || (status[4] != RTEMS_SUCCESSFUL) ||
-         (status[5] != RTEMS_SUCCESSFUL) || (status[6] != RTEMS_SUCCESSFUL)    )
+    status[7] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
+    if (status[7] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[7])
+    }
+
+    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
+         (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
+         (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) ||
+         (status[6] != RTEMS_SUCCESSFUL) || (status[7] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -639,12 +652,35 @@ int suspend_science_tasks()
 
     rtems_status_code status;
 
-    status = rtems_task_suspend( Task_id[TASKID_AVF0] );
+    status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
     }
-
+    if (status == RTEMS_SUCCESSFUL)        // suspend PRC0
+    {
+        status = rtems_task_suspend( Task_id[TASKID_PRC0] );
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in suspend_science_task *** PRC0 ERR %d\n", status)
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)        // suspend AVF1
+    {
+        status = rtems_task_suspend( Task_id[TASKID_AVF1] );
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in suspend_science_task *** AVF1 ERR %d\n", status)
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)        // suspend PRC1
+    {
+        status = rtems_task_suspend( Task_id[TASKID_PRC1] );
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
+        }
+    }
     if (status == RTEMS_SUCCESSFUL)        // suspend WFRM
     {
         status = rtems_task_suspend( Task_id[TASKID_WFRM] );
@@ -653,7 +689,6 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** WFRM ERR %d\n", status)
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF3
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF3] );
@@ -662,7 +697,6 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** CWF3 ERR %d\n", status)
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF2
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF2] );
@@ -671,7 +705,6 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** CWF2 ERR %d\n", status)
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF1
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF1] );
@@ -707,7 +740,7 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
 void launch_spectral_matrix( void )
 {
     SM_reset_current_ring_nodes();
-    ASM_reset_current_ring_node();
+    ASM_reset_current_ring_nodes();
     reset_spectral_matrix_regs();
 
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
@@ -724,7 +757,7 @@ void launch_spectral_matrix( void )
 void launch_spectral_matrix_simu( void )
 {
     SM_reset_current_ring_nodes();
-    ASM_reset_current_ring_node();
+    ASM_reset_current_ring_nodes();
     reset_spectral_matrix_regs();
 
     // Spectral Matrices simulator
