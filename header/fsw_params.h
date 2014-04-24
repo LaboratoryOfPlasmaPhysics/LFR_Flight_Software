@@ -19,17 +19,17 @@ typedef struct ring_node
 } ring_node;
 
 typedef struct {
-    unsigned int norm_bp1_f0;
-    unsigned int norm_bp2_f0;
-    unsigned int norm_asm_f0;
-    unsigned int burst_sbm_bp1_f0;
-    unsigned int burst_sbm_bp2_f0;
-    unsigned int burst_bp1_f0;
-    unsigned int burst_bp2_f0;
-    unsigned int sbm1_bp1_f0;
-    unsigned int sbm1_bp2_f0;
-    unsigned int sbm2_bp1_f0;
-    unsigned int sbm2_bp2_f0;
+    unsigned int norm_bp1;
+    unsigned int norm_bp2;
+    unsigned int norm_asm;
+    unsigned int burst_sbm_bp1;
+    unsigned int burst_sbm_bp2;
+    unsigned int burst_bp1;
+    unsigned int burst_bp2;
+    unsigned int sbm1_bp1;
+    unsigned int sbm1_bp2;
+    unsigned int sbm2_bp1;
+    unsigned int sbm2_bp2;
 } nb_sm_before_bp_asm_f0;
 
 typedef struct {
@@ -207,7 +207,6 @@ typedef struct {
 #define TASKID_PRC1 17
 
 #define TASK_PRIORITY_SPIQ 5
-//#define TASK_PRIORITY_SMIQ 10
 #define TASK_PRIORITY_WTDG 20
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
@@ -219,9 +218,9 @@ typedef struct {
 #define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50
 #define TASK_PRIORITY_AVF0 60
+#define TASK_PRIORITY_AVF1 70
 #define TASK_PRIORITY_PRC0 100
 #define TASK_PRIORITY_PRC1 100
-#define TASK_PRIORITY_AVF1 60
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 

@@ -25,13 +25,13 @@
 //
 #define NB_BINS_PER_ASM_F1  104
 #define NB_BINS_PER_PKT_ASM_F1  52
-#define TOTAL_SIZE_ASM_F1   2600    // 25 * 104
+#define TOTAL_SIZE_ASM_F1_IN_BYTES   5200    // 25 * 104 * 2
 #define ASM_F1_INDICE_START 6       // 104 bins
 #define ASM_F1_INDICE_STOP  109     // 2 packets of 52 bins
 //
 #define NB_BINS_PER_ASM_F2  96
 #define NB_BINS_PER_PKT_ASM_F2  48
-#define TOTAL_SIZE_ASM_F2   2400    // 25 * 96
+#define TOTAL_SIZE_ASM_F2_IN_BYTES   4800    // 25 * 96 * 2
 #define ASM_F2_INDICE_START 7       // 96 bins
 #define ASM_F2_INDICE_STOP  102     // 2 packets of 48 bins
 //
@@ -49,23 +49,13 @@
 #define NB_BINS_TO_AVERAGE_ASM_SBM_F1   4
 #define NB_BINS_TO_AVERAGE_ASM_SBM_F2   4
 //
-#define TOTAL_SIZE_COMPRESSED_ASM_F0    275     // 11 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_F1    325     // 13 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_F2    300     // 12 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_SBM1  550     // 22 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_NORM_F0     275     // 11 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_NORM_F1     325     // 13 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_F2     300     // 12 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 550     // 22 * 25 WORDS
+#define TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 650     // 26 * 25 WORDS
 // NORM
 #define NB_SM_BEFORE_NORM_BP1_F0        384     // 96 * 4
-#define NB_SM_BEFORE_NORM_BP2_F0        1920    // 96 * 20
-#define NB_SM_BEFORE_NORM_ASM_F0        384     // 384 matrices at f0 = 4.00 second
-// BURST
-#define NB_SM_BEFORE_BURST_BP1_F0       96      // 96  matrices at f0 = 1.00 second
-#define NB_SM_BEFORE_BURST_BP2_F0       480     // 480 matrices at f0 = 5.00 second
-// SBM1
-#define NB_SM_BEFORE_SBM1_BP1_F0        24      // 24  matrices at f0 = 0.25 second
-#define NB_SM_BEFORE_SBM1_BP2_F0        96      // 96  matrices at f0 = 1.00 second
-// SBM2
-#define NB_SM_BEFORE_SBM2_BP1_F0        96      // 96  matrices at f0 = 1.00 second
-#define NB_SM_BEFORE_SBM2_BP2_F0        480     // 480 matrices at f0 = 5.00 second
 // GENERAL
 #define NB_SM_BEFORE_AVF0               8
 #define NB_SM_BEFORE_AVF1               8
