@@ -50,12 +50,12 @@ TARGET = fsw
 INCLUDEPATH += \
     ../src \
     ../header \
-    ../src/basic_parameters
+    ../src/basic_parameters \
+    ../src/avf_prc
 
 SOURCES += \
     ../src/wf_handler.c \
     ../src/tc_handler.c \
-    ../src/fsw_processing.c \
     ../src/fsw_misc.c \
     ../src/fsw_init.c \
     ../src/fsw_globals.c \
@@ -63,14 +63,17 @@ SOURCES += \
     ../src/tc_load_dump_parameters.c \
     ../src/tm_lfr_tc_exe.c \
     ../src/tc_acceptance.c \
-    ../src/basic_parameters/basic_parameters.c
+    ../src/basic_parameters/basic_parameters.c \
+    ../src/avf_prc/fsw_processing.c \
+    ../src/avf_prc/avf0_prc0.c \
+    ../src/avf_prc/avf1_prc1.c \
+    ../src/avf_prc/avf2_prc2.c
 
 
 HEADERS += \
     ../header/wf_handler.h \
     ../header/tc_handler.h \
     ../header/grlib_regs.h \
-    ../header/fsw_processing.h \
     ../header/fsw_params.h \
     ../header/fsw_misc.h \
     ../header/fsw_init.h \
@@ -81,5 +84,9 @@ HEADERS += \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
     ../header/fsw_params_nb_bytes.h \
-    ../src/basic_parameters/basic_parameters.h
+    ../src/basic_parameters/basic_parameters.h \
+    ../src/avf_prc/fsw_processing.h \
+    ../src/avf_prc/avf0_prc0.h \
+    ../src/avf_prc/avf1_prc1.h \
+    ../src/avf_prc/avf2_prc2.h
 

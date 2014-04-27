@@ -7,9 +7,12 @@
 #include "fsw_params.h"
 #include "fsw_misc.h"
 #include "fsw_processing.h"
+#include "avf0_prc0.h"
+#include "avf1_prc1.h"
+#include "avf2_prc2.h"
+
 #include "tc_handler.h"
 #include "wf_handler.h"
-
 #include "fsw_spacewire.h"
 
 extern rtems_name  Task_name[20];       /* array of task names */
@@ -28,6 +31,7 @@ rtems_status_code get_message_queue_id_send( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
+rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 //
 int start_recv_send_tasks( void );
 //

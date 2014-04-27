@@ -18,44 +18,6 @@ typedef struct ring_node
     unsigned int status;
 } ring_node;
 
-typedef struct {
-    unsigned int norm_bp1;
-    unsigned int norm_bp2;
-    unsigned int norm_asm;
-    unsigned int burst_sbm_bp1;
-    unsigned int burst_sbm_bp2;
-    unsigned int burst_bp1;
-    unsigned int burst_bp2;
-    unsigned int sbm1_bp1;
-    unsigned int sbm1_bp2;
-    unsigned int sbm2_bp1;
-    unsigned int sbm2_bp2;
-} nb_sm_before_bp_asm_f0;
-
-typedef struct {
-    unsigned int norm_bp1;
-    unsigned int norm_bp2;
-    unsigned int norm_asm;
-    unsigned int burst_sbm_bp1;
-    unsigned int burst_sbm_bp2;
-    unsigned int burst_bp1;
-    unsigned int burst_bp2;
-    unsigned int sbm2_bp1;
-    unsigned int sbm2_bp2;
-} nb_sm_before_bp_asm_f1;
-
-typedef struct {
-    unsigned int norm_bp1_f2;
-    unsigned int norm_bp2_f2;
-    unsigned int norm_asm_f2;
-    unsigned int burst_sbm_bp1_f2;
-    unsigned int burst_sbm_bp2_f2;
-    unsigned int burst_bp1_f2;
-    unsigned int burst_bp2_f2;
-    unsigned int sbm2_bp1_f2;
-    unsigned int sbm2_bp2_f2;
-} nb_sm_before_bp_asm_f2;
-
 //************************
 // flight software version
 // this parameters is handled by the Qt project options
@@ -101,19 +63,17 @@ typedef struct {
 #define RTEMS_EVENT_MODE_SBM2_WFRM      RTEMS_EVENT_5
 #define RTEMS_EVENT_NORM_BP1_F0         RTEMS_EVENT_6
 #define RTEMS_EVENT_NORM_BP2_F0         RTEMS_EVENT_7
-#define RTEMS_EVENT_NORM_ASM_F0         RTEMS_EVENT_8
+#define RTEMS_EVENT_NORM_ASM_F0         RTEMS_EVENT_8   // ASM only in NORM mode
 #define RTEMS_EVENT_NORM_BP1_F1         RTEMS_EVENT_9
 #define RTEMS_EVENT_NORM_BP2_F1         RTEMS_EVENT_10
-#define RTEMS_EVENT_NORM_ASM_F1         RTEMS_EVENT_11
+#define RTEMS_EVENT_NORM_ASM_F1         RTEMS_EVENT_11  // ASM only in NORM mode
 #define RTEMS_EVENT_NORM_BP1_F2         RTEMS_EVENT_12
 #define RTEMS_EVENT_NORM_BP2_F2         RTEMS_EVENT_13
-#define RTEMS_EVENT_NORM_ASM_F2         RTEMS_EVENT_14
+#define RTEMS_EVENT_NORM_ASM_F2         RTEMS_EVENT_14  // ASM only in NORM mode
 #define RTEMS_EVENT_BURST_SBM_BP1_F0    RTEMS_EVENT_15
 #define RTEMS_EVENT_BURST_SBM_BP2_F0    RTEMS_EVENT_16
 #define RTEMS_EVENT_BURST_SBM_BP1_F1    RTEMS_EVENT_17
 #define RTEMS_EVENT_BURST_SBM_BP2_F1    RTEMS_EVENT_18
-#define RTEMS_EVENT_BURST_SBM_BP1_F2    RTEMS_EVENT_19
-#define RTEMS_EVENT_BURST_SBM_BP2_F2    RTEMS_EVENT_20
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
@@ -205,6 +165,8 @@ typedef struct {
 #define TASKID_WTDG 15
 #define TASKID_AVF1 16
 #define TASKID_PRC1 17
+#define TASKID_AVF2 18
+#define TASKID_PRC2 19
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_WTDG 20
@@ -221,6 +183,8 @@ typedef struct {
 #define TASK_PRIORITY_AVF1 70
 #define TASK_PRIORITY_PRC0 100
 #define TASK_PRIORITY_PRC1 100
+#define TASK_PRIORITY_AVF2 110
+#define TASK_PRIORITY_PRC2 110
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
@@ -228,15 +192,18 @@ typedef struct {
 #define MSG_QUEUE_COUNT_SEND  50
 #define MSG_QUEUE_COUNT_PRC0  10
 #define MSG_QUEUE_COUNT_PRC1  10
+#define MSG_QUEUE_COUNT_PRC2  5
 #define MSG_QUEUE_SIZE_SEND             810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
 #define MSG_QUEUE_SIZE_PRC0             20  // two pointers and one rtems_event + 2 integers
 #define MSG_QUEUE_SIZE_PRC1             20  // two pointers and one rtems_event + 2 integers
+#define MSG_QUEUE_SIZE_PRC2             20  // two pointers and one rtems_event + 2 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1
 #define QUEUE_PRC0 2
 #define QUEUE_PRC1 3
+#define QUEUE_PRC2 4
 
 //*******
 // MACROS

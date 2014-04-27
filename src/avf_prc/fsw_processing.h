@@ -49,10 +49,6 @@ typedef struct asm_msg
     unsigned int fineTime;
 } asm_msg;
 
-extern nb_sm_before_bp_asm_f0 nb_sm_before_f0;
-extern nb_sm_before_bp_asm_f1 nb_sm_before_f1;
-extern nb_sm_before_bp_asm_f2 nb_sm_before_f2;
-
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];
 extern volatile int sm_f2[ ];
@@ -68,23 +64,15 @@ extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
 
 // ISR
-void reset_nb_sm_f0( unsigned char lfrMode );
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
-// RTEMS TASKS
-rtems_task avf0_task( rtems_task_argument lfrRequestedMode );
-rtems_task prc0_task( rtems_task_argument lfrRequestedMode );
-rtems_task avf1_task( rtems_task_argument lfrRequestedMode );
-rtems_task prc1_task( rtems_task_argument lfrRequestedMode );
-
 //******************
 // Spectral Matrices
+void reset_nb_sm( void );
 void SM_init_rings( void );
-void ASM_init_rings( void );
 void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
 void SM_reset_current_ring_nodes( void );
-void ASM_reset_current_ring_nodes( void );
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header);
 void SM_average(float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                   ring_node_sm *ring_node_tab[],
@@ -116,8 +104,5 @@ void BP_send(char *data,
 // general functions
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
-
-extern rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );
-extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 
 #endif // FSW_PROCESSING_H_INCLUDED
