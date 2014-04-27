@@ -54,93 +54,93 @@ void SM_average_f2( float *averaged_spec_mat_f2,
 
 rtems_task avf2_task( rtems_task_argument lfrRequestedMode )
 {
-    rtems_event_set event_out;
-    rtems_status_code status;
-    rtems_id queue_id_prc2;
-    asm_msg msgForMATR;
+//    rtems_event_set event_out;
+//    rtems_status_code status;
+//    rtems_id queue_id_prc2;
+//    asm_msg msgForMATR;
 
-    unsigned int nb_norm_bp1;
-    unsigned int nb_norm_bp2;
-    unsigned int nb_norm_asm;
+//    unsigned int nb_norm_bp1;
+//    unsigned int nb_norm_bp2;
+//    unsigned int nb_norm_asm;
 
-    nb_norm_bp1 = 0;
-    nb_norm_bp2 = 0;
-    nb_norm_asm = 0;
+//    nb_norm_bp1 = 0;
+//    nb_norm_bp2 = 0;
+//    nb_norm_asm = 0;
 
-    reset_nb_sm_f2( );   // reset the sm counters that drive the BP and ASM computations / transmissions
+//    reset_nb_sm_f2( );   // reset the sm counters that drive the BP and ASM computations / transmissions
 
-    BOOT_PRINTF1("in AVF2 *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
+//    BOOT_PRINTF1("in AVF2 *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
 
-    status = get_message_queue_id_prc2( &queue_id_prc2 );
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status)
-    }
+//    status = get_message_queue_id_prc2( &queue_id_prc2 );
+//    if (status != RTEMS_SUCCESSFUL)
+//    {
+//        PRINTF1("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status)
+//    }
 
-    while(1){
-        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+//    while(1){
+//        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
 
-        // compute the average and store it in the averaged_sm_f2 buffer
-        SM_average_f2( current_ring_node_asm_norm_f2->matrix,
-                       ring_node_for_averaging_sm_f2,
-                       nb_norm_bp1 );
+//        // compute the average and store it in the averaged_sm_f2 buffer
+//        SM_average_f2( current_ring_node_asm_norm_f2->matrix,
+//                       ring_node_for_averaging_sm_f2,
+//                       nb_norm_bp1 );
 
-        // update nb_average
-        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF2;
-        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF2;
-        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF2;
+//        // update nb_average
+//        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF2;
+//        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF2;
+//        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF2;
 
-        //****************************************
-        // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
-        msgForMATR.burst_sbm  = NULL;
-        msgForMATR.norm       = current_ring_node_asm_norm_f2;
-//        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
-//        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
-        msgForMATR.coarseTime = time_management_regs->coarse_time;
-        msgForMATR.fineTime   = time_management_regs->fine_time;
+//        //****************************************
+//        // initialize the mesage for the MATR task
+//        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
+//        msgForMATR.burst_sbm  = NULL;
+//        msgForMATR.norm       = current_ring_node_asm_norm_f2;
+////        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
+////        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
+//        msgForMATR.coarseTime = time_management_regs->coarse_time;
+//        msgForMATR.fineTime   = time_management_regs->fine_time;
 
-        if (nb_norm_bp1 == nb_sm_before_f2.norm_bp1)
-        {
-            nb_norm_bp1 = 0;
-            // set another ring for the ASM storage
-            current_ring_node_asm_norm_f2 = current_ring_node_asm_norm_f2->next;
-            if ( lfrCurrentMode == LFR_MODE_NORMAL )
-            {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
-            }
-        }
+//        if (nb_norm_bp1 == nb_sm_before_f2.norm_bp1)
+//        {
+//            nb_norm_bp1 = 0;
+//            // set another ring for the ASM storage
+//            current_ring_node_asm_norm_f2 = current_ring_node_asm_norm_f2->next;
+//            if ( lfrCurrentMode == LFR_MODE_NORMAL )
+//            {
+//                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
+//            }
+//        }
 
-        if (nb_norm_bp2 == nb_sm_before_f2.norm_bp2)
-        {
-            nb_norm_bp2 = 0;
-            if ( lfrCurrentMode == LFR_MODE_NORMAL )
-            {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F2;
-            }
-        }
+//        if (nb_norm_bp2 == nb_sm_before_f2.norm_bp2)
+//        {
+//            nb_norm_bp2 = 0;
+//            if ( lfrCurrentMode == LFR_MODE_NORMAL )
+//            {
+//                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F2;
+//            }
+//        }
 
-        if (nb_norm_asm == nb_sm_before_f2.norm_asm)
-        {
-            nb_norm_asm = 0;
-            if ( lfrCurrentMode == LFR_MODE_NORMAL )
-            {
-//                PRINTF1("%lld\n", localTime)
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F2;
-            }
-        }
+//        if (nb_norm_asm == nb_sm_before_f2.norm_asm)
+//        {
+//            nb_norm_asm = 0;
+//            if ( lfrCurrentMode == LFR_MODE_NORMAL )
+//            {
+////                PRINTF1("%lld\n", localTime)
+//                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F2;
+//            }
+//        }
 
-        //*************************
-        // send the message to MATR
-        if (msgForMATR.event != 0x00)
-        {
-            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC0);
-        }
+//        //*************************
+//        // send the message to MATR
+//        if (msgForMATR.event != 0x00)
+//        {
+//            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC0);
+//        }
 
-        if (status != RTEMS_SUCCESSFUL) {
-            printf("in AVF2 *** Error sending message to MATR, code %d\n", status);
-        }
-    }
+//        if (status != RTEMS_SUCCESSFUL) {
+//            printf("in AVF2 *** Error sending message to MATR, code %d\n", status);
+//        }
+//    }
 }
 
 rtems_task prc2_task( rtems_task_argument argument )

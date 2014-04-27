@@ -15,12 +15,14 @@ typedef struct {
     unsigned int sbm2_bp2;
 } nb_sm_before_bp_asm_f1;
 
-extern struct ring_node_sm *current_ring_node_sm_f1;
 extern struct ring_node_sm *ring_node_for_averaging_sm_f1;
 
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 
 void reset_nb_sm_f1( unsigned char lfrMode );
+void SM_average_f1( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+                  ring_node_sm *ring_node_tab[],
+                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 );
 
 rtems_task avf1_task( rtems_task_argument lfrRequestedMode );
 rtems_task prc1_task( rtems_task_argument lfrRequestedMode );

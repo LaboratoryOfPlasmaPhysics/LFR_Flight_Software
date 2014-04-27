@@ -547,20 +547,20 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_PRC1\n")
         }
     }
-    if (status == RTEMS_SUCCESSFUL)     // AVF2
-    {
-        status = rtems_task_start( Task_id[TASKID_AVF2], avf2_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF2\n")
-        }
-    }
-    if (status == RTEMS_SUCCESSFUL)     // PRC2
-    {
-        status = rtems_task_start( Task_id[TASKID_PRC2], prc2_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC2\n")
-        }
-    }
+//    if (status == RTEMS_SUCCESSFUL)     // AVF2
+//    {
+//        status = rtems_task_start( Task_id[TASKID_AVF2], avf2_task, 1 );
+//        if (status!=RTEMS_SUCCESSFUL) {
+//            BOOT_PRINTF("in INIT *** Error starting TASK_AVF2\n")
+//        }
+//    }
+//    if (status == RTEMS_SUCCESSFUL)     // PRC2
+//    {
+//        status = rtems_task_start( Task_id[TASKID_PRC2], prc2_task, 1 );
+//        if (status!=RTEMS_SUCCESSFUL) {
+//            BOOT_PRINTF("in INIT *** Error starting TASK_PRC2\n")
+//        }
+//    }
 
     //****************
     // WAVEFORM PICKER

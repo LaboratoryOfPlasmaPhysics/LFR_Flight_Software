@@ -32,41 +32,41 @@ ring_node_sm *ring_node_for_averaging_sm_f2;
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
-    ring_node_sm *previous_ring_node_sm_f0;
+//    ring_node_sm *previous_ring_node_sm_f0;
 
-//    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+////    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
 
-    previous_ring_node_sm_f0 = current_ring_node_sm_f0;
+//    previous_ring_node_sm_f0 = current_ring_node_sm_f0;
 
-    if ( (spectral_matrix_regs->status & 0x2) == 0x02)  // check ready matrix bit f0_1
-    {
-        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-        spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
-        nb_sm_f0 = nb_sm_f0 + 1;
-    }
+//    if ( (spectral_matrix_regs->status & 0x2) == 0x02)  // check ready matrix bit f0_1
+//    {
+//        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+//        spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
+//        nb_sm_f0 = nb_sm_f0 + 1;
+//    }
 
-    //************************
-    // reset status error bits
-    if ( (spectral_matrix_regs->status & 0x30) != 0x00)
-    {
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf;   // 1100 1111
-    }
+//    //************************
+//    // reset status error bits
+//    if ( (spectral_matrix_regs->status & 0x30) != 0x00)
+//    {
+//        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf;   // 1100 1111
+//    }
 
-    //**************************************
-    // reset ready matrix bits for f0_0, f1 and f2
-    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff2;       // 0010
+//    //**************************************
+//    // reset ready matrix bits for f0_0, f1 and f2
+//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff2;       // 0010
 
-    if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
-    {
-        ring_node_for_averaging_sm_f0 = previous_ring_node_sm_f0;
-        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_sm_f0 = 0;
-    }
+//    if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
+//    {
+//        ring_node_for_averaging_sm_f0 = previous_ring_node_sm_f0;
+//        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//        {
+//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//        }
+//        nb_sm_f0 = 0;
+//    }
 
 }
 
@@ -105,16 +105,16 @@ rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 
     //***
     // F2
-    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
-    if (nb_sm_f0_aux_f2 == 96)
-    {
-        nb_sm_f0_aux_f2 = 0;
-        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-    }
+//    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
+//    if (nb_sm_f0_aux_f2 == 96)
+//    {
+//        nb_sm_f0_aux_f2 = 0;
+//        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
+//        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//        {
+//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//        }
+//    }
 }
 
 //******************
@@ -217,7 +217,9 @@ void SM_reset_current_ring_nodes( void )
     current_ring_node_sm_f1 = sm_ring_f1;
     current_ring_node_sm_f2 = sm_ring_f2;
 
-    ring_node_for_averaging_sm_f0   = sm_ring_f0;
+    ring_node_for_averaging_sm_f0 = sm_ring_f0;
+    ring_node_for_averaging_sm_f1 = sm_ring_f1;
+    ring_node_for_averaging_sm_f2 = sm_ring_f2;
 }
 
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)
@@ -250,46 +252,6 @@ void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->time[0] = 0x00;
     header->pa_lfr_asm_blk_nr[0] = 0x00;  // BLK_NR MSB
     header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
-}
-
-void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
-                  ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
-{
-    float sum;
-    unsigned int i;
-
-    for(i=0; i<TOTAL_SIZE_SM; i++)
-    {
-        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
-
-        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
-            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else
-        {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
-        }
-    }
 }
 
 void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )

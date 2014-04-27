@@ -9,7 +9,6 @@ typedef struct {
     unsigned int norm_asm;
 } nb_sm_before_bp_asm_f2;
 
-extern struct ring_node_sm *current_ring_node_sm_f2;
 extern struct ring_node_sm *ring_node_for_averaging_sm_f2;
 
 extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );

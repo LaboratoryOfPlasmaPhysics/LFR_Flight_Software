@@ -628,23 +628,22 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
         PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[7])
     }
 
-    status[8] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
-    if (status[8] != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[8])
-    }
+//    status[8] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
+//    if (status[8] != RTEMS_SUCCESSFUL)
+//    {
+//        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[8])
+//    }
 
-    status[9] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
-    if (status[9] != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[9])
-    }
+//    status[9] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
+//    if (status[9] != RTEMS_SUCCESSFUL)
+//    {
+//        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[9])
+//    }
 
     if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
          (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
          (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) ||
-         (status[6] != RTEMS_SUCCESSFUL) || (status[7] != RTEMS_SUCCESSFUL) ||
-         (status[8] != RTEMS_SUCCESSFUL) || (status[9] != RTEMS_SUCCESSFUL))
+         (status[6] != RTEMS_SUCCESSFUL) || (status[7] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -694,22 +693,22 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
         }
     }
-    if (status == RTEMS_SUCCESSFUL)        // suspend AVF2
-    {
-        status = rtems_task_suspend( Task_id[TASKID_AVF2] );
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
-        }
-    }
-    if (status == RTEMS_SUCCESSFUL)        // suspend PRC2
-    {
-        status = rtems_task_suspend( Task_id[TASKID_PRC2] );
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
-        }
-    }
+//    if (status == RTEMS_SUCCESSFUL)        // suspend AVF2
+//    {
+//        status = rtems_task_suspend( Task_id[TASKID_AVF2] );
+//        if (status != RTEMS_SUCCESSFUL)
+//        {
+//            PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
+//        }
+//    }
+//    if (status == RTEMS_SUCCESSFUL)        // suspend PRC2
+//    {
+//        status = rtems_task_suspend( Task_id[TASKID_PRC2] );
+//        if (status != RTEMS_SUCCESSFUL)
+//        {
+//            PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
+//        }
+//    }
     if (status == RTEMS_SUCCESSFUL)        // suspend WFRM
     {
         status = rtems_task_suspend( Task_id[TASKID_WFRM] );

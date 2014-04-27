@@ -74,9 +74,6 @@ void SM_init_rings( void );
 void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
 void SM_reset_current_ring_nodes( void );
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header);
-void SM_average(float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
-                  ring_node_sm *ring_node_tab[],
-                  unsigned int firstTimeF0, unsigned int firstTimeF1 );
 void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
 void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,

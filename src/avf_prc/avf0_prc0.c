@@ -55,6 +55,46 @@ void reset_nb_sm_f0( unsigned char lfrMode )
     }
 }
 
+void SM_average_f0( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+                  ring_node_sm *ring_node_tab[],
+                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
+{
+    float sum;
+    unsigned int i;
+
+    for(i=0; i<TOTAL_SIZE_SM; i++)
+    {
+        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
+                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
+
+        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
+        {
+            averaged_spec_mat_f0[ i ] = sum;
+            averaged_spec_mat_f1[ i ] = sum;
+        }
+        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
+        {
+            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
+            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
+        }
+        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
+        {
+            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
+            averaged_spec_mat_f1[ i ] = sum;
+        }
+        else
+        {
+            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
+        }
+    }
+}
+
 //************
 // RTEMS TASKS
 
@@ -81,7 +121,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     nb_sbm_bp2  = 0;
 
     reset_nb_sm_f0( lfrRequestedMode );   // reset the sm counters that drive the BP and ASM computations / transmissions
-    ASM_generic_init_ring( asm_ring_norm_f0, NB_RING_NODES_ASM_NORM_F0 );
+    ASM_generic_init_ring( asm_ring_norm_f0,      NB_RING_NODES_ASM_NORM_F0      );
     ASM_generic_init_ring( asm_ring_burst_sbm_f0, NB_RING_NODES_ASM_BURST_SBM_F0 );
     current_ring_node_asm_norm_f0      = asm_ring_norm_f0;
     current_ring_node_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
@@ -104,7 +144,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        SM_average( current_ring_node_asm_norm_f0->matrix,
+        SM_average_f0( current_ring_node_asm_norm_f0->matrix,
                     current_ring_node_asm_burst_sbm_f0->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1 );
@@ -113,8 +153,8 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0;
         nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF0;
         nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF0;
-        nb_sbm_bp1 = nb_sbm_bp1   + NB_SM_BEFORE_AVF0;
-        nb_sbm_bp2 = nb_sbm_bp2   + NB_SM_BEFORE_AVF0;
+        nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF0;
+        nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF0;
 
         //****************************************
         // initialize the mesage for the MATR task
