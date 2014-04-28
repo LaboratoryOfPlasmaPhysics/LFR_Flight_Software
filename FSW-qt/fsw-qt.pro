@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-CONFIG += console verbose cpu_usage_report boot_messages debug_messages
+CONFIG += console verbose cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -50,8 +50,8 @@ TARGET = fsw
 INCLUDEPATH += \
     ../src \
     ../header \
-    ../src/basic_parameters \
-    ../src/avf_prc
+    ../header/processing \
+    ../src/basic_parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -64,11 +64,10 @@ SOURCES += \
     ../src/tm_lfr_tc_exe.c \
     ../src/tc_acceptance.c \
     ../src/basic_parameters/basic_parameters.c \
-    ../src/avf_prc/fsw_processing.c \
-    ../src/avf_prc/avf0_prc0.c \
-    ../src/avf_prc/avf1_prc1.c \
-    ../src/avf_prc/avf2_prc2.c
-
+    ../src/processing/fsw_processing.c \
+    ../src/processing/avf0_prc0.c \
+    ../src/processing/avf1_prc1.c \
+    ../src/processing/avf2_prc2.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -78,15 +77,15 @@ HEADERS += \
     ../header/fsw_misc.h \
     ../header/fsw_init.h \
     ../header/ccsds_types.h \
-    ../header/fsw_params_processing.h \
     ../header/fsw_spacewire.h \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
     ../header/fsw_params_nb_bytes.h \
     ../src/basic_parameters/basic_parameters.h \
-    ../src/avf_prc/fsw_processing.h \
-    ../src/avf_prc/avf0_prc0.h \
-    ../src/avf_prc/avf1_prc1.h \
-    ../src/avf_prc/avf2_prc2.h
+    ../header/processing/fsw_processing.h \
+    ../header/processing/fsw_params_processing.h \
+    ../header/processing/avf0_prc0.h \
+    ../header/processing/avf1_prc1.h \
+    ../header/processing/avf2_prc2.h
 

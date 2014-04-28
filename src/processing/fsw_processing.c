@@ -105,16 +105,16 @@ rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
 
     //***
     // F2
-//    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
-//    if (nb_sm_f0_aux_f2 == 96)
-//    {
-//        nb_sm_f0_aux_f2 = 0;
-//        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-//        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-//        {
-//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-//        }
-//    }
+    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
+    if (nb_sm_f0_aux_f2 == 96)
+    {
+        nb_sm_f0_aux_f2 = 0;
+        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
+        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
+    }
 }
 
 //******************
@@ -254,88 +254,6 @@ void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
 }
 
-void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )
-{
-    int frequencyBin;
-    int asmComponent;
-    unsigned int offsetAveragedSpecMatReorganized;
-    unsigned int offsetAveragedSpecMat;
-
-    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
-    {
-        for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
-        {
-            offsetAveragedSpecMatReorganized =
-                    frequencyBin * NB_VALUES_PER_SM
-                    + asmComponent;
-            offsetAveragedSpecMat            =
-                    asmComponent * NB_BINS_PER_SM
-                    + frequencyBin;
-            averaged_spec_mat_reorganized[offsetAveragedSpecMatReorganized  ] =
-                    averaged_spec_mat[ offsetAveragedSpecMat ] / divider;
-        }
-    }
-}
-
-void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat , float divider,
-                                 unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage, unsigned char ASMIndexStart )
-{
-    int frequencyBin;
-    int asmComponent;
-    int offsetASM;
-    int offsetCompressed;
-    int k;
-
-    // build data
-    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
-    {
-        for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
-        {
-            offsetCompressed =  // NO TIME OFFSET
-                    frequencyBin * NB_VALUES_PER_SM
-                    + asmComponent;
-            offsetASM =         // NO TIME OFFSET
-                    asmComponent * NB_BINS_PER_SM
-                    + ASMIndexStart
-                    + frequencyBin * nbBinsToAverage;
-            compressed_spec_mat[ offsetCompressed ] = 0;
-            for ( k = 0; k < nbBinsToAverage; k++ )
-            {
-                compressed_spec_mat[offsetCompressed ] =
-                        ( compressed_spec_mat[ offsetCompressed ]
-                        + averaged_spec_mat[ offsetASM + k ] ) / (divider * nbBinsToAverage);
-            }
-        }
-    }
-}
-
-void ASM_convert( volatile float *input_matrix, char *output_matrix)
-{
-    unsigned int frequencyBin;
-    unsigned int asmComponent;
-    char * pt_char_input;
-    char * pt_char_output;
-    unsigned int offsetInput;
-    unsigned int offsetOutput;
-
-    pt_char_input = (char*) &input_matrix;
-    pt_char_output = (char*) &output_matrix;
-
-    // convert all other data
-    for( frequencyBin=0; frequencyBin<NB_BINS_PER_SM; frequencyBin++)
-    {
-        for ( asmComponent=0; asmComponent<NB_VALUES_PER_SM; asmComponent++)
-        {
-            offsetInput  =       (frequencyBin*NB_VALUES_PER_SM) + asmComponent   ;
-            offsetOutput = 2 * ( (frequencyBin*NB_VALUES_PER_SM) + asmComponent ) ;
-            pt_char_input =  (char*) &input_matrix [ offsetInput  ];
-            pt_char_output = (char*) &output_matrix[ offsetOutput ];
-            pt_char_output[0] = pt_char_input[0];   // bits 31 downto 24 of the float
-            pt_char_output[1] = pt_char_input[1];   // bits 23 downto 16 of the float
-        }
-    }
-}
-
 void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
                     unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id)
 {
@@ -367,6 +285,13 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1);        // BLK_NR LSB
             break;
         case SID_NORM_ASM_F2:
+            spw_ioctl_send->dlen = TOTAL_SIZE_ASM_F2_IN_BYTES / 2;  // 2 packets will be sent
+            spw_ioctl_send->data = &spectral_matrix[
+                    ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_VALUES_PER_SM ) * 2
+                    ];
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F2);        // BLK_NR LSB
             break;
         default:
             PRINTF1("ERR *** in ASM_send *** unexpected sid %d\n", sid)
@@ -528,5 +453,3 @@ void set_time( unsigned char *time, unsigned char * timeInBuffer )
     time[4] = timeInBuffer[6];
     time[5] = timeInBuffer[7];
 }
-
-

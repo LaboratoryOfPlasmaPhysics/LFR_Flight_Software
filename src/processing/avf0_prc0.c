@@ -8,92 +8,19 @@
  */
 
 #include "avf0_prc0.h"
+#include "fsw_processing.h"
 
+nb_sm_before_bp_asm_f0 nb_sm_before_f0;
+
+//***
+// F0
 ring_node_asm asm_ring_norm_f0     [ NB_RING_NODES_ASM_NORM_F0      ];
 ring_node_asm asm_ring_burst_sbm_f0[ NB_RING_NODES_ASM_BURST_SBM_F0 ];
-ring_node_asm *current_ring_node_asm_burst_sbm_f0;
-ring_node_asm *current_ring_node_asm_norm_f0;
 
 float asm_f0_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f0_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F0];
 float compressed_sm_sbm_f0 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 ];
-
-nb_sm_before_bp_asm_f0 nb_sm_before_f0;
-
-void reset_nb_sm_f0( unsigned char lfrMode )
-{
-    nb_sm_before_f0.norm_bp1 = parameter_dump_packet.sy_lfr_n_bp_p0 * 96;
-    nb_sm_before_f0.norm_bp2 = parameter_dump_packet.sy_lfr_n_bp_p1 * 96;
-    nb_sm_before_f0.norm_asm = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 96;
-    nb_sm_before_f0.sbm1_bp1 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;
-    nb_sm_before_f0.sbm1_bp2 =  parameter_dump_packet.sy_lfr_s1_bp_p1 * 96;
-    nb_sm_before_f0.sbm2_bp1 =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 96;
-    nb_sm_before_f0.sbm2_bp2 =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 96;
-    nb_sm_before_f0.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 96;
-    nb_sm_before_f0.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 96;
-
-    if (lfrMode == LFR_MODE_SBM1)
-    {
-        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.sbm1_bp1;
-        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.sbm1_bp2;
-    }
-    else if (lfrMode == LFR_MODE_SBM2)
-    {
-        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.sbm2_bp1;
-        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.sbm2_bp2;
-    }
-    else if (lfrMode == LFR_MODE_BURST)
-    {
-        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.burst_bp1;
-        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.burst_bp2;
-    }
-    else
-    {
-        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.burst_bp1;
-        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.burst_bp2;
-    }
-}
-
-void SM_average_f0( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
-                  ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
-{
-    float sum;
-    unsigned int i;
-
-    for(i=0; i<TOTAL_SIZE_SM; i++)
-    {
-        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
-
-        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
-            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else
-        {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
-        }
-    }
-}
 
 //************
 // RTEMS TASKS
@@ -107,6 +34,8 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     rtems_id queue_id_prc0;
     asm_msg msgForMATR;
     ring_node_sm *ring_node_tab[8];
+    ring_node_asm *current_ring_node_asm_burst_sbm_f0;
+    ring_node_asm *current_ring_node_asm_norm_f0;
 
     unsigned int nb_norm_bp1;
     unsigned int nb_norm_bp2;
@@ -144,7 +73,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        SM_average_f0( current_ring_node_asm_norm_f0->matrix,
+        SM_average( current_ring_node_asm_norm_f0->matrix,
                     current_ring_node_asm_burst_sbm_f0->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1 );
@@ -394,5 +323,42 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             ASM_send( &headerASM, asm_f0_char, SID_NORM_ASM_F0, &spw_ioctl_send_ASM, queue_id);
         }
 
+    }
+}
+
+//**********
+// FUNCTIONS
+
+void reset_nb_sm_f0( unsigned char lfrMode )
+{
+    nb_sm_before_f0.norm_bp1 = parameter_dump_packet.sy_lfr_n_bp_p0 * 96;
+    nb_sm_before_f0.norm_bp2 = parameter_dump_packet.sy_lfr_n_bp_p1 * 96;
+    nb_sm_before_f0.norm_asm = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 96;
+    nb_sm_before_f0.sbm1_bp1 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;
+    nb_sm_before_f0.sbm1_bp2 =  parameter_dump_packet.sy_lfr_s1_bp_p1 * 96;
+    nb_sm_before_f0.sbm2_bp1 =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 96;
+    nb_sm_before_f0.sbm2_bp2 =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 96;
+    nb_sm_before_f0.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 96;
+    nb_sm_before_f0.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 96;
+
+    if (lfrMode == LFR_MODE_SBM1)
+    {
+        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.sbm1_bp1;
+        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.sbm1_bp2;
+    }
+    else if (lfrMode == LFR_MODE_SBM2)
+    {
+        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.sbm2_bp1;
+        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.sbm2_bp2;
+    }
+    else if (lfrMode == LFR_MODE_BURST)
+    {
+        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.burst_bp1;
+        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.burst_bp2;
+    }
+    else
+    {
+        nb_sm_before_f0.burst_sbm_bp1 =  nb_sm_before_f0.burst_bp1;
+        nb_sm_before_f0.burst_sbm_bp2 =  nb_sm_before_f0.burst_bp2;
     }
 }

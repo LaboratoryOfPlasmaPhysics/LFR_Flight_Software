@@ -7,13 +7,14 @@
 #include "fsw_params.h"
 #include "fsw_misc.h"
 #include "fsw_processing.h"
-#include "avf0_prc0.h"
-#include "avf1_prc1.h"
-#include "avf2_prc2.h"
 
 #include "tc_handler.h"
 #include "wf_handler.h"
 #include "fsw_spacewire.h"
+
+#include "avf0_prc0.h"
+#include "avf1_prc1.h"
+#include "avf2_prc2.h"
 
 extern rtems_name  Task_name[20];       /* array of task names */
 extern rtems_id    Task_id[20];         /* array of task ids */

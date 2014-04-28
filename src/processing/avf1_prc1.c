@@ -9,84 +9,17 @@
 
 #include "avf1_prc1.h"
 
+nb_sm_before_bp_asm_f1 nb_sm_before_f1;
+
+//***
+// F1
 ring_node_asm asm_ring_norm_f1     [ NB_RING_NODES_ASM_NORM_F1      ];
 ring_node_asm asm_ring_burst_sbm_f1[ NB_RING_NODES_ASM_BURST_SBM_F1 ];
-ring_node_asm *current_ring_node_asm_burst_sbm_f1;
-ring_node_asm *current_ring_node_asm_norm_f1;
 
 float asm_f1_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f1_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f1[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F1];
 float compressed_sm_sbm_f1 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 ];
-
-nb_sm_before_bp_asm_f1 nb_sm_before_f1;
-
-void reset_nb_sm_f1( unsigned char lfrMode )
-{
-    nb_sm_before_f1.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0 * 16;
-    nb_sm_before_f1.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1 * 16;
-    nb_sm_before_f1.norm_asm  = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 16;
-    nb_sm_before_f1.sbm2_bp1  =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 16;
-    nb_sm_before_f1.sbm2_bp2  =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 16;
-    nb_sm_before_f1.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 16;
-    nb_sm_before_f1.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 16;
-
-    if (lfrMode == LFR_MODE_SBM2)
-    {
-        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.sbm2_bp1;
-        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.sbm2_bp2;
-    }
-    else if (lfrMode == LFR_MODE_BURST)
-    {
-        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
-        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
-    }
-    else
-    {
-        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
-        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
-    }
-}
-
-void SM_average_f1( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
-                  ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
-{
-    float sum;
-    unsigned int i;
-
-    for(i=0; i<TOTAL_SIZE_SM; i++)
-    {
-        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
-
-        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
-            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
-        }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
-        {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
-            averaged_spec_mat_f1[ i ] = sum;
-        }
-        else
-        {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
-        }
-    }
-}
 
 //************
 // RTEMS TASKS
@@ -100,6 +33,8 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
     rtems_id queue_id_prc1;
     asm_msg msgForMATR;
     ring_node_sm *ring_node_tab[8];
+    ring_node_asm *current_ring_node_asm_burst_sbm_f1;
+    ring_node_asm *current_ring_node_asm_norm_f1;
 
     unsigned int nb_norm_bp1;
     unsigned int nb_norm_bp2;
@@ -137,7 +72,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        SM_average_f1( current_ring_node_asm_norm_f1->matrix,
+        SM_average( current_ring_node_asm_norm_f1->matrix,
                     current_ring_node_asm_burst_sbm_f1->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1 );
@@ -377,3 +312,34 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
     }
 }
+
+//**********
+// FUNCTIONS
+
+void reset_nb_sm_f1( unsigned char lfrMode )
+{
+    nb_sm_before_f1.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0 * 16;
+    nb_sm_before_f1.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1 * 16;
+    nb_sm_before_f1.norm_asm  = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 16;
+    nb_sm_before_f1.sbm2_bp1  =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 16;
+    nb_sm_before_f1.sbm2_bp2  =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 16;
+    nb_sm_before_f1.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 16;
+    nb_sm_before_f1.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 16;
+
+    if (lfrMode == LFR_MODE_SBM2)
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.sbm2_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.sbm2_bp2;
+    }
+    else if (lfrMode == LFR_MODE_BURST)
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
+    }
+    else
+    {
+        nb_sm_before_f1.burst_sbm_bp1 =  nb_sm_before_f1.burst_bp1;
+        nb_sm_before_f1.burst_sbm_bp2 =  nb_sm_before_f1.burst_bp2;
+    }
+}
+
