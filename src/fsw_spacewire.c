@@ -62,7 +62,7 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else                    // [2.b] in run state, start the link
         {
-            status = spacewire_stop_start_link( fdSPW ); // start the link
+            status = spacewire_stop_and_start_link( fdSPW ); // start the link
             if ( status != RTEMS_SUCCESSFUL)
             {
                 PRINTF1("in SPIQ *** ERR spacewire_start_link %d\n", status)
@@ -281,7 +281,7 @@ rtems_task wtdg_task( rtems_task_argument argument )
             status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
         }
 
-        status = spacewire_stop_start_link( fdSPW );
+        status = spacewire_stop_and_start_link( fdSPW );
 
         if (status != RTEMS_SUCCESSFUL)
         {
@@ -312,7 +312,7 @@ rtems_task wtdg_task( rtems_task_argument argument )
 
 //****************
 // OTHER FUNCTIONS
-int spacewire_open_link( void )
+int spacewire_open_link( void )  // by default, the driver resets the core: [SPW_CTRL_WRITE(pDev, SPW_CTRL_RESET);]
 {
     /** This function opens the SpaceWire link.
      *
@@ -337,18 +337,18 @@ int spacewire_start_link( int fd )
 {
     rtems_status_code status;
 
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
+    status = ioctl( fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
                                                         // -1 default hardcoded driver timeout
 
     return status;
 }
 
-int spacewire_stop_start_link( int fd )
+int spacewire_stop_and_start_link( int fd )
 {
     rtems_status_code status;
 
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_STOP);      // start fails if link pDev->running != 0
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
+    status = ioctl( fd, SPACEWIRE_IOCTRL_STOP);      // start fails if link pDev->running != 0
+    status = ioctl( fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
                                                         // -1 default hardcoded driver timeout
 
     return status;
@@ -416,7 +416,7 @@ int spacewire_reset_link( void )
 
         // CLOSING THE DRIVER AT THIS POINT WILL MAKE THE SEND TASK BLOCK THE SYSTEM
 
-        status_spw = spacewire_stop_start_link( fdSPW );
+        status_spw = spacewire_stop_and_start_link( fdSPW );
         if (  status_spw != RTEMS_SUCCESSFUL )
         {
             PRINTF1("in spacewire_reset_link *** ERR spacewire_start_link code %d\n",  status_spw)

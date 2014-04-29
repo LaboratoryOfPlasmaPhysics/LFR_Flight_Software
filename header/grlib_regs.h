@@ -80,21 +80,21 @@ typedef struct{
 } waveform_picker_regs_new_t;
 
 typedef struct {
-    volatile int config;
-    volatile int status;
-    volatile int matrixF0_Address0;
-    volatile int matrixFO_Address1;
-    volatile int matrixF1_Address;
-    volatile int matrixF2_Address;
-    volatile int coarse_time_F0_0;
-    volatile int coarse_time_F0_1;
-    volatile int coarse_time_F1;
-    volatile int coarse_time_F2;
-    volatile int fine_time_FO_0;
-    volatile int fine_time_F0_1;
-    volatile int fine_time_F1;
-    volatile int fine_time_F2;
-    volatile int debug;
+    volatile int config;            // 0x00
+    volatile int status;            // 0x04
+    volatile int matrixF0_Address0; // 0x08
+    volatile int matrixFO_Address1; // 0x0C
+    volatile int matrixF1_Address;  // 0x10
+    volatile int matrixF2_Address;  // 0x14
+    volatile int coarse_time_F0_0;  // 0x18
+    volatile int coarse_time_F0_1;  // 0x1C
+    volatile int coarse_time_F1;    // 0x20
+    volatile int coarse_time_F2;    // 0x24
+    volatile int fine_time_FO_0;    // 0x28
+    volatile int fine_time_F0_1;    // 0x2C
+    volatile int fine_time_F1;      // 0x30
+    volatile int fine_time_F2;      // 0x34
+    volatile int debug;             // 0x38
 } spectral_matrix_regs_t;
 
 #endif // GRLIB_REGS_H_INCLUDED

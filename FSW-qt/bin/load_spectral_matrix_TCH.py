@@ -41,13 +41,28 @@ for indexComponent in range(nbComponentsByMatrix):
 ## WRITE THE DATA ##
 ####################
 
+# F0 buffer address
 address_to_read = 0x80000f08
 val = RMAPPlugin0.Read( address_to_read, 1)
 matrixF0_Address0 = val[0]
+
+# F1 buffer address
+address_to_read = 0x80000f10
+val = RMAPPlugin0.Read( address_to_read, 1)
+matrixF1_Address = val[0]
+
+# F2 buffer address
+address_to_read = 0x80000f14
+val = RMAPPlugin0.Read( address_to_read, 1)
+matrixF2_Address = val[0]
+
 print str( len(dataInIntReorganized) ) + " data to write"
 RMAPPlugin0.Write( matrixF0_Address0, dataInIntReorganized )
 print str( len(dataInIntReorganized) ) + " data written @" + hex(matrixF0_Address0)
-
+RMAPPlugin0.Write( matrixF1_Address, dataInIntReorganized )
+print str( len(dataInIntReorganized) ) + " data written @" + hex(matrixF1_Address)
+RMAPPlugin0.Write( matrixF2_Address, dataInIntReorganized )
+print str( len(dataInIntReorganized) ) + " data written @" + hex(matrixF2_Address)
 
 
 

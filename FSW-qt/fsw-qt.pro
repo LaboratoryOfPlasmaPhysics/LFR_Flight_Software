@@ -83,8 +83,8 @@ HEADERS += \
     ../header/tc_acceptance.h \
     ../header/fsw_params_nb_bytes.h \
     ../src/basic_parameters/basic_parameters.h \
+    ../header/fsw_params_processing.h \
     ../header/processing/fsw_processing.h \
-    ../header/processing/fsw_params_processing.h \
     ../header/processing/avf0_prc0.h \
     ../header/processing/avf1_prc1.h \
     ../header/processing/avf2_prc2.h
