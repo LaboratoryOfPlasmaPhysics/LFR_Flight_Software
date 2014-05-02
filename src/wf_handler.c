@@ -1304,29 +1304,21 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     if ( (sid ==SID_NORM_SWF_F0)    || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
          || (sid ==SID_NORM_CWF_F3) || (sid==SID_NORM_CWF_LONG_F3) || (sid ==SID_BURST_CWF_F2) )
     {
-        sequence_cnt = &sequenceCounters_SCIENCE_NORMAL_BURST;
+        sequence_cnt = (unsigned short *) &sequenceCounters_SCIENCE_NORMAL_BURST;
     }
     else if ( (sid ==SID_SBM1_CWF_F1) || (sid ==SID_SBM2_CWF_F2) )
     {
-        sequence_cnt = &sequenceCounters_SCIENCE_SBM1_SBM2;
+        sequence_cnt = (unsigned short *) &sequenceCounters_SCIENCE_SBM1_SBM2;
     }
     else
     {
-        sequence_cnt = NULL;
+        sequence_cnt = (unsigned short *) NULL;
         PRINTF1("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", sid)
     }
 
     if (sequence_cnt != NULL)
     {
-        segmentation_grouping_flag  = (packet_sequence_control[ 0 ] & 0xc0) << 8;
-        *sequence_cnt                = (*sequence_cnt) & 0x3fff;
-
-        new_packet_sequence_control = segmentation_grouping_flag | *sequence_cnt ;
-
-        packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
-        packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
-
-        // increment the sequence counter for the next packet
+        // increment the sequence counter
         if ( *sequence_cnt < SEQ_CNT_MAX)
         {
             *sequence_cnt = *sequence_cnt + 1;
@@ -1335,5 +1327,12 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
         {
             *sequence_cnt = 0;
         }
+        segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+        *sequence_cnt                = (*sequence_cnt) & 0x3fff;
+
+        new_packet_sequence_control = segmentation_grouping_flag | (*sequence_cnt) ;
+
+        packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+        packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
     }
 }

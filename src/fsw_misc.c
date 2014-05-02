@@ -197,7 +197,8 @@ rtems_task hous_task(rtems_task_argument argument)
         else
         {
             status = rtems_rate_monotonic_get_status( HK_id, &period_status );
-            sched_yield();
+//            sched_yield();
+            status = rtems_task_wake_after( 10 );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 100 ms = 10 * 10 ms
         }
     }
     status = rtems_rate_monotonic_cancel(HK_id);
@@ -328,7 +329,7 @@ void increment_seq_counter( unsigned char *packet_sequence_control)
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
 
-    segmentation_grouping_flag  = (unsigned short) ( (packet_sequence_control[0] & 0xc0) << 8 );   // keep bits 7 downto 6
+    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;   // keep bits 7 downto 6
     sequence_cnt                = (unsigned short) (
                 ( (packet_sequence_control[0] & 0x3f) << 8 )    // keep bits 5 downto 0
                                 + packet_sequence_control[1]

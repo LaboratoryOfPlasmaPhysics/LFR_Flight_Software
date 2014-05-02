@@ -21,6 +21,8 @@ float asm_f0_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f0_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F0];
 float compressed_sm_sbm_f0 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 ];
+unsigned char bp1_norm_f0  [ TOTAL_SIZE_BP1_NORM_F0 ];
+unsigned char bp1_sbm_f0   [ TOTAL_SIZE_BP1_SBM_F0  ];
 
 //************
 // RTEMS TASKS
@@ -259,7 +261,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                                          NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,
                                          ASM_F0_INDICE_START);
             // 2) compute the BP1 set
-
+//            BP1_set( compressed_sm_norm_f0, NB_BINS_COMPRESSED_SM_SBM_F0, bp1_sbm_f0 );
             // 3) send the BP1 set
             set_time( packet_sbm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
             set_time( packet_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
@@ -291,7 +293,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                                          NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
                                          ASM_F0_INDICE_START );
             // 2) compute the BP1 set
-
+//            BP1_set( compressed_sm_norm_f0, NB_BINS_COMPRESSED_SM_F0, bp1_norm_f0 );
             // 3) send the BP1 set
             set_time( packet_norm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
             set_time( packet_norm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );

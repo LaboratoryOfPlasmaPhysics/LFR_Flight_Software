@@ -2,6 +2,7 @@
 #define AVF0_PRC0_H_INCLUDED
 
 #include "fsw_processing.h"
+#include "basic_parameters.h"
 
 typedef struct {
     unsigned int norm_bp1;
