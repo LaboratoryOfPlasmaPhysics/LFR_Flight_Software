@@ -751,6 +751,7 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
     reset_current_ring_nodes();
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
+    get_v_e1_e2_f3( NULL, NULL, NULL, true );
 
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );

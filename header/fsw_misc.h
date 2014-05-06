@@ -36,6 +36,7 @@ void increment_seq_counter( unsigned char *packet_sequence_control);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
+void get_v_e1_e2_f3 (unsigned char *v, unsigned char *e1, unsigned char *e2, bool init_buffer_addr );
 
 extern int sched_yield( void );
 

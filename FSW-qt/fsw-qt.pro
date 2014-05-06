@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-CONFIG += console verbose
+CONFIG += console verbose cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -11,7 +11,7 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=1 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=6 # internal
+DEFINES += SW_VERSION_N4=7 # internal
 
 contains( CONFIG, debug_tch ) {
     DEFINES += DEBUG_TCH

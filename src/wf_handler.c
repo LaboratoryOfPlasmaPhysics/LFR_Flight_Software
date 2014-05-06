@@ -66,7 +66,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 
     rtems_status_code status;
 
-    if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+    if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_BURST)  // in BURST the data are used to place v, e1 and e2 in the HK packet
          || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
     { // in modes other than STANDBY and BURST, send the CWF_F3 data
         if ((waveform_picker_regs->status & 0x08) == 0x08){     // [1000] f3 is full
@@ -282,35 +282,43 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
-        {
-            PRINTF("send CWF_LONG_F3\n")
-        }
-        else
-        {
-            PRINTF("send CWF_F3 (light)\n")
-        }
-        if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
-            if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
-            {
-                send_waveform_CWF( wf_cont_f3_b, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
-            }
-            else
-            {
-                send_waveform_CWF3_light( wf_cont_f3_b, headerCWF_F3_light, queue_id );
-            }
-        }
-        else
+        if ( (lfrCurrentMode == LFR_MODE_NORMAL)
+             || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode==LFR_MODE_SBM2) )
         {
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
-                send_waveform_CWF( wf_cont_f3_a, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+                PRINTF("send CWF_LONG_F3\n")
             }
             else
             {
-                send_waveform_CWF3_light( wf_cont_f3_a, headerCWF_F3_light, queue_id );
+                PRINTF("send CWF_F3 (light)\n")
             }
+            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
+                if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
+                {
+                    send_waveform_CWF( wf_cont_f3_b, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+                }
+                else
+                {
+                    send_waveform_CWF3_light( wf_cont_f3_b, headerCWF_F3_light, queue_id );
+                }
+            }
+            else
+            {
+                if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
+                {
+                    send_waveform_CWF( wf_cont_f3_a, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+                }
+                else
+                {
+                    send_waveform_CWF3_light( wf_cont_f3_a, headerCWF_F3_light, queue_id );
+                }
 
+            }
+        }
+        else
+        {
+            PRINTF1("in CWF3 *** lfrCurrentMode is %d, no data will be sent\n", lfrCurrentMode)
         }
     }
 }
@@ -1205,7 +1213,8 @@ void set_wfp_burst_enable_register( unsigned char mode )
         break;
     case(LFR_MODE_BURST):
         waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x04; // [0100] enable f2
+//        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x04; // [0100] enable f2
+        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x06; // [0110] enable f3 AND f2
         break;
     case(LFR_MODE_SBM1):
         waveform_picker_regs->run_burst_enable = 0x20;  // [0010 0000] f1 burst enabled

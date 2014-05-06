@@ -221,6 +221,10 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
+            get_v_e1_e2_f3(
+                        housekeeping_packet.hk_lfr_sc_v_f3, housekeeping_packet.hk_lfr_sc_e1_f3, housekeeping_packet.hk_lfr_sc_e2_f3,
+                        false );
+
             // SEND PACKET
             status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
@@ -255,7 +259,7 @@ rtems_task dumb_task( rtems_task_argument unused )
 
     char *DumbMessages[10] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-                        "in DUMB *** waveforms_isr",                                            // RTEMS_EVENT_2
+                        "in DUMB *** f3 buffer changed",                                            // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                         "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
                         "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
@@ -432,3 +436,66 @@ void send_dumb_hk( void )
     rtems_message_queue_urgent( queue_id, &dummy_hk_packet,
                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
+
+void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, bool init_buffer_addr )
+{
+    static int *current_addr_data_f3 = NULL;
+    int *new_addr_data_f3;
+    unsigned char *ptr;
+
+    static unsigned int counter = 0;
+    unsigned int offset_in_samples;
+    unsigned int offset_in_words;
+    unsigned char delta = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
+
+    new_addr_data_f3 = (int *) waveform_picker_regs->addr_data_f3;
+
+    if (init_buffer_addr == true)       // when the waveform_picker is launched
+    {
+        current_addr_data_f3 = NULL;
+    }
+    else
+    {
+        if (lfrCurrentMode == LFR_MODE_STANDBY)
+        {
+            v[0] = 0x00;
+            v[1] = 0x00;
+            e1[0] = 0x00;
+            e1[1] = 0x00;
+            e2[0] = 0x00;
+            e2[1] = 0x00;
+        }
+        else
+        {
+            if ( new_addr_data_f3 != current_addr_data_f3 )
+            {
+                counter = 0;
+                offset_in_samples = 0;
+                current_addr_data_f3 = new_addr_data_f3;
+            }
+            else
+            {
+                counter = counter + 1;
+                offset_in_samples = counter * delta;
+                if ( offset_in_samples > NB_SAMPLES_PER_SNAPSHOT )
+                {
+                    offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
+                    PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out the buffer, counter = %d\n", counter)
+                }
+            }
+            offset_in_words = TIME_OFFSET + offset_in_samples * NB_WORDS_SWF_BLK;
+            ptr = (unsigned char*) &current_addr_data_f3[ offset_in_words  ];
+            v[0] = ptr[0];
+            v[1] = ptr[1];
+            e1[0] = ptr[2];
+            e1[1] = ptr[3];
+            e2[0] = ptr[4];
+            e2[1] = ptr[5];
+        }
+    }
+}
+
+
+
+
+

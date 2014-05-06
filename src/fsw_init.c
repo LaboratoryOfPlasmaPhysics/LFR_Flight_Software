@@ -321,7 +321,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_ACTN]
         );
     }
