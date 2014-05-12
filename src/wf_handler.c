@@ -81,6 +81,7 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
             if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
             }
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2);
             waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff777; // reset f3 bits to 0, [1111 0111 0111 0111]
         }
     }
@@ -1214,7 +1215,7 @@ void set_wfp_burst_enable_register( unsigned char mode )
     case(LFR_MODE_BURST):
         waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
 //        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x04; // [0100] enable f2
-        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x06; // [0110] enable f3 AND f2
+        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0c; // [1100] enable f3 AND f2
         break;
     case(LFR_MODE_SBM1):
         waveform_picker_regs->run_burst_enable = 0x20;  // [0010 0000] f1 burst enabled

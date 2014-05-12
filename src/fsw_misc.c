@@ -439,59 +439,61 @@ void send_dumb_hk( void )
 
 void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, bool init_buffer_addr )
 {
-    static int *current_addr_data_f3 = NULL;
-    int *new_addr_data_f3;
-    unsigned char *ptr;
+    unsigned int coarseTime;
+    unsigned int acquisitionTime;
+    unsigned int deltaT = 0;
+    unsigned char *bufferPtr;
 
-    static unsigned int counter = 0;
     unsigned int offset_in_samples;
-    unsigned int offset_in_words;
-    unsigned char delta = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
+    unsigned int offset_in_bytes;
+    unsigned char f3 = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
 
-    new_addr_data_f3 = (int *) waveform_picker_regs->addr_data_f3;
-
-    if (init_buffer_addr == true)       // when the waveform_picker is launched
+    if (lfrCurrentMode == LFR_MODE_STANDBY)
     {
-        current_addr_data_f3 = NULL;
+        v[0] = 0x00;
+        v[1] = 0x00;
+        e1[0] = 0x00;
+        e1[1] = 0x00;
+        e2[0] = 0x00;
+        e2[1] = 0x00;
     }
     else
     {
-        if (lfrCurrentMode == LFR_MODE_STANDBY)
+        coarseTime = time_management_regs->coarse_time & 0x7fffffff;
+        bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3;
+        acquisitionTime = (unsigned int) ( ( bufferPtr[2] & 0x7f ) << 24 )
+                + (unsigned int) ( bufferPtr[3] << 16 )
+                + (unsigned int) ( bufferPtr[0] << 8  )
+                + (unsigned int) ( bufferPtr[1]       );
+        if ( coarseTime > acquisitionTime )
         {
-            v[0] = 0x00;
-            v[1] = 0x00;
-            e1[0] = 0x00;
-            e1[1] = 0x00;
-            e2[0] = 0x00;
-            e2[1] = 0x00;
+            deltaT = coarseTime - acquisitionTime;
+            offset_in_samples = (deltaT-1) * f3 ;
+        }
+        else if( coarseTime == acquisitionTime )
+        {
+            offset_in_samples = 0;
         }
         else
         {
-            if ( new_addr_data_f3 != current_addr_data_f3 )
-            {
-                counter = 0;
-                offset_in_samples = 0;
-                current_addr_data_f3 = new_addr_data_f3;
-            }
-            else
-            {
-                counter = counter + 1;
-                offset_in_samples = counter * delta;
-                if ( offset_in_samples > NB_SAMPLES_PER_SNAPSHOT )
-                {
-                    offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
-                    PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out the buffer, counter = %d\n", counter)
-                }
-            }
-            offset_in_words = TIME_OFFSET + offset_in_samples * NB_WORDS_SWF_BLK;
-            ptr = (unsigned char*) &current_addr_data_f3[ offset_in_words  ];
-            v[0] = ptr[0];
-            v[1] = ptr[1];
-            e1[0] = ptr[2];
-            e1[1] = ptr[3];
-            e2[0] = ptr[4];
-            e2[1] = ptr[5];
+            offset_in_samples = 0;
+            PRINTF2("ERR *** in get_v_e1_e2_f3 *** coarseTime = %x, acquisitionTime = %x\n", coarseTime, acquisitionTime)
         }
+
+        if ( offset_in_samples > (NB_SAMPLES_PER_SNAPSHOT - 1) )
+        {
+            PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out the buffer, counter = %d\n", offset_in_samples)
+            offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
+        }
+        PRINTF1("f3 data @ %x *** ", waveform_picker_regs->addr_data_f3 )
+        PRINTF2("deltaT = %d, offset_in_samples = %d\n", deltaT, offset_in_samples )
+        offset_in_bytes = TIME_OFFSET_IN_BYTES + offset_in_samples * NB_WORDS_SWF_BLK * 4;
+        v[0]  = bufferPtr[ offset_in_bytes + 0];
+        v[1]  = bufferPtr[ offset_in_bytes + 1];
+        e1[0] = bufferPtr[ offset_in_bytes + 2];
+        e1[1] = bufferPtr[ offset_in_bytes + 3];
+        e2[0] = bufferPtr[ offset_in_bytes + 4];
+        e2[1] = bufferPtr[ offset_in_bytes + 5];
     }
 }
 
