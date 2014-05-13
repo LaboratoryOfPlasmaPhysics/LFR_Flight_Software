@@ -35,6 +35,7 @@ typedef struct ring_node
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
+#define NB_RING_NODES_F3 3      // AT LEAST 3
 
 //**********
 // LFR MODES

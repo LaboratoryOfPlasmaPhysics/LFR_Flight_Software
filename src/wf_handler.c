@@ -27,6 +27,7 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3_light[ NB_PACKETS_PER_GROUP_OF_CWF_LIGH
 ring_node waveform_ring_f0[NB_RING_NODES_F0];
 ring_node waveform_ring_f1[NB_RING_NODES_F1];
 ring_node waveform_ring_f2[NB_RING_NODES_F2];
+ring_node waveform_ring_f3[NB_RING_NODES_F3];
 ring_node *current_ring_node_f0;
 ring_node *ring_node_to_send_swf_f0;
 ring_node *current_ring_node_f1;
@@ -35,6 +36,8 @@ ring_node *ring_node_to_send_cwf_f1;
 ring_node *current_ring_node_f2;
 ring_node *ring_node_to_send_swf_f2;
 ring_node *ring_node_to_send_cwf_f2;
+ring_node *current_ring_node_f3;
+ring_node *ring_node_to_send_cwf_f3;
 
 bool extractSWF = false;
 bool swf_f0_ready = false;
@@ -71,12 +74,9 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
     { // in modes other than STANDBY and BURST, send the CWF_F3 data
         if ((waveform_picker_regs->status & 0x08) == 0x08){     // [1000] f3 is full
             // (1) change the receiving buffer for the waveform picker
-            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
-                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_b);
-            }
-            else {
-                waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);
-            }
+            ring_node_to_send_cwf_f3 = current_ring_node_f3;
+            current_ring_node_f3 = current_ring_node_f3->next;
+            waveform_picker_regs->addr_data_f3 = current_ring_node_f3->buffer_address;
             // (2) send an event for the waveforms transmission
             if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
                 rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
@@ -289,33 +289,18 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
                 PRINTF("send CWF_LONG_F3\n")
+                send_waveform_CWF(
+                            (volatile int*) current_ring_node_f3->buffer_address,
+                            SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
+                send_waveform_CWF3_light(
+                            (volatile int*) current_ring_node_f3->buffer_address,
+                            headerCWF_F3_light, queue_id );
             }
-            if (waveform_picker_regs->addr_data_f3 == (int) wf_cont_f3_a) {
-                if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
-                {
-                    send_waveform_CWF( wf_cont_f3_b, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
-                }
-                else
-                {
-                    send_waveform_CWF3_light( wf_cont_f3_b, headerCWF_F3_light, queue_id );
-                }
-            }
-            else
-            {
-                if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
-                {
-                    send_waveform_CWF( wf_cont_f3_a, SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
-                }
-                else
-                {
-                    send_waveform_CWF3_light( wf_cont_f3_a, headerCWF_F3_light, queue_id );
-                }
 
-            }
         }
         else
         {
@@ -498,60 +483,39 @@ void init_waveforms( void )
 
 void init_waveform_rings( void )
 {
-    unsigned char i;
-
     // F0 RING
-    waveform_ring_f0[0].next            = (ring_node*) &waveform_ring_f0[1];
-    waveform_ring_f0[0].previous        = (ring_node*) &waveform_ring_f0[NB_RING_NODES_F0-1];
-    waveform_ring_f0[0].buffer_address  = (int) &wf_snap_f0[0][0];
-
-    waveform_ring_f0[NB_RING_NODES_F0-1].next           = (ring_node*) &waveform_ring_f0[0];
-    waveform_ring_f0[NB_RING_NODES_F0-1].previous       = (ring_node*) &waveform_ring_f0[NB_RING_NODES_F0-2];
-    waveform_ring_f0[NB_RING_NODES_F0-1].buffer_address = (int) &wf_snap_f0[NB_RING_NODES_F0-1][0];
-
-    for(i=1; i<NB_RING_NODES_F0-1; i++)
-    {
-        waveform_ring_f0[i].next            = (ring_node*) &waveform_ring_f0[i+1];
-        waveform_ring_f0[i].previous        = (ring_node*) &waveform_ring_f0[i-1];
-        waveform_ring_f0[i].buffer_address  = (int) &wf_snap_f0[i][0];
-    }
-
+    init_waveform_ring( waveform_ring_f0, NB_RING_NODES_F0, wf_snap_f0 );
     // F1 RING
-    waveform_ring_f1[0].next            = (ring_node*) &waveform_ring_f1[1];
-    waveform_ring_f1[0].previous        = (ring_node*) &waveform_ring_f1[NB_RING_NODES_F1-1];
-    waveform_ring_f1[0].buffer_address  = (int) &wf_snap_f1[0][0];
-
-    waveform_ring_f1[NB_RING_NODES_F1-1].next           = (ring_node*) &waveform_ring_f1[0];
-    waveform_ring_f1[NB_RING_NODES_F1-1].previous       = (ring_node*) &waveform_ring_f1[NB_RING_NODES_F1-2];
-    waveform_ring_f1[NB_RING_NODES_F1-1].buffer_address = (int) &wf_snap_f1[NB_RING_NODES_F1-1][0];
-
-    for(i=1; i<NB_RING_NODES_F1-1; i++)
-    {
-        waveform_ring_f1[i].next            = (ring_node*) &waveform_ring_f1[i+1];
-        waveform_ring_f1[i].previous        = (ring_node*) &waveform_ring_f1[i-1];
-        waveform_ring_f1[i].buffer_address  = (int) &wf_snap_f1[i][0];
-    }
-
+    init_waveform_ring( waveform_ring_f1, NB_RING_NODES_F1, wf_snap_f1 );
     // F2 RING
-    waveform_ring_f2[0].next            = (ring_node*) &waveform_ring_f2[1];
-    waveform_ring_f2[0].previous        = (ring_node*) &waveform_ring_f2[NB_RING_NODES_F2-1];
-    waveform_ring_f2[0].buffer_address  = (int) &wf_snap_f2[0][0];
-
-    waveform_ring_f2[NB_RING_NODES_F2-1].next           = (ring_node*) &waveform_ring_f2[0];
-    waveform_ring_f2[NB_RING_NODES_F2-1].previous       = (ring_node*) &waveform_ring_f2[NB_RING_NODES_F2-2];
-    waveform_ring_f2[NB_RING_NODES_F2-1].buffer_address = (int) &wf_snap_f2[NB_RING_NODES_F2-1][0];
-
-    for(i=1; i<NB_RING_NODES_F2-1; i++)
-    {
-        waveform_ring_f2[i].next            = (ring_node*) &waveform_ring_f2[i+1];
-        waveform_ring_f2[i].previous        = (ring_node*) &waveform_ring_f2[i-1];
-        waveform_ring_f2[i].buffer_address  = (int) &wf_snap_f2[i][0];
-    }
+    init_waveform_ring( waveform_ring_f2, NB_RING_NODES_F2, wf_snap_f2 );
+    // F3 RING
+    init_waveform_ring( waveform_ring_f3, NB_RING_NODES_F3, wf_cont_f3 );
 
     DEBUG_PRINTF1("waveform_ring_f0 @%x\n", (unsigned int) waveform_ring_f0)
     DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int) waveform_ring_f1)
     DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int) waveform_ring_f2)
+    DEBUG_PRINTF1("waveform_ring_f3 @%x\n", (unsigned int) waveform_ring_f3)
+}
 
+void init_waveform_ring(ring_node waveform_ring[], unsigned char nbNodes, volatile int wfrm[] )
+{
+    unsigned char i;
+
+    waveform_ring[0].next            = (ring_node*) &waveform_ring[ 1 ];
+    waveform_ring[0].previous        = (ring_node*) &waveform_ring[ nbNodes - 1 ];
+    waveform_ring[0].buffer_address  = (int) &wfrm[0];
+
+    waveform_ring[nbNodes-1].next           = (ring_node*) &waveform_ring[ 0 ];
+    waveform_ring[nbNodes-1].previous       = (ring_node*) &waveform_ring[ nbNodes - 2 ];
+    waveform_ring[nbNodes-1].buffer_address = (int) &wfrm[ (nbNodes-1) * WFRM_BUFFER ];
+
+    for(i=1; i<nbNodes-1; i++)
+    {
+        waveform_ring[i].next            = (ring_node*) &waveform_ring[ i + 1 ];
+        waveform_ring[i].previous        = (ring_node*) &waveform_ring[ i - 1 ];
+        waveform_ring[i].buffer_address  = (int) &wfrm[ i * WFRM_BUFFER ];
+    }
 }
 
 void reset_current_ring_nodes( void )
@@ -566,6 +530,9 @@ void reset_current_ring_nodes( void )
     current_ring_node_f2        = waveform_ring_f2;
     ring_node_to_send_cwf_f2    = waveform_ring_f2;
     ring_node_to_send_swf_f2    = waveform_ring_f2;
+
+    current_ring_node_f3        = waveform_ring_f3;
+    ring_node_to_send_cwf_f3    = waveform_ring_f3;
 }
 
 int init_header_snapshot_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF)
@@ -1152,7 +1119,7 @@ void reset_waveform_picker_regs(void)
     waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address; // 0x08
     waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address; // 0x0c
     waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f3 = (int) (wf_cont_f3_a);  // 0x14
+    waveform_picker_regs->addr_data_f3 = current_ring_node_f3->buffer_address; // 0x14
     reset_wfp_status();                                         // 0x18
     //
     set_wfp_delta_snapshot();   // 0x1c

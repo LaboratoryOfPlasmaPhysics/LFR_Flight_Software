@@ -9,6 +9,7 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 #include "fsw_misc.h"
+#include "fsw_params_wf_handler.h"
 
 #define pi 3.1415
 
@@ -16,15 +17,10 @@ extern int fdSPW;
 
 //*****************
 // waveform buffers
-// F0
-//extern volatile int wf_snap_f0[ ];
-// F1 F2
-extern volatile int wf_snap_f0[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
-extern volatile int wf_snap_f1[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
-extern volatile int wf_snap_f2[ ][ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET + 62 ];
-// F3
-extern volatile int wf_cont_f3_a[ ];
-extern volatile int wf_cont_f3_b[ ];
+extern volatile int wf_snap_f0[ ];
+extern volatile int wf_snap_f1[ ];
+extern volatile int wf_snap_f2[ ];
+extern volatile int wf_cont_f3[ ];
 extern char wf_cont_f3_light[ ];
 
 extern waveform_picker_regs_new_t *waveform_picker_regs;
@@ -57,6 +53,7 @@ rtems_task swbd_task( rtems_task_argument argument );
 // general functions
 void init_waveforms( void );
 void init_waveform_rings( void );
+void init_waveform_ring( ring_node waveform_ring[], unsigned char nbNodes, volatile int wfrm[] );
 void reset_current_ring_nodes( void );
 //
 int init_header_snapshot_wf_table(      unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF );

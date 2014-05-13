@@ -87,5 +87,6 @@ HEADERS += \
     ../header/processing/fsw_processing.h \
     ../header/processing/avf0_prc0.h \
     ../header/processing/avf1_prc1.h \
-    ../header/processing/avf2_prc2.h
+    ../header/processing/avf2_prc2.h \
+    ../header/fsw_params_wf_handler.h
 

@@ -21,8 +21,8 @@ float asm_f0_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f0_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F0];
 float compressed_sm_sbm_f0 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 ];
-unsigned char bp1_norm_f0  [ TOTAL_SIZE_BP1_NORM_F0 ];
-unsigned char bp1_sbm_f0   [ TOTAL_SIZE_BP1_SBM_F0  ];
+//unsigned char bp1_norm_f0  [ TOTAL_SIZE_BP1_NORM_F0 ];
+//unsigned char bp1_sbm_f0   [ TOTAL_SIZE_BP1_SBM_F0  ];
 
 //************
 // RTEMS TASKS
