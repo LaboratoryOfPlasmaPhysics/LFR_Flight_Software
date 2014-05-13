@@ -572,7 +572,7 @@ typedef struct {
     unsigned char hk_lfr_dpu_spw_tick_out_cnt;
     unsigned char hk_lfr_dpu_spw_last_timc;
     // ahb error statistics
-    unsigned int hk_lfr_last_fail_addr;
+    unsigned char hk_lfr_last_fail_addr[4];
     // temperatures
     unsigned char hk_lfr_temp_scm[2];
     unsigned char hk_lfr_temp_pcb[2];

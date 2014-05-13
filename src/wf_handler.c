@@ -214,8 +214,6 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     init_header_snapshot_wf_table( SID_NORM_SWF_F1, headerSWF_F1 );
     init_header_snapshot_wf_table( SID_NORM_SWF_F2, headerSWF_F2 );
 
-    init_waveforms();
-
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -449,37 +447,6 @@ rtems_task swbd_task(rtems_task_argument argument)
 
 //******************
 // general functions
-void init_waveforms( void )
-{
-    int i = 0;
-
-    for (i=0; i< NB_SAMPLES_PER_SNAPSHOT; i++)
-    {
-        //***
-        // F0
-//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET ] = 0x88887777;     //
-//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x22221111;    //
-//        wf_snap_f0[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0x44443333;    //
-
-        //***
-        // F1
-//        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = 0x22221111;
-//        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x44443333;
-//        wf_snap_f1[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0xaaaa0000;
-
-        //***
-        // F2
-//        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 0 + TIME_OFFSET  ] = 0x44443333;
-//        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 1 + TIME_OFFSET  ] = 0x22221111;
-//        wf_snap_f2[ (i* NB_WORDS_SWF_BLK) + 2 + TIME_OFFSET  ] = 0xaaaa0000;
-
-        //***
-        // F3
-//        wf_cont_f3[ (i* NB_WORDS_SWF_BLK) + 0 ] = val1;
-//        wf_cont_f3[ (i* NB_WORDS_SWF_BLK) + 1 ] = val2;
-//        wf_cont_f3[ (i* NB_WORDS_SWF_BLK) + 2 ] = 0xaaaa0000;
-    }
-}
 
 void init_waveform_rings( void )
 {

@@ -36,8 +36,10 @@ void increment_seq_counter( unsigned char *packet_sequence_control);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
-void get_v_e1_e2_f3 (unsigned char *v, unsigned char *e1, unsigned char *e2, bool init_buffer_addr );
+void get_v_e1_e2_f3 (unsigned char *v, unsigned char *e1, unsigned char *e2);
 
 extern int sched_yield( void );
+extern ring_node *current_ring_node_f3;
+extern ring_node *ring_node_to_send_cwf_f3;
 
 #endif // FSW_MISC_H_INCLUDED

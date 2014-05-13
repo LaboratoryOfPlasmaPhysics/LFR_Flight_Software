@@ -51,7 +51,6 @@ rtems_task swbd_task( rtems_task_argument argument );
 
 //******************
 // general functions
-void init_waveforms( void );
 void init_waveform_rings( void );
 void init_waveform_ring( ring_node waveform_ring[], unsigned char nbNodes, volatile int wfrm[] );
 void reset_current_ring_nodes( void );

@@ -222,8 +222,7 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             get_v_e1_e2_f3(
-                        housekeeping_packet.hk_lfr_sc_v_f3, housekeeping_packet.hk_lfr_sc_e1_f3, housekeeping_packet.hk_lfr_sc_e2_f3,
-                        false );
+                        housekeeping_packet.hk_lfr_sc_v_f3, housekeeping_packet.hk_lfr_sc_e1_f3, housekeeping_packet.hk_lfr_sc_e2_f3 );
 
             // SEND PACKET
             status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
@@ -437,7 +436,7 @@ void send_dumb_hk( void )
                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
 
-void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, bool init_buffer_addr )
+void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2 )
 {
     unsigned int coarseTime;
     unsigned int acquisitionTime;
@@ -460,7 +459,7 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, boo
     else
     {
         coarseTime = time_management_regs->coarse_time & 0x7fffffff;
-        bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3;
+        bufferPtr = (unsigned char*) current_ring_node_f3->buffer_address;
         acquisitionTime = (unsigned int) ( ( bufferPtr[2] & 0x7f ) << 24 )
                 + (unsigned int) ( bufferPtr[3] << 16 )
                 + (unsigned int) ( bufferPtr[0] << 8  )
@@ -472,7 +471,8 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, boo
         }
         else if( coarseTime == acquisitionTime )
         {
-            offset_in_samples = 0;
+            bufferPtr = (unsigned char*) current_ring_node_f3->previous->buffer_address;    // pick up v e1 and e2 in the previous f3 buffer
+            offset_in_samples = NB_SAMPLES_PER_SNAPSHOT-1;
         }
         else
         {
@@ -482,7 +482,7 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2, boo
 
         if ( offset_in_samples > (NB_SAMPLES_PER_SNAPSHOT - 1) )
         {
-            PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out the buffer, counter = %d\n", offset_in_samples)
+            PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out of the buffer, counter = %d\n", offset_in_samples)
             offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
         }
         PRINTF1("f3 data @ %x *** ", waveform_picker_regs->addr_data_f3 )
