@@ -245,7 +245,6 @@ struct param_local_str{
     unsigned int local_sbm1_nb_cwf_max;
     unsigned int local_sbm2_nb_cwf_sent;
     unsigned int local_sbm2_nb_cwf_max;
-    unsigned int local_nb_interrupt_f0_MAX;
 };
 
 #endif // FSW_PARAMS_H_INCLUDED

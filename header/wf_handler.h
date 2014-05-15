@@ -87,8 +87,6 @@ void set_wfp_delta_f2( void );
 
 //*****************
 // local parameters
-void set_local_nb_interrupt_f0_MAX( void );
-
 void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid );
 
 #endif // WF_HANDLER_H_INCLUDED

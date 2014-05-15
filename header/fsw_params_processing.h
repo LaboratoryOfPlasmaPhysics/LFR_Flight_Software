@@ -3,7 +3,7 @@
 
 #define NB_BINS_PER_SM          128
 #define NB_VALUES_PER_SM        25
-#define TOTAL_SIZE_SM           3200    // 25 * 128
+#define TOTAL_SIZE_SM           3200    // 25 * 128 = 0xC80
 #define TOTAL_SIZE_NORM_BP1_F0   99     // 11 * 9 = 99
 #define TOTAL_SIZE_NORM_BP1_F1  117     // 13 * 9 = 117
 #define TOTAL_SIZE_NORM_BP1_F2  108     // 12 * 9 = 108
@@ -19,23 +19,23 @@
 #define NB_RING_NODES_ASM_BURST_SBM_F2  3   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F2       3   // AT LEAST 3
 //
-#define NB_BINS_PER_ASM_F0  88
-#define NB_BINS_PER_PKT_ASM_F0  44
-#define TOTAL_SIZE_ASM_F0_IN_BYTES   4400    // 25 * 88 * 2
-#define ASM_F0_INDICE_START 17      // 88 bins
-#define ASM_F0_INDICE_STOP  104     // 2 packets of 44 bins
+#define NB_BINS_PER_ASM_F0          88
+#define NB_BINS_PER_PKT_ASM_F0      44
+#define TOTAL_SIZE_ASM_F0_IN_BYTES  4400    // 25 * 88 * 2
+#define ASM_F0_INDICE_START         17      // 88 bins
+#define ASM_F0_INDICE_STOP          104     // 2 packets of 44 bins
 //
-#define NB_BINS_PER_ASM_F1  104
-#define NB_BINS_PER_PKT_ASM_F1  52
-#define TOTAL_SIZE_ASM_F1_IN_BYTES   5200    // 25 * 104 * 2
-#define ASM_F1_INDICE_START 6       // 104 bins
-#define ASM_F1_INDICE_STOP  109     // 2 packets of 52 bins
+#define NB_BINS_PER_ASM_F1          104
+#define NB_BINS_PER_PKT_ASM_F1      52
+#define TOTAL_SIZE_ASM_F1_IN_BYTES  5200    // 25 * 104 * 2
+#define ASM_F1_INDICE_START         6       // 104 bins
+#define ASM_F1_INDICE_STOP          109     // 2 packets of 52 bins
 //
-#define NB_BINS_PER_ASM_F2  96
-#define NB_BINS_PER_PKT_ASM_F2  48
-#define TOTAL_SIZE_ASM_F2_IN_BYTES   4800    // 25 * 96 * 2
-#define ASM_F2_INDICE_START 7       // 96 bins
-#define ASM_F2_INDICE_STOP  102     // 2 packets of 48 bins
+#define NB_BINS_PER_ASM_F2          96
+#define NB_BINS_PER_PKT_ASM_F2      48
+#define TOTAL_SIZE_ASM_F2_IN_BYTES  4800    // 25 * 96 * 2
+#define ASM_F2_INDICE_START         7       // 96 bins
+#define ASM_F2_INDICE_STOP          102     // 2 packets of 48 bins
 //
 #define NB_BINS_COMPRESSED_SM_F0        11
 #define NB_BINS_COMPRESSED_SM_F1        13

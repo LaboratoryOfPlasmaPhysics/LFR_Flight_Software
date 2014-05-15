@@ -214,7 +214,6 @@ void init_local_mode_parameters( void )
     unsigned int i;
 
     // LOCAL PARAMETERS
-    set_local_nb_interrupt_f0_MAX();
 
     BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)

@@ -485,8 +485,6 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2 )
             PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out of the buffer, counter = %d\n", offset_in_samples)
             offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
         }
-        PRINTF1("f3 data @ %x *** ", waveform_picker_regs->addr_data_f3 )
-        PRINTF2("deltaT = %d, offset_in_samples = %d\n", deltaT, offset_in_samples )
         offset_in_bytes = TIME_OFFSET_IN_BYTES + offset_in_samples * NB_WORDS_SWF_BLK * 4;
         v[0]  = bufferPtr[ offset_in_bytes + 0];
         v[1]  = bufferPtr[ offset_in_bytes + 1];

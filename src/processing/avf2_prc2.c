@@ -188,8 +188,9 @@ rtems_task prc2_task( rtems_task_argument argument )
             // 3) send the BP1 set
             set_time( packet_norm_bp1_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
             set_time( packet_norm_bp1_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-            BP_send( (char *) &packet_norm_bp1_f2.header, queue_id,
-                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA);
+            BP_send( (char *) &packet_norm_bp1_f2, queue_id,
+                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
+                     SID_NORM_BP1_F2 );
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
             {
                 // 1) compute the BP2 set using the same ASM as the one used for BP1
@@ -197,8 +198,9 @@ rtems_task prc2_task( rtems_task_argument argument )
                 // 2) send the BP2 set
                 set_time( packet_norm_bp2_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
                 set_time( packet_norm_bp2_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
-                BP_send( (char *) &packet_norm_bp2_f2.header, queue_id,
-                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA);
+                BP_send( (char *) &packet_norm_bp2_f2, queue_id,
+                         PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
+                         SID_NORM_BP2_F2 );
             }
         }
 

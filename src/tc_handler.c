@@ -793,7 +793,6 @@ void launch_spectral_matrix_simu( void )
     timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
     LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
     LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
-    set_local_nb_interrupt_f0_MAX();
 }
 
 void set_irq_on_new_ready_matrix( unsigned char value )

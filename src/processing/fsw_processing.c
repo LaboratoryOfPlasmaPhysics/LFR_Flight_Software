@@ -302,6 +302,7 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
         spw_ioctl_send->options = 0;
 
         // (2) BUILD THE HEADER
+        increment_seq_counter_source_id( header->packetSequenceControl, sid );
         header->packetLength[0] = (unsigned char) (length>>8);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
@@ -398,10 +399,12 @@ void BP_init_header_with_spare(Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
     header->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
 
-void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend )
+void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid )
 {
     rtems_status_code status;
 
+    // SET THE SEQUENCE_CNT PARAMETER
+    increment_seq_counter_source_id( (unsigned char*) &data[ PACKET_POS_SEQUENCE_CNT ], sid );
     // SEND PACKET
     status =  rtems_message_queue_send( queue_id, data, nbBytesToSend);
     if (status != RTEMS_SUCCESSFUL)

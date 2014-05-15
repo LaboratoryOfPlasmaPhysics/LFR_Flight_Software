@@ -28,19 +28,19 @@ typedef struct ring_node_asm
     unsigned int status;
 } ring_node_asm;
 
-typedef struct bp_packet
+typedef struct
 {
     Header_TM_LFR_SCIENCE_BP_t header;
     unsigned char data[ 30 * 22 ];   // MAX size is 22 * 30 [TM_LFR_SCIENCE_BURST_BP2_F1]
 } bp_packet;
 
-typedef struct bp_packet_with_spare
+typedef struct
 {
     Header_TM_LFR_SCIENCE_BP_with_spare_t header;
     unsigned char data[ 9 * 13 ];   // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 } bp_packet_with_spare;
 
-typedef struct asm_msg
+typedef struct
 {
     ring_node_asm *norm;
     ring_node_asm *burst_sbm;
@@ -83,15 +83,15 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
 // Basic Parameters
 
 void BP_reset_current_ring_nodes( void );
-void BP_init_header(Header_TM_LFR_SCIENCE_BP_t *header,
-                    unsigned int apid, unsigned char sid,
-                    unsigned int packetLength , unsigned char blkNr);
-void BP_init_header_with_spare(Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
-                               unsigned int apid, unsigned char sid,
-                               unsigned int packetLength, unsigned char blkNr );
-void BP_send(char *data,
-               rtems_id queue_id ,
-               unsigned int nbBytesToSend );
+void BP_init_header( Header_TM_LFR_SCIENCE_BP_t *header,
+                     unsigned int apid, unsigned char sid,
+                     unsigned int packetLength , unsigned char blkNr);
+void BP_init_header_with_spare( Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
+                                unsigned int apid, unsigned char sid,
+                                unsigned int packetLength, unsigned char blkNr );
+void BP_send( char *data,
+              rtems_id queue_id ,
+              unsigned int nbBytesToSend , unsigned int sid );
 
 //******************
 // general functions

@@ -1225,32 +1225,49 @@ void set_wfp_delta_f2()
 
 //*****************
 // local parameters
-void set_local_nb_interrupt_f0_MAX( void )
-{
-    /** This function sets the value of the nb_interrupt_f0_MAX local parameter.
-     *
-     * This parameter is used for the SM validation only.\n
-     * The software waits param_local.local_nb_interrupt_f0_MAX interruptions from the spectral matrices
-     * module before launching a basic processing.
-     *
-     */
-
-    param_local.local_nb_interrupt_f0_MAX = ( (parameter_dump_packet.sy_lfr_n_asm_p[0]) * 256
-            + parameter_dump_packet.sy_lfr_n_asm_p[1] ) * 100;
-}
 
 void increment_seq_counter_source_id( unsigned char *packet_sequence_control, unsigned int sid )
 {
+    /** This function increments the parameter "sequence_cnt" depending on the sid passed in argument.
+     *
+     * @param packet_sequence_control is a pointer toward the parameter sequence_cnt to update.
+     * @param sid is the source identifier of the packet being updated.
+     *
+     * REQ-LFR-SRS-5240 / SSS-CP-FS-590
+     * The sequence counters shall wrap around from 2^14 to zero.
+     * The sequence counter shall start at zero at startup.
+     *
+     * REQ-LFR-SRS-5239 / SSS-CP-FS-580
+     * All TM_LFR_SCIENCE_ packets are sent to ground, i.e. destination id = 0
+     *
+     */
+
     unsigned short *sequence_cnt;
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
+    rtems_mode initial_mode_set;
+    rtems_mode current_mode_set;
+    rtems_status_code status;
 
-    if ( (sid ==SID_NORM_SWF_F0)    || (sid ==SID_NORM_SWF_F1) || (sid ==SID_NORM_SWF_F2)
-         || (sid ==SID_NORM_CWF_F3) || (sid==SID_NORM_CWF_LONG_F3) || (sid ==SID_BURST_CWF_F2) )
+    //******************************************
+    // CHANGE THE MODE OF THE CALLING RTEMS TASK
+    status =  rtems_task_mode( RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &initial_mode_set );
+
+    if ( (sid == SID_NORM_SWF_F0)    || (sid == SID_NORM_SWF_F1) || (sid == SID_NORM_SWF_F2)
+         || (sid == SID_NORM_CWF_F3) || (sid == SID_NORM_CWF_LONG_F3)
+         || (sid == SID_BURST_CWF_F2)
+         || (sid == SID_NORM_ASM_F0) || (sid == SID_NORM_ASM_F1) || (sid == SID_NORM_ASM_F2)
+         || (sid == SID_NORM_BP1_F0) || (sid == SID_NORM_BP1_F1) || (sid == SID_NORM_BP1_F2)
+         || (sid == SID_NORM_BP2_F0) || (sid == SID_NORM_BP2_F1) || (sid == SID_NORM_BP2_F2)
+         || (sid == SID_BURST_BP1_F0) || (sid == SID_BURST_BP2_F0)
+         || (sid == SID_BURST_BP1_F1) || (sid == SID_BURST_BP2_F1) )
     {
         sequence_cnt = (unsigned short *) &sequenceCounters_SCIENCE_NORMAL_BURST;
     }
-    else if ( (sid ==SID_SBM1_CWF_F1) || (sid ==SID_SBM2_CWF_F2) )
+    else if ( (sid ==SID_SBM1_CWF_F1) || (sid ==SID_SBM2_CWF_F2)
+              || (sid == SID_SBM1_BP1_F0) || (sid == SID_SBM1_BP2_F0)
+              || (sid == SID_SBM2_BP1_F0) || (sid == SID_SBM2_BP2_F0)
+              || (sid == SID_SBM2_BP1_F1) || (sid == SID_SBM2_BP2_F1) )
     {
         sequence_cnt = (unsigned short *) &sequenceCounters_SCIENCE_SBM1_SBM2;
     }
@@ -1279,4 +1296,8 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
         packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
         packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
     }
+
+    //***********************************
+    // RESET THE MODE OF THE CALLING TASK
+    status =  rtems_task_mode( initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set );
 }
