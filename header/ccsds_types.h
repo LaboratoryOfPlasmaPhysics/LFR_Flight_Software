@@ -476,7 +476,7 @@ typedef struct {
     unsigned char sid;
     unsigned char biaStatusInfo;
     unsigned char acquisitionTime[6];
-    unsigned char source_data_spare[2];
+    unsigned char source_data_spare;
     unsigned char pa_lfr_bp_blk_nr[2];
 } Header_TM_LFR_SCIENCE_BP_with_spare_t;
 
@@ -539,8 +539,8 @@ typedef struct {
     unsigned char lfr_fpga_version[3];
     // ressource statistics
     unsigned char hk_lfr_cpu_load;
-    unsigned char hk_lfr_load_max;
-    unsigned char hk_lfr_load_aver;
+    unsigned char hk_lfr_cpu_load_max;
+    unsigned char hk_lfr_cpu_load_aver;
     // tc statistics
     unsigned char hk_lfr_update_info_tc_cnt[2];
     unsigned char hk_lfr_update_time_tc_cnt[2];

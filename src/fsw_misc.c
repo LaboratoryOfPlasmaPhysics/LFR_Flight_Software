@@ -221,8 +221,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
-            get_v_e1_e2_f3(
-                        housekeeping_packet.hk_lfr_sc_v_f3, housekeeping_packet.hk_lfr_sc_e1_f3, housekeeping_packet.hk_lfr_sc_e2_f3 );
+            get_v_e1_e2_f3( housekeeping_packet.hk_lfr_sc_v_f3 );
+            get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );
 
             // SEND PACKET
             status =  rtems_message_queue_urgent( queue_id, &housekeeping_packet,
@@ -436,7 +436,7 @@ void send_dumb_hk( void )
                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
 
-void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2 )
+void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
 {
     unsigned int coarseTime;
     unsigned int acquisitionTime;
@@ -449,12 +449,12 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2 )
 
     if (lfrCurrentMode == LFR_MODE_STANDBY)
     {
-        v[0] = 0x00;
-        v[1] = 0x00;
-        e1[0] = 0x00;
-        e1[1] = 0x00;
-        e2[0] = 0x00;
-        e2[1] = 0x00;
+        spacecraft_potential[0] = 0x00;
+        spacecraft_potential[1] = 0x00;
+        spacecraft_potential[2] = 0x00;
+        spacecraft_potential[3] = 0x00;
+        spacecraft_potential[4] = 0x00;
+        spacecraft_potential[5] = 0x00;
     }
     else
     {
@@ -486,16 +486,38 @@ void get_v_e1_e2_f3( unsigned char *v, unsigned char *e1, unsigned char *e2 )
             offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
         }
         offset_in_bytes = TIME_OFFSET_IN_BYTES + offset_in_samples * NB_WORDS_SWF_BLK * 4;
-        v[0]  = bufferPtr[ offset_in_bytes + 0];
-        v[1]  = bufferPtr[ offset_in_bytes + 1];
-        e1[0] = bufferPtr[ offset_in_bytes + 2];
-        e1[1] = bufferPtr[ offset_in_bytes + 3];
-        e2[0] = bufferPtr[ offset_in_bytes + 4];
-        e2[1] = bufferPtr[ offset_in_bytes + 5];
+        spacecraft_potential[0] = bufferPtr[ offset_in_bytes + 0];
+        spacecraft_potential[1] = bufferPtr[ offset_in_bytes + 1];
+        spacecraft_potential[2] = bufferPtr[ offset_in_bytes + 2];
+        spacecraft_potential[3] = bufferPtr[ offset_in_bytes + 3];
+        spacecraft_potential[4] = bufferPtr[ offset_in_bytes + 4];
+        spacecraft_potential[5] = bufferPtr[ offset_in_bytes + 5];
     }
 }
 
+void get_cpu_load( unsigned char *resource_statistics )
+{
+    unsigned char cpu_load;
 
+    cpu_load = lfr_rtems_cpu_usage_report();
+
+    // HK_LFR_CPU_LOAD
+    resource_statistics[0] = cpu_load;
+
+    // HK_LFR_CPU_LOAD_MAX
+    if (cpu_load > resource_statistics[1])
+    {
+         resource_statistics[1] = cpu_load;
+    }
+
+    // CPU_LOAD_AVE
+    resource_statistics[2] = 0;
+
+#ifndef PRINT_TASK_STATISTICS
+        rtems_cpu_usage_reset();
+#endif
+
+}
 
 
 

@@ -72,6 +72,8 @@ rtems_task Init( rtems_task_argument ignored )
 
     reset_local_time();
 
+    rtems_cpu_usage_reset();
+
     rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;

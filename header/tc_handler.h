@@ -10,6 +10,8 @@
 #include "wf_handler.h"
 #include "fsw_processing.h"
 
+#include "lfr_cpu_usage_report.h"
+
 // MODE PARAMETERS
 extern unsigned int maxCount;
 

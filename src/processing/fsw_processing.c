@@ -317,12 +317,12 @@ void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
         header->time[4] = (unsigned char) (time_management_regs->fine_time>>8);
         header->time[5] = (unsigned char) (time_management_regs->fine_time);
         //
-        header->acquisitionTime[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-        header->acquisitionTime[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-        header->acquisitionTime[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-        header->acquisitionTime[3] = (unsigned char) (time_management_regs->coarse_time);
-        header->acquisitionTime[4] = (unsigned char) (time_management_regs->fine_time>>8);
-        header->acquisitionTime[5] = (unsigned char) (time_management_regs->fine_time);
+        header->acquisitionTime[0] = header->time[0];
+        header->acquisitionTime[1] = header->time[1];
+        header->acquisitionTime[2] = header->time[2];
+        header->acquisitionTime[3] = header->time[3];
+        header->acquisitionTime[4] = header->time[4];
+        header->acquisitionTime[5] = header->time[5];
 
         // (4) SEND PACKET
         status =  rtems_message_queue_send( queue_id, spw_ioctl_send, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
@@ -395,6 +395,7 @@ void BP_init_header_with_spare(Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
     header->time[0] = 0x00;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
+    header->source_data_spare = 0x00;
     header->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
     header->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }

@@ -7,6 +7,7 @@
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
+#include "lfr_cpu_usage_report.h"
 
 rtems_name name_hk_rate_monotonic;     // name of the HK rate monotonic
 rtems_id HK_id;         // id of the HK rate monotonic period
@@ -36,9 +37,11 @@ void increment_seq_counter( unsigned char *packet_sequence_control);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
-void get_v_e1_e2_f3 (unsigned char *v, unsigned char *e1, unsigned char *e2);
+void get_v_e1_e2_f3 (unsigned char *spacecraft_potential);
+void get_cpu_load( unsigned char *resource_statistics );
 
 extern int sched_yield( void );
+extern int rtems_cpu_usage_reset();
 extern ring_node *current_ring_node_f3;
 extern ring_node *ring_node_to_send_cwf_f3;
 

@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-CONFIG += console verbose cpu_usage_report
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -67,7 +67,8 @@ SOURCES += \
     ../src/processing/fsw_processing.c \
     ../src/processing/avf0_prc0.c \
     ../src/processing/avf1_prc1.c \
-    ../src/processing/avf2_prc2.c
+    ../src/processing/avf2_prc2.c \
+    ../src/lfr_cpu_usage_report.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -88,5 +89,6 @@ HEADERS += \
     ../header/processing/avf0_prc0.h \
     ../header/processing/avf1_prc1.h \
     ../header/processing/avf2_prc2.h \
-    ../header/fsw_params_wf_handler.h
+    ../header/fsw_params_wf_handler.h \
+    ../header/lfr_cpu_usage_report.h
 
