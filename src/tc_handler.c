@@ -532,7 +532,7 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
         status = restart_science_tasks( mode );
         launch_waveform_picker( mode, transitionCoarseTime );
-        launch_spectral_matrix( );
+        //launch_spectral_matrix( );
         launch_spectral_matrix_simu( );
     }
     else if ( mode == LFR_MODE_STANDBY )

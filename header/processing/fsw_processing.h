@@ -73,6 +73,7 @@ void reset_nb_sm( void );
 // SM
 void SM_init_rings( void );
 void SM_reset_current_ring_nodes( void );
+void SM_generic_init_ring(ring_node_sm *ring, unsigned char nbNodes, volatile int sm_f[] );
 // ASM
 void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
 void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header);

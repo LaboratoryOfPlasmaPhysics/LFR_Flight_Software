@@ -32,40 +32,65 @@ ring_node_sm *ring_node_for_averaging_sm_f2;
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
-//    ring_node_sm *previous_ring_node_sm_f0;
+    //***
+    // F0
+    if ( (spectral_matrix_regs->status & 0x1) == 0x01)  // check the status_ready_matrix_f0 bit
+    {
+        nb_sm_f0 = nb_sm_f0 + 1;
+        if (nb_sm_f0 == NB_SM_BEFORE_AVF0 )
+        {
+            ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+            spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
+            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f0 = 0;
+        }
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;   // 1110
+    }
 
-////    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+    //***
+    // F1
+    if ( (spectral_matrix_regs->status & 0x4) == 0x04)  // check the status_ready_matrix_f1 bit
+    {
+        nb_sm_f1 = nb_sm_f1 + 1;
+        if (nb_sm_f1 == NB_SM_BEFORE_AVF1 )
+        {
+            ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1;
+            current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
+            spectral_matrix_regs->matrixF1_Address = current_ring_node_sm_f1->buffer_address;
+            if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f1 = 0;
+        }
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffb;   // 1011
+    }
 
-//    previous_ring_node_sm_f0 = current_ring_node_sm_f0;
+    //***
+    // F2
+    if ( (spectral_matrix_regs->status & 0x8) == 0x08)  // check the status_ready_matrix_f2 bit
+    {
 
-//    if ( (spectral_matrix_regs->status & 0x2) == 0x02)  // check ready matrix bit f0_1
-//    {
-//        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-//        spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // 1101
-//        nb_sm_f0 = nb_sm_f0 + 1;
-//    }
+            ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
+            current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
+            spectral_matrix_regs->matrixF2_Address = current_ring_node_sm_f2->buffer_address;
+            if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff7;   // 0111
+    }
 
-//    //************************
-//    // reset status error bits
-//    if ( (spectral_matrix_regs->status & 0x30) != 0x00)
+    //************************
+    // reset status error bits
+//    if ( (spectral_matrix_regs->status & 0x3e0) != 0x00)    // [0011 1110 0000] check the status bits
 //    {
 //        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xffffffcf;   // 1100 1111
-//    }
-
-//    //**************************************
-//    // reset ready matrix bits for f0_0, f1 and f2
-//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff2;       // 0010
-
-//    if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
-//    {
-//        ring_node_for_averaging_sm_f0 = previous_ring_node_sm_f0;
-//        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-//        {
-//            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-//        }
-//        nb_sm_f0 = 0;
+//        spectral_matrix_regs->status = spectral_matrix_regs->status | 0xfffffc1f;   // [1100 0001 1111]
 //    }
 
 }
@@ -196,6 +221,34 @@ void SM_init_rings( void )
 
     spectral_matrix_regs->matrixF0_Address0 = sm_ring_f0[0].buffer_address;
     DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->matrixF0_Address0)
+}
+
+void SM_generic_init_ring( ring_node_sm *ring, unsigned char nbNodes, volatile int sm_f[] )
+{
+    unsigned char i;
+
+    //***************
+    // BUFFER ADDRESS
+    for(i=0; i<nbNodes; i++)
+    {
+        ring[ i ].buffer_address = (int) &sm_f[ i * TOTAL_SIZE_SM ];
+    }
+
+    //*****
+    // NEXT
+    ring[ nbNodes - 1 ].next = (ring_node_sm*) &ring[ 0 ];
+    for(i=0; i<nbNodes-1; i++)
+    {
+        ring[ i ].next = (ring_node_sm*) &ring[ i + 1 ];
+    }
+
+    //*********
+    // PREVIOUS
+    ring[ 0 ].previous = (ring_node_sm*) &ring[ nbNodes -1 ];
+    for(i=1; i<nbNodes; i++)
+    {
+        ring[ i ].previous = (ring_node_sm*) &ring[ i - 1 ];
+    }
 }
 
 void ASM_generic_init_ring( ring_node_asm *ring, unsigned char nbNodes )
