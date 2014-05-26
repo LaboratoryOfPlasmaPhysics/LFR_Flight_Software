@@ -51,7 +51,7 @@ INCLUDEPATH += \
     ../src \
     ../header \
     ../header/processing \
-    ../src/basic_parameters
+    ../src/LFR_basic-parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -63,12 +63,12 @@ SOURCES += \
     ../src/tc_load_dump_parameters.c \
     ../src/tm_lfr_tc_exe.c \
     ../src/tc_acceptance.c \
-    ../src/basic_parameters/basic_parameters.c \
     ../src/processing/fsw_processing.c \
     ../src/processing/avf0_prc0.c \
     ../src/processing/avf1_prc1.c \
     ../src/processing/avf2_prc2.c \
-    ../src/lfr_cpu_usage_report.c
+    ../src/lfr_cpu_usage_report.c \
+    ../src/LFR_basic-parameters/basic_parameters.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -83,12 +83,13 @@ HEADERS += \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
     ../header/fsw_params_nb_bytes.h \
-    ../src/basic_parameters/basic_parameters.h \
     ../header/fsw_params_processing.h \
     ../header/processing/fsw_processing.h \
     ../header/processing/avf0_prc0.h \
     ../header/processing/avf1_prc1.h \
     ../header/processing/avf2_prc2.h \
     ../header/fsw_params_wf_handler.h \
-    ../header/lfr_cpu_usage_report.h
+    ../header/lfr_cpu_usage_report.h \
+    ../src/LFR_basic-parameters/basic_parameters.h \
+    ../src/LFR_basic-parameters/basic_parameters_params.h
 
