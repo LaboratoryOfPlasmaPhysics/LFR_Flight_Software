@@ -532,8 +532,8 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 #endif
         status = restart_science_tasks( mode );
         launch_waveform_picker( mode, transitionCoarseTime );
-        //launch_spectral_matrix( );
-        launch_spectral_matrix_simu( );
+        launch_spectral_matrix( );
+//        launch_spectral_matrix_simu( );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -748,7 +748,7 @@ int suspend_science_tasks()
 
 void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
 {
-    reset_current_ring_nodes();
+    WFP_reset_current_ring_nodes();
     reset_waveform_picker_regs();
     set_wfp_burst_enable_register( mode );
 

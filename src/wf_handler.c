@@ -448,7 +448,7 @@ rtems_task swbd_task(rtems_task_argument argument)
 //******************
 // general functions
 
-void init_waveform_rings( void )
+void WFP_init_rings( void )
 {
     // F0 RING
     init_waveform_ring( waveform_ring_f0, NB_RING_NODES_F0, wf_snap_f0 );
@@ -485,7 +485,7 @@ void init_waveform_ring(ring_node waveform_ring[], unsigned char nbNodes, volati
     }
 }
 
-void reset_current_ring_nodes( void )
+void WFP_reset_current_ring_nodes( void )
 {
     current_ring_node_f0        = waveform_ring_f0;
     ring_node_to_send_swf_f0    = waveform_ring_f0;

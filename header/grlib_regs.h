@@ -82,19 +82,28 @@ typedef struct{
 typedef struct {
     volatile int config;            // 0x00
     volatile int status;            // 0x04
-    volatile int matrixF0_Address0; // 0x08
-    volatile int matrixFO_Address1; // 0x0C
-    volatile int matrixF1_Address;  // 0x10
-    volatile int matrixF2_Address;  // 0x14
-    volatile int coarse_time_F0_0;  // 0x18
-    volatile int coarse_time_F0_1;  // 0x1C
-    volatile int coarse_time_F1;    // 0x20
-    volatile int coarse_time_F2;    // 0x24
-    volatile int fine_time_FO_0;    // 0x28
-    volatile int fine_time_F0_1;    // 0x2C
-    volatile int fine_time_F1;      // 0x30
-    volatile int fine_time_F2;      // 0x34
-    volatile int debug;             // 0x38
+    volatile int f0_0_address;      // 0x08
+    volatile int f0_1_address;      // 0x0C
+    //
+    volatile int f1_0_address;      // 0x10
+    volatile int f1_1_address;      // 0x14
+    volatile int f2_0_address;      // 0x18
+    volatile int f2_1_address;      // 0x1C
+    //
+    volatile int f0_0_coarse_time;  // 0x20
+    volatile int f0_0_fine_time;    // 0x24
+    volatile int f0_1_coarse_time;  // 0x28
+    volatile int f0_1_fine_time;    // 0x2C
+    //
+    volatile int f1_0_coarse_time;  // 0x30
+    volatile int f1_0_fine_time;    // 0x34
+    volatile int f1_1_coarse_time;  // 0x38
+    volatile int f1_1_time_time;    // 0x3C
+    //
+    volatile int f2_0_coarse_time;  // 0x40
+    volatile int f2_0_fine_time;    // 0x44
+    volatile int f2_1_coarse_time;  // 0x48
+    volatile int f2_1_time_time;    // 0x4C
 } spectral_matrix_regs_t;
 
 #endif // GRLIB_REGS_H_INCLUDED

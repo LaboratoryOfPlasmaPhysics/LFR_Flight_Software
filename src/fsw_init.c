@@ -32,6 +32,7 @@
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
 #define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
 #define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
+#define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
@@ -98,12 +99,15 @@ rtems_task Init( rtems_task_argument ignored )
     init_local_mode_parameters();
     init_housekeeping_parameters();
 
-    init_waveform_rings();      // initialize the waveform rings
-    SM_init_rings();            // initialize spectral matrices rings
+    // waveform picker initialization
+    WFP_init_rings();      // initialize the waveform rings
+    WFP_reset_current_ring_nodes();
+    reset_waveform_picker_regs();
 
-    reset_wfp_burst_enable();
-    reset_wfp_status();
-    set_wfp_data_shaping();
+    // spectral matrices initialization
+    SM_init_rings();            // initialize spectral matrices rings
+    SM_reset_current_ring_nodes();
+    reset_spectral_matrix_regs();
 
     updateLFRCurrentMode();
 

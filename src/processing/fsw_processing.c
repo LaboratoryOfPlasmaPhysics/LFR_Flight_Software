@@ -32,58 +32,92 @@ ring_node_sm *ring_node_for_averaging_sm_f2;
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 {
+    unsigned char status;
+    unsigned long long int time_0;
+    unsigned long long int time_1;
+    // STATUS REGISTER
+    // input_fifo_write(2) *** input_fifo_write(1) *** input_fifo_write(0)
+    //           10                    9                       8
+    // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
+    //      7                  6             5       4       3       2       1       0
+
     //***
     // F0
-    if ( (spectral_matrix_regs->status & 0x1) == 0x01)  // check the status_ready_matrix_f0 bit
+    status = spectral_matrix_regs->status & 0x03;   // [0011] get the status_ready_matrix_f0_x bits
+    switch(status)
     {
-        nb_sm_f0 = nb_sm_f0 + 1;
-        if (nb_sm_f0 == NB_SM_BEFORE_AVF0 )
+    case 0:
+        break;
+    case 3:
+        time_0 = get_acquisition_time( (unsigned char *) spectral_matrix_regs->f0_0_coarse_time );
+        time_1 = get_acquisition_time( (unsigned char *) spectral_matrix_regs->f0_1_coarse_time );
+        if ( time_0 < time_1 )
         {
-            ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
+            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-            }
-            nb_sm_f0 = 0;
+            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
+            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
+            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
         }
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;   // 1110
+        else
+        {
+            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
+            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
+            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
+        }
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffc;   // [1100]
+        break;
+    case 1:
+        close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
+        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+        spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffe;   // [1110]
+        break;
+    case 2:
+        close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
+        current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+        spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffd;   // [1101]
+        break;
     }
 
     //***
     // F1
-    if ( (spectral_matrix_regs->status & 0x4) == 0x04)  // check the status_ready_matrix_f1 bit
-    {
-        nb_sm_f1 = nb_sm_f1 + 1;
-        if (nb_sm_f1 == NB_SM_BEFORE_AVF1 )
-        {
-            ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1;
-            current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
-            spectral_matrix_regs->matrixF1_Address = current_ring_node_sm_f1->buffer_address;
-            if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-            }
-            nb_sm_f1 = 0;
-        }
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffb;   // 1011
-    }
+//    if ( (spectral_matrix_regs->status & 0x4) == 0x04)  // check the status_ready_matrix_f1 bit
+//    {
+//        nb_sm_f1 = nb_sm_f1 + 1;
+//        if (nb_sm_f1 == NB_SM_BEFORE_AVF1 )
+//        {
+//            ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1;
+//            current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
+//            spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
+//            if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//            {
+//                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//            }
+//            nb_sm_f1 = 0;
+//        }
+//        spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffffb;   // 1011
+//    }
 
     //***
     // F2
-    if ( (spectral_matrix_regs->status & 0x8) == 0x08)  // check the status_ready_matrix_f2 bit
-    {
+//    if ( (spectral_matrix_regs->status & 0x8) == 0x08)  // check the status_ready_matrix_f2 bit
+//    {
 
-            ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-            current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
-            spectral_matrix_regs->matrixF2_Address = current_ring_node_sm_f2->buffer_address;
-            if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-            {
-                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-            }
-            spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff7;   // 0111
-    }
+//            ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
+//            current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
+//            spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->buffer_address;
+//            if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+//            {
+//                rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+//            }
+//            spectral_matrix_regs->status = spectral_matrix_regs->status & 0xfffffff7;   // 0111
+//    }
 
     //************************
     // reset status error bits
@@ -219,8 +253,8 @@ void SM_init_rings( void )
     DEBUG_PRINTF1("asm_ring_f1 @%x\n", (unsigned int) sm_ring_f1)
     DEBUG_PRINTF1("asm_ring_f2 @%x\n", (unsigned int) sm_ring_f2)
 
-    spectral_matrix_regs->matrixF0_Address0 = sm_ring_f0[0].buffer_address;
-    DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->matrixF0_Address0)
+    spectral_matrix_regs->f0_0_address = sm_ring_f0[0].buffer_address;
+    DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->f0_0_address)
 }
 
 void SM_generic_init_ring( ring_node_sm *ring, unsigned char nbNodes, volatile int sm_f[] )
@@ -266,9 +300,9 @@ void ASM_generic_init_ring( ring_node_asm *ring, unsigned char nbNodes )
 
 void SM_reset_current_ring_nodes( void )
 {
-    current_ring_node_sm_f0 = sm_ring_f0;
-    current_ring_node_sm_f1 = sm_ring_f1;
-    current_ring_node_sm_f2 = sm_ring_f2;
+    current_ring_node_sm_f0 = sm_ring_f0[0].next;
+    current_ring_node_sm_f1 = sm_ring_f1[0].next;
+    current_ring_node_sm_f2 = sm_ring_f2[0].next;
 
     ring_node_for_averaging_sm_f0 = sm_ring_f0;
     ring_node_for_averaging_sm_f1 = sm_ring_f1;
@@ -488,10 +522,12 @@ void reset_spectral_matrix_regs( void )
     spectral_matrix_regs->config = 0x00;
     spectral_matrix_regs->status = 0x00;
 
-    spectral_matrix_regs->matrixF0_Address0 = current_ring_node_sm_f0->buffer_address;
-    spectral_matrix_regs->matrixFO_Address1 = current_ring_node_sm_f0->buffer_address;
-    spectral_matrix_regs->matrixF1_Address = current_ring_node_sm_f1->buffer_address;
-    spectral_matrix_regs->matrixF2_Address = current_ring_node_sm_f2->buffer_address;
+    spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->previous->buffer_address;
+    spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->previous->buffer_address;
+    spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
+    spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
+    spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
 }
 
 void set_time( unsigned char *time, unsigned char * timeInBuffer )
@@ -510,3 +546,33 @@ void set_time( unsigned char *time, unsigned char * timeInBuffer )
     time[4] = timeInBuffer[6];
     time[5] = timeInBuffer[7];
 }
+
+unsigned long long int get_acquisition_time( unsigned char *timePtr )
+{
+    unsigned long long int acquisitionTimeAslong;
+    acquisitionTimeAslong = 0x00;
+    acquisitionTimeAslong = ( (unsigned long long int) (timePtr[0] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
+            + ( (unsigned long long int) timePtr[1] << 32 )
+            + ( timePtr[2] << 24 )
+            + ( timePtr[3] << 16 )
+            + ( timePtr[4] << 8  )
+            + ( timePtr[5]       );
+    return acquisitionTimeAslong;
+}
+
+void close_matrix_actions( unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id task_id,
+                           ring_node_sm *node_for_averaging, ring_node_sm *ringNode )
+{
+    *nb_sm = *nb_sm + 1;
+    if (*nb_sm == nb_sm_before_avf)
+    {
+        node_for_averaging = ringNode;
+        if (rtems_event_send( task_id, RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
+        *nb_sm = 0;
+    }
+}
+
+

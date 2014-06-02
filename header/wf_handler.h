@@ -51,9 +51,9 @@ rtems_task swbd_task( rtems_task_argument argument );
 
 //******************
 // general functions
-void init_waveform_rings( void );
+void WFP_init_rings( void );
 void init_waveform_ring( ring_node waveform_ring[], unsigned char nbNodes, volatile int wfrm[] );
-void reset_current_ring_nodes( void );
+void WFP_reset_current_ring_nodes( void );
 //
 int init_header_snapshot_wf_table(      unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF );
 int init_header_continuous_wf_table(    unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
