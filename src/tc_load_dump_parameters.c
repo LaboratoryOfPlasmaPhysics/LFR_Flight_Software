@@ -580,10 +580,21 @@ int set_sy_lfr_b_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
+
+    if (val < DEFAULT_SY_LFR_B_BP_P0 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_b_bp_p0 = val;
+    }
 
     return status;
 }
@@ -598,10 +609,21 @@ int set_sy_lfr_b_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_b_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
+
+    if (val < DEFAULT_SY_LFR_B_BP_P1 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P1+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_b_bp_p1 = val;
+    }
 
     return status;
 }
@@ -618,10 +640,21 @@ int set_sy_lfr_s1_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_s1_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
+
+    if (val < DEFAULT_SY_LFR_S1_BP_P0 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_s1_bp_p0 = val;
+    }
 
     return status;
 }
@@ -636,10 +669,21 @@ int set_sy_lfr_s1_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_s1_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
+
+    if (val < DEFAULT_SY_LFR_S1_BP_P1 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P1+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_s1_bp_p1 = val;
+    }
 
     return status;
 }
@@ -656,10 +700,21 @@ int set_sy_lfr_s2_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_s2_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
+
+    if (val < DEFAULT_SY_LFR_S2_BP_P0 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_s2_bp_p0 = val;
+    }
 
     return status;
 }
@@ -674,10 +729,21 @@ int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_s2_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
+
+    if (val < DEFAULT_SY_LFR_S2_BP_P1 )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P1+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_s2_bp_p1 = val;
+    }
 
     return status;
 }
