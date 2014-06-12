@@ -342,6 +342,11 @@ void increment_seq_counter( unsigned char *packet_sequence_control)
                                 + packet_sequence_control[1]
             );
 
+    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
+
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
+
     if ( sequence_cnt < SEQ_CNT_MAX)
     {
         sequence_cnt = sequence_cnt + 1;
@@ -350,11 +355,6 @@ void increment_seq_counter( unsigned char *packet_sequence_control)
     {
         sequence_cnt = 0;
     }
-
-    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
-
-    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
-    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 }
 
 void getTime( unsigned char *time)
