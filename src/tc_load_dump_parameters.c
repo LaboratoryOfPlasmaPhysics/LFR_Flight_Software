@@ -101,6 +101,20 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         }
     }
 
+    //****************************************************************
+    // check the consistency between sy_lfr_n_bp_p0 and sy_lfr_n_bp_p1
+    if (flag == LFR_SUCCESSFUL)
+    {
+        sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
+        sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
+        aux = ( (float ) sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0);
+        if (aux != 0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
+            flag = LFR_DEFAULT;
+        }
+    }
+
     //***************
     // sy_lfr_n_bp_p1
     if (flag == LFR_SUCCESSFUL)
@@ -488,10 +502,21 @@ int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
+
+    if (val < SY_LFR_N_BP_P0)
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_n_bp_p0 = val;
+    }
 
     return status;
 }
@@ -506,10 +531,21 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      */
 
     int status;
+    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
+    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
+
+    if (val < SY_LFR_N_BP_P1)
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, val );
+        status = WRONG_APP_DATA;
+    }
+    else
+    {
+        parameter_dump_packet.sy_lfr_n_bp_p1 = val;
+    }
 
     return status;
 }
