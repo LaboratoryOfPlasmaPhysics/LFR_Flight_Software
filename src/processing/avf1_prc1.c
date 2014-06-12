@@ -194,10 +194,10 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
     {
         BP_init_header( &packet_sbm_bp1.header,
                         APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP1_F1,
-                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0, NB_BINS_COMPRESSED_SM_SBM_F1);
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1, NB_BINS_COMPRESSED_SM_SBM_F1);
         BP_init_header( &packet_sbm_bp2.header,
                         APID_TM_SCIENCE_NORMAL_BURST, SID_BURST_BP2_F1,
-                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0, NB_BINS_COMPRESSED_SM_SBM_F1);
+                        PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1, NB_BINS_COMPRESSED_SM_SBM_F1);
     }
     else if ( lfrRequestedMode == LFR_MODE_SBM2 )
     {
@@ -249,7 +249,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
             // 3) send the BP1 set
             set_time( packet_sbm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( packet_sbm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            set_time( packet_sbm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
             BP_send( (char *) &packet_sbm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1 + PACKET_LENGTH_DELTA,
                      SID_SBM2_BP1_F1 );
@@ -260,7 +260,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
                 // 2) send the BP2 set
                 set_time( packet_sbm_bp2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( packet_sbm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                set_time( packet_sbm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
                 BP_send( (char *) &packet_sbm_bp2, queue_id_send,
                          PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1 + PACKET_LENGTH_DELTA,
                          SID_SBM2_BP2_F1 );
@@ -293,7 +293,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
                 // 2) send the BP2 set
                 set_time( packet_norm_bp2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( packet_norm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                set_time( packet_norm_bp2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
                 BP_send( (char *) &packet_norm_bp2, queue_id_send,
                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1 + PACKET_LENGTH_DELTA,
                          SID_NORM_BP2_F1 );
