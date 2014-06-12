@@ -318,7 +318,7 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
     housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
     // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xb0);
+    parameters = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
     housekeeping_packet.lfr_fpga_version[0] = parameters[1]; // n1
     housekeeping_packet.lfr_fpga_version[1] = parameters[2]; // n2
     housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3

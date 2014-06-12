@@ -71,6 +71,8 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
+    unsigned char *vhdlVersion;
+
     reset_local_time();
 
     rtems_cpu_usage_reset();
@@ -92,6 +94,12 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF1("%d."   , SW_VERSION_N2)
     PRINTF1("%d."   , SW_VERSION_N3)
     PRINTF1("%d             **\n", SW_VERSION_N4)
+
+    vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
+    PRINTF("** VHDL                **\n")
+    PRINTF1("** %d.", vhdlVersion[1])
+    PRINTF1("%d."   , vhdlVersion[2])
+    PRINTF1("%d              **\n", vhdlVersion[3])
     PRINTF("*************************\n")
     PRINTF("\n\n")
 
