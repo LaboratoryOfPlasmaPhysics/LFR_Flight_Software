@@ -283,7 +283,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
             // 3) send the BP1 set
             set_time( packet_norm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( packet_norm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            set_time( packet_norm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime   );
             BP_send( (char *) &packet_norm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F1 );
