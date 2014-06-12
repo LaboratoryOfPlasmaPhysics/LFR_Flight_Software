@@ -928,8 +928,8 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
     localAcquisitionTime[1] = (unsigned char) ( coarseTime >> 16 );
     localAcquisitionTime[2] = (unsigned char) ( coarseTime >> 8  );
     localAcquisitionTime[3] = (unsigned char) ( coarseTime       );
-    localAcquisitionTime[4] = (unsigned char) ( fineTime   >> 24 );
-    localAcquisitionTime[5] = (unsigned char) ( fineTime   >> 16 );
+    localAcquisitionTime[4] = (unsigned char) ( fineTime   >> 8  );
+    localAcquisitionTime[5] = (unsigned char) ( fineTime         );
 
     acquisitionTimeAsLong = ( (unsigned long long int) localAcquisitionTime[0] << 40 )
             + ( (unsigned long long int) localAcquisitionTime[1] << 32 )
@@ -998,6 +998,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     unsigned long long int bufferAcquisitionTime_asLong;
     unsigned char *ptr1;
     unsigned char *ptr2;
+    unsigned char *timeCharPtr;
     unsigned char nb_ring_nodes;
     unsigned long long int frequency_asLong;
     unsigned long long int nbTicksPerSample_asLong;
@@ -1058,7 +1059,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     // (5) compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> 16;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
-    PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
+    PRINTF2("sampleOffset_asLong = %llx, nbSamplesPart1_asLong = %llx\n", sampleOffset_asLong, nbSamplesPart1_asLong)
 
     // (6) compute the final acquisition time
     acquisitionTime_asLong = bufferAcquisitionTime_asLong +
@@ -1067,16 +1068,21 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     // (7) copy the acquisition time at the beginning of the extrated snapshot
     ptr1 = (unsigned char*) &acquisitionTime_asLong;
     ptr2 = (unsigned char*) wf_snap_extracted;
-    ptr2[0] = ptr1[ 2 + 2 ];
-    ptr2[1] = ptr1[ 3 + 2 ];
-    ptr2[2] = ptr1[ 0 + 2 ];
-    ptr2[3] = ptr1[ 1 + 2 ];
-    ptr2[4] = ptr1[ 4 + 2 ];
-    ptr2[5] = ptr1[ 5 + 2 ];
+    ptr2[0] = ptr1[ 0 + 2 ];
+    ptr2[1] = ptr1[ 1 + 2 ];
+    ptr2[2] = ptr1[ 2 + 2 ];
+    ptr2[3] = ptr1[ 3 + 2 ];
+    ptr2[6] = ptr1[ 4 + 2 ];
+    ptr2[7] = ptr1[ 5 + 2 ];
 
     // re set the synchronization bit
+    timeCharPtr = (unsigned char*) ring_node_to_send->buffer_address;
+    ptr2[0] = ptr2[0] | (timeCharPtr[0] & 0x80); // [1000 0000]
 
-
+    if ( (nbSamplesPart1_asLong >= NB_SAMPLES_PER_SNAPSHOT) | (nbSamplesPart1_asLong < 0) )
+    {
+        nbSamplesPart1_asLong = 0;
+    }
     // copy the part 1 of the snapshot in the extracted buffer
     for ( i = 0; i < (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK); i++ )
     {
@@ -1118,8 +1124,8 @@ void build_acquisition_time( unsigned long long int *acquisitionTimeAslong, ring
             + ( (unsigned long long int) acquisitionTimeCharPtr[1] << 32 )
             + ( acquisitionTimeCharPtr[2] << 24 )
             + ( acquisitionTimeCharPtr[3] << 16 )
-            + ( acquisitionTimeCharPtr[4] << 8  )
-            + ( acquisitionTimeCharPtr[5]       );
+            + ( acquisitionTimeCharPtr[6] << 8  )
+            + ( acquisitionTimeCharPtr[7]       );
 }
 
 //**************
