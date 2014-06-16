@@ -64,6 +64,17 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+
+        //****************************************
+        // initialize the mesage for the MATR task
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC1 task
+        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
+        msgForMATR.norm       = current_ring_node_asm_norm_f1;
+        msgForMATR.coarseTime = ring_node_for_averaging_sm_f1->coarseTime;
+        msgForMATR.fineTime   = ring_node_for_averaging_sm_f1->fineTime;
+        //
+        //****************************************
+
         ring_node_tab[NB_SM_BEFORE_AVF1-1] = ring_node_for_averaging_sm_f1;
         for ( i = 2; i < (NB_SM_BEFORE_AVF1+1); i++ )
         {
@@ -83,16 +94,6 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF1;
         nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF1;
         nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF1;
-
-        //****************************************
-        // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC1 task
-        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
-        msgForMATR.norm       = current_ring_node_asm_norm_f1;
-//        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
-//        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
-        msgForMATR.coarseTime = time_management_regs->coarse_time;
-        msgForMATR.fineTime   = time_management_regs->fine_time;
 
         if (nb_sbm_bp1 == nb_sm_before_f1.burst_sbm_bp1)
         {

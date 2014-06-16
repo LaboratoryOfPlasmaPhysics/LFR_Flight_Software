@@ -67,6 +67,17 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
 
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+
+        //****************************************
+        // initialize the mesage for the MATR task
+        msgForMATR.norm       = current_ring_node_asm_norm_f0;
+        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f0;
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
+        msgForMATR.coarseTime = ring_node_for_averaging_sm_f0->coarseTime;
+        msgForMATR.fineTime   = ring_node_for_averaging_sm_f0->fineTime;
+        //
+        //****************************************
+
         ring_node_tab[NB_SM_BEFORE_AVF0-1] = ring_node_for_averaging_sm_f0;
         for ( i = 2; i < (NB_SM_BEFORE_AVF0+1); i++ )
         {
@@ -86,16 +97,6 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF0;
         nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF0;
         nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF0;
-
-        //****************************************
-        // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
-        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f0;
-        msgForMATR.norm       = current_ring_node_asm_norm_f0;
-//        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
-//        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
-        msgForMATR.coarseTime = time_management_regs->coarse_time;
-        msgForMATR.fineTime   = time_management_regs->fine_time;
 
         if (nb_sbm_bp1 == nb_sm_before_f0.burst_sbm_bp1)
         {
@@ -349,7 +350,7 @@ void reset_nb_sm_f0( unsigned char lfrMode )
     nb_sm_before_f0.norm_bp1 = parameter_dump_packet.sy_lfr_n_bp_p0 * 96;
     nb_sm_before_f0.norm_bp2 = parameter_dump_packet.sy_lfr_n_bp_p1 * 96;
     nb_sm_before_f0.norm_asm = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 96;
-    nb_sm_before_f0.sbm1_bp1 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;
+    nb_sm_before_f0.sbm1_bp1 =  parameter_dump_packet.sy_lfr_s1_bp_p0 * 24;     // 0.25 s per digit
     nb_sm_before_f0.sbm1_bp2 =  parameter_dump_packet.sy_lfr_s1_bp_p1 * 96;
     nb_sm_before_f0.sbm2_bp1 =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 96;
     nb_sm_before_f0.sbm2_bp2 =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 96;

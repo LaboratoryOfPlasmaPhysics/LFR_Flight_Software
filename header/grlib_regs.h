@@ -90,20 +90,20 @@ typedef struct {
     volatile int f2_0_address;      // 0x18
     volatile int f2_1_address;      // 0x1C
     //
-    volatile int f0_0_coarse_time;  // 0x20
-    volatile int f0_0_fine_time;    // 0x24
-    volatile int f0_1_coarse_time;  // 0x28
-    volatile int f0_1_fine_time;    // 0x2C
+    volatile unsigned int f0_0_coarse_time;  // 0x20
+    volatile unsigned int f0_0_fine_time;    // 0x24
+    volatile unsigned int f0_1_coarse_time;  // 0x28
+    volatile unsigned int f0_1_fine_time;    // 0x2C
     //
-    volatile int f1_0_coarse_time;  // 0x30
-    volatile int f1_0_fine_time;    // 0x34
-    volatile int f1_1_coarse_time;  // 0x38
-    volatile int f1_1_time_time;    // 0x3C
+    volatile unsigned int f1_0_coarse_time;  // 0x30
+    volatile unsigned int f1_0_fine_time;    // 0x34
+    volatile unsigned int f1_1_coarse_time;  // 0x38
+    volatile unsigned int f1_1_time_time;    // 0x3C
     //
-    volatile int f2_0_coarse_time;  // 0x40
-    volatile int f2_0_fine_time;    // 0x44
-    volatile int f2_1_coarse_time;  // 0x48
-    volatile int f2_1_time_time;    // 0x4C
+    volatile unsigned int f2_0_coarse_time;  // 0x40
+    volatile unsigned int f2_0_fine_time;    // 0x44
+    volatile unsigned int f2_1_coarse_time;  // 0x48
+    volatile unsigned int f2_1_fine_time;    // 0x4C
 } spectral_matrix_regs_t;
 
 #endif // GRLIB_REGS_H_INCLUDED

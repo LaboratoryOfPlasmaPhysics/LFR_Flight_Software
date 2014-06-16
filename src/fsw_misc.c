@@ -259,16 +259,18 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[10] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
+    char *DumbMessages[12] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-                        "in DUMB *** f3 buffer changed",                                            // RTEMS_EVENT_2
+                        "in DUMB *** f3 buffer changed",                                        // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                         "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
                         "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
                         "ERR HK",                                                               // RTEMS_EVENT_6
                         "ready for dump",                                                       // RTEMS_EVENT_7
-                        "in DUMB *** spectral_matrices_isr",                                    // RTEMS_EVENT_8
-                        "tick"                                                                  // RTEMS_EVENT_9
+                        "VHDL ERR *** spectral matrix",                                         // RTEMS_EVENT_8
+                        "tick",                                                                 // RTEMS_EVENT_9
+                        "VHDL ERR *** waveform picker",                                         // RTEMS_EVENT_10
+                        "VHDL ERR *** unexpected ready matrix values"                           // RTEMS_EVENT_11
     };
 
     BOOT_PRINTF("in DUMB *** \n")
@@ -288,7 +290,11 @@ rtems_task dumb_task( rtems_task_argument unused )
                 printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
                 if (i==8)
                 {
-                    PRINTF1("status = %x\n", spectral_matrix_regs->status)
+                    PRINTF1("spectral_matrix_regs->status = %x\n", spectral_matrix_regs->status)
+                }
+                if (i==10)
+                {
+                    PRINTF1("waveform_picker_regs->status = %x\n", waveform_picker_regs->status)
                 }
             }
         }

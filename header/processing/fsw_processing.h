@@ -100,7 +100,7 @@ void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );
 void close_matrix_actions(unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id task_id,
-                           ring_node_sm *node_for_averaging, ring_node_sm *ringNode);
+                           ring_node_sm *node_for_averaging, ring_node_sm *ringNode, unsigned long long int time);
 unsigned char getSID( rtems_event_set event );
 
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
@@ -108,9 +108,9 @@ extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 
 //***************************************
 // DEFINITIONS OF STATIC INLINE FUNCTIONS
-static inline void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+static inline void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                   ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 );
+                  unsigned int nbAverageNORM, unsigned int nbAverageSBM );
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
 static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,
@@ -118,9 +118,9 @@ static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, 
                                   unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart);
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
-void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
+void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                   ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNormF0, unsigned int nbAverageSBM1F0 )
+                  unsigned int nbAverageNORM, unsigned int nbAverageSBM )
 {
     float sum;
     unsigned int i;
@@ -136,24 +136,24 @@ void SM_average( float *averaged_spec_mat_f0, float *averaged_spec_mat_f1,
                 + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
                 + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
 
-        if ( (nbAverageNormF0 == 0) && (nbAverageSBM1F0 == 0) )
+        if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
         {
-            averaged_spec_mat_f0[ i ] = sum;
-            averaged_spec_mat_f1[ i ] = sum;
+            averaged_spec_mat_NORM[ i ] = sum;
+            averaged_spec_mat_SBM[  i ] = sum;
         }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 != 0) )
+        else if ( (nbAverageNORM != 0) && (nbAverageSBM != 0) )
         {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[  i ] + sum );
-            averaged_spec_mat_f1[ i ] = ( averaged_spec_mat_f1[  i ] + sum );
+            averaged_spec_mat_NORM[ i ] = ( averaged_spec_mat_NORM[  i ] + sum );
+            averaged_spec_mat_SBM[  i ] = ( averaged_spec_mat_SBM[   i ] + sum );
         }
-        else if ( (nbAverageNormF0 != 0) && (nbAverageSBM1F0 == 0) )
+        else if ( (nbAverageNORM != 0) && (nbAverageSBM == 0) )
         {
-            averaged_spec_mat_f0[ i ] = ( averaged_spec_mat_f0[ i ] + sum );
-            averaged_spec_mat_f1[ i ] = sum;
+            averaged_spec_mat_NORM[ i ] = ( averaged_spec_mat_NORM[ i ] + sum );
+            averaged_spec_mat_SBM[  i ] = sum;
         }
         else
         {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNormF0, nbAverageSBM1F0)
+            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNORM, nbAverageSBM)
         }
     }
 }

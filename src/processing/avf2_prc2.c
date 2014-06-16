@@ -57,6 +57,16 @@ rtems_task avf2_task( rtems_task_argument argument )
     while(1){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
 
+        //****************************************
+        // initialize the mesage for the MATR task
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
+        msgForMATR.burst_sbm  = NULL;
+        msgForMATR.norm       = current_ring_node_asm_norm_f2;
+        msgForMATR.coarseTime = ring_node_for_averaging_sm_f2->coarseTime;
+        msgForMATR.fineTime   = ring_node_for_averaging_sm_f2->fineTime;
+        //
+        //****************************************
+
         // compute the average and store it in the averaged_sm_f2 buffer
         SM_average_f2( current_ring_node_asm_norm_f2->matrix,
                        ring_node_for_averaging_sm_f2,
@@ -66,16 +76,6 @@ rtems_task avf2_task( rtems_task_argument argument )
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF2;
         nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF2;
         nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF2;
-
-        //****************************************
-        // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
-        msgForMATR.burst_sbm  = NULL;
-        msgForMATR.norm       = current_ring_node_asm_norm_f2;
-//        msgForMATR.coarseTime = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[0];
-//        msgForMATR.fineTime   = ( (unsigned int *) (ring_node_tab[0]->buffer_address) )[1];
-        msgForMATR.coarseTime = time_management_regs->coarse_time;
-        msgForMATR.fineTime   = time_management_regs->fine_time;
 
         if (nb_norm_bp1 == nb_sm_before_f2.norm_bp1)
         {
@@ -187,7 +187,7 @@ rtems_task prc2_task( rtems_task_argument argument )
 
             // 3) send the BP1 set
             set_time( packet_norm_bp1_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( packet_norm_bp1_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+            set_time( packet_norm_bp1_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
             BP_send( (char *) &packet_norm_bp1_f2, queue_id,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F2 );
@@ -197,7 +197,7 @@ rtems_task prc2_task( rtems_task_argument argument )
 
                 // 2) send the BP2 set
                 set_time( packet_norm_bp2_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( packet_norm_bp2_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->fineTime   );
+                set_time( packet_norm_bp2_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
                 BP_send( (char *) &packet_norm_bp2_f2, queue_id,
                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
                          SID_NORM_BP2_F2 );

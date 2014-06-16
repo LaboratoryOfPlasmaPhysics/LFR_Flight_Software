@@ -30,7 +30,7 @@ void reset_nb_sm_f0( unsigned char lfrMode );
 
 //*******
 // EXTERN
-extern struct ring_node_sm *ring_node_for_averaging_sm_f0;
+extern ring_node_sm *ring_node_for_averaging_sm_f0;
 extern rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );
 
 #endif // AVF0_PRC0_H_INCLUDED
