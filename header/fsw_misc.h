@@ -33,7 +33,7 @@ rtems_task hous_task( rtems_task_argument argument );
 rtems_task dumb_task( rtems_task_argument unused );
 
 void init_housekeeping_parameters( void );
-void increment_seq_counter( unsigned char *packet_sequence_control);
+void increment_seq_counter(unsigned short *packetSequenceControl);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
@@ -44,5 +44,6 @@ extern int sched_yield( void );
 extern int rtems_cpu_usage_reset();
 extern ring_node *current_ring_node_f3;
 extern ring_node *ring_node_to_send_cwf_f3;
+extern unsigned short sequenceCounterHK;
 
 #endif // FSW_MISC_H_INCLUDED

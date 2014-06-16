@@ -101,6 +101,7 @@ void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );
 void close_matrix_actions(unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id task_id,
                            ring_node_sm *node_for_averaging, ring_node_sm *ringNode);
+unsigned char getSID( rtems_event_set event );
 
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );

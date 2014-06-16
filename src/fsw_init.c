@@ -93,7 +93,7 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF1("** %d.", SW_VERSION_N1)
     PRINTF1("%d."   , SW_VERSION_N2)
     PRINTF1("%d."   , SW_VERSION_N3)
-    PRINTF1("%d             **\n", SW_VERSION_N4)
+    PRINTF1("%d            **\n", SW_VERSION_N4)
 
     vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
     PRINTF("** VHDL                **\n")
@@ -241,6 +241,8 @@ void init_local_mode_parameters( void )
     }
     sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
     sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
+    sequenceCounterHK = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequenceCounterParameterDump = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
 }
 
 void reset_local_time( void )

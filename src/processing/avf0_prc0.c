@@ -102,20 +102,26 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             nb_sbm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0->next;
-            if ( (lfrCurrentMode == LFR_MODE_BURST)
-                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            if ( lfrCurrentMode == LFR_MODE_BURST )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP1_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_BP1_F0;
+            }
+            else if ( (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_SBM_BP1_F0;
             }
         }
 
         if (nb_sbm_bp2 == nb_sm_before_f0.burst_sbm_bp2)
         {
             nb_sbm_bp2 = 0;
-            if ( (lfrCurrentMode == LFR_MODE_BURST)
-                 || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            if ( lfrCurrentMode == LFR_MODE_BURST )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_SBM_BP2_F0;
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_BP2_F0;
+            }
+            else if ( (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+            {
+                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_SBM_BP2_F0;
             }
         }
 
@@ -171,6 +177,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
     size_t size;                            // size of the incoming TC packet
     asm_msg *incomingMsg;
     //
+    unsigned char sid;
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
     rtems_status_code status;
     rtems_id queue_id;
@@ -254,8 +261,9 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
         // BURST SBM1 SBM2
         //****************
         //****************
-        if (incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP1_F0 )
+        if ( (incomingMsg->event & RTEMS_EVENT_BURST_BP1_F0 ) || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F0 ) )
         {
+            sid = getSID( incomingMsg->event );
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_reorganize_and_divide( incomingMsg->burst_sbm->matrix, compressed_sm_sbm_f0,
                                          nb_sm_before_f0.burst_sbm_bp1,
@@ -267,10 +275,10 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             set_time( packet_sbm_bp1_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
             set_time( packet_sbm_bp1_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
             BP_send( (char *) &packet_sbm_bp1_f0, queue_id,
-                      PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA,
-                     SID_SBM1_BP1_F0);
+                     PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA,
+                     sid);
             // 4) compute the BP2 set if needed
-            if ( incomingMsg->event & RTEMS_EVENT_BURST_SBM_BP2_F0 )
+            if ( (incomingMsg->event & RTEMS_EVENT_BURST_BP2_F0) || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F0) )
             {
                 // 1) compute the BP2 set
 
@@ -278,8 +286,8 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                 set_time( packet_sbm_bp2_f0.header.time,            (unsigned char *) &incomingMsg->coarseTime );
                 set_time( packet_sbm_bp2_f0.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
                 BP_send( (char *) &packet_sbm_bp2_f0, queue_id,
-                          PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA,
-                         SID_SBM1_BP2_F0);
+                         PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA,
+                         sid);
             }
         }
 

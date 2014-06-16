@@ -63,19 +63,19 @@ void spectral_matrices_isr_f0( void )
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
             spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
         }
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x03;   // [0011]
+        spectral_matrix_regs->status = 0x03;   // [0011]
         break;
     case 1:
         close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
         spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x01;   // [0001]
+        spectral_matrix_regs->status = 0x01;   // [0001]
         break;
     case 2:
         close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0], ring_node_for_averaging_sm_f0, current_ring_node_sm_f0->previous);
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
         spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x02;   // [0010]
+        spectral_matrix_regs->status = 0x02;   // [0010]
         break;
     }
 }
@@ -113,19 +113,19 @@ void spectral_matrices_isr_f1( void )
             current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
             spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
         }
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x0c;   // [1100]
+        spectral_matrix_regs->status = 0x0c;   // [1100]
         break;
     case 1:
         close_matrix_actions( &nb_sm_f1, NB_SM_BEFORE_AVF1, Task_id[TASKID_AVF1], ring_node_for_averaging_sm_f1, current_ring_node_sm_f1->previous);
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
         spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x07;   // [0100]
+        spectral_matrix_regs->status = 0x04;   // [0100]
         break;
     case 2:
         close_matrix_actions( &nb_sm_f1, NB_SM_BEFORE_AVF1, Task_id[TASKID_AVF1], ring_node_for_averaging_sm_f1, current_ring_node_sm_f1->previous);
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
         spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x08;   // [1000]
+        spectral_matrix_regs->status = 0x08;   // [1000]
         break;
     }
 }
@@ -143,21 +143,31 @@ void spectral_matrices_isr_f2( void )
     switch(status)
     {
     case 0:
+        break;
     case 3:
+        spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->buffer_address;
+        spectral_matrix_regs->status = 0x30;   // [0011 0000]
+        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
         break;
     case 1:
         spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x10;   // [0001 0000]
+        spectral_matrix_regs->status = 0x10;   // [0001 0000]
+        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
         break;
     case 2:
         spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
-        spectral_matrix_regs->status = spectral_matrix_regs->status & 0x20;   // [0010 0000]
+        spectral_matrix_regs->status = 0x20;   // [0010 0000]
+        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+        }
         break;
-    }
-
-    if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-    {
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
     }
 }
 
@@ -180,7 +190,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     spectral_matrices_isr_f2();
 
-    spectral_matrix_isr_error_handler();
+//    spectral_matrix_isr_error_handler();
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
@@ -629,4 +639,40 @@ void close_matrix_actions( unsigned int *nb_sm, unsigned int nb_sm_before_avf, r
     }
 }
 
+unsigned char getSID( rtems_event_set event )
+{
+    unsigned char sid;
+
+    rtems_event_set eventSetBURST;
+    rtems_event_set eventSetSBM;
+
+    //******
+    // BURST
+    eventSetBURST = RTEMS_EVENT_BURST_BP1_F0
+            | RTEMS_EVENT_BURST_BP1_F1
+            | RTEMS_EVENT_BURST_BP2_F0
+            | RTEMS_EVENT_BURST_BP2_F1;
+
+    //****
+    // SBM
+    eventSetSBM = RTEMS_EVENT_SBM_BP1_F0
+            | RTEMS_EVENT_SBM_BP1_F1
+            | RTEMS_EVENT_SBM_BP2_F0
+            | RTEMS_EVENT_SBM_BP2_F1;
+
+    if (event & eventSetBURST)
+    {
+        sid = SID_BURST_BP1_F0;
+    }
+    else if (event & eventSetSBM)
+    {
+        sid = SID_SBM1_BP1_F0;
+    }
+    else
+    {
+        sid = 0;
+    }
+
+    return sid;
+}
 
