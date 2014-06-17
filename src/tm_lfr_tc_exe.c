@@ -132,7 +132,7 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     TM.tc_service = TC->serviceType;      // type of the rejected TC
     TM.tc_subtype = TC->serviceSubType;   // subtype of the rejected TC
     TM.byte_position = byte_position;
-    TM.rcv_value = rcv_value;
+    TM.rcv_value = (unsigned char) rcv_value;
 
     messageSize = PACKET_LENGTH_TC_EXE_INCONSISTENT + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 

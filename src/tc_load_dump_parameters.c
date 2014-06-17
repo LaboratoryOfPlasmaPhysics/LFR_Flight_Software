@@ -41,10 +41,6 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     int result;
     int flag;
     rtems_status_code status;
-    unsigned char sy_lfr_n_bp_p0;
-    unsigned char sy_lfr_n_bp_p1;
-    unsigned int sy_lfr_n_asm_p;
-    float aux;
 
     flag = LFR_SUCCESSFUL;
 
@@ -54,114 +50,21 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         flag = LFR_DEFAULT;
     }
 
-    //***************
-    // sy_lfr_n_swf_l
+    // CHECK THE PARAMETERS SET CONSISTENCY
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_n_swf_l( TC, queue_id, time );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
+        flag = check_common_par_consistency( TC, queue_id );
     }
 
-    //***************
-    // sy_lfr_n_swf_p
+    // SET THE PARAMETERS IF THEY ARE CONSISTENT
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_n_swf_p( TC, queue_id, time );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //****************************************************************
-    // check the consistency between sy_lfr_n_bp_p0 and sy_lfr_n_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
-        sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
-        aux = ( (float ) sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0);
-        if (aux != 0)
-        {
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0+10, sy_lfr_n_bp_p0 );
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_n_bp_p0
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_n_bp_p0( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //****************************************************************
-    // check the consistency between sy_lfr_n_bp_p0 and sy_lfr_n_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
-        sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
-        aux = ( (float ) sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0);
-        if (aux != 0)
-        {
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_n_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_n_bp_p1( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //****************************************************************
-    // check the consistency between sy_lfr_n_asm_p and sy_lfr_n_bp_p0
-    if (flag == LFR_SUCCESSFUL)
-    {
-        sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
-        sy_lfr_n_asm_p =
-                TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P ] * 256
-                + TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P + 1 ];
-        aux = ( (float ) sy_lfr_n_asm_p / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_asm_p / sy_lfr_n_bp_p0);
-        if (aux != 0)
-        {
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P+10, sy_lfr_n_asm_p );
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_n_asm_p
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_n_asm_p( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //*********************
-    // sy_lfr_n_cwf_long_f3
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_n_cwf_long_f3( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
+        result = set_sy_lfr_n_swf_l( TC );
+        result = set_sy_lfr_n_swf_p( TC );
+        result = set_sy_lfr_n_bp_p0( TC );
+        result = set_sy_lfr_n_bp_p1( TC );
+        result = set_sy_lfr_n_asm_p( TC );
+        result = set_sy_lfr_n_cwf_long_f3( TC );
     }
 
     return flag;
@@ -190,6 +93,27 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
         result = LFR_DEFAULT;
     }
 
+    sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
+    sy_lfr_b_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
+
+    // sy_lfr_b_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_b_bp_p0 < DEFAULT_SY_LFR_B_BP_P0 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0+10, sy_lfr_b_bp_p0 );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_b_bp_p1
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_b_bp_p1 < DEFAULT_SY_LFR_B_BP_P1 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P1+10, sy_lfr_b_bp_p1 );
+            flag = WRONG_APP_DATA;
+        }
+    }
     //****************************************************************
     // check the consistency between sy_lfr_b_bp_p0 and sy_lfr_b_bp_p1
     if (flag == LFR_SUCCESSFUL)
@@ -204,26 +128,11 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
         }
     }
 
-    //***************
-    // sy_lfr_b_bp_p0
+    // SET HTE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_b_bp_p0( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_b_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_b_bp_p1( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
+        result = set_sy_lfr_b_bp_p0( TC );
+        result = set_sy_lfr_b_bp_p1( TC );
     }
 
     return flag;
@@ -252,12 +161,31 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         result = LFR_DEFAULT;
     }
 
+    sy_lfr_s1_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
+    sy_lfr_s1_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
+
+    // sy_lfr_s1_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_s1_bp_p0 < DEFAULT_SY_LFR_S1_BP_P0 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0+10, sy_lfr_s1_bp_p0 );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_s1_bp_p1
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_s1_bp_p1 < DEFAULT_SY_LFR_S1_BP_P1 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P1+10, sy_lfr_s1_bp_p1 );
+            flag = WRONG_APP_DATA;
+        }
+    }
     //******************************************************************
     // check the consistency between sy_lfr_s1_bp_p0 and sy_lfr_s1_bp_p1
     if (flag == LFR_SUCCESSFUL)
     {
-        sy_lfr_s1_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
-        sy_lfr_s1_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
         aux = ( (float ) sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0*0.25) ) - floor(sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0*0.25));
         if (aux != 0)
         {
@@ -266,26 +194,11 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         }
     }
 
-    //***************
-    // sy_lfr_s1_bp_p0
+    // SET THE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_s1_bp_p0( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_s1_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_s1_bp_p1( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
+        result = set_sy_lfr_s1_bp_p0( TC );
+        result = set_sy_lfr_s1_bp_p1( TC );
     }
 
     return flag;
@@ -314,6 +227,27 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         result = LFR_DEFAULT;
     }
 
+    sy_lfr_s2_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
+    sy_lfr_s2_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
+
+    // sy_lfr_s2_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_s2_bp_p0 < DEFAULT_SY_LFR_S2_BP_P0 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0+10, sy_lfr_s2_bp_p0 );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_s2_bp_p1
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_s2_bp_p1 < DEFAULT_SY_LFR_S2_BP_P1 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P1+10, sy_lfr_s2_bp_p1 );
+            flag = WRONG_APP_DATA;
+        }
+    }
     //******************************************************************
     // check the consistency between sy_lfr_s2_bp_p0 and sy_lfr_s2_bp_p1
     if (flag == LFR_SUCCESSFUL)
@@ -328,26 +262,11 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         }
     }
 
-    //***************
-    // sy_lfr_s2_bp_p0
+    // SET THE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_s2_bp_p0( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
-    }
-
-    //***************
-    // sy_lfr_s2_bp_p1
-    if (flag == LFR_SUCCESSFUL)
-    {
-        result = set_sy_lfr_s2_bp_p1( TC, queue_id );
-        if (result != LFR_SUCCESSFUL)
-        {
-            flag = LFR_DEFAULT;
-        }
+        result = set_sy_lfr_s2_bp_p0( TC );
+        result = set_sy_lfr_s2_bp_p1( TC );
     }
 
     return flag;
@@ -395,7 +314,113 @@ int action_dump_par( rtems_id queue_id )
 //***********************
 // NORMAL MODE PARAMETERS
 
-int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
+int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+{
+    unsigned char msb;
+    unsigned char lsb;
+    int flag;
+    float aux;
+    rtems_status_code status;
+
+    unsigned int sy_lfr_n_swf_l;
+    unsigned int sy_lfr_n_swf_p;
+    unsigned int sy_lfr_n_asm_p;
+    unsigned char sy_lfr_n_bp_p0;
+    unsigned char sy_lfr_n_bp_p1;
+    unsigned char sy_lfr_n_cwf_long_f3;
+
+    flag = LFR_SUCCESSFUL;
+
+    //***************
+    // get parameters
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L+1 ];
+    sy_lfr_n_swf_l = msb * 256 + lsb;
+
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P+1 ];
+    sy_lfr_n_swf_p = msb * 256  + lsb;
+
+    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P ];
+    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P+1 ];
+    sy_lfr_n_asm_p = msb * 256  + lsb;
+
+    sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
+
+    sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
+
+    sy_lfr_n_cwf_long_f3 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_CWF_LONG_F3 ];
+
+    //******************
+    // check consistency
+    // sy_lfr_n_swf_l
+    if (sy_lfr_n_swf_l != 2048)
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L+10, lsb );
+        flag = WRONG_APP_DATA;
+    }
+    // sy_lfr_n_swf_p
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if ( sy_lfr_n_swf_p < 16 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, lsb );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_n_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_n_bp_p0 < SY_LFR_N_BP_P0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0+10, sy_lfr_n_bp_p0 );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_n_asm_p
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_n_asm_p == 0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P+10, sy_lfr_n_asm_p );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_n_asm_p shall be a whole multiple of sy_lfr_n_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        aux = ( (float ) sy_lfr_n_asm_p / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_asm_p / sy_lfr_n_bp_p0);
+        if (aux != 0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P+10, sy_lfr_n_asm_p );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_n_bp_p1
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_n_bp_p1 < SY_LFR_N_BP_P1)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_n_bp_p1 shall be a whole multiple of sy_lfr_n_bp_p0
+    if (flag == LFR_SUCCESSFUL)
+    {
+        aux = ( (float ) sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0);
+        if (aux != 0)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
+            flag = LFR_DEFAULT;
+        }
+    }
+    // sy_lfr_n_cwf_long_f3
+
+    return flag;
+}
+
+int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the number of points of a snapshot (sy_lfr_n_swf_l).
      *
@@ -404,40 +429,17 @@ int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigne
      *
      */
 
-    unsigned int tmp;
     int result;
-    unsigned char msb;
-    unsigned char lsb;
-    rtems_status_code status;
 
-    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L ];
-    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L+1 ];
+    result = LFR_SUCCESSFUL;
 
-    tmp = ( unsigned int ) floor(
-                ( ( msb*256 ) + lsb ) / 16
-            ) * 16;
-
-    if ( (tmp < 16) || (tmp > 2048) )   // the snapshot period is a multiple of 16
-    {                                   // 2048 is the maximum limit due to the size of the buffers
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L+10, lsb );
-        result = WRONG_APP_DATA;
-    }
-    else if (tmp != 2048)
-    {
-        status = send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
-        result = FUNCT_NOT_IMPL;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (tmp >> 8);
-        parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (tmp     );
-        result = LFR_SUCCESSFUL;
-    }
+    parameter_dump_packet.sy_lfr_n_swf_l[0] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L   ];
+    parameter_dump_packet.sy_lfr_n_swf_l[1] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_L+1 ];
 
     return result;
 }
 
-int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time)
+int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two snapshots, in s (sy_lfr_n_swf_p).
      *
@@ -446,33 +448,17 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigne
      *
      */
 
-    unsigned int tmp;
     int result;
-    unsigned char msb;
-    unsigned char lsb;
-    rtems_status_code status;
 
-    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P ];
-    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P+1 ];
+    result = LFR_SUCCESSFUL;
 
-    tmp = msb * 256  + lsb;
-
-    if ( tmp < 16 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, lsb );
-        result = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (tmp >> 8);
-        parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (tmp     );
-        result = LFR_SUCCESSFUL;
-    }
+    parameter_dump_packet.sy_lfr_n_swf_p[0] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P   ];
+    parameter_dump_packet.sy_lfr_n_swf_p[1] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_SWF_P+1 ];
 
     return result;
 }
 
-int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two full spectral matrices transmission, in s (SY_LFR_N_ASM_P).
      *
@@ -482,20 +468,16 @@ int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int result;
-    unsigned char msb;
-    unsigned char lsb;
 
-    msb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P ];
-    lsb = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P+1 ];
-
-    parameter_dump_packet.sy_lfr_n_asm_p[0] = msb;
-    parameter_dump_packet.sy_lfr_n_asm_p[1] = lsb;
     result = LFR_SUCCESSFUL;
+
+    parameter_dump_packet.sy_lfr_n_asm_p[0] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P   ];
+    parameter_dump_packet.sy_lfr_n_asm_p[1] = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_ASM_P+1 ];
 
     return result;
 }
 
-int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_N_BP_P0).
      *
@@ -505,26 +487,15 @@ int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
-
-    if (val < SY_LFR_N_BP_P0)
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_n_bp_p0 = val;
-    }
+    parameter_dump_packet.sy_lfr_n_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P0 ];
 
     return status;
 }
 
-int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets (autocorrelation + crosscorrelation), in s (sy_lfr_n_bp_p1).
      *
@@ -534,26 +505,15 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
-
-    if (val < SY_LFR_N_BP_P1)
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_n_bp_p1 = val;
-    }
+    parameter_dump_packet.sy_lfr_n_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_N_BP_P1 ];
 
     return status;
 }
 
-int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
+int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC )
 {
     /** This function allows to switch from CWF_F3 packets to CWF_LONG_F3 packets.
      *
@@ -573,7 +533,7 @@ int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
 //**********************
 // BURST MODE PARAMETERS
-int set_sy_lfr_b_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_b_bp_p0(ccsdsTelecommandPacket_t *TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_B_BP_P0).
      *
@@ -583,26 +543,15 @@ int set_sy_lfr_b_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
-
-    if (val < DEFAULT_SY_LFR_B_BP_P0 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_b_bp_p0 = val;
-    }
+    parameter_dump_packet.sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
 
     return status;
 }
 
-int set_sy_lfr_b_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_b_bp_p1( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_B_BP_P1).
      *
@@ -612,28 +561,17 @@ int set_sy_lfr_b_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
-
-    if (val < DEFAULT_SY_LFR_B_BP_P1 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P1+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_b_bp_p1 = val;
-    }
+    parameter_dump_packet.sy_lfr_b_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
 
     return status;
 }
 
 //*********************
 // SBM1 MODE PARAMETERS
-int set_sy_lfr_s1_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_s1_bp_p0( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S1_BP_P0).
      *
@@ -643,26 +581,15 @@ int set_sy_lfr_s1_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
-
-    if (val < DEFAULT_SY_LFR_S1_BP_P0 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_s1_bp_p0 = val;
-    }
+    parameter_dump_packet.sy_lfr_s1_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
 
     return status;
 }
 
-int set_sy_lfr_s1_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_s1_bp_p1( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S1_BP_P1).
      *
@@ -672,28 +599,17 @@ int set_sy_lfr_s1_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
-
-    if (val < DEFAULT_SY_LFR_S1_BP_P1 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P1+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_s1_bp_p1 = val;
-    }
+    parameter_dump_packet.sy_lfr_s1_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P1 ];
 
     return status;
 }
 
 //*********************
 // SBM2 MODE PARAMETERS
-int set_sy_lfr_s2_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_s2_bp_p0(ccsdsTelecommandPacket_t *TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S2_BP_P0).
      *
@@ -703,26 +619,15 @@ int set_sy_lfr_s2_bp_p0( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
-
-    if (val < DEFAULT_SY_LFR_S2_BP_P0 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_s2_bp_p0 = val;
-    }
+    parameter_dump_packet.sy_lfr_s2_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
 
     return status;
 }
 
-int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S2_BP_P1).
      *
@@ -732,21 +637,10 @@ int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    unsigned char val;
 
     status = LFR_SUCCESSFUL;
 
-    val = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
-
-    if (val < DEFAULT_SY_LFR_S2_BP_P1 )
-    {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P1+10, val );
-        status = WRONG_APP_DATA;
-    }
-    else
-    {
-        parameter_dump_packet.sy_lfr_s2_bp_p1 = val;
-    }
+    parameter_dump_packet.sy_lfr_s2_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
 
     return status;
 }
