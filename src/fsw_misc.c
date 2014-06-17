@@ -211,8 +211,8 @@ rtems_task hous_task(rtems_task_argument argument)
             rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         }
         else {
-            housekeeping_packet.packetSequenceControl[0] = (unsigned char) sequenceCounterHK >> 8;
-            housekeeping_packet.packetSequenceControl[1] = (unsigned char) sequenceCounterHK;
+            housekeeping_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterHK >> 8);
+            housekeeping_packet.packetSequenceControl[1] = (unsigned char) (sequenceCounterHK     );
             increment_seq_counter( &sequenceCounterHK );
 
             housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
@@ -333,39 +333,6 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3
 }
 
-void increment_seq_counter_old( unsigned char *packet_sequence_control)
-{
-    /** This function increment the sequence counter psased in argument.
-     *
-     * The increment does not affect the grouping flag. In case of an overflow, the counter is reset to 0.
-     *
-     */
-
-    unsigned short sequence_cnt;
-    unsigned short segmentation_grouping_flag;
-    unsigned short new_packet_sequence_control;
-
-    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;   // keep bits 7 downto 6
-    sequence_cnt                = (unsigned short) (
-                ( (packet_sequence_control[0] & 0x3f) << 8 )    // keep bits 5 downto 0
-                                + packet_sequence_control[1]
-            );
-
-    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
-
-    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
-    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
-
-    if ( sequence_cnt < SEQ_CNT_MAX)
-    {
-        sequence_cnt = sequence_cnt + 1;
-    }
-    else
-    {
-        sequence_cnt = 0;
-    }
-}
-
 void increment_seq_counter( unsigned short *packetSequenceControl )
 {
     /** This function increment the sequence counter psased in argument.
@@ -374,11 +341,11 @@ void increment_seq_counter( unsigned short *packetSequenceControl )
      *
      */
 
-    unsigned short sequence_cnt;
     unsigned short segmentation_grouping_flag;
+    unsigned short sequence_cnt;
 
     segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;   // keep bits 7 downto 6
-    sequence_cnt                = (*packetSequenceControl) & 0x3fff;       // [0011 1111 1111 1111]
+    sequence_cnt                = (*packetSequenceControl) & 0x3fff;    // [0011 1111 1111 1111]
 
     if ( sequence_cnt < SEQ_CNT_MAX)
     {

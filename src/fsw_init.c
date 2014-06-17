@@ -240,9 +240,9 @@ void init_local_mode_parameters( void )
         sequenceCounters_TC_EXE[i] = 0x00;
     }
     sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
-    sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
-    sequenceCounterHK = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
-    sequenceCounterParameterDump = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequenceCounters_SCIENCE_SBM1_SBM2 =    0x00;
+    sequenceCounterHK =                     TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequenceCounterParameterDump =          TM_PACKET_SEQ_CTRL_STANDALONE << 8;
 }
 
 void reset_local_time( void )
