@@ -291,8 +291,8 @@ int action_dump_par( rtems_id queue_id )
     int status;
 
     // UPDATE TIME
-    parameter_dump_packet.packetSequenceControl[0] = (unsigned char) sequenceCounterParameterDump >> 8;
-    parameter_dump_packet.packetSequenceControl[1] = (unsigned char) sequenceCounterParameterDump;
+    parameter_dump_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
+    parameter_dump_packet.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
     increment_seq_counter( &sequenceCounterParameterDump );
 
     parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
