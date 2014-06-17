@@ -1374,6 +1374,14 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
 
     if (sequence_cnt != NULL)
     {
+        segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+        *sequence_cnt                = (*sequence_cnt) & 0x3fff;
+
+        new_packet_sequence_control = segmentation_grouping_flag | (*sequence_cnt) ;
+
+        packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+        packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
+
         // increment the sequence counter
         if ( *sequence_cnt < SEQ_CNT_MAX)
         {
@@ -1383,13 +1391,6 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
         {
             *sequence_cnt = 0;
         }
-        segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
-        *sequence_cnt                = (*sequence_cnt) & 0x3fff;
-
-        new_packet_sequence_control = segmentation_grouping_flag | (*sequence_cnt) ;
-
-        packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
-        packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
     }
 
     //***********************************
