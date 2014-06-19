@@ -780,7 +780,6 @@ void launch_spectral_matrix( void )
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
     set_run_matrix_spectral( 1 );
-
 }
 
 void launch_spectral_matrix_simu( void )

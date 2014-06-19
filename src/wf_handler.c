@@ -288,14 +288,14 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             {
                 PRINTF("send CWF_LONG_F3\n")
                 send_waveform_CWF(
-                            (volatile int*) current_ring_node_f3->buffer_address,
+                            (volatile int*) ring_node_to_send_cwf_f3->buffer_address,
                             SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
                 send_waveform_CWF3_light(
-                            (volatile int*) current_ring_node_f3->buffer_address,
+                            (volatile int*) ring_node_to_send_cwf_f3->buffer_address,
                             headerCWF_F3_light, queue_id );
             }
 

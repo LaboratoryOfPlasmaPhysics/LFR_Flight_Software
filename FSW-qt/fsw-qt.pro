@@ -11,7 +11,7 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=1 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=11 # internal
+DEFINES += SW_VERSION_N4=12 # internal
 
 contains( CONFIG, debug_tch ) {
     DEFINES += DEBUG_TCH
