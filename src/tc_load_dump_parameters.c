@@ -356,7 +356,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     // sy_lfr_n_swf_l
     if (sy_lfr_n_swf_l != 2048)
     {
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L+10, lsb );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L+10, sy_lfr_n_swf_l );
         flag = WRONG_APP_DATA;
     }
     // sy_lfr_n_swf_p
@@ -364,7 +364,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     {
         if ( sy_lfr_n_swf_p < 16 )
         {
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, lsb );
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, sy_lfr_n_swf_p );
             flag = WRONG_APP_DATA;
         }
     }
