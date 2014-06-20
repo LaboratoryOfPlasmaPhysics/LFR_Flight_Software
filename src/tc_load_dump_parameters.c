@@ -79,7 +79,6 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
      *
      */
 
-    int result;
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_b_bp_p0;
@@ -90,7 +89,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
 
     if ( lfrCurrentMode == LFR_MODE_BURST ) {
         status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
-        result = LFR_DEFAULT;
+        flag = LFR_DEFAULT;
     }
 
     sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
@@ -131,8 +130,8 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
     // SET HTE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_b_bp_p0( TC );
-        result = set_sy_lfr_b_bp_p1( TC );
+        flag = set_sy_lfr_b_bp_p0( TC );
+        flag = set_sy_lfr_b_bp_p1( TC );
     }
 
     return flag;
@@ -147,7 +146,6 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
      *
      */
 
-    int result;
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_s1_bp_p0;
@@ -158,7 +156,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
 
     if ( lfrCurrentMode == LFR_MODE_SBM1 ) {
         status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
-        result = LFR_DEFAULT;
+        flag = LFR_DEFAULT;
     }
 
     sy_lfr_s1_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S1_BP_P0 ];
@@ -197,8 +195,8 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
     // SET THE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_s1_bp_p0( TC );
-        result = set_sy_lfr_s1_bp_p1( TC );
+        flag = set_sy_lfr_s1_bp_p0( TC );
+        flag = set_sy_lfr_s1_bp_p1( TC );
     }
 
     return flag;
@@ -213,7 +211,6 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
      *
      */
 
-    int result;
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_s2_bp_p0;
@@ -224,7 +221,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
 
     if ( lfrCurrentMode == LFR_MODE_SBM2 ) {
         status = send_tm_lfr_tc_exe_not_executable( TC, queue_id );
-        result = LFR_DEFAULT;
+        flag = LFR_DEFAULT;
     }
 
     sy_lfr_s2_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
@@ -265,8 +262,8 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
     // SET THE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_s2_bp_p0( TC );
-        result = set_sy_lfr_s2_bp_p1( TC );
+        flag = set_sy_lfr_s2_bp_p0( TC );
+        flag = set_sy_lfr_s2_bp_p1( TC );
     }
 
     return flag;
