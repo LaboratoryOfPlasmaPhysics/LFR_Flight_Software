@@ -1277,7 +1277,7 @@ void set_wfp_delta_snapshot( void )
             + parameter_dump_packet.sy_lfr_n_swf_p[1];
 
     delta_snapshot_in_T2 = delta_snapshot * 256;
-    waveform_picker_regs->delta_snapshot = delta_snapshot_in_T2;    // max 4 bytes
+    waveform_picker_regs->delta_snapshot = delta_snapshot_in_T2 - 1;    // max 4 bytes
 }
 
 void set_wfp_delta_f0_f0_2( void )
