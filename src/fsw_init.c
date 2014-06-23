@@ -213,8 +213,6 @@ rtems_task Init( rtems_task_argument ignored )
 
     BOOT_PRINTF("delete INIT\n")
 
-    send_dumb_hk();
-
     status = rtems_task_delete(RTEMS_SELF);
 
 }
