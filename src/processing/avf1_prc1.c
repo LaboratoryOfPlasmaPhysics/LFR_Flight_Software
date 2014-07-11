@@ -83,7 +83,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
-        SM_average( current_ring_node_asm_norm_f1->matrix,
+        SM_average_alt( current_ring_node_asm_norm_f1->matrix,
                     current_ring_node_asm_burst_sbm_f1->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1 );

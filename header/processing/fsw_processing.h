@@ -109,8 +109,11 @@ extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 //***************************************
 // DEFINITIONS OF STATIC INLINE FUNCTIONS
 static inline void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node_sm *ring_node_tab[],
-                  unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+                               ring_node_sm *ring_node_tab[],
+                               unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+static inline void SM_average_alt( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
+                                   ring_node_sm *ring_node_tab[],
+                                   unsigned int nbAverageNORM, unsigned int nbAverageSBM );
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
 static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,
@@ -158,11 +161,25 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
     }
 }
 
+void SM_average_alt( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
+                  ring_node_sm *ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM )
+{
+    float sum;
+    unsigned int i;
+
+    for(i=0; i<TOTAL_SIZE_SM; i++)
+    {
+        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ];
+        averaged_spec_mat_NORM[ i ] = sum;
+        averaged_spec_mat_SBM[  i ] = sum;
+    }
+}
+
 void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )
 {
-    // reorganize the data to have a matrix in the VHDL format
+    // reorganize the data to have a matrix in the ICD format
     // INPUT	(VHDL format)
-    // component_0[0 .. 127] component_1[0 .. 127] .. component_24[0 .. 127]
+    // component_0[0 .. 127] component_1_re[0 .. 127] component_1_im[0 .. 127] .. component_24[0 .. 127]
     // OUTPUT		(ICD format)
     // matrix_0[0 .. 24] matrix_1[0 .. 24] .. matrix_127[0 .. 24]
 

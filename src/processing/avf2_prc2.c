@@ -68,7 +68,7 @@ rtems_task avf2_task( rtems_task_argument argument )
         //****************************************
 
         // compute the average and store it in the averaged_sm_f2 buffer
-        SM_average_f2( current_ring_node_asm_norm_f2->matrix,
+        SM_average_f2_alt( current_ring_node_asm_norm_f2->matrix,
                        ring_node_for_averaging_sm_f2,
                        nb_norm_bp1 );
 
@@ -249,5 +249,19 @@ void SM_average_f2( float *averaged_spec_mat_f2,
         {
             averaged_spec_mat_f2[ i ] = ( averaged_spec_mat_f2[  i ] + sum );
         }
+    }
+}
+
+void SM_average_f2_alt( float *averaged_spec_mat_f2,
+                  ring_node_sm *ring_node,
+                  unsigned int nbAverageNormF2 )
+{
+    float sum;
+    unsigned int i;
+
+    for(i=0; i<TOTAL_SIZE_SM; i++)
+    {
+        sum = ( (int *) (ring_node->buffer_address) ) [ i ];
+        averaged_spec_mat_f2[ i ] = sum;
     }
 }
