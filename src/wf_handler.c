@@ -841,80 +841,6 @@ int send_waveform_CWF3_light(volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t
     return ret;
 }
 
-void compute_acquisition_time_old( unsigned int coarseTime, unsigned int fineTime,
-                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char * acquisitionTime )
-{
-    unsigned long long int acquisitionTimeAsLong;
-    unsigned char localAcquisitionTime[6];
-    double deltaT;
-
-    deltaT = 0.;
-
-    localAcquisitionTime[0] = (unsigned char) ( coarseTime >>  8 );
-    localAcquisitionTime[1] = (unsigned char) ( coarseTime       );
-    localAcquisitionTime[2] = (unsigned char) ( coarseTime >> 24 );
-    localAcquisitionTime[3] = (unsigned char) ( coarseTime >> 16 );
-    localAcquisitionTime[4] = (unsigned char) ( fineTime   >> 24 );
-    localAcquisitionTime[5] = (unsigned char) ( fineTime   >> 16 );
-
-    acquisitionTimeAsLong = ( (unsigned long long int) localAcquisitionTime[0] << 40 )
-            + ( (unsigned long long int) localAcquisitionTime[1] << 32 )
-            + ( localAcquisitionTime[2] << 24 )
-            + ( localAcquisitionTime[3] << 16 )
-            + ( localAcquisitionTime[4] << 8  )
-            + ( localAcquisitionTime[5]       );
-
-    switch( sid )
-    {
-    case SID_NORM_SWF_F0:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_304 * 65536. / 24576. ;
-        break;
-
-    case SID_NORM_SWF_F1:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_304 * 65536. / 4096. ;
-        break;
-
-    case SID_NORM_SWF_F2:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_304 * 65536. / 256. ;
-        break;
-
-    case SID_SBM1_CWF_F1:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 4096. ;
-        break;
-
-    case SID_SBM2_CWF_F2:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 256. ;
-        break;
-
-    case SID_BURST_CWF_F2:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 256. ;
-        break;
-
-    case SID_NORM_CWF_F3:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF_SHORT_F3 * 65536. / 16. ;
-        break;
-
-    case SID_NORM_CWF_LONG_F3:
-        deltaT = ( (double ) (pa_lfr_pkt_nr) ) * BLK_NR_CWF * 65536. / 16. ;
-        break;
-
-    default:
-        PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d", sid)
-        deltaT = 0.;
-        break;
-    }
-
-    acquisitionTimeAsLong = acquisitionTimeAsLong + (unsigned long long int) deltaT;
-    //
-    acquisitionTime[0] = (unsigned char) (acquisitionTimeAsLong >> 40);
-    acquisitionTime[1] = (unsigned char) (acquisitionTimeAsLong >> 32);
-    acquisitionTime[2] = (unsigned char) (acquisitionTimeAsLong >> 24);
-    acquisitionTime[3] = (unsigned char) (acquisitionTimeAsLong >> 16);
-    acquisitionTime[4] = (unsigned char) (acquisitionTimeAsLong >> 8 );
-    acquisitionTime[5] = (unsigned char) (acquisitionTimeAsLong      );
-
-}
-
 void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
                                unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char * acquisitionTime )
 {
@@ -933,10 +859,10 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
 
     acquisitionTimeAsLong = ( (unsigned long long int) localAcquisitionTime[0] << 40 )
             + ( (unsigned long long int) localAcquisitionTime[1] << 32 )
-            + ( localAcquisitionTime[2] << 24 )
-            + ( localAcquisitionTime[3] << 16 )
-            + ( localAcquisitionTime[4] << 8  )
-            + ( localAcquisitionTime[5]       );
+            + ( (unsigned long long int) localAcquisitionTime[2] << 24 )
+            + ( (unsigned long long int) localAcquisitionTime[3] << 16 )
+            + ( (unsigned long long int) localAcquisitionTime[4] << 8  )
+            + ( (unsigned long long int) localAcquisitionTime[5]       );
 
     switch( sid )
     {
@@ -1098,21 +1024,6 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     }
 }
 
-void build_acquisition_time_old( unsigned long long int *acquisitionTimeAslong, ring_node *current_ring_node )
-{
-    unsigned char *acquisitionTimeCharPtr;
-
-    acquisitionTimeCharPtr = (unsigned char*) current_ring_node->buffer_address;
-
-    *acquisitionTimeAslong = 0x00;
-    *acquisitionTimeAslong = ( acquisitionTimeCharPtr[0] << 24 )
-            + ( acquisitionTimeCharPtr[1] << 16 )
-            + ( (unsigned long long int) (acquisitionTimeCharPtr[2] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
-            + ( (unsigned long long int) acquisitionTimeCharPtr[3] << 32 )
-            + ( acquisitionTimeCharPtr[4] << 8  )
-            + ( acquisitionTimeCharPtr[5]       );
-}
-
 void build_acquisition_time( unsigned long long int *acquisitionTimeAslong, ring_node *current_ring_node )
 {
     unsigned char *acquisitionTimeCharPtr;
@@ -1122,10 +1033,10 @@ void build_acquisition_time( unsigned long long int *acquisitionTimeAslong, ring
     *acquisitionTimeAslong = 0x00;
     *acquisitionTimeAslong = ( (unsigned long long int) (acquisitionTimeCharPtr[0] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
             + ( (unsigned long long int) acquisitionTimeCharPtr[1] << 32 )
-            + ( acquisitionTimeCharPtr[2] << 24 )
-            + ( acquisitionTimeCharPtr[3] << 16 )
-            + ( acquisitionTimeCharPtr[6] << 8  )
-            + ( acquisitionTimeCharPtr[7]       );
+            + ( (unsigned long long int) acquisitionTimeCharPtr[2] << 24 )
+            + ( (unsigned long long int) acquisitionTimeCharPtr[3] << 16 )
+            + ( (unsigned long long int) acquisitionTimeCharPtr[6] << 8  )
+            + ( (unsigned long long int) acquisitionTimeCharPtr[7]       );
 }
 
 //**************

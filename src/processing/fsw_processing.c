@@ -613,10 +613,10 @@ unsigned long long int get_acquisition_time( unsigned char *timePtr )
     acquisitionTimeAslong = 0x00;
     acquisitionTimeAslong = ( (unsigned long long int) (timePtr[0] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
             + ( (unsigned long long int) timePtr[1] << 32 )
-            + ( timePtr[2] << 24 )
-            + ( timePtr[3] << 16 )
-            + ( timePtr[6] << 8  )
-            + ( timePtr[7]       );
+            + ( (unsigned long long int) timePtr[2] << 24 )
+            + ( (unsigned long long int) timePtr[3] << 16 )
+            + ( (unsigned long long int) timePtr[6] << 8  )
+            + ( (unsigned long long int) timePtr[7]       );
     return acquisitionTimeAslong;
 }
 

@@ -442,65 +442,6 @@ void send_dumb_hk( void )
                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
 
-void get_v_e1_e2_f3_old( unsigned char *spacecraft_potential )
-{
-    unsigned int coarseTime;
-    unsigned int acquisitionTime;
-    unsigned int deltaT = 0;
-    unsigned char *bufferPtr;
-
-    unsigned int offset_in_samples;
-    unsigned int offset_in_bytes;
-    unsigned char f3 = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
-
-    if (lfrCurrentMode == LFR_MODE_STANDBY)
-    {
-        spacecraft_potential[0] = 0x00;
-        spacecraft_potential[1] = 0x00;
-        spacecraft_potential[2] = 0x00;
-        spacecraft_potential[3] = 0x00;
-        spacecraft_potential[4] = 0x00;
-        spacecraft_potential[5] = 0x00;
-    }
-    else
-    {
-        coarseTime = time_management_regs->coarse_time & 0x7fffffff;
-        bufferPtr = (unsigned char*) current_ring_node_f3->buffer_address;
-        acquisitionTime = (unsigned int) ( ( bufferPtr[2] & 0x7f ) << 24 )
-                + (unsigned int) ( bufferPtr[3] << 16 )
-                + (unsigned int) ( bufferPtr[0] << 8  )
-                + (unsigned int) ( bufferPtr[1]       );
-        if ( coarseTime > acquisitionTime )
-        {
-            deltaT = coarseTime - acquisitionTime;
-            offset_in_samples = (deltaT-1) * f3 ;
-        }
-        else if( coarseTime == acquisitionTime )
-        {
-            bufferPtr = (unsigned char*) current_ring_node_f3->previous->buffer_address;    // pick up v e1 and e2 in the previous f3 buffer
-            offset_in_samples = NB_SAMPLES_PER_SNAPSHOT-1;
-        }
-        else
-        {
-            offset_in_samples = 0;
-            PRINTF2("ERR *** in get_v_e1_e2_f3 *** coarseTime = %x, acquisitionTime = %x\n", coarseTime, acquisitionTime)
-        }
-
-        if ( offset_in_samples > (NB_SAMPLES_PER_SNAPSHOT - 1) )
-        {
-            PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out of the buffer, counter = %d\n", offset_in_samples)
-            offset_in_samples = NB_SAMPLES_PER_SNAPSHOT -1;
-        }
-        offset_in_bytes = TIME_OFFSET_IN_BYTES + offset_in_samples * NB_WORDS_SWF_BLK * 4;
-        spacecraft_potential[0] = bufferPtr[ offset_in_bytes + 0];
-        spacecraft_potential[1] = bufferPtr[ offset_in_bytes + 1];
-        spacecraft_potential[2] = bufferPtr[ offset_in_bytes + 2];
-        spacecraft_potential[3] = bufferPtr[ offset_in_bytes + 3];
-        spacecraft_potential[4] = bufferPtr[ offset_in_bytes + 4];
-        spacecraft_potential[5] = bufferPtr[ offset_in_bytes + 5];
-    }
-}
-
 void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
 {
     unsigned int coarseTime;

@@ -22,22 +22,19 @@
 #define NB_BINS_PER_ASM_F0          88
 #define NB_BINS_PER_PKT_ASM_F0      44
 #define TOTAL_SIZE_ASM_F0_IN_BYTES  4400    // 25 * 88 * 2
-//#define ASM_F0_INDICE_START         17      // 88 bins
-#define ASM_F0_INDICE_START         0
+#define ASM_F0_INDICE_START         17      // 88 bins
 #define ASM_F0_INDICE_STOP          104     // 2 packets of 44 bins
 //
 #define NB_BINS_PER_ASM_F1          104
 #define NB_BINS_PER_PKT_ASM_F1      52
 #define TOTAL_SIZE_ASM_F1_IN_BYTES  5200    // 25 * 104 * 2
-//#define ASM_F1_INDICE_START         6       // 104 bins
-#define ASM_F1_INDICE_START         0
+#define ASM_F1_INDICE_START         6       // 104 bins
 #define ASM_F1_INDICE_STOP          109     // 2 packets of 52 bins
 //
 #define NB_BINS_PER_ASM_F2          96
 #define NB_BINS_PER_PKT_ASM_F2      48
 #define TOTAL_SIZE_ASM_F2_IN_BYTES  4800    // 25 * 96 * 2
-//#define ASM_F2_INDICE_START         7       // 96 bins
-#define ASM_F2_INDICE_START         0
+#define ASM_F2_INDICE_START         7       // 96 bins
 #define ASM_F2_INDICE_STOP          102     // 2 packets of 48 bins
 //
 #define NB_BINS_COMPRESSED_SM_F0        11
