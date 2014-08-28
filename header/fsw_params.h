@@ -140,11 +140,25 @@ typedef struct ring_node
 
 //*****
 // TIME
-#define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
-#define TIMER_SM_SIMULATOR 1
-#define HK_PERIOD                           100     // 100 * 10ms => 1s
-#define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
-#define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
+#ifdef FAST_SCHEDULER
+    #define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
+    #define TIMER_SM_SIMULATOR 1
+    #define HK_PERIOD                           1000    // 1000  * 1ms = 1s
+    #define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
+    #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    2000    // 2000  * 1ms = 2s
+    #define SPOOL_TIMEOUT_in_ms                 10
+    #define SPOOL_TIMEOUT_in_ticks              5      // 10    * 1ms = 10ms
+    #define STAT_TASK_PERIOD                    10000   // 10000 * 1ms = 10s
+#else
+    #define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
+    #define TIMER_SM_SIMULATOR 1
+    #define HK_PERIOD                           100     // 100 * 10ms = 1s
+    #define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
+    #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
+    #define SPOOL_TIMEOUT_in_ms                 10
+    #define SPOOL_TIMEOUT_in_ticks              1       // 200 * 10 ms = 2 s
+    #define STAT_TASK_PERIOD                    1000    // 1000 * 10ms = 10s
+#endif
 
 //**********
 // LPP CODES
@@ -173,6 +187,7 @@ typedef struct ring_node
 #define TASKID_PRC1 17
 #define TASKID_AVF2 18
 #define TASKID_PRC2 19
+#define TASKID_SPOO 20
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_WTDG 20
@@ -191,6 +206,7 @@ typedef struct ring_node
 #define TASK_PRIORITY_PRC1 100
 #define TASK_PRIORITY_AVF2 110
 #define TASK_PRIORITY_PRC2 110
+#define TASK_PRIORITY_SPOO 150
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 

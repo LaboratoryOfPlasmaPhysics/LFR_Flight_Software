@@ -208,6 +208,7 @@ rtems_task send_task( rtems_task_argument argument)
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
     rtems_id queue_id;
+    rtems_interrupt_level level;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -221,7 +222,7 @@ rtems_task send_task( rtems_task_argument argument)
     {
         status = rtems_message_queue_receive( queue_id, incomingData, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT );
-
+        rtems_interrupt_disable( level );
         if (status!=RTEMS_SUCCESSFUL)
         {
             PRINTF1("in SEND *** (1) ERR = %d\n", status)
@@ -257,6 +258,8 @@ rtems_task send_task( rtems_task_argument argument)
                 maxCount = count;
             }
         }
+
+        rtems_interrupt_enable( level );
     }
 }
 

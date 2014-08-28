@@ -125,7 +125,7 @@ rtems_task stat_task(rtems_task_argument argument)
     j = 0;
     BOOT_PRINTF("in STAT *** \n")
     while(1){
-        rtems_task_wake_after(1000);
+        rtems_task_wake_after(STAT_TASK_PERIOD);
         PRINTF1("%d\n", j)
         if (i == CPU_USAGE_REPORT_PERIOD) {
 //            #ifdef PRINT_TASK_STATISTICS
@@ -156,7 +156,7 @@ rtems_task hous_task(rtems_task_argument argument)
     if (rtems_rate_monotonic_ident( name_hk_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( name_hk_rate_monotonic, &HK_id );
         if( status != RTEMS_SUCCESSFUL ) {
-            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
+            PRINTF1( "in HOUS *** rtems_rate_monotonic_create failed with status of %d\n", status )
         }
     }
 
@@ -524,6 +524,3 @@ void get_cpu_load( unsigned char *resource_statistics )
 #endif
 
 }
-
-
-

@@ -15,9 +15,10 @@
 #include "avf0_prc0.h"
 #include "avf1_prc1.h"
 #include "avf2_prc2.h"
+#include "fsw_spool.h"
 
-extern rtems_name  Task_name[20];       /* array of task names */
-extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name  Task_name[];       /* array of task names */
+extern rtems_id    Task_id[];         /* array of task ids */
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);

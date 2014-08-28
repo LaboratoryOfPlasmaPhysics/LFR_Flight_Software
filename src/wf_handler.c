@@ -44,6 +44,12 @@ bool swf_f0_ready = false;
 bool swf_f1_ready = false;
 bool swf_f2_ready = false;
 
+bool wake_up_task_wfrm = false;
+bool wake_up_task_cwf_f1 = false;
+bool wake_up_task_cwf_f2_burst = false;
+bool wake_up_task_cwf_f2_sbm2 = false;
+bool wake_up_task_cwf_f3 = false;
+
 int wf_snap_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) + TIME_OFFSET ];
 
 //*********************
@@ -188,6 +194,135 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         default:
         break;
     }
+}
+
+rtems_isr waveforms_isr_alt( rtems_vector_number vector )
+{
+    /** This is the interrupt sub routine called by the waveform picker core.
+     *
+     * This ISR launch different actions depending mainly on two pieces of information:
+     * 1. the values read in the registers of the waveform picker.
+     * 2. the current LFR mode.
+     *
+     */
+
+    rtems_interrupt_level level;
+
+    rtems_interrupt_disable( level );
+
+    if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_BURST)  // in BURST the data are used to place v, e1 and e2 in the HK packet
+         || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
+    { // in modes other than STANDBY and BURST, send the CWF_F3 data
+        if ((waveform_picker_regs->status & 0x08) == 0x08){     // [1000] f3 is full
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f3 = current_ring_node_f3;
+            current_ring_node_f3 = current_ring_node_f3->next;
+            waveform_picker_regs->addr_data_f3 = current_ring_node_f3->buffer_address;
+            // (2) send an event for the waveforms transmission
+            wake_up_task_cwf_f3 = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff777; // reset f3 bits to 0, [1111 0111 0111 0111]
+        }
+    }
+
+    switch(lfrCurrentMode)
+    {
+        //********
+        // STANDBY
+        case(LFR_MODE_STANDBY):
+        break;
+
+        //******
+        // NORMAL
+        case(LFR_MODE_NORMAL):
+        if ( (waveform_picker_regs->status & 0xff8) != 0x00)    // [1000] check the error bits
+        {
+            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2 );
+        }
+        if ( (waveform_picker_regs->status & 0x07) == 0x07)    // [0111] check the f2, f1, f0 full bits
+        {
+            // change F0 ring node
+            ring_node_to_send_swf_f0 = current_ring_node_f0;
+            current_ring_node_f0 = current_ring_node_f0->next;
+            waveform_picker_regs->addr_data_f0 = current_ring_node_f0->buffer_address;
+            // change F1 ring node
+            ring_node_to_send_swf_f1 = current_ring_node_f1;
+            current_ring_node_f1 = current_ring_node_f1->next;
+            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
+            // change F2 ring node
+            ring_node_to_send_swf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            //
+            wake_up_task_wfrm = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffff888; // [1000 1000 1000]
+        }
+        break;
+
+        //******
+        // BURST
+        case(LFR_MODE_BURST):
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            // (2) send an event for the waveforms transmission
+            wake_up_task_cwf_f2_burst = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
+        }
+        break;
+
+        //*****
+        // SBM1
+        case(LFR_MODE_SBM1):
+        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f1 = current_ring_node_f1;
+            current_ring_node_f1 = current_ring_node_f1->next;
+            waveform_picker_regs->addr_data_f1 = current_ring_node_f1->buffer_address;
+            // (2) send an event for the the CWF1 task for transmission (and snapshot extraction if needed)
+            wake_up_task_cwf_f1 = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1 bits = 0
+        }
+        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
+            swf_f0_ready = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffeee; // [1111 1110 1110 1110] f0 bits = 0
+        }
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ) { // [0100] check the f2 full bit
+            swf_f2_ready = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bits = 0
+        }
+        break;
+
+        //*****
+        // SBM2
+        case(LFR_MODE_SBM2):
+        if ( (waveform_picker_regs->status & 0x04) == 0x04 ){ // [0100] check the f2 full bit
+            // (1) change the receiving buffer for the waveform picker
+            ring_node_to_send_cwf_f2 = current_ring_node_f2;
+            current_ring_node_f2 = current_ring_node_f2->next;
+            waveform_picker_regs->addr_data_f2 = current_ring_node_f2->buffer_address;
+            // (2) send an event for the waveforms transmission
+            wake_up_task_cwf_f2_sbm2 = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffbbb; // [1111 1011 1011 1011] f2 bit = 0
+        }
+        if ( (waveform_picker_regs->status & 0x01) == 0x01 ) { // [0001] check the f0 full bit
+            swf_f0_ready = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffeee; // [1111 1110 1110 1110] f0 bits = 0
+        }
+        if ( (waveform_picker_regs->status & 0x02) == 0x02 ) { // [0010] check the f1 full bit
+            swf_f1_ready = true;
+            waveform_picker_regs->status = waveform_picker_regs->status & 0xfffffddd; // [1111 1101 1101 1101] f1, f0 bits = 0
+        }
+        break;
+
+        //********
+        // DEFAULT
+        default:
+        break;
+    }
+
+    rtems_interrupt_enable( level );
 }
 
 //************
@@ -379,6 +514,7 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
+    rtems_interrupt_level level = 0;
 
     init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
 
@@ -390,10 +526,17 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 
     BOOT_PRINTF("in CWF1 ***\n")
 
+    printf("(0) level = %x\n", (unsigned int) level);
+
     while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+
+        rtems_interrupt_disable( level );
+
+        printf("(1) level = %x\n", (unsigned int) level);
+
         send_waveform_CWF( (volatile int*) ring_node_to_send_cwf_f1->buffer_address, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
         // launch snapshot extraction if needed
         if (extractSWF == true)
@@ -414,6 +557,10 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
             swf_f1_ready = false;
             swf_f2_ready = false;
         }
+
+        rtems_interrupt_enable( level );
+
+        printf("(2) level = %x\n", (unsigned int) level);
     }
 }
 

@@ -60,10 +60,14 @@ extern struct param_local_str param_local;
 extern time_management_regs_t *time_management_regs;
 extern spectral_matrix_regs_t *spectral_matrix_regs;
 
-extern rtems_name  misc_name[5];
-extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name  misc_name[];
+extern rtems_id    Task_id[];         /* array of task ids */
 
 // ISR
+void spectral_matrices_isr_f0( void );
+void spectral_matrices_isr_f1( void );
+void spectral_matrices_isr_f2( void );
+void spectral_matrix_isr_error_handler( void );
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 

@@ -173,10 +173,12 @@ void spectral_matrices_isr_f2( void )
 
 void spectral_matrix_isr_error_handler( void )
 {
-    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
-    {
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-    }
+//    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
+//    {
+//        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+//    }
+
+    spectral_matrix_regs->status = spectral_matrix_regs->status & 0x83f;
 }
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )

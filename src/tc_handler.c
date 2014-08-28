@@ -531,9 +531,16 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
         maxCount = 0;
 #endif
         status = restart_science_tasks( mode );
+        //****************
+        // WAVEFORM PICKER
         launch_waveform_picker( mode, transitionCoarseTime );
-        launch_spectral_matrix( );
+//        launch_waveform_picker_spool( mode, transitionCoarseTime );
+
+        //******************
+        // SPECTRAL MATRICES
+//        launch_spectral_matrix( );
 //        launch_spectral_matrix_simu( );
+        launch_spectral_matrix_spool( );
     }
     else if ( mode == LFR_MODE_STANDBY )
     {
@@ -575,7 +582,7 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
      *
      */
 
-    rtems_status_code status[10];
+    rtems_status_code status[11];
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
@@ -640,11 +647,19 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
         PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[9])
     }
 
+    status[10] = rtems_task_restart( Task_id[TASKID_SPOO], 1 );
+    if (status[10] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** SPOO ERR %d\n", status[10])
+    }
+
+
     if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
          (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
          (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) ||
          (status[6] != RTEMS_SUCCESSFUL) || (status[7] != RTEMS_SUCCESSFUL) ||
-         (status[8] != RTEMS_SUCCESSFUL) || (status[9] != RTEMS_SUCCESSFUL) )
+         (status[8] != RTEMS_SUCCESSFUL) || (status[9] != RTEMS_SUCCESSFUL) ||
+         (status[10]!= RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -742,8 +757,33 @@ int suspend_science_tasks()
             PRINTF1("in suspend_science_task *** CWF1 ERR %d\n", status)
         }
     }
+    if (status == RTEMS_SUCCESSFUL)        // suspend SPOO
+    {
+        status = rtems_task_suspend( Task_id[TASKID_SPOO] );
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("in suspend_science_task *** SPOO ERR %d\n", status)
+        }
+    }
 
     return status;
+}
+
+void launch_waveform_picker_spool( unsigned char mode, unsigned int transitionCoarseTime )
+{
+    WFP_reset_current_ring_nodes();
+    reset_waveform_picker_regs();
+    set_wfp_burst_enable_register( mode );
+
+    waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
+    if (transitionCoarseTime == 0)
+    {
+        waveform_picker_regs->start_date = time_management_regs->coarse_time;
+    }
+    else
+    {
+        waveform_picker_regs->start_date = transitionCoarseTime;
+    }
 }
 
 void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
@@ -764,6 +804,20 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
     {
         waveform_picker_regs->start_date = transitionCoarseTime;
     }
+}
+
+void launch_spectral_matrix_spool( void )
+{
+    SM_reset_current_ring_nodes();
+    reset_spectral_matrix_regs();
+    reset_nb_sm();
+
+    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
+    grgpio_regs->io_port_direction_register =
+            grgpio_regs->io_port_direction_register | 0x01; // [0000 0001], 0 = output disabled, 1 = output enabled
+    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfffffffe; // set the bit 0 to 0
+    set_irq_on_new_ready_matrix( 0 );
+    set_run_matrix_spectral( 1 );
 }
 
 void launch_spectral_matrix( void )
