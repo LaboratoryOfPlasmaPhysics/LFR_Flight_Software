@@ -26,7 +26,7 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS 21
+#define CONFIGURE_MAXIMUM_TASKS 20
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
@@ -39,9 +39,6 @@
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
-#endif
-#ifdef FAST_SCHEDULER
-    #define CONFIGURE_MICROSECONDS_PER_TICK 1000 /* 1 millisecond */
 #endif
 
 #include <rtems/confdefs.h>
@@ -197,13 +194,13 @@ rtems_task Init( rtems_task_argument ignored )
     //*******************************
 
     // configure IRQ handling for the waveform picker unit
-    status = rtems_interrupt_catch( waveforms_isr_alt,
+    status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
                                    &old_isr_handler) ;
     // configure IRQ handling for the spectral matrices unit
-//    status = rtems_interrupt_catch( spectral_matrices_isr,
-//                                   IRQ_SPARC_SPECTRAL_MATRIX,
-//                                   &old_isr_handler) ;
+    status = rtems_interrupt_catch( spectral_matrices_isr,
+                                   IRQ_SPARC_SPECTRAL_MATRIX,
+                                   &old_isr_handler) ;
 
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )
@@ -280,11 +277,9 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_PRC1] = rtems_build_name( 'P', 'R', 'C', '1' );
     Task_name[TASKID_AVF2] = rtems_build_name( 'A', 'V', 'F', '2' );
     Task_name[TASKID_PRC2] = rtems_build_name( 'P', 'R', 'C', '2' );
-    Task_name[TASKID_SPOO] = rtems_build_name( 'S', 'P', 'O', 'O' );
 
     // rate monotonic period names
-    name_hk_rate_monotonic = rtems_build_name( 'R', '_', 'H', 'K' );
-    name_spool_rate_monotonic = rtems_build_name( 'R', '_', 'S', 'P' );
+    name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
@@ -472,14 +467,6 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // SPOO
-    {
-        status = rtems_task_create(
-            Task_name[TASKID_SPOO], TASK_PRIORITY_SPOO, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPOO]
-        );
-    }
 
     return status;
 }
@@ -647,13 +634,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
-        }
-    }
-    if (status == RTEMS_SUCCESSFUL)     // SPOO
-    {
-        status = rtems_task_start( Task_id[TASKID_SPOO], spoo_task, 1 );
-        if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SPOO\n")
         }
     }
 

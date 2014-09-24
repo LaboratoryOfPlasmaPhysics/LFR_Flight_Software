@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-CONFIG += console verbose fast_scheduler cpu_usage_report
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -41,10 +41,6 @@ contains( CONFIG, boot_messages ) {
     DEFINES += BOOT_MESSAGES
 }
 
-contains( CONFIG, fast_scheduler ) {
-    DEFINES += FAST_SCHEDULER
-}
-
 #doxygen.target = doxygen
 #doxygen.commands = doxygen ../doc/Doxyfile
 #QMAKE_EXTRA_TARGETS += doxygen
@@ -72,8 +68,7 @@ SOURCES += \
     ../src/processing/avf1_prc1.c \
     ../src/processing/avf2_prc2.c \
     ../src/lfr_cpu_usage_report.c \
-    ../src/LFR_basic-parameters/basic_parameters.c \
-    ../src/fsw_spool.c
+    ../src/LFR_basic-parameters/basic_parameters.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -96,6 +91,5 @@ HEADERS += \
     ../header/fsw_params_wf_handler.h \
     ../header/lfr_cpu_usage_report.h \
     ../src/LFR_basic-parameters/basic_parameters.h \
-    ../src/LFR_basic-parameters/basic_parameters_params.h \
-    ../header/fsw_spool.h
+    ../src/LFR_basic-parameters/basic_parameters_params.h
 

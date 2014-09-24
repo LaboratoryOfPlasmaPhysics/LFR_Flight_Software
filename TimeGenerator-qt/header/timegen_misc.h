@@ -24,6 +24,8 @@ unsigned int coarseTime;
 
 rtems_name rtems_name_updt;
 rtems_id   rtems_id_updt;
+rtems_name rtems_name_act_;
+rtems_id   rtems_id_act_;
 
 void timegen_timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc );
 

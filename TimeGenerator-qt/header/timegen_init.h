@@ -6,7 +6,6 @@
 
 #include "fsw_params.h"
 #include "fsw_misc.h"
-#include "fsw_processing.h"
 #include "wf_handler.h"
 
 #include "timegen_spacewire.h"
@@ -14,6 +13,7 @@
 
 extern rtems_name  Task_name[20];       /* array of task names */
 extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name  misc_name[5];
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);
@@ -32,8 +32,6 @@ int start_recv_send_tasks( void );
 void init_local_mode_parameters( void );
 void reset_local_time( void );
 
-extern int rtems_cpu_usage_report( void );
-extern int rtems_cpu_usage_reset( void );
 extern void rtems_stack_checker_report_usage( void );
 
 extern int sched_yield( void );

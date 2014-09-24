@@ -10,36 +10,6 @@ struct drvmgr_key grlib_grspw_0n1_res[] = {
     	KEY_EMPTY
 };
 
-#if 0
-    /* APBUART0 */
-    struct drvmgr_key grlib_drv_res_apbuart0[] =
-    {
-        {"mode", KEY_TYPE_INT, {(unsigned int)1}},
-        {"syscon", KEY_TYPE_INT, {(unsigned int)1}},
-        KEY_EMPTY
-    };
-    /* APBUART1 */
-    struct drvmgr_key grlib_drv_res_apbuart1[] =
-    {
-        {"mode", KEY_TYPE_INT, {(unsigned int)1}},
-        {"syscon", KEY_TYPE_INT, {(unsigned int)0}},
-        KEY_EMPTY
-    };
-    /* LEON3 System with driver configuration for 2 APBUARTs, the
-    * the rest of the AMBA device drivers use their defaults.
-    */
-
-    /* Override default debug UART assignment.
-    * 0 = Default APBUART. APBUART[0], but on MP system CPU0=APBUART0,
-    *     CPU1=APBUART1...
-    * 1 = APBUART[0]
-    * 2 = APBUART[1]
-    * 3 = APBUART[2]
-    * ...
-    */
-    //int debug_uart_index = 2; /* second UART -- APBUART[1] */
-#endif
-
 // If RTEMS_DRVMGR_STARTUP is defined we override the "weak defaults" that is defined by the LEON3 BSP.
 
 struct drvmgr_bus_res grlib_drv_resources = {

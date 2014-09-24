@@ -125,7 +125,7 @@ rtems_task stat_task(rtems_task_argument argument)
     j = 0;
     BOOT_PRINTF("in STAT *** \n")
     while(1){
-        rtems_task_wake_after(STAT_TASK_PERIOD);
+        rtems_task_wake_after(1000);
         PRINTF1("%d\n", j)
         if (i == CPU_USAGE_REPORT_PERIOD) {
 //            #ifdef PRINT_TASK_STATISTICS
@@ -142,6 +142,7 @@ rtems_task stat_task(rtems_task_argument argument)
 rtems_task hous_task(rtems_task_argument argument)
 {
     rtems_status_code status;
+    rtems_status_code spare_status;
     rtems_id queue_id;
     rtems_rate_monotonic_period_status period_status;
 
@@ -156,7 +157,7 @@ rtems_task hous_task(rtems_task_argument argument)
     if (rtems_rate_monotonic_ident( name_hk_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( name_hk_rate_monotonic, &HK_id );
         if( status != RTEMS_SUCCESSFUL ) {
-            PRINTF1( "in HOUS *** rtems_rate_monotonic_create failed with status of %d\n", status )
+            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
         }
     }
 
@@ -208,7 +209,7 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "in HOUS *** ERR period: %d\n", status);
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
+            spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         }
         else {
             housekeeping_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterHK >> 8);
@@ -290,11 +291,9 @@ rtems_task dumb_task( rtems_task_argument unused )
                 printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
                 if (i==8)
                 {
-                    PRINTF1("spectral_matrix_regs->status = %x\n", spectral_matrix_regs->status)
                 }
                 if (i==10)
                 {
-                    PRINTF1("waveform_picker_regs->status = %x\n", waveform_picker_regs->status)
                 }
             }
         }
@@ -453,6 +452,8 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     unsigned int offset_in_bytes;
     unsigned char f3 = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
 
+    bufferPtr = NULL;
+
     if (lfrCurrentMode == LFR_MODE_STANDBY)
     {
         spacecraft_potential[0] = 0x00;
@@ -524,3 +525,6 @@ void get_cpu_load( unsigned char *resource_statistics )
 #endif
 
 }
+
+
+

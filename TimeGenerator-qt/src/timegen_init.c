@@ -155,13 +155,6 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n",  status )
     }
 
-    // suspend science tasks. they will be restarted later depending on the mode
-    status = suspend_science_tasks();   // suspend science tasks (not done in stop_current_mode if current mode = STANDBY)
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
-    }
-
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )
     {
@@ -177,31 +170,6 @@ rtems_task Init( rtems_task_argument ignored )
 
 }
 
-void init_local_mode_parameters( void )
-{
-    /** This function initialize the param_local global variable with default values.
-     *
-     */
-
-    unsigned int i;
-
-    // LOCAL PARAMETERS
-//    set_local_nb_interrupt_f0_MAX();
-
-    BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
-    BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
-    BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
-
-    // init sequence counters
-
-    for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
-    {
-        sequenceCounters_TC_EXE[i] = 0x00;
-    }
-    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
-    sequenceCounters_SCIENCE_SBM1_SBM2 = 0x00;
-}
-
 void create_names( void ) // create all names for tasks and queues
 {
     /** This function creates all RTEMS names used in the software for tasks and queues.
@@ -213,27 +181,15 @@ void create_names( void ) // create all names for tasks and queues
 
     // task names
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
-    Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
-    Task_name[TASKID_SMIQ] = rtems_build_name( 'S', 'M', 'I', 'Q' );
     Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
-    Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
-    Task_name[TASKID_SWBD] = rtems_build_name( 'S', 'W', 'B', 'D' );
-    Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
-    Task_name[TASKID_HOUS] = rtems_build_name( 'H', 'O', 'U', 'S' );
-    Task_name[TASKID_MATR] = rtems_build_name( 'M', 'A', 'T', 'R' );
-    Task_name[TASKID_CWF3] = rtems_build_name( 'C', 'W', 'F', '3' );
-    Task_name[TASKID_CWF2] = rtems_build_name( 'C', 'W', 'F', '2' );
-    Task_name[TASKID_CWF1] = rtems_build_name( 'C', 'W', 'F', '1' );
     Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
     Task_name[TASKID_WTDG] = rtems_build_name( 'W', 'T', 'D', 'G' );
 
     // TIMEGEN
     rtems_name_updt = rtems_build_name( 'U', 'P', 'D', 'T' );
-
-    // rate monotonic period names
-    name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
+    rtems_name_act_ = rtems_build_name( 'A', 'C', 'T', '_' );
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
@@ -281,12 +237,12 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // ACTN
+    if (status == RTEMS_SUCCESSFUL) // ACT_
     {
         status = rtems_task_create(
-            Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
+            rtems_id_act_, TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_ACTN]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &rtems_id_act_
         );
     }
     if (status == RTEMS_SUCCESSFUL) // SPIQ
@@ -379,11 +335,11 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         }
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // ACTN
+    if (status == RTEMS_SUCCESSFUL)     // ACT_
     {
-        status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
+        status = rtems_task_start( rtems_id_act_, act__task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_ACT_\n")
         }
     }
 
@@ -425,7 +381,7 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 
     // create the queue for handling valid TCs
     status_recv = rtems_message_queue_create( misc_name[QUEUE_RECV],
-                                              ACTION_MSG_QUEUE_COUNT, CCSDS_TC_PKT_MAX_SIZE,
+                                              MSG_QUEUE_COUNT_RECV, CCSDS_TC_PKT_MAX_SIZE,
                                          RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if ( status_recv != RTEMS_SUCCESSFUL ) {
         PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
@@ -433,7 +389,7 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 
     // create the queue for handling TM packet sending
     status_send = rtems_message_queue_create( misc_name[QUEUE_SEND],
-                                              ACTION_MSG_PKTS_COUNT, ACTION_MSG_PKTS_MAX_SIZE,
+                                              MSG_QUEUE_COUNT_SEND, MSG_QUEUE_SIZE_SEND,
                                       RTEMS_FIFO | RTEMS_LOCAL, &queue_id );
     if ( status_send != RTEMS_SUCCESSFUL ) {
         PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)

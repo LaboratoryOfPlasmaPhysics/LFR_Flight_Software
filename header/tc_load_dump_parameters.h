@@ -9,6 +9,8 @@
 #include "tm_lfr_tc_exe.h"
 #include "fsw_misc.h"
 
+#define FLOAT_EQUAL_ZERO 0.001
+
 extern unsigned short sequenceCounterParameterDump;
 
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );

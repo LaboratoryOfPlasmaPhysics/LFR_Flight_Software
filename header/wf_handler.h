@@ -32,7 +32,7 @@ extern struct param_local_str param_local;
 extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
 extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 
-extern rtems_id    Task_id[];         /* array of task ids */
+extern rtems_id    Task_id[20];         /* array of task ids */
 
 extern unsigned char lfrCurrentMode;
 
@@ -40,7 +40,6 @@ extern unsigned char lfrCurrentMode;
 // RTEMS_ISR
 void reset_extractSWF( void );
 rtems_isr waveforms_isr( rtems_vector_number vector );
-rtems_isr waveforms_isr_alt( rtems_vector_number vector );
 
 //***********
 // RTEMS_TASK

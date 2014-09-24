@@ -120,7 +120,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
         sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
         sy_lfr_b_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
         aux = ( (float ) sy_lfr_b_bp_p1 / sy_lfr_b_bp_p0 ) - floor(sy_lfr_b_bp_p1 / sy_lfr_b_bp_p0);
-        if (aux != 0)
+        if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0+10, sy_lfr_b_bp_p0 );
             flag = LFR_DEFAULT;
@@ -185,7 +185,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
     if (flag == LFR_SUCCESSFUL)
     {
         aux = ( (float ) sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0*0.25) ) - floor(sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0*0.25));
-        if (aux != 0)
+        if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0+10, sy_lfr_s1_bp_p0 );
             flag = LFR_DEFAULT;
@@ -252,7 +252,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         sy_lfr_s2_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P0 ];
         sy_lfr_s2_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_S2_BP_P1 ];
         aux = ( (float ) sy_lfr_s2_bp_p1 / sy_lfr_s2_bp_p0 ) - floor(sy_lfr_s2_bp_p1 / sy_lfr_s2_bp_p0);
-        if (aux != 0)
+        if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0+10, sy_lfr_s2_bp_p0 );
             flag = LFR_DEFAULT;
@@ -368,7 +368,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     // sy_lfr_n_bp_p0
     if (flag == LFR_SUCCESSFUL)
     {
-        if (sy_lfr_n_bp_p0 < SY_LFR_N_BP_P0)
+        if (sy_lfr_n_bp_p0 < DFLT_SY_LFR_N_BP_P0)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0+10, sy_lfr_n_bp_p0 );
             flag = WRONG_APP_DATA;
@@ -387,7 +387,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     if (flag == LFR_SUCCESSFUL)
     {
         aux = ( (float ) sy_lfr_n_asm_p / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_asm_p / sy_lfr_n_bp_p0);
-        if (aux != 0)
+        if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P+10, sy_lfr_n_asm_p );
             flag = WRONG_APP_DATA;
@@ -396,7 +396,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     // sy_lfr_n_bp_p1
     if (flag == LFR_SUCCESSFUL)
     {
-        if (sy_lfr_n_bp_p1 < SY_LFR_N_BP_P1)
+        if (sy_lfr_n_bp_p1 < DFLT_SY_LFR_N_BP_P1)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
             flag = WRONG_APP_DATA;
@@ -406,7 +406,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     if (flag == LFR_SUCCESSFUL)
     {
         aux = ( (float ) sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0 ) - floor(sy_lfr_n_bp_p1 / sy_lfr_n_bp_p0);
-        if (aux != 0)
+        if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1+10, sy_lfr_n_bp_p1 );
             flag = LFR_DEFAULT;
@@ -476,7 +476,7 @@ int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC )
 
 int set_sy_lfr_n_bp_p0( ccsdsTelecommandPacket_t *TC )
 {
-    /** This function sets the time between two basic parameter sets, in s (SY_LFR_N_BP_P0).
+    /** This function sets the time between two basic parameter sets, in s (DFLT_SY_LFR_N_BP_P0).
      *
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM related to this execution step
@@ -738,15 +738,15 @@ void init_parameter_dump( void )
 
     //******************
     // NORMAL PARAMETERS
-    parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (SY_LFR_N_SWF_L >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (SY_LFR_N_SWF_L     );
-    parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (SY_LFR_N_SWF_P >> 8);
-    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (SY_LFR_N_SWF_P     );
-    parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (SY_LFR_N_ASM_P >> 8);
-    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (SY_LFR_N_ASM_P     );
-    parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) SY_LFR_N_BP_P0;
-    parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) SY_LFR_N_BP_P1;
-    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = (unsigned char) SY_LFR_N_CWF_LONG_F3;
+    parameter_dump_packet.sy_lfr_n_swf_l[0] = (unsigned char) (DFLT_SY_LFR_N_SWF_L >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_l[1] = (unsigned char) (DFLT_SY_LFR_N_SWF_L     );
+    parameter_dump_packet.sy_lfr_n_swf_p[0] = (unsigned char) (DFLT_SY_LFR_N_SWF_P >> 8);
+    parameter_dump_packet.sy_lfr_n_swf_p[1] = (unsigned char) (DFLT_SY_LFR_N_SWF_P     );
+    parameter_dump_packet.sy_lfr_n_asm_p[0] = (unsigned char) (DFLT_SY_LFR_N_ASM_P >> 8);
+    parameter_dump_packet.sy_lfr_n_asm_p[1] = (unsigned char) (DFLT_SY_LFR_N_ASM_P     );
+    parameter_dump_packet.sy_lfr_n_bp_p0 = (unsigned char) DFLT_SY_LFR_N_BP_P0;
+    parameter_dump_packet.sy_lfr_n_bp_p1 = (unsigned char) DFLT_SY_LFR_N_BP_P1;
+    parameter_dump_packet.sy_lfr_n_cwf_long_f3 = (unsigned char) DFLT_SY_LFR_N_CWF_LONG_F3;
 
     //*****************
     // BURST PARAMETERS

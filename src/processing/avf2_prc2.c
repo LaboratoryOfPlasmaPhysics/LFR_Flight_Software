@@ -139,6 +139,8 @@ rtems_task prc2_task( rtems_task_argument argument )
 
     unsigned long long int localTime;
 
+    incomingMsg = NULL;
+
     ASM_init_header( &headerASM );
 
     //*************

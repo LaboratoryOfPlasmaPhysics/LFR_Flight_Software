@@ -208,7 +208,6 @@ rtems_task send_task( rtems_task_argument argument)
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
     rtems_id queue_id;
-    rtems_interrupt_level level;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -222,7 +221,7 @@ rtems_task send_task( rtems_task_argument argument)
     {
         status = rtems_message_queue_receive( queue_id, incomingData, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT );
-        rtems_interrupt_disable( level );
+
         if (status!=RTEMS_SUCCESSFUL)
         {
             PRINTF1("in SEND *** (1) ERR = %d\n", status)
@@ -258,8 +257,6 @@ rtems_task send_task( rtems_task_argument argument)
                 maxCount = count;
             }
         }
-
-        rtems_interrupt_enable( level );
     }
 }
 
@@ -377,25 +374,39 @@ int spacewire_configure_link( int fd )
     spacewire_set_RE(1, REGS_ADDR_GRSPW); // [R]MAP [E]nable, the dedicated call seems to  break the no port force configuration
 
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n")
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n")
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1);         // sets the link-error interrupt bit
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n")
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK, 0);             // transmission blocks
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n")
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL, 1);      // transmission blocks when no transmission descriptor is available
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
+    }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
-    if (status!=RTEMS_SUCCESSFUL) PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
+    }
 
     return status;
 }

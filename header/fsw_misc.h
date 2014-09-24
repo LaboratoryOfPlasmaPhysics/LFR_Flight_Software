@@ -12,10 +12,6 @@
 rtems_name name_hk_rate_monotonic;     // name of the HK rate monotonic
 rtems_id HK_id;         // id of the HK rate monotonic period
 
-//extern rtems_name  misc_name[5];
-//time_management_regs_t *time_management_regs;
-//extern Packet_TM_LFR_HK_t housekeeping_packet;
-
 void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
 void timer_start( gptimer_regs_t *gptimer_regs, unsigned char timer );
@@ -41,7 +37,7 @@ void get_v_e1_e2_f3 (unsigned char *spacecraft_potential);
 void get_cpu_load( unsigned char *resource_statistics );
 
 extern int sched_yield( void );
-extern int rtems_cpu_usage_reset();
+extern void rtems_cpu_usage_reset();
 extern ring_node *current_ring_node_f3;
 extern ring_node *ring_node_to_send_cwf_f3;
 extern unsigned short sequenceCounterHK;

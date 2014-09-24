@@ -60,14 +60,10 @@ extern struct param_local_str param_local;
 extern time_management_regs_t *time_management_regs;
 extern spectral_matrix_regs_t *spectral_matrix_regs;
 
-extern rtems_name  misc_name[];
-extern rtems_id    Task_id[];         /* array of task ids */
+extern rtems_name  misc_name[5];
+extern rtems_id    Task_id[20];         /* array of task ids */
 
 // ISR
-void spectral_matrices_isr_f0( void );
-void spectral_matrices_isr_f1( void );
-void spectral_matrices_isr_f2( void );
-void spectral_matrix_isr_error_handler( void );
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
@@ -103,7 +99,7 @@ void BP_send( char *data,
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );
-void close_matrix_actions(unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id task_id,
+void close_matrix_actions(unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id avf_task_id,
                            ring_node_sm *node_for_averaging, ring_node_sm *ringNode, unsigned long long int time);
 unsigned char getSID( rtems_event_set event );
 
