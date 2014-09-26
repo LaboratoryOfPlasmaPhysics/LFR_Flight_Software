@@ -1,7 +1,7 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-CONFIG += console verbose boot_messages debug_messages
+CONFIG += console verbose
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -11,7 +11,11 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=0 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=1 # internal
+DEFINES += SW_VERSION_N4=0 # internal
+
+contains( CONFIG, debug_tch ) {
+    DEFINES += DEBUG_TCH
+}
 
 contains( CONFIG, vhdl_dev ) {
     DEFINES += VHDL_DEV
@@ -44,32 +48,34 @@ contains( CONFIG, boot_messages ) {
 TARGET = timegen
 
 INCLUDEPATH += \
-    src \
-    header \
-    ../src \
-    ../header
+    ./src \
+    ./header \
+    ./header/processing \
+    ./src/LFR_basic-parameters
 
 SOURCES += \
-    src/timegen_init.c \
-    src/timegen_tc_handler.c \
-    src/timegen_misc.c \
-    src/timegen_spacewire.c \
-    ../src/fsw_misc.c \
-    ../src/fsw_globals.c \
-    ../src/tm_lfr_tc_exe.c \
-    ../src/tc_acceptance.c
+    ./src/tc_handler.c \
+    ./src/fsw_misc.c \
+    ./src/fsw_init.c \
+    ./src/fsw_globals.c \
+    ./src/fsw_spacewire.c \
+    ./src/tc_acceptance.c \
+    ./src/LFR_basic-parameters/basic_parameters.c
 
 HEADERS += \
-    ../header/grlib_regs.h \
-    ../header/fsw_params.h \
-    ../header/fsw_misc.h \
-    ../header/ccsds_types.h \
-    ../header/fsw_params_processing.h \
-    ../header/tm_lfr_tc_exe.h \
-    ../header/tc_acceptance.h \
-    ../header/fsw_params_nb_bytes.h \
-    ../header/TC_types.h \
-    header/timegen_init.h \
-    header/timegen_tc_handler.h \
-    header/timegen_misc.h \
-    header/timegen_spacewire.h
+    ./header/tc_handler.h \
+    ./header/grlib_regs.h \
+    ./header/fsw_params.h \
+    ./header/fsw_misc.h \
+    ./header/fsw_init.h \
+    ./header/ccsds_types.h \
+    ./header/fsw_spacewire.h \
+    ./header/tc_acceptance.h \
+    ./header/fsw_params_nb_bytes.h \
+    ./header/fsw_params_processing.h \
+    ./header/fsw_params_wf_handler.h \
+    ./header/lfr_cpu_usage_report.h \
+    ./src/LFR_basic-parameters/basic_parameters.h \
+    ./src/LFR_basic-parameters/basic_parameters_params.h \
+    ../header/TC_types.h
+

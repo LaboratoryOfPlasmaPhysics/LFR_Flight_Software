@@ -32,10 +32,11 @@
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
 #define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
 #define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
+#define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
 #define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 2
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
 #endif
@@ -57,8 +58,11 @@
     #include <drvmgr/drvmgr_confdefs.h>
 #endif
 
-#include "timegen_init.h"
+#include "fsw_init.h"
 #include "fsw_config.c"
+
+rtems_id rtems_task_id_updt;
+rtems_name rtems_task_name_updt;
 
 rtems_task Init( rtems_task_argument ignored )
 {
@@ -70,10 +74,16 @@ rtems_task Init( rtems_task_argument ignored )
      *
      */
 
+    unsigned char *vhdlVersion;
+
+    reset_local_time();
+
+    rtems_cpu_usage_reset();
+
     rtems_status_code status;
     rtems_status_code status_spw;
 
-//    initCoarseTime();
+    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
 
     // UART settings
     send_console_outputs_on_apbuart_port();
@@ -83,20 +93,19 @@ rtems_task Init( rtems_task_argument ignored )
 
     PRINTF("\n\n\n\n\n")
     PRINTF("*************************\n")
-    PRINTF("** Time Generator      **\n")
+    PRINTF("** timegen for LFR     **\n")
     PRINTF1("** %d.", SW_VERSION_N1)
-    PRINTF1("%d.", SW_VERSION_N2)
-    PRINTF1("%d.", SW_VERSION_N3)
+    PRINTF1("%d."   , SW_VERSION_N2)
+    PRINTF1("%d."   , SW_VERSION_N3)
     PRINTF1("%d             **\n", SW_VERSION_N4)
+
+    vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
+    PRINTF("** VHDL                **\n")
+    PRINTF1("** %d.", vhdlVersion[1])
+    PRINTF1("%d."   , vhdlVersion[2])
+    PRINTF1("%d              **\n", vhdlVersion[3])
     PRINTF("*************************\n")
     PRINTF("\n\n")
-
-//    init_local_mode_parameters();
-//    init_housekeeping_parameters();
-
-//    updateLFRCurrentMode();
-
-//    BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
 
     create_names();                             // create all names
 
@@ -109,12 +118,12 @@ rtems_task Init( rtems_task_argument ignored )
     status = create_all_tasks();                // create all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR in create_all_tasks, code %d", status)
+        PRINTF1("in INIT *** ERR in create_all_tasks, code %d\n", status)
     }
 
     // **************************
     // <SPACEWIRE INITIALIZATION>
-    grspw_timecode_callback = &timegen_timecode_irq_handler;
+    grspw_timecode_callback = &timecode_irq_handler;
 
     status_spw = spacewire_open_link();     // (1) open the link
     if ( status_spw != RTEMS_SUCCESSFUL )
@@ -155,6 +164,13 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n",  status )
     }
 
+    // suspend science tasks, they will be restarted later depending on the mode
+    status = suspend_science_tasks();   // suspend science tasks (not done in stop_current_mode if current mode = STANDBY)
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
+    }
+
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if ( status_spw != RTEMS_SUCCESSFUL )
     {
@@ -164,10 +180,48 @@ rtems_task Init( rtems_task_argument ignored )
         }
     }
 
+    //*********************************
+    // init GPIO for trigger generation
+    grgpio_regs->io_port_direction_register =
+            grgpio_regs->io_port_direction_register | 0x04; // [0000 0100], 0 = output disabled, 1 = output enabled
+    grgpio_regs->io_port_direction_register =
+            grgpio_regs->io_port_direction_register | 0x08; // [0000 1000], 0 = output disabled, 1 = output enabled
+
     BOOT_PRINTF("delete INIT\n")
 
     status = rtems_task_delete(RTEMS_SELF);
 
+}
+
+void init_local_mode_parameters( void )
+{
+    /** This function initialize the param_local global variable with default values.
+     *
+     */
+
+    unsigned int i;
+
+    // LOCAL PARAMETERS
+
+    BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
+    BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+    BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
+
+    // init sequence counters
+
+    for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
+    {
+        sequenceCounters_TC_EXE[i] = 0x00;
+    }
+    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
+    sequenceCounters_SCIENCE_SBM1_SBM2 =    0x00;
+    sequenceCounterHK =                     TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequenceCounterParameterDump =          TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+}
+
+void reset_local_time( void )
+{
+    time_management_regs->ctrl = 0x02;  // software reset, coarse time = 0x80000000
 }
 
 void create_names( void ) // create all names for tasks and queues
@@ -181,18 +235,18 @@ void create_names( void ) // create all names for tasks and queues
 
     // task names
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
+    Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
     Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
     Task_name[TASKID_DUMB] = rtems_build_name( 'D', 'U', 'M', 'B' );
     Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
     Task_name[TASKID_WTDG] = rtems_build_name( 'W', 'T', 'D', 'G' );
 
-    // TIMEGEN
-    rtems_name_updt = rtems_build_name( 'U', 'P', 'D', 'T' );
-    rtems_name_act_ = rtems_build_name( 'A', 'C', 'T', '_' );
+    rtems_task_name_updt   = rtems_build_name( 'U', 'P', 'D', 'T' );
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
+
 }
 
 int create_all_tasks( void ) // create all tasks which run in the software
@@ -237,12 +291,12 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // ACT_
+    if (status == RTEMS_SUCCESSFUL) // ACTN
     {
         status = rtems_task_create(
-            rtems_id_act_, TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &rtems_id_act_
+            Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_ACTN]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // SPIQ
@@ -275,9 +329,9 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // UPDT
     {
         status = rtems_task_create(
-            rtems_name_updt, TASK_PRIORITY_UPDT, RTEMS_MINIMUM_STACK_SIZE,
+            rtems_task_name_updt, TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &rtems_id_updt
+            RTEMS_DEFAULT_ATTRIBUTES, &rtems_task_id_updt
         );
     }
 
@@ -335,11 +389,11 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         }
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // ACT_
+    if (status == RTEMS_SUCCESSFUL)     // ACTN
     {
-        status = rtems_task_start( rtems_id_act_, act__task, 1 );
+        status = rtems_task_start( Task_id[TASKID_ACTN], actn_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_ACT_\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n")
         }
     }
 
@@ -352,7 +406,6 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // STAT
     {
         status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
@@ -360,10 +413,9 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
         }
     }
-
     if (status == RTEMS_SUCCESSFUL)     // UPDT
     {
-        status = rtems_task_start( rtems_id_updt, updt_task, 1 );
+        status = rtems_task_start( rtems_task_id_updt, updt_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_UPDT\n")
         }
@@ -376,9 +428,13 @@ rtems_status_code create_message_queues( void ) // create the two message queues
 {
     rtems_status_code status_recv;
     rtems_status_code status_send;
+
     rtems_status_code ret;
     rtems_id queue_id;
 
+    ret = LFR_SUCCESSFUL;
+
+    //****************************************
     // create the queue for handling valid TCs
     status_recv = rtems_message_queue_create( misc_name[QUEUE_RECV],
                                               MSG_QUEUE_COUNT_RECV, CCSDS_TC_PKT_MAX_SIZE,
@@ -387,6 +443,7 @@ rtems_status_code create_message_queues( void ) // create the two message queues
         PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
     }
 
+    //************************************************
     // create the queue for handling TM packet sending
     status_send = rtems_message_queue_create( misc_name[QUEUE_SEND],
                                               MSG_QUEUE_COUNT_SEND, MSG_QUEUE_SIZE_SEND,
@@ -399,7 +456,7 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     {
         ret = status_recv;
     }
-    else
+    else if( status_send != RTEMS_SUCCESSFUL )
     {
         ret = status_send;
     }

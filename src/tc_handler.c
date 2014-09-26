@@ -315,8 +315,6 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
                                                 + (TC->dataAndCRC[2] << 8)
                                                 + TC->dataAndCRC[3];
 
-    PRINTF1("time received: %x\n", time_management_regs->coarse_time_load)
-
     val = housekeeping_packet.hk_lfr_update_time_tc_cnt[0] * 256
             + housekeeping_packet.hk_lfr_update_time_tc_cnt[1];
     val++;

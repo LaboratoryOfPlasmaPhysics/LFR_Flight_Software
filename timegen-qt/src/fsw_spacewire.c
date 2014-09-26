@@ -16,6 +16,28 @@
 rtems_name semq_name;
 rtems_id semq_id;
 
+unsigned int localCoarseTime;
+
+void resetLocalCoarseTime()
+{
+    localCoarseTime = 0;
+}
+
+void setLocalCoarseTime( unsigned int value )
+{
+    localCoarseTime = value;
+}
+
+unsigned int getLocalCoarseTime()
+{
+    return localCoarseTime;
+}
+
+void incrementLocalCoarseTime()
+{
+    localCoarseTime = localCoarseTime + 1;
+}
+
 //***********
 // RTEMS TASK
 rtems_task spiq_task(rtems_task_argument unused)
@@ -173,9 +195,6 @@ rtems_task recv_task( rtems_task_argument unused )
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        send_tm_lfr_tc_exe_corrupted( &currentTC, queue_send_id,
-                                                      computed_CRC, currentTC_LEN_RCV,
-                                                      destinationID );
                     }
                 }
                 else
@@ -228,7 +247,7 @@ rtems_task send_task( rtems_task_argument argument)
         }
         else
         {
-            if ( incomingData[0] == CCSDS_DESTINATION_ID) // the incoming message is a ccsds packet
+            if ((incomingData[0] == CCSDS_DESTINATION_ID) || (incomingData[0] == (char) 0xfe)) // the incoming message is a ccsds packet
             {
                 status = write( fdSPW, incomingData, size );
                 if (status == -1){
@@ -594,20 +613,31 @@ void spacewire_update_statistics( void )
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
-//    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_9 );
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
 
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x04; // [0000 0100], 0 = output disabled, 1 = output enabled
-
-    if ( (grgpio_regs->io_port_output_register & 0x04) == 0x04 )
-    {
-        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfb; // [1111 1011]
-    }
-    else
+    //*******
+    // GPIO 2
+    if ( get_transitionCoarseTime() == getLocalCoarseTime() )
     {
         grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x04; // [0000 0100]
     }
+    else
+    {
+        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfb; // [1111 1011]
+    }
+
+    //*******
+    // GPIO 3
+    if ( (grgpio_regs->io_port_output_register & 0x08) == 0x08 )
+    {
+        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf7; // [1111 0111]
+    }
+    else
+    {
+        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x08; // [0000 1000]
+    }
+
+    rtems_event_send( rtems_task_id_updt, RTEMS_EVENT_0);
 }
 
 rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
@@ -621,4 +651,75 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
         PRINTF("in spacewire_reset_link *** link is running\n")
         status = RTEMS_SUCCESSFUL;
     }
+}
+
+rtems_task updt_task(rtems_task_argument unused)
+{
+
+    rtems_event_set event_out;
+    rtems_status_code status;
+    rtems_id queue_id;
+
+    Packet_TC_LFR_UPDATE_TIME_WITH_HEADER_t update_time_packet;
+
+    resetLocalCoarseTime();
+    reset_transitionCoarseTime();
+
+    status =  get_message_queue_id_send( &queue_id );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
+    }
+
+    update_time_packet.targetLogicalAddress = 0xfe;
+    update_time_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    update_time_packet.reserved = DEFAULT_RESERVED;
+    update_time_packet.userApplication = CCSDS_USER_APP;
+    update_time_packet.packetID[0] = (unsigned char) (TC_LFR_PACKET_ID >> 8);
+    update_time_packet.packetID[1] = (unsigned char) (TC_LFR_PACKET_ID     );
+    update_time_packet.packetSequenceControl[0] = (unsigned char) (TC_LFR_PACKET_SEQUENCE_CONTROL >> 8);
+    update_time_packet.packetSequenceControl[1] = (unsigned char) (TC_LFR_PACKET_SEQUENCE_CONTROL     );
+    update_time_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_LFR_UPDATE_TIME >> 8);
+    update_time_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_LFR_UPDATE_TIME     );
+
+    update_time_packet.ccsdsSecHeaderFlag_pusVersion_ack = 0x19;
+    update_time_packet.serviceType = TC_TYPE_LFR_UPDATE_TIME;
+    update_time_packet.serviceSubType = TC_SUBTYPE_UPDATE_TIME;
+    update_time_packet.sourceID = SID_TC_RPW_INTERNAL;
+
+    BOOT_PRINTF("in UPDT *** \n")
+
+    while(true){
+        rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
+
+        incrementLocalCoarseTime();
+        updateTimePacket( getLocalCoarseTime() , &update_time_packet);
+        printf("UPDT will send %x as coarse time in 700 ms\n", getLocalCoarseTime());
+
+        rtems_task_wake_after( 70 ); // 70 => 700 ms
+
+        status =  rtems_message_queue_urgent( queue_id, &update_time_packet,
+                                            PACKET_LENGTH_TC_LFR_UPDATE_TIME + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES
+                                              + 0); // 1 is for the star dundee extra byte
+        if (status != RTEMS_SUCCESSFUL) {
+            PRINTF1("in HOUS *** ERR send: %d\n", status)
+        }
+    }
+}
+
+void updateTimePacket(unsigned int time, Packet_TC_LFR_UPDATE_TIME_WITH_HEADER_t *packet)
+{
+    unsigned char crcAsTwoBytes[2];
+
+    packet->cp_rpw_time[0] = (unsigned char) (time >> 24);
+    packet->cp_rpw_time[1] = (unsigned char) (time >> 16);
+    packet->cp_rpw_time[2] = (unsigned char) (time >> 8);
+    packet->cp_rpw_time[3] = (unsigned char) (time);
+    packet->cp_rpw_time[4] = 0; // fine time MSB
+    packet->cp_rpw_time[5] = 0; // fine time LSB
+
+    GetCRCAsTwoBytes((unsigned char*) &packet->packetID, crcAsTwoBytes,
+                                   PACKET_LENGTH_TC_LFR_UPDATE_TIME + CCSDS_TC_TM_PACKET_OFFSET - 2);
+    packet->crc[0] = crcAsTwoBytes[0];
+    packet->crc[1] = crcAsTwoBytes[1];
 }

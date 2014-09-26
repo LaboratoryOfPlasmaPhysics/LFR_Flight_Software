@@ -9,10 +9,10 @@
 #define TOTAL_SIZE_NORM_BP1_F2  108     // 12 * 9 = 108
 #define TOTAL_SIZE_SBM1_BP1_F0  198     // 22 * 9 = 198
 //
-#define NB_RING_NODES_SM_F0             12  // AT LEAST 8 due to the way the averaging is done
+#define NB_RING_NODES_SM_F0             12  // AT LEAST 3
 #define NB_RING_NODES_ASM_BURST_SBM_F0  10  // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F0       10  // AT LEAST 3
-#define NB_RING_NODES_SM_F1             12  // AT LEAST 8 due to the way the averaging is done
+#define NB_RING_NODES_SM_F1             3   // AT LEAST 3
 #define NB_RING_NODES_ASM_BURST_SBM_F1  5   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F1       5   // AT LEAST 3
 #define NB_RING_NODES_SM_F2             3   // AT LEAST 3
