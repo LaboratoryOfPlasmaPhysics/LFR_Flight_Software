@@ -210,6 +210,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
+    bool resynchronisationEngaged;
+
+    resynchronisationEngaged = false;
 
     init_header_snapshot_wf_table( SID_NORM_SWF_F0, headerSWF_F0 );
     init_header_snapshot_wf_table( SID_NORM_SWF_F1, headerSWF_F1 );
@@ -228,6 +231,19 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         rtems_event_receive(RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1
                             | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        if(resynchronisationEngaged == false)
+        {   // engage resynchronisation
+            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->buffer_address);
+            resynchronisationEngaged = true;
+        }
+        else
+        {   // reset delta_snapshot to the nominal value
+            PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n")
+            set_wfp_delta_snapshot();
+            resynchronisationEngaged = false;
+        }
+        //
+
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_NORMAL\n")
@@ -954,7 +970,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     sampleOffset_asLong = 0x00;
 
     // (1) get the f0 acquisition time
-    build_acquisition_time( &acquisitionTimeF0_asLong, current_ring_node_f0 );
+    acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) current_ring_node_f0->buffer_address );
 
     // (2) compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
@@ -986,7 +1002,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     for (i=0; i<nb_ring_nodes; i++)
     {
         PRINTF1("%d ... ", i)
-        build_acquisition_time( &bufferAcquisitionTime_asLong, ring_node_to_send );
+        bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) ring_node_to_send->buffer_address );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
             PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong)
@@ -1037,19 +1053,47 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     }
 }
 
-void build_acquisition_time( unsigned long long int *acquisitionTimeAslong, ring_node *current_ring_node )
+void snapshot_resynchronization( unsigned char *timePtr )
 {
-    unsigned char *acquisitionTimeCharPtr;
+    unsigned long long int acquisitionTime;
+    unsigned long long int centerTime;
+    unsigned long long int previousTick;
+    unsigned long long int nextTick;
+    unsigned long long int deltaPreviousTick;
+    unsigned long long int deltaNextTick;
+    unsigned int deltaTickInF2;
+    double deltaPrevious;
+    double deltaNext;
 
-    acquisitionTimeCharPtr = (unsigned char*) current_ring_node->buffer_address;
+    acquisitionTime = get_acquisition_time( timePtr );
 
-    *acquisitionTimeAslong = 0x00;
-    *acquisitionTimeAslong = ( (unsigned long long int) (acquisitionTimeCharPtr[0] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
-            + ( (unsigned long long int) acquisitionTimeCharPtr[1] << 32 )
-            + ( (unsigned long long int) acquisitionTimeCharPtr[2] << 24 )
-            + ( (unsigned long long int) acquisitionTimeCharPtr[3] << 16 )
-            + ( (unsigned long long int) acquisitionTimeCharPtr[6] << 8  )
-            + ( (unsigned long long int) acquisitionTimeCharPtr[7]       );
+    // compute center time
+    centerTime = acquisitionTime + 2731;    // (2048. / 24576. / 2.) * 65536. = 2730.667;
+    previousTick = centerTime - (centerTime & 0xffff);
+    nextTick = previousTick + 65536;
+
+    deltaPreviousTick   = centerTime - previousTick;
+    deltaNextTick       = nextTick - centerTime;
+
+    deltaPrevious       = ((double) deltaPreviousTick) / 65536. * 1000.;
+    deltaNext           = ((double) deltaNextTick) / 65536. * 1000.;
+
+    printf("delta previous = %f ms, delta next = %f ms\n", deltaPrevious, deltaNext);
+    printf("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick);
+
+    // which tick is the closest
+    if (deltaPreviousTick > deltaNextTick)
+    {
+        deltaTickInF2 = floor( (deltaNext * 256. / 1000.) ); // the division by 2 is important here
+        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
+        printf("correction of = + %u\n", deltaTickInF2);
+    }
+    else
+    {
+        deltaTickInF2 = floor( (deltaPrevious * 256. / 1000.) ); // the division by 2 is important here
+        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - deltaTickInF2;
+        printf("correction of = - %u\n", deltaTickInF2);
+    }
 }
 
 //**************

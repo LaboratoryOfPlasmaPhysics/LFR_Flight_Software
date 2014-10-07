@@ -27,11 +27,11 @@ typedef struct ring_node
 #define NB_SAMPLES_PER_SNAPSHOT 2688    // 336 * 8 = 672 * 4 = 2688
 #define TIME_OFFSET 2
 #define TIME_OFFSET_IN_BYTES 8
-#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
+//#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK (2 * 6)
 #define NB_WORDS_SWF_BLK 3
 #define NB_BYTES_CWF3_LIGHT_BLK 6
-#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
+//#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
@@ -127,7 +127,8 @@ typedef struct ring_node
 
 #define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
 #define APBUART_CTRL_REG_MASK_TE    0x00000002
-#define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400 (0x50)
+// scaler value = system_clock_frequency / ( baud_rate * 8 ) - 1
+#define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400
 
 //**********
 // IRQ LINES

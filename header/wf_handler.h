@@ -67,7 +67,7 @@ int send_waveform_CWF3_light( volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_
 void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
 void build_snapshot_from_ring(ring_node *ring_node_to_send , unsigned char frequencyChannel );
-void build_acquisition_time( unsigned long long int * acquisitionTimeAslong, ring_node *current_ring_node );
+void snapshot_resynchronization( unsigned char *timePtr );
 //
 rtems_id get_pkts_queue_id( void );
 

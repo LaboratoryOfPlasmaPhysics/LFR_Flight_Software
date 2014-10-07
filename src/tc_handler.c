@@ -145,6 +145,8 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      *
      */
 
+    printf("this is the end!!!\n");
+    exit(0);
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
     return LFR_DEFAULT;
 }
