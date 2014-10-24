@@ -1,0 +1,4 @@
+#!/bin/bash
+
+/opt/GCOV/01A/COTS/gcovr-3.1/scripts/gcovr --gcov-executable=sparc-rtems-gcov --html-details
+

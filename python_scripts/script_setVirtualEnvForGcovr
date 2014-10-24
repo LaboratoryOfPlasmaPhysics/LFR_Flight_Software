@@ -1,0 +1,8 @@
+#!/bin/bash
+
+ln -s /opt/DEV_PLE/FSW-qt/obj/*.gcno ./
+
+ln -s /opt/DEV_PLE/src ./
+
+cat trace | /opt/GCOV/01A/tool/createfile.py
+
