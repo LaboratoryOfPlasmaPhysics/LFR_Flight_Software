@@ -16,6 +16,8 @@ typedef struct ring_node
     int buffer_address;
     struct ring_node *next;
     unsigned int status;
+    unsigned coarseTime;
+    unsigned int fineTime;
 } ring_node;
 
 //************************
@@ -122,7 +124,8 @@ typedef struct ring_node
 #define REGS_ADDR_GRGPIO            0x80000b00
 
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
-#define REGS_ADDR_WAVEFORM_PICKER   0x80000f50
+//#define REGS_ADDR_WAVEFORM_PICKER   0x80000f50
+#define REGS_ADDR_WAVEFORM_PICKER   0x80000f54  // PDB >= 0.1.28
 #define REGS_ADDR_VHDL_VERSION      0x80000ff0
 
 #define APBUART_CTRL_REG_MASK_DB    0xfffff7ff

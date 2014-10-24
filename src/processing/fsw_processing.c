@@ -601,6 +601,8 @@ void reset_spectral_matrix_regs( void )
     spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
     spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
     spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
+
+    spectral_matrix_regs->matrix_length = 0xc8; // 25 * 128 / 16 = 200 = 0xc8
 }
 
 void set_time( unsigned char *time, unsigned char * timeInBuffer )

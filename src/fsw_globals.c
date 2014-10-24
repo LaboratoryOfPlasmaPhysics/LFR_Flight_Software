@@ -25,8 +25,8 @@
 // RTEMS GLOBAL VARIABLES
 rtems_name  misc_name[5];
 rtems_id    misc_id[5];
-rtems_name  Task_name[21];       /* array of task names */
-rtems_id    Task_id[21];         /* array of task ids */
+rtems_name  Task_name[20];       /* array of task names */
+rtems_id    Task_id[20];         /* array of task ids */
 unsigned int maxCount;
 int fdSPW = 0;
 int fdUART = 0;
@@ -52,10 +52,10 @@ volatile int sm_f1[ NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM ] __attribute__((aligned
 volatile int sm_f2[ NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
 
 // APB CONFIGURATION REGISTERS
-time_management_regs_t      *time_management_regs   = (time_management_regs_t*)     REGS_ADDR_TIME_MANAGEMENT;
-gptimer_regs_t              *gptimer_regs           = (gptimer_regs_t *)            REGS_ADDR_GPTIMER;
-waveform_picker_regs_new_t  *waveform_picker_regs   = (waveform_picker_regs_new_t*) REGS_ADDR_WAVEFORM_PICKER;
-spectral_matrix_regs_t      *spectral_matrix_regs   = (spectral_matrix_regs_t*)     REGS_ADDR_SPECTRAL_MATRIX;
+time_management_regs_t          *time_management_regs   = (time_management_regs_t*)         REGS_ADDR_TIME_MANAGEMENT;
+gptimer_regs_t                  *gptimer_regs           = (gptimer_regs_t *)                REGS_ADDR_GPTIMER;
+waveform_picker_regs_0_1_18_t   *waveform_picker_regs   = (waveform_picker_regs_0_1_18_t*)  REGS_ADDR_WAVEFORM_PICKER;
+spectral_matrix_regs_t          *spectral_matrix_regs   = (spectral_matrix_regs_t*)         REGS_ADDR_SPECTRAL_MATRIX;
 
 // MODE PARAMETERS
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
