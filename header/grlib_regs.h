@@ -39,7 +39,9 @@ typedef struct {
 } gptimer_regs_t;
 
 typedef struct {
-    volatile int ctrl; // bit 0 forces the load of the coarse_time_load value and resets the fine_time
+    volatile int ctrl;  // bit 0 forces the load of the coarse_time_load value and resets the fine_time
+                        // bit 1 is the soft reset for the time management module
+                        // bit 2 is the soft reset for the waveform picker and the spectral matrix modules, set to 1 after HW reset
     volatile int coarse_time_load;
     volatile int coarse_time;
     volatile int fine_time;
@@ -68,24 +70,24 @@ typedef struct{
     int start_date;         // 0x48
     //
     volatile unsigned int f0_0_coarse_time; // 0x4c
-    volatile unsigned int f0_0_fine_time;    // 0x50
-    volatile unsigned int f0_1_coarse_time;  // 0x54
-    volatile unsigned int f0_1_fine_time;    // 0x58
+    volatile unsigned int f0_0_fine_time;   // 0x50
+    volatile unsigned int f0_1_coarse_time; // 0x54
+    volatile unsigned int f0_1_fine_time;   // 0x58
     //
-    volatile unsigned int f1_0_coarse_time;  // 0x5c
-    volatile unsigned int f1_0_fine_time;    // 0x60
-    volatile unsigned int f1_1_coarse_time;  // 0x64
-    volatile unsigned int f1_1_fine_time;    // 0x68
+    volatile unsigned int f1_0_coarse_time; // 0x5c
+    volatile unsigned int f1_0_fine_time;   // 0x60
+    volatile unsigned int f1_1_coarse_time; // 0x64
+    volatile unsigned int f1_1_fine_time;   // 0x68
     //
-    volatile unsigned int f2_0_coarse_time;  // 0x6c
-    volatile unsigned int f2_0_fine_time;    // 0x70
-    volatile unsigned int f2_1_coarse_time;  // 0x74
-    volatile unsigned int f2_1_fine_time;    // 0x78
+    volatile unsigned int f2_0_coarse_time; // 0x6c
+    volatile unsigned int f2_0_fine_time;   // 0x70
+    volatile unsigned int f2_1_coarse_time; // 0x74
+    volatile unsigned int f2_1_fine_time;   // 0x78
     //
-    volatile unsigned int f3_0_coarse_time;  // 0x7c
-    volatile unsigned int f3_0_fine_time;    // 0x80
-    volatile unsigned int f3_1_coarse_time;  // 0x84
-    volatile unsigned int f3_1_fine_time;    // 0x88
+    volatile unsigned int f3_0_coarse_time; // 0x7c
+    volatile unsigned int f3_0_fine_time;   // 0x80
+    volatile unsigned int f3_1_coarse_time; // 0x84
+    volatile unsigned int f3_1_fine_time;   // 0x88
     //
     unsigned int buffer_length;             // 0x8c = buffer length in burst 2688 / 16 = 168
 } waveform_picker_regs_0_1_18_t;

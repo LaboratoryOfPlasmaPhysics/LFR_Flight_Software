@@ -73,6 +73,8 @@ rtems_task Init( rtems_task_argument ignored )
 
     unsigned char *vhdlVersion;
 
+    reset_lfr();
+
     reset_local_time();
 
     rtems_cpu_usage_reset();
@@ -245,7 +247,7 @@ void init_local_mode_parameters( void )
 
 void reset_local_time( void )
 {
-    time_management_regs->ctrl = 0x02;  // software reset, coarse time = 0x80000000
+    time_management_regs->ctrl = time_management_regs->ctrl | 0x02;  // [0010] software reset, coarse time = 0x80000000
 }
 
 void create_names( void ) // create all names for tasks and queues
@@ -464,7 +466,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
         status = rtems_task_create(
             Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_HOUS]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_HOUS]
         );
     }
 

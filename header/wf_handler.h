@@ -59,10 +59,10 @@ int init_header_snapshot_wf_table(      unsigned int sid, Header_TM_LFR_SCIENCE_
 int init_header_continuous_wf_table(    unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
 int init_header_continuous_cwf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF );
 //
-int send_waveform_SWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id );
-int send_waveform_CWF(  volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
-int send_waveform_CWF3( volatile int *waveform, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
-int send_waveform_CWF3_light( volatile int *waveform, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
+int send_waveform_SWF( ring_node *ring_node_to_send, unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id );
+int send_waveform_CWF( ring_node *ring_node_to_send, unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
+int send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id );
+int send_ring_node_CWF( ring_node *ring_node_to_send );
 //
 void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
@@ -75,7 +75,8 @@ rtems_id get_pkts_queue_id( void );
 // wfp registers
 // RESET
 void reset_wfp_burst_enable( void );
-void reset_wfp_status(void);
+void reset_wfp_status( void );
+void reset_wfp_buffer_addresses( void );
 void reset_waveform_picker_regs( void );
 // SET
 void set_wfp_data_shaping(void);

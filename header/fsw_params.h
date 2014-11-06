@@ -13,11 +13,11 @@
 typedef struct ring_node
 {
     struct ring_node *previous;
-    int buffer_address;
     struct ring_node *next;
-    unsigned int status;
-    unsigned coarseTime;
+    unsigned int coarseTime;
     unsigned int fineTime;
+    int buffer_address;
+    unsigned int status;
 } ring_node;
 
 //************************

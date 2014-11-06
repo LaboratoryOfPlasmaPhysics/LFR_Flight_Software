@@ -577,6 +577,17 @@ void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
 //******************
 // general functions
 
+void reset_sm_status( void )
+{
+    // error
+    // 10 --------------- 9 ---------------- 8 ---------------- 7 ---------
+    // input_fif0_write_2 input_fifo_write_1 input_fifo_write_0 buffer_full
+    // ---------- 5 -- 4 -- 3 -- 2 -- 1 -- 0 --
+    // ready bits f2_1 f2_0 f1_1 f1_1 f0_1 f0_0
+
+    spectral_matrix_regs->status = 0x7ff;   // [0111 1111 1111]
+}
+
 void reset_spectral_matrix_regs( void )
 {
     /** This function resets the spectral matrices module registers.
@@ -592,8 +603,11 @@ void reset_spectral_matrix_regs( void )
      *
      */
 
-    spectral_matrix_regs->config = 0x00;
-    spectral_matrix_regs->status = 0x00;
+    set_sm_irq_onError( 0 );
+
+    set_sm_irq_onNewMatrix( 0 );
+
+    reset_sm_status();
 
     spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->previous->buffer_address;
     spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;

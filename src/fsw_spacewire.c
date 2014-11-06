@@ -228,7 +228,7 @@ rtems_task send_task( rtems_task_argument argument)
         }
         else
         {
-            if ( incomingData[0] == CCSDS_DESTINATION_ID) // the incoming message is a ccsds packet
+            if ( incomingData[0] == CCSDS_DESTINATION_ID ) // the incoming message is a ccsds packet
             {
                 status = write( fdSPW, incomingData, size );
                 if (status == -1){

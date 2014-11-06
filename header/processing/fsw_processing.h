@@ -96,6 +96,7 @@ void BP_send( char *data,
 
 //******************
 // general functions
+void reset_sm_status( void );
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );

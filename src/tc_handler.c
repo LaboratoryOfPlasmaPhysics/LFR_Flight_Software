@@ -466,18 +466,22 @@ int stop_current_mode( void )
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
-    // (2) clear interruptions
-    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
-    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    // reset lfr VHDL module
+    reset_lfr();
 
-    // (3) reset waveform picker registers
+    // (2) reset waveform picker registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
 
-    // (4) reset spectral matrices registers
-    set_irq_on_new_ready_matrix( 0 );               // stop the spectral matrices
-    set_run_matrix_spectral( 0 );                   // run_matrix_spectral is set to 0
+    // (3) reset spectral matrices registers
+    set_sm_irq_onNewMatrix( 0 );               // stop the spectral matrices
+    reset_sm_status();
+
     reset_extractSWF();                             // reset the extractSWF flag to false
+
+    // (4) clear interruptions
+    LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
     // <Spectral Matrices simulator>
     LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
@@ -748,13 +752,14 @@ int suspend_science_tasks()
 void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
 {
     WFP_reset_current_ring_nodes();
+
     reset_waveform_picker_regs();
+
     set_wfp_burst_enable_register( mode );
 
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );
     LEON_Unmask_interrupt( IRQ_WAVEFORM_PICKER );
 
-    waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x80; // [1000 0000]
     if (transitionCoarseTime == 0)
     {
         waveform_picker_regs->start_date = time_management_regs->coarse_time;
@@ -770,17 +775,16 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
 void launch_spectral_matrix( void )
 {
     SM_reset_current_ring_nodes();
+
     reset_spectral_matrix_regs();
+
     reset_nb_sm();
 
-    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x01; // [0000 0001], 0 = output disabled, 1 = output enabled
-    grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfffffffe; // set the bit 0 to 0
-    set_irq_on_new_ready_matrix( 1 );
+    set_sm_irq_onNewMatrix( 1 );
+
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
-    set_run_matrix_spectral( 1 );
+
 }
 
 void launch_spectral_matrix_simu( void )
@@ -795,7 +799,7 @@ void launch_spectral_matrix_simu( void )
     LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
 }
 
-void set_irq_on_new_ready_matrix( unsigned char value )
+void set_sm_irq_onNewMatrix( unsigned char value )
 {
     if (value == 1)
     {
@@ -807,15 +811,15 @@ void set_irq_on_new_ready_matrix( unsigned char value )
     }
 }
 
-void set_run_matrix_spectral( unsigned char value )
+void set_sm_irq_onError( unsigned char value )
 {
     if (value == 1)
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x4;  // [0100] set run_matrix spectral to 1
+        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x02;
     }
     else
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffb;  // [1011] set run_matrix spectral to 0
+        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffd;   // 1101
     }
 }
 
@@ -947,3 +951,21 @@ void updateLFRCurrentMode()
     lfrCurrentMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 }
 
+void set_lfr_soft_reset( unsigned char value )
+{
+    if (value == 1)
+    {
+        time_management_regs->ctrl = time_management_regs->ctrl | 0x00000004; // [0100]
+    }
+    else
+    {
+        time_management_regs->ctrl = time_management_regs->ctrl & 0xfffffffb; // [1011]
+    }
+}
+
+void reset_lfr( void )
+{
+    set_lfr_soft_reset( 1 );
+
+    set_lfr_soft_reset( 0 );
+}

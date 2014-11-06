@@ -39,16 +39,18 @@ int check_mode_transition( unsigned char requestedMode );
 int check_transition_date( unsigned int transitionCoarseTime );
 int stop_current_mode( void );
 int enter_mode( unsigned char mode , unsigned int transitionCoarseTime );
-int restart_science_tasks(unsigned char lfrRequestedMode );
+int restart_science_tasks( unsigned char lfrRequestedMode );
 int suspend_science_tasks();
-void launch_waveform_picker(unsigned char mode , unsigned int transitionCoarseTime);
+void launch_waveform_picker( unsigned char mode , unsigned int transitionCoarseTime );
 void launch_spectral_matrix( void );
 void launch_spectral_matrix_simu( void );
-void set_irq_on_new_ready_matrix(unsigned char value );
-void set_run_matrix_spectral( unsigned char value );
+void set_sm_irq_onNewMatrix( unsigned char value );
+void set_sm_irq_onError( unsigned char value );
 
 // other functions
 void updateLFRCurrentMode();
+void set_lfr_soft_reset( unsigned char value );
+void reset_lfr( void );
 void update_last_TC_exe( ccsdsTelecommandPacket_t *TC , unsigned char *time );
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC , unsigned char *time );
 void close_action( ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id );

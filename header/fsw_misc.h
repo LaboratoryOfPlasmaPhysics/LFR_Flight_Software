@@ -33,13 +33,15 @@ void increment_seq_counter(unsigned short *packetSequenceControl);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
-void get_v_e1_e2_f3 (unsigned char *spacecraft_potential);
+void get_v_e1_e2_f3(unsigned char *spacecraft_potential);
+void get_v_e1_e2_f3_alt(unsigned char *spacecraft_potential);
 void get_cpu_load( unsigned char *resource_statistics );
 
 extern int sched_yield( void );
 extern void rtems_cpu_usage_reset();
 extern ring_node *current_ring_node_f3;
 extern ring_node *ring_node_to_send_cwf_f3;
+extern ring_node waveform_ring_f3[];
 extern unsigned short sequenceCounterHK;
 
 #endif // FSW_MISC_H_INCLUDED
