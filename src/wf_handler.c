@@ -9,19 +9,6 @@
 
 #include "wf_handler.h"
 
-//*****************
-// waveform headers
-// SWF
-Header_TM_LFR_SCIENCE_SWF_t headerSWF_F0[7];
-Header_TM_LFR_SCIENCE_SWF_t headerSWF_F1[7];
-Header_TM_LFR_SCIENCE_SWF_t headerSWF_F2[7];
-// CWF
-Header_TM_LFR_SCIENCE_CWF_t headerCWF_F1[       NB_PACKETS_PER_GROUP_OF_CWF         ];
-Header_TM_LFR_SCIENCE_CWF_t headerCWF_F2_BURST[ NB_PACKETS_PER_GROUP_OF_CWF         ];
-Header_TM_LFR_SCIENCE_CWF_t headerCWF_F2_SBM2[  NB_PACKETS_PER_GROUP_OF_CWF         ];
-Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3[       NB_PACKETS_PER_GROUP_OF_CWF         ];
-Header_TM_LFR_SCIENCE_CWF_t headerCWF_F3_light[ NB_PACKETS_PER_GROUP_OF_CWF_LIGHT   ];
-
 //***************
 // waveform rings
 // F0
@@ -62,7 +49,7 @@ void reset_extractSWF( void )
     swf_f2_ready = false;
 }
 
-void waveforms_isr_f3( void )
+inline void waveforms_isr_f3( void )
 {
     rtems_status_code spare_status;
 
@@ -94,7 +81,7 @@ void waveforms_isr_f3( void )
     }
 }
 
-void waveforms_isr_normal( void )
+inline void waveforms_isr_normal( void )
 {
     rtems_status_code status;
 
@@ -168,7 +155,7 @@ void waveforms_isr_normal( void )
     }
 }
 
-void waveforms_isr_burst( void )
+inline void waveforms_isr_burst( void )
 {
     rtems_status_code spare_status;
 
@@ -197,10 +184,9 @@ void waveforms_isr_burst( void )
     }
 }
 
-void waveforms_isr_sbm1( void )
+inline void waveforms_isr_sbm1( void )
 {
     rtems_status_code status;
-    rtems_status_code spare_status;
 
     //***
     // F1
@@ -271,15 +257,10 @@ void waveforms_isr_sbm1( void )
             waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
             waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
         }
-        // start the snapshots transmission
-        if (rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL ) != RTEMS_SUCCESSFUL)
-        {
-            spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
-        }
     }
 }
 
-void waveforms_isr_sbm2( void )
+inline void waveforms_isr_sbm2( void )
 {
     rtems_status_code status;
 
@@ -440,12 +421,11 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     rtems_id queue_id;
     rtems_status_code status;
     bool resynchronisationEngaged;
+    ring_node *ring_node_wf_snap_extracted_ptr;
+
+    ring_node_wf_snap_extracted_ptr = (ring_node *) &ring_node_wf_snap_extracted;
 
     resynchronisationEngaged = false;
-
-    init_header_snapshot_wf_table( SID_NORM_SWF_F0, headerSWF_F0 );
-    init_header_snapshot_wf_table( SID_NORM_SWF_F1, headerSWF_F1 );
-    init_header_snapshot_wf_table( SID_NORM_SWF_F2, headerSWF_F2 );
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -462,7 +442,7 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if(resynchronisationEngaged == false)
         {   // engage resynchronisation
-            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->buffer_address);
+            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->coarseTime );
             resynchronisationEngaged = true;
         }
         else
@@ -476,23 +456,32 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_NORMAL\n")
-            send_waveform_SWF( ring_node_to_send_swf_f0, SID_NORM_SWF_F0, headerSWF_F0, queue_id);
-            send_waveform_SWF( ring_node_to_send_swf_f1, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
-            send_waveform_SWF( ring_node_to_send_swf_f2, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
+            ring_node_to_send_swf_f0->sid = SID_NORM_SWF_F0;
+            ring_node_to_send_swf_f1->sid = SID_NORM_SWF_F1;
+            ring_node_to_send_swf_f2->sid = SID_NORM_SWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0, sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f1, sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f2, sizeof( ring_node* ) );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM1)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM1\n")
-            send_waveform_SWF( ring_node_to_send_swf_f0,    SID_NORM_SWF_F0, headerSWF_F0, queue_id);
-            send_waveform_SWF( &ring_node_wf_snap_extracted, SID_NORM_SWF_F1, headerSWF_F1, queue_id);
-            send_waveform_SWF( ring_node_to_send_swf_f2,    SID_NORM_SWF_F2, headerSWF_F2, queue_id);
+            ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
+            ring_node_wf_snap_extracted_ptr->sid    = SID_NORM_SWF_F1;
+            ring_node_to_send_swf_f2->sid           = SID_NORM_SWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,        sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_wf_snap_extracted_ptr, sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f2,        sizeof( ring_node* ) );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n")
-            send_waveform_SWF( ring_node_to_send_swf_f0,    SID_NORM_SWF_F0, headerSWF_F0, queue_id);
-            send_waveform_SWF( ring_node_to_send_swf_f1,    SID_NORM_SWF_F1, headerSWF_F1, queue_id);
-            send_waveform_SWF( &ring_node_wf_snap_extracted, SID_NORM_SWF_F2, headerSWF_F2, queue_id);
+            ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
+            ring_node_to_send_swf_f1->sid           = SID_NORM_SWF_F1;
+            ring_node_wf_snap_extracted_ptr->sid    = SID_NORM_SWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,        sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f1,        sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_wf_snap_extracted_ptr, sizeof( ring_node* ) );
         }
     }
 }
@@ -511,15 +500,24 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
-
-    init_header_continuous_wf_table( SID_NORM_CWF_LONG_F3, headerCWF_F3 );
-    init_header_continuous_cwf3_light_table( headerCWF_F3_light );
+    ring_node ring_node_cwf3_light;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in CWF3 *** ERR get_message_queue_id_send %d\n", status)
     }
+
+    ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+
+    // init the ring_node_cwf3_light structure
+    ring_node_cwf3_light.buffer_address = (int) wf_cont_f3_light;
+    ring_node_cwf3_light.coarseTime = 0x00;
+    ring_node_cwf3_light.fineTime = 0x00;
+    ring_node_cwf3_light.next = NULL;
+    ring_node_cwf3_light.previous = NULL;
+    ring_node_cwf3_light.sid = SID_NORM_CWF_F3;
+    ring_node_cwf3_light.status = 0x00;
 
     BOOT_PRINTF("in CWF3 ***\n")
 
@@ -533,14 +531,14 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
                 PRINTF("send CWF_LONG_F3\n")
-                send_waveform_CWF( ring_node_to_send_cwf_f3,
-                            SID_NORM_CWF_LONG_F3, headerCWF_F3, queue_id );
+                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
-                send_waveform_CWF3_light( ring_node_to_send_cwf_f3,
-                            headerCWF_F3_light, queue_id );
+                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_F3;
+                send_waveform_CWF3_light( ring_node_to_send_cwf_f3, &ring_node_cwf3_light, queue_id );
             }
 
         }
@@ -567,9 +565,6 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
     rtems_id queue_id;
     rtems_status_code status;
 
-    init_header_continuous_wf_table( SID_BURST_CWF_F2, headerCWF_F2_BURST );
-    init_header_continuous_wf_table( SID_SBM2_CWF_F2, headerCWF_F2_SBM2 );
-
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -584,11 +579,15 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
-            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
+//            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
+            ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
-            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
+//            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
+            ring_node_to_send_cwf_f2->sid = SID_SBM2_CWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
             // launch snapshot extraction if needed
             if (extractSWF == true)
             {
@@ -624,7 +623,7 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
     rtems_id queue_id;
     rtems_status_code status;
 
-    init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
+//    init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -638,7 +637,8 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        send_waveform_CWF( ring_node_to_send_cwf_f1, SID_SBM1_CWF_F1, headerCWF_F1, queue_id );
+        ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
+        status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f1, sizeof( ring_node* ) );
         // launch snapshot extraction if needed
         if (extractSWF == true)
         {
@@ -695,13 +695,13 @@ rtems_task swbd_task(rtems_task_argument argument)
 void WFP_init_rings( void )
 {
     // F0 RING
-    init_waveform_ring( waveform_ring_f0, NB_RING_NODES_F0, wf_snap_f0 );
+    init_ring( waveform_ring_f0, NB_RING_NODES_F0, wf_buffer_f0, WFRM_BUFFER );
     // F1 RING
-    init_waveform_ring( waveform_ring_f1, NB_RING_NODES_F1, wf_snap_f1 );
+    init_ring( waveform_ring_f1, NB_RING_NODES_F1, wf_buffer_f1, WFRM_BUFFER );
     // F2 RING
-    init_waveform_ring( waveform_ring_f2, NB_RING_NODES_F2, wf_snap_f2 );
+    init_ring( waveform_ring_f2, NB_RING_NODES_F2, wf_buffer_f2, WFRM_BUFFER );
     // F3 RING
-    init_waveform_ring( waveform_ring_f3, NB_RING_NODES_F3, wf_cont_f3 );
+    init_ring( waveform_ring_f3, NB_RING_NODES_F3, wf_buffer_f3, WFRM_BUFFER );
 
     ring_node_wf_snap_extracted.buffer_address = (int) wf_snap_extracted;
 
@@ -709,25 +709,42 @@ void WFP_init_rings( void )
     DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int) waveform_ring_f1)
     DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int) waveform_ring_f2)
     DEBUG_PRINTF1("waveform_ring_f3 @%x\n", (unsigned int) waveform_ring_f3)
+    DEBUG_PRINTF1("wf_buffer_f0 @%x\n", (unsigned int) wf_buffer_f0)
+    DEBUG_PRINTF1("wf_buffer_f1 @%x\n", (unsigned int) wf_buffer_f1)
+    DEBUG_PRINTF1("wf_buffer_f2 @%x\n", (unsigned int) wf_buffer_f2)
+    DEBUG_PRINTF1("wf_buffer_f3 @%x\n", (unsigned int) wf_buffer_f3)
+
 }
 
-void init_waveform_ring(ring_node waveform_ring[], unsigned char nbNodes, volatile int wfrm[] )
+void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize )
 {
     unsigned char i;
 
-    waveform_ring[0].next            = (ring_node*) &waveform_ring[ 1 ];
-    waveform_ring[0].previous        = (ring_node*) &waveform_ring[ nbNodes - 1 ];
-    waveform_ring[0].buffer_address  = (int) &wfrm[0];
-
-    waveform_ring[nbNodes-1].next           = (ring_node*) &waveform_ring[ 0 ];
-    waveform_ring[nbNodes-1].previous       = (ring_node*) &waveform_ring[ nbNodes - 2 ];
-    waveform_ring[nbNodes-1].buffer_address = (int) &wfrm[ (nbNodes-1) * WFRM_BUFFER ];
-
-    for(i=1; i<nbNodes-1; i++)
+    //***************
+    // BUFFER ADDRESS
+    for(i=0; i<nbNodes; i++)
     {
-        waveform_ring[i].next            = (ring_node*) &waveform_ring[ i + 1 ];
-        waveform_ring[i].previous        = (ring_node*) &waveform_ring[ i - 1 ];
-        waveform_ring[i].buffer_address  = (int) &wfrm[ i * WFRM_BUFFER ];
+        ring[i].coarseTime = 0x00;
+        ring[i].fineTime = 0x00;
+        ring[i].sid = 0x00;
+        ring[i].status = 0x00;
+        ring[i].buffer_address  = (int) &buffer[ i * bufferSize ];
+    }
+
+    //*****
+    // NEXT
+     ring[nbNodes-1].next  = (ring_node*) &ring[ 0 ];
+     for(i=0; i<nbNodes-1; i++)
+     {
+         ring[i].next      = (ring_node*) &ring[ i + 1 ];
+     }
+
+    //*********
+    // PREVIOUS
+    ring[0].previous       = (ring_node*) &ring[ nbNodes - 1 ];
+    for(i=1; i<nbNodes; i++)
+    {
+        ring[i].previous   = (ring_node*) &ring[ i - 1 ];
     }
 }
 
@@ -748,288 +765,7 @@ void WFP_reset_current_ring_nodes( void )
     ring_node_to_send_cwf_f3  = waveform_ring_f3;
 }
 
-int init_header_snapshot_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_SWF_t *headerSWF)
-{
-    unsigned char i;
-    int return_value;
-
-    return_value = LFR_SUCCESSFUL;
-
-    for (i=0; i<7; i++)
-    {
-        headerSWF[ i ].targetLogicalAddress = CCSDS_DESTINATION_ID;
-        headerSWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
-        headerSWF[ i ].reserved = DEFAULT_RESERVED;
-        headerSWF[ i ].userApplication = CCSDS_USER_APP;
-        headerSWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
-        headerSWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
-        headerSWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-        if (i == 6)
-        {
-            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_224 >> 8);
-            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_224     );
-            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_224 >> 8);
-            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_224     );
-        }
-        else
-        {
-            headerSWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_304 >> 8);
-            headerSWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_304     );
-            headerSWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_304 >> 8);
-            headerSWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_304     );
-        }
-        headerSWF[ i ].packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-        headerSWF[ i ].pktCnt = DEFAULT_PKTCNT;  // PKT_CNT
-        headerSWF[ i ].pktNr = i+1;    // PKT_NR
-        // DATA FIELD HEADER
-        headerSWF[ i ].spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-        headerSWF[ i ].serviceType = TM_TYPE_LFR_SCIENCE; // service type
-        headerSWF[ i ].serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
-        headerSWF[ i ].destinationID = TM_DESTINATION_ID_GROUND;
-        // AUXILIARY DATA HEADER
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].time[0] = 0x00;
-        headerSWF[ i ].sid = sid;
-        headerSWF[ i ].hkBIA = DEFAULT_HKBIA;
-    }
-
-    return return_value;
-}
-
-int init_header_continuous_wf_table( unsigned int sid, Header_TM_LFR_SCIENCE_CWF_t *headerCWF )
-{
-    unsigned int i;
-    int return_value;
-
-    return_value = LFR_SUCCESSFUL;
-
-    for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF; i++)
-    {
-        headerCWF[ i ].targetLogicalAddress = CCSDS_DESTINATION_ID;
-        headerCWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
-        headerCWF[ i ].reserved = DEFAULT_RESERVED;
-        headerCWF[ i ].userApplication = CCSDS_USER_APP;
-        if ( (sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2) )
-        {
-            headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2 >> 8);
-            headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2);
-        }
-        else
-        {
-            headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
-            headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
-        }
-        headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-        headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
-        headerCWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
-        headerCWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
-        headerCWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_CWF     );
-        headerCWF[ i ].packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-        // DATA FIELD HEADER
-        headerCWF[ i ].spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-        headerCWF[ i ].serviceType = TM_TYPE_LFR_SCIENCE; // service type
-        headerCWF[ i ].serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
-        headerCWF[ i ].destinationID = TM_DESTINATION_ID_GROUND;
-        // AUXILIARY DATA HEADER
-        headerCWF[ i ].sid = sid;
-        headerCWF[ i ].hkBIA = DEFAULT_HKBIA;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-    }
-
-    return return_value;
-}
-
-int init_header_continuous_cwf3_light_table( Header_TM_LFR_SCIENCE_CWF_t *headerCWF )
-{
-    unsigned int i;
-    int return_value;
-
-    return_value = LFR_SUCCESSFUL;
-
-    for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF_LIGHT; i++)
-    {
-        headerCWF[ i ].targetLogicalAddress = CCSDS_DESTINATION_ID;
-        headerCWF[ i ].protocolIdentifier = CCSDS_PROTOCOLE_ID;
-        headerCWF[ i ].reserved = DEFAULT_RESERVED;
-        headerCWF[ i ].userApplication = CCSDS_USER_APP;
-
-        headerCWF[ i ].packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
-        headerCWF[ i ].packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
-
-        headerCWF[ i ].packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-        headerCWF[ i ].packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);
-        headerCWF[ i ].packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
-        headerCWF[ i ].blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
-        headerCWF[ i ].blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
-
-        headerCWF[ i ].packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-        // DATA FIELD HEADER
-        headerCWF[ i ].spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-        headerCWF[ i ].serviceType = TM_TYPE_LFR_SCIENCE; // service type
-        headerCWF[ i ].serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
-        headerCWF[ i ].destinationID = TM_DESTINATION_ID_GROUND;
-        // AUXILIARY DATA HEADER
-        headerCWF[ i ].sid = SID_NORM_CWF_F3;
-        headerCWF[ i ].hkBIA = DEFAULT_HKBIA;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-        headerCWF[ i ].time[0] = 0x00;
-    }
-
-    return return_value;
-}
-
-int send_waveform_SWF( ring_node *ring_node_to_send, unsigned int sid,
-                       Header_TM_LFR_SCIENCE_SWF_t *headerSWF, rtems_id queue_id )
-{
-    /** This function sends SWF CCSDS packets (F2, F1 or F0).
-     *
-     * @param waveform points to the buffer containing the data that will be send.
-     * @param sid is the source identifier of the data that will be sent.
-     * @param headerSWF points to a table of headers that have been prepared for the data transmission.
-     * @param queue_id is the id of the rtems queue to which spw_ioctl_pkt_send structures will be send. The structures
-     * contain information to setup the transmission of the data packets.
-     *
-     * One group of 2048 samples is sent as 7 consecutive packets, 6 packets containing 340 blocks and 8 packets containing 8 blocks.
-     *
-     */
-
-    unsigned int i;
-    int ret;
-    unsigned int coarseTime;
-    unsigned int fineTime;
-    rtems_status_code status;
-    spw_ioctl_pkt_send spw_ioctl_send_SWF;
-    int *dataPtr;
-
-    spw_ioctl_send_SWF.hlen = TM_HEADER_LEN + 4 + 12; // + 4 is for the protocole extra header, + 12 is for the auxiliary header
-    spw_ioctl_send_SWF.options = 0;
-
-    ret = LFR_DEFAULT;
-
-    coarseTime  = ring_node_to_send->coarseTime;
-    fineTime    = ring_node_to_send->fineTime;
-    dataPtr     = (int*) ring_node_to_send->buffer_address;
-
-    for (i=0; i<7; i++) // send waveform
-    {
-        spw_ioctl_send_SWF.data = (char*) &dataPtr[ (i * BLK_NR_304 * NB_WORDS_SWF_BLK) ];
-        spw_ioctl_send_SWF.hdr = (char*) &headerSWF[ i ];
-        // BUILD THE DATA
-        if (i==6) {
-            spw_ioctl_send_SWF.dlen = BLK_NR_224 * NB_BYTES_SWF_BLK;
-        }
-        else {
-            spw_ioctl_send_SWF.dlen = BLK_NR_304 * NB_BYTES_SWF_BLK;
-        }
-        // SET PACKET SEQUENCE COUNTER
-        increment_seq_counter_source_id( headerSWF[ i ].packetSequenceControl, sid );
-        // SET PACKET TIME
-        compute_acquisition_time( coarseTime, fineTime, sid, i, headerSWF[ i ].acquisitionTime );
-        //
-        headerSWF[ i ].time[0] = headerSWF[ i ].acquisitionTime[0];
-        headerSWF[ i ].time[1] = headerSWF[ i ].acquisitionTime[1];
-        headerSWF[ i ].time[2] = headerSWF[ i ].acquisitionTime[2];
-        headerSWF[ i ].time[3] = headerSWF[ i ].acquisitionTime[3];
-        headerSWF[ i ].time[4] = headerSWF[ i ].acquisitionTime[4];
-        headerSWF[ i ].time[5] = headerSWF[ i ].acquisitionTime[5];
-        // SEND PACKET
-        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_SWF, ACTION_MSG_SPW_IOCTL_SEND_SIZE);
-        if (status != RTEMS_SUCCESSFUL) {
-            printf("%d-%d, ERR %d\n", sid, i, (int) status);
-            ret = LFR_DEFAULT;
-        }
-        rtems_task_wake_after(TIME_BETWEEN_TWO_SWF_PACKETS);  // 300 ms between each packet => 7 * 3 = 21 packets => 6.3 seconds
-    }
-
-    return ret;
-}
-
-int send_waveform_CWF(ring_node *ring_node_to_send, unsigned int sid,
-                      Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id)
-{
-    /** This function sends CWF CCSDS packets (F2, F1 or F0).
-     *
-     * @param waveform points to the buffer containing the data that will be send.
-     * @param sid is the source identifier of the data that will be sent.
-     * @param headerCWF points to a table of headers that have been prepared for the data transmission.
-     * @param queue_id is the id of the rtems queue to which spw_ioctl_pkt_send structures will be send. The structures
-     * contain information to setup the transmission of the data packets.
-     *
-     * One group of 2048 samples is sent as 7 consecutive packets, 6 packets containing 340 blocks and 8 packets containing 8 blocks.
-     *
-     */
-
-    unsigned int i;
-    int ret;
-    unsigned int coarseTime;
-    unsigned int fineTime;
-    rtems_status_code status;
-    spw_ioctl_pkt_send spw_ioctl_send_CWF;
-    int *dataPtr;
-
-    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
-    spw_ioctl_send_CWF.options = 0;
-
-    ret = LFR_DEFAULT;
-
-    coarseTime  = ring_node_to_send->coarseTime;
-    fineTime    = ring_node_to_send->fineTime;
-    dataPtr     = (int*) ring_node_to_send->buffer_address;
-
-    for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF; i++) // send waveform
-    {
-        spw_ioctl_send_CWF.data = (char*) &dataPtr[ (i * BLK_NR_CWF * NB_WORDS_SWF_BLK) ];
-        spw_ioctl_send_CWF.hdr = (char*) &headerCWF[ i ];
-        // BUILD THE DATA
-        spw_ioctl_send_CWF.dlen = BLK_NR_CWF * NB_BYTES_SWF_BLK;
-        // SET PACKET SEQUENCE COUNTER
-        increment_seq_counter_source_id( headerCWF[ i ].packetSequenceControl, sid );
-        // SET PACKET TIME
-        compute_acquisition_time( coarseTime, fineTime, sid, i, headerCWF[ i ].acquisitionTime);
-        //
-        headerCWF[ i ].time[0] = headerCWF[ i ].acquisitionTime[0];
-        headerCWF[ i ].time[1] = headerCWF[ i ].acquisitionTime[1];
-        headerCWF[ i ].time[2] = headerCWF[ i ].acquisitionTime[2];
-        headerCWF[ i ].time[3] = headerCWF[ i ].acquisitionTime[3];
-        headerCWF[ i ].time[4] = headerCWF[ i ].acquisitionTime[4];
-        headerCWF[ i ].time[5] = headerCWF[ i ].acquisitionTime[5];
-        // SEND PACKET
-        if (sid == SID_NORM_CWF_LONG_F3)
-        {
-            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
-            if (status != RTEMS_SUCCESSFUL) {
-                printf("%d-%d, ERR %d\n", sid, i, (int) status);
-                ret = LFR_DEFAULT;
-            }
-            rtems_task_wake_after(TIME_BETWEEN_TWO_CWF3_PACKETS);
-        }
-        else
-        {
-            status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
-            if (status != RTEMS_SUCCESSFUL) {
-                printf("%d-%d, ERR %d\n", sid, i, (int) status);
-                ret = LFR_DEFAULT;
-            }
-        }
-    }
-
-    return ret;
-}
-
-int send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_CWF_t *headerCWF, rtems_id queue_id )
+int send_waveform_CWF3_light( ring_node *ring_node_to_send, ring_node *ring_node_cwf3_light, rtems_id queue_id )
 {
     /** This function sends CWF_F3 CCSDS packets without the b1, b2 and b3 data.
      *
@@ -1045,8 +781,6 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENC
 
     unsigned int i;
     int ret;
-    unsigned int coarseTime;
-    unsigned int fineTime;
     rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send_CWF;
     char *sample;
@@ -1057,9 +791,10 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENC
 
     ret = LFR_DEFAULT;
 
-    coarseTime  = ring_node_to_send->coarseTime;
-    fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (int*) ring_node_to_send->buffer_address;
+
+    ring_node_cwf3_light->coarseTime = ring_node_to_send->coarseTime;
+    ring_node_cwf3_light->fineTime = ring_node_to_send->fineTime;
 
     //**********************
     // BUILD CWF3_light DATA
@@ -1074,45 +809,14 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENC
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 5 ] = sample[ 5 ];
     }
 
-    //*********************
-    // SEND CWF3_light DATA
-    for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF_LIGHT; i++) // send waveform
-    {
-        spw_ioctl_send_CWF.data = (char*) &wf_cont_f3_light[ (i * BLK_NR_CWF_SHORT_F3 * NB_BYTES_CWF3_LIGHT_BLK) ];
-        spw_ioctl_send_CWF.hdr = (char*) &headerCWF[ i ];
-        // BUILD THE DATA
-        spw_ioctl_send_CWF.dlen = BLK_NR_CWF_SHORT_F3 * NB_BYTES_CWF3_LIGHT_BLK;
-        // SET PACKET SEQUENCE COUNTER
-        increment_seq_counter_source_id( headerCWF[ i ].packetSequenceControl, SID_NORM_CWF_F3 );
-        // SET PACKET TIME
-        compute_acquisition_time( coarseTime, fineTime, SID_NORM_CWF_F3, i, headerCWF[ i ].acquisitionTime );
-        //
-        headerCWF[ i ].time[0] = headerCWF[ i ].acquisitionTime[0];
-        headerCWF[ i ].time[1] = headerCWF[ i ].acquisitionTime[1];
-        headerCWF[ i ].time[2] = headerCWF[ i ].acquisitionTime[2];
-        headerCWF[ i ].time[3] = headerCWF[ i ].acquisitionTime[3];
-        headerCWF[ i ].time[4] = headerCWF[ i ].acquisitionTime[4];
-        headerCWF[ i ].time[5] = headerCWF[ i ].acquisitionTime[5];
-        // SEND PACKET
-        status =  rtems_message_queue_send( queue_id, &spw_ioctl_send_CWF, sizeof(spw_ioctl_send_CWF));
-        if (status != RTEMS_SUCCESSFUL) {
-            printf("%d-%d, ERR %d\n", SID_NORM_CWF_F3, i, (int) status);
-            ret = LFR_DEFAULT;
-        }
-        rtems_task_wake_after(TIME_BETWEEN_TWO_CWF3_PACKETS);
+    // SEND PACKET
+    status =  rtems_message_queue_send( queue_id, &ring_node_cwf3_light, sizeof( ring_node* ) );
+    if (status != RTEMS_SUCCESSFUL) {
+        printf("%d-%d, ERR %d\n", SID_NORM_CWF_F3, i, (int) status);
+        ret = LFR_DEFAULT;
     }
 
     return ret;
-}
-
-int send_ring_node_CWF( ring_node *ring_node_to_send )
-{
-    int status;
-
-    status = LFR_SUCCESSFUL;
-//    status =  rtems_message_queue_send( queue_id, ring_node_to_send, 4 );
-
-    return status;
 }
 
 void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
@@ -1173,7 +877,7 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
         break;
 
     default:
-        PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d", sid)
+        PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d\n", sid)
         deltaT = 0.;
         break;
     }

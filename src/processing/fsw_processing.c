@@ -261,102 +261,78 @@ void reset_nb_sm( void )
     nb_sm_f1 = 0;
 }
 
+//void SM_init_rings_alt( void )
+//{
+//    init_ring( sm_ring_f0, NB_RING_NODES_SM_F0, sm_f0, TOTAL_SIZE_SM );
+//    init_ring( sm_ring_f1, NB_RING_NODES_SM_F1, sm_f0, TOTAL_SIZE_SM );
+//    init_ring( sm_ring_f2, NB_RING_NODES_SM_F2, sm_f0, TOTAL_SIZE_SM );
+
+//    DEBUG_PRINTF1("sm_ring_f0 @%x\n", (unsigned int) sm_ring_f0)
+//    DEBUG_PRINTF1("sm_ring_f1 @%x\n", (unsigned int) sm_ring_f1)
+//    DEBUG_PRINTF1("sm_ring_f2 @%x\n", (unsigned int) sm_ring_f2)
+//    DEBUG_PRINTF1("sm_f0 @%x\n", (unsigned int) sm_f0)
+//    DEBUG_PRINTF1("sm_f1 @%x\n", (unsigned int) sm_f1)
+//    DEBUG_PRINTF1("sm_f2 @%x\n", (unsigned int) sm_f2)
+//}
+
 void SM_init_rings( void )
 {
     unsigned char i;
-
     // F0 RING
-    sm_ring_f0[0].next            = (ring_node_sm*) &sm_ring_f0[1];
-    sm_ring_f0[0].previous        = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_SM_F0-1];
-    sm_ring_f0[0].buffer_address  =
+    sm_ring_f0[0].next = (ring_node_sm*) &sm_ring_f0[1];
+    sm_ring_f0[0].previous = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_SM_F0-1];
+    sm_ring_f0[0].buffer_address =
             (int) &sm_f0[ 0 ];
-
-    sm_ring_f0[NB_RING_NODES_SM_F0-1].next           = (ring_node_sm*) &sm_ring_f0[0];
-    sm_ring_f0[NB_RING_NODES_SM_F0-1].previous       = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_SM_F0-2];
+    sm_ring_f0[NB_RING_NODES_SM_F0-1].next = (ring_node_sm*) &sm_ring_f0[0];
+    sm_ring_f0[NB_RING_NODES_SM_F0-1].previous = (ring_node_sm*) &sm_ring_f0[NB_RING_NODES_SM_F0-2];
     sm_ring_f0[NB_RING_NODES_SM_F0-1].buffer_address =
             (int) &sm_f0[ (NB_RING_NODES_SM_F0-1) * TOTAL_SIZE_SM ];
-
     for(i=1; i<NB_RING_NODES_SM_F0-1; i++)
     {
-        sm_ring_f0[i].next            = (ring_node_sm*) &sm_ring_f0[i+1];
-        sm_ring_f0[i].previous        = (ring_node_sm*) &sm_ring_f0[i-1];
-        sm_ring_f0[i].buffer_address  =
+        sm_ring_f0[i].next = (ring_node_sm*) &sm_ring_f0[i+1];
+        sm_ring_f0[i].previous = (ring_node_sm*) &sm_ring_f0[i-1];
+        sm_ring_f0[i].buffer_address =
                 (int) &sm_f0[ i * TOTAL_SIZE_SM ];
     }
-
     // F1 RING
-    sm_ring_f1[0].next            = (ring_node_sm*) &sm_ring_f1[1];
-    sm_ring_f1[0].previous        = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_SM_F1-1];
-    sm_ring_f1[0].buffer_address  =
+    sm_ring_f1[0].next = (ring_node_sm*) &sm_ring_f1[1];
+    sm_ring_f1[0].previous = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_SM_F1-1];
+    sm_ring_f1[0].buffer_address =
             (int) &sm_f1[ 0 ];
-
-    sm_ring_f1[NB_RING_NODES_SM_F1-1].next           = (ring_node_sm*) &sm_ring_f1[0];
-    sm_ring_f1[NB_RING_NODES_SM_F1-1].previous       = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_SM_F1-2];
+    sm_ring_f1[NB_RING_NODES_SM_F1-1].next = (ring_node_sm*) &sm_ring_f1[0];
+    sm_ring_f1[NB_RING_NODES_SM_F1-1].previous = (ring_node_sm*) &sm_ring_f1[NB_RING_NODES_SM_F1-2];
     sm_ring_f1[NB_RING_NODES_SM_F1-1].buffer_address =
             (int) &sm_f1[ (NB_RING_NODES_SM_F1-1) * TOTAL_SIZE_SM ];
-
     for(i=1; i<NB_RING_NODES_SM_F1-1; i++)
     {
-        sm_ring_f1[i].next            = (ring_node_sm*) &sm_ring_f1[i+1];
-        sm_ring_f1[i].previous        = (ring_node_sm*) &sm_ring_f1[i-1];
-        sm_ring_f1[i].buffer_address  =
+        sm_ring_f1[i].next = (ring_node_sm*) &sm_ring_f1[i+1];
+        sm_ring_f1[i].previous = (ring_node_sm*) &sm_ring_f1[i-1];
+        sm_ring_f1[i].buffer_address =
                 (int) &sm_f1[ i * TOTAL_SIZE_SM ];
     }
-
     // F2 RING
-    sm_ring_f2[0].next            = (ring_node_sm*) &sm_ring_f2[1];
-    sm_ring_f2[0].previous        = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_SM_F2-1];
-    sm_ring_f2[0].buffer_address  =
+    sm_ring_f2[0].next = (ring_node_sm*) &sm_ring_f2[1];
+    sm_ring_f2[0].previous = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_SM_F2-1];
+    sm_ring_f2[0].buffer_address =
             (int) &sm_f2[ 0 ];
-
-    sm_ring_f2[NB_RING_NODES_SM_F2-1].next           = (ring_node_sm*) &sm_ring_f2[0];
-    sm_ring_f2[NB_RING_NODES_SM_F2-1].previous       = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_SM_F2-2];
+    sm_ring_f2[NB_RING_NODES_SM_F2-1].next = (ring_node_sm*) &sm_ring_f2[0];
+    sm_ring_f2[NB_RING_NODES_SM_F2-1].previous = (ring_node_sm*) &sm_ring_f2[NB_RING_NODES_SM_F2-2];
     sm_ring_f2[NB_RING_NODES_SM_F2-1].buffer_address =
             (int) &sm_f2[ (NB_RING_NODES_SM_F2-1) * TOTAL_SIZE_SM ];
-
     for(i=1; i<NB_RING_NODES_SM_F2-1; i++)
     {
-        sm_ring_f2[i].next            = (ring_node_sm*) &sm_ring_f2[i+1];
-        sm_ring_f2[i].previous        = (ring_node_sm*) &sm_ring_f2[i-1];
-        sm_ring_f2[i].buffer_address  =
+        sm_ring_f2[i].next = (ring_node_sm*) &sm_ring_f2[i+1];
+        sm_ring_f2[i].previous = (ring_node_sm*) &sm_ring_f2[i-1];
+        sm_ring_f2[i].buffer_address =
                 (int) &sm_f2[ i * TOTAL_SIZE_SM ];
     }
-
     DEBUG_PRINTF1("asm_ring_f0 @%x\n", (unsigned int) sm_ring_f0)
-    DEBUG_PRINTF1("asm_ring_f1 @%x\n", (unsigned int) sm_ring_f1)
-    DEBUG_PRINTF1("asm_ring_f2 @%x\n", (unsigned int) sm_ring_f2)
-
-    spectral_matrix_regs->f0_0_address = sm_ring_f0[0].buffer_address;
+            DEBUG_PRINTF1("asm_ring_f1 @%x\n", (unsigned int) sm_ring_f1)
+            DEBUG_PRINTF1("asm_ring_f2 @%x\n", (unsigned int) sm_ring_f2)
+            spectral_matrix_regs->f0_0_address = sm_ring_f0[0].buffer_address;
     DEBUG_PRINTF1("spectral_matrix_regs->matrixF0_Address0 @%x\n", spectral_matrix_regs->f0_0_address)
 }
 
-void SM_generic_init_ring( ring_node_sm *ring, unsigned char nbNodes, volatile int sm_f[] )
-{
-    unsigned char i;
-
-    //***************
-    // BUFFER ADDRESS
-    for(i=0; i<nbNodes; i++)
-    {
-        ring[ i ].buffer_address = (int) &sm_f[ i * TOTAL_SIZE_SM ];
-    }
-
-    //*****
-    // NEXT
-    ring[ nbNodes - 1 ].next = (ring_node_sm*) &ring[ 0 ];
-    for(i=0; i<nbNodes-1; i++)
-    {
-        ring[ i ].next = (ring_node_sm*) &ring[ i + 1 ];
-    }
-
-    //*********
-    // PREVIOUS
-    ring[ 0 ].previous = (ring_node_sm*) &ring[ nbNodes -1 ];
-    for(i=1; i<nbNodes; i++)
-    {
-        ring[ i ].previous = (ring_node_sm*) &ring[ i - 1 ];
-    }
-}
 
 void ASM_generic_init_ring( ring_node_asm *ring, unsigned char nbNodes )
 {
@@ -399,17 +375,17 @@ void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header)
     header->serviceType = TM_TYPE_LFR_SCIENCE; // service type
     header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
     header->destinationID = TM_DESTINATION_ID_GROUND;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
+    header->time[0] = 0x00;
     // AUXILIARY DATA HEADER
     header->sid = 0x00;
     header->biaStatusInfo = 0x00;
     header->pa_lfr_pkt_cnt_asm = 0x00;
     header->pa_lfr_pkt_nr_asm = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
     header->pa_lfr_asm_blk_nr[0] = 0x00;  // BLK_NR MSB
     header->pa_lfr_asm_blk_nr[1] = 0x00;  // BLK_NR LSB
 }

@@ -34,7 +34,6 @@ void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
 void get_v_e1_e2_f3(unsigned char *spacecraft_potential);
-void get_v_e1_e2_f3_alt(unsigned char *spacecraft_potential);
 void get_cpu_load( unsigned char *resource_statistics );
 
 extern int sched_yield( void );

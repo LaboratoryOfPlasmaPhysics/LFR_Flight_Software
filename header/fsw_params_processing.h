@@ -12,6 +12,7 @@
 #define NB_RING_NODES_SM_F0             12  // AT LEAST 8 due to the way the averaging is done
 #define NB_RING_NODES_ASM_BURST_SBM_F0  10  // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F0       10  // AT LEAST 3
+#define NB_RING_NODES_ASM_F0            3  // AT LEAST 3
 #define NB_RING_NODES_SM_F1             12  // AT LEAST 8 due to the way the averaging is done
 #define NB_RING_NODES_ASM_BURST_SBM_F1  5   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F1       5   // AT LEAST 3

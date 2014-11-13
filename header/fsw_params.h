@@ -14,6 +14,7 @@ typedef struct ring_node
 {
     struct ring_node *previous;
     struct ring_node *next;
+    unsigned int sid;
     unsigned int coarseTime;
     unsigned int fineTime;
     int buffer_address;
