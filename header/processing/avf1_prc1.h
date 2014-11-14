@@ -27,7 +27,7 @@ void reset_nb_sm_f1( unsigned char lfrMode );
 
 //*******
 // EXTERN
-extern struct ring_node_sm *ring_node_for_averaging_sm_f1;
+extern struct ring_node *ring_node_for_averaging_sm_f1;
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 
 #endif // AVF1_PRC1_H

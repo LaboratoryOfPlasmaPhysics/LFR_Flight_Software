@@ -16,6 +16,9 @@ nb_sm_before_bp_asm_f2 nb_sm_before_f2;
 ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ];
 ring_node_asm asm_ring_burst_sbm_f2[ NB_RING_NODES_ASM_BURST_SBM_F2 ];
 
+ring_node ring_to_send_asm_f2       [ NB_RING_NODES_ASM_F2 ];
+int buffer_asm_f2                   [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
+
 float asm_f2_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f2_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
@@ -59,9 +62,9 @@ rtems_task avf2_task( rtems_task_argument argument )
 
         //****************************************
         // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the MATR task
-        msgForMATR.burst_sbm  = NULL;
         msgForMATR.norm       = current_ring_node_asm_norm_f2;
+        msgForMATR.burst_sbm  = NULL;
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC2 task
         msgForMATR.coarseTime = ring_node_for_averaging_sm_f2->coarseTime;
         msgForMATR.fineTime   = ring_node_for_averaging_sm_f2->fineTime;
         //
@@ -129,19 +132,20 @@ rtems_task prc2_task( rtems_task_argument argument )
     size_t size;                            // size of the incoming TC packet
     asm_msg *incomingMsg;
     //
-    spw_ioctl_pkt_send spw_ioctl_send_ASM;
     rtems_status_code status;
     rtems_id queue_id;
     rtems_id queue_id_q_p2;
-    Header_TM_LFR_SCIENCE_ASM_t headerASM;
-    bp_packet packet_norm_bp1_f2;
-    bp_packet packet_norm_bp2_f2;
+    bp_packet                   packet_norm_bp1_f2;
+    bp_packet                   packet_norm_bp2_f2;
+    ring_node                   *current_ring_node_to_send_asm_f2;
 
     unsigned long long int localTime;
 
-    incomingMsg = NULL;
+    // init the ring of the averaged spectral matrices which will be transmitted to the DPU
+    init_ring( ring_to_send_asm_f2, NB_RING_NODES_ASM_F2, (volatile int*) buffer_asm_f2, TOTAL_SIZE_SM );
+    current_ring_node_to_send_asm_f2 = ring_to_send_asm_f2;
 
-    ASM_init_header( &headerASM );
+    incomingMsg = NULL;
 
     //*************
     // NORM headers
@@ -213,11 +217,14 @@ rtems_task prc2_task( rtems_task_argument argument )
                                        asm_f2_reorganized,
                                        nb_sm_before_f2.norm_bp1 );
             // 2) convert the float array in a char array
-            ASM_convert( asm_f2_reorganized, asm_f2_char);
+            ASM_convert( asm_f2_reorganized, (char*) current_ring_node_to_send_asm_f2->buffer_address );
+            current_ring_node_to_send_asm_f2->coarseTime    = incomingMsg->coarseTime;
+            current_ring_node_to_send_asm_f2->fineTime      = incomingMsg->fineTime;
+            current_ring_node_to_send_asm_f2->sid           = SID_NORM_ASM_F2;
             // 3) send the spectral matrix packets
-            set_time( headerASM.time           , (unsigned char *) &incomingMsg->coarseTime );
-            set_time( headerASM.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
-            ASM_send( &headerASM, asm_f2_char, SID_NORM_ASM_F2, &spw_ioctl_send_ASM, queue_id);
+            status =  rtems_message_queue_send( queue_id, &current_ring_node_to_send_asm_f2, sizeof( ring_node* ) );
+            // change asm ring node
+            current_ring_node_to_send_asm_f2 = current_ring_node_to_send_asm_f2->next;
         }
 
     }
@@ -234,7 +241,7 @@ void reset_nb_sm_f2( void )
 }
 
 void SM_average_f2( float *averaged_spec_mat_f2,
-                  ring_node_sm *ring_node,
+                  ring_node *ring_node,
                   unsigned int nbAverageNormF2 )
 {
     float sum;

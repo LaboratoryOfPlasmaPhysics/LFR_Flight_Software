@@ -13,8 +13,11 @@ nb_sm_before_bp_asm_f1 nb_sm_before_f1;
 
 //***
 // F1
-ring_node_asm asm_ring_norm_f1     [ NB_RING_NODES_ASM_NORM_F1      ];
-ring_node_asm asm_ring_burst_sbm_f1[ NB_RING_NODES_ASM_BURST_SBM_F1 ];
+ring_node_asm asm_ring_norm_f1      [ NB_RING_NODES_ASM_NORM_F1      ];
+ring_node_asm asm_ring_burst_sbm_f1 [ NB_RING_NODES_ASM_BURST_SBM_F1 ];
+
+ring_node ring_to_send_asm_f1       [ NB_RING_NODES_ASM_F1 ];
+int buffer_asm_f1                   [ NB_RING_NODES_ASM_F1 * TOTAL_SIZE_SM ];
 
 float asm_f1_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f1_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
@@ -32,7 +35,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
     rtems_status_code status;
     rtems_id queue_id_prc1;
     asm_msg msgForMATR;
-    ring_node_sm *ring_node_tab[8];
+    ring_node *ring_node_tab[8];
     ring_node_asm *current_ring_node_asm_burst_sbm_f1;
     ring_node_asm *current_ring_node_asm_norm_f1;
 
@@ -67,9 +70,9 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
 
         //****************************************
         // initialize the mesage for the MATR task
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC1 task
-        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
         msgForMATR.norm       = current_ring_node_asm_norm_f1;
+        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
+        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC1 task
         msgForMATR.coarseTime = ring_node_for_averaging_sm_f1->coarseTime;
         msgForMATR.fineTime   = ring_node_for_averaging_sm_f1->fineTime;
         //
@@ -175,19 +178,20 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
     asm_msg *incomingMsg;
     //
     unsigned char sid;
-    spw_ioctl_pkt_send spw_ioctl_send_ASM;
     rtems_status_code status;
     rtems_id queue_id_send;
     rtems_id queue_id_q_p1;
-    Header_TM_LFR_SCIENCE_ASM_t headerASM;
-    bp_packet_with_spare packet_norm_bp1;
-    bp_packet            packet_norm_bp2;
-    bp_packet            packet_sbm_bp1;
-    bp_packet            packet_sbm_bp2;
+    bp_packet_with_spare    packet_norm_bp1;
+    bp_packet               packet_norm_bp2;
+    bp_packet               packet_sbm_bp1;
+    bp_packet               packet_sbm_bp2;
+    ring_node               *current_ring_node_to_send_asm_f1;
 
     unsigned long long int localTime;
 
-    ASM_init_header( &headerASM );
+    // init the ring of the averaged spectral matrices which will be transmitted to the DPU
+    init_ring( ring_to_send_asm_f1, NB_RING_NODES_ASM_F1, (volatile int*) buffer_asm_f1, TOTAL_SIZE_SM );
+    current_ring_node_to_send_asm_f1 = ring_to_send_asm_f1;
 
     //*************
     // NORM headers
@@ -318,11 +322,14 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
                                        asm_f1_reorganized,
                                        nb_sm_before_f1.norm_bp1 );
             // 2) convert the float array in a char array
-            ASM_convert( asm_f1_reorganized, asm_f1_char);
+            ASM_convert( asm_f1_reorganized, (char*) current_ring_node_to_send_asm_f1->buffer_address );
+            current_ring_node_to_send_asm_f1->coarseTime    = incomingMsg->coarseTime;
+            current_ring_node_to_send_asm_f1->fineTime      = incomingMsg->fineTime;
+            current_ring_node_to_send_asm_f1->sid           = SID_NORM_ASM_F1;
             // 3) send the spectral matrix packets
-            set_time( headerASM.time           , (unsigned char *) &incomingMsg->coarseTime );
-            set_time( headerASM.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
-            ASM_send( &headerASM, asm_f1_char, SID_NORM_ASM_F1, &spw_ioctl_send_ASM, queue_id_send);
+            status =  rtems_message_queue_send( queue_id_send, &current_ring_node_to_send_asm_f1, sizeof( ring_node* ) );
+            // change asm ring node
+            current_ring_node_to_send_asm_f1 = current_ring_node_to_send_asm_f1->next;
         }
 
     }

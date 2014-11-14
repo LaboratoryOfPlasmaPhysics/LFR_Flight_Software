@@ -11,16 +11,6 @@
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
 
-typedef struct ring_node_sm
-{
-struct ring_node_sm *previous;
-struct ring_node_sm *next;
-int buffer_address;
-unsigned int status;
-unsigned int coarseTime;
-unsigned int fineTime;
-} ring_node_sm;
-
 typedef struct ring_node_asm
 {
     struct ring_node_asm *next;
@@ -75,9 +65,6 @@ void SM_init_rings( void );
 void SM_reset_current_ring_nodes( void );
 // ASM
 void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
-void ASM_init_header( Header_TM_LFR_SCIENCE_ASM_t *header);
-void ASM_send(Header_TM_LFR_SCIENCE_ASM_t *header, char *spectral_matrix,
-                    unsigned int sid, spw_ioctl_pkt_send *spw_ioctl_send, rtems_id queue_id);
 
 //*****************
 // Basic Parameters
@@ -100,7 +87,7 @@ void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );
 void close_matrix_actions( unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id avf_task_id,
-                           ring_node_sm *node_for_averaging, ring_node_sm *ringNode, unsigned long long int time );
+                           ring_node *node_for_averaging, ring_node *ringNode, unsigned long long int time );
 unsigned char getSID( rtems_event_set event );
 
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
@@ -109,10 +96,10 @@ extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 //***************************************
 // DEFINITIONS OF STATIC INLINE FUNCTIONS
 static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node_sm *ring_node_tab[],
+                  ring_node *ring_node_tab[],
                   unsigned int nbAverageNORM, unsigned int nbAverageSBM );
 static inline void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node_sm *ring_node_tab[],
+                  ring_node *ring_node_tab[],
                   unsigned int nbAverageNORM, unsigned int nbAverageSBM );
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
@@ -121,8 +108,8 @@ static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, 
                                   unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart);
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
-void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node_sm *ring_node_tab[],
+void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
+                  ring_node *ring_node_tab[],
                   unsigned int nbAverageNORM, unsigned int nbAverageSBM )
 {
     float sum;
@@ -161,8 +148,8 @@ void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_S
     }
 }
 
-void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node_sm *ring_node_tab[],
+void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
+                  ring_node *ring_node_tab[],
                   unsigned int nbAverageNORM, unsigned int nbAverageSBM )
 {
     float sum;
