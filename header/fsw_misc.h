@@ -4,6 +4,7 @@
 #include <rtems.h>
 #include <stdio.h>
 #include <grspw.h>
+#include <grlib_regs.h>
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"

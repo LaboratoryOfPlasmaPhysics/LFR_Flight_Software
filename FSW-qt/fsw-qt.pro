@@ -60,10 +60,11 @@ contains( CONFIG, boot_messages ) {
 TARGET = fsw
 
 INCLUDEPATH += \
-    ../src \
-    ../header \
-    ../header/processing \
-    ../src/LFR_basic-parameters
+    $${PWD}/../src \
+    $${PWD}/../header \
+    $${PWD}/../header/common_lfr_headers \
+    $${PWD}/../header/processing \
+    $${PWD}/../src/LFR_basic-parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -103,5 +104,6 @@ HEADERS += \
     ../header/fsw_params_wf_handler.h \
     ../header/lfr_cpu_usage_report.h \
     ../src/LFR_basic-parameters/basic_parameters.h \
-    ../src/LFR_basic-parameters/basic_parameters_params.h
+    ../src/LFR_basic-parameters/basic_parameters_params.h \
+    ../header/tm_byte_positions.h
 

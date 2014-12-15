@@ -1,7 +1,6 @@
 #ifndef FSW_PARAMS_H_INCLUDED
 #define FSW_PARAMS_H_INCLUDED
 
-#include "grlib_regs.h"
 #include "fsw_params_processing.h"
 #include "fsw_params_nb_bytes.h"
 #include "tm_byte_positions.h"

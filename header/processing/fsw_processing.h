@@ -7,6 +7,7 @@
 #include <stdlib.h> // abs() is in the stdlib
 #include <stdio.h>  // printf()
 #include <math.h>
+#include <grlib_regs.h>
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"

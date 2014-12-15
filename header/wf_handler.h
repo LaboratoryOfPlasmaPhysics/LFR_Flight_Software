@@ -5,8 +5,8 @@
 #include <grspw.h>
 #include <stdio.h>
 #include <math.h>
+#include <fsw_params.h>
 
-#include "fsw_params.h"
 #include "fsw_spacewire.h"
 #include "fsw_misc.h"
 #include "fsw_params_wf_handler.h"

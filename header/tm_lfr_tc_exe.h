@@ -3,6 +3,7 @@
 
 #include <rtems.h>
 #include <stdio.h>
+#include <ccsds_types.h>
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
