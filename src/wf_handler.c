@@ -442,13 +442,13 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if(resynchronisationEngaged == false)
         {   // engage resynchronisation
-            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->coarseTime );
+//            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->coarseTime );
             resynchronisationEngaged = true;
         }
         else
         {   // reset delta_snapshot to the nominal value
             PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n")
-            set_wfp_delta_snapshot();
+//            set_wfp_delta_snapshot();
             resynchronisationEngaged = false;
         }
         //

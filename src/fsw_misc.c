@@ -266,7 +266,7 @@ rtems_task dumb_task( rtems_task_argument unused )
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
                         "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
                         "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-                        "ERR HK",                                                               // RTEMS_EVENT_6
+                        "VHDL SM *** two buffers f0 ready",                                     // RTEMS_EVENT_6
                         "ready for dump",                                                       // RTEMS_EVENT_7
                         "VHDL ERR *** spectral matrix",                                         // RTEMS_EVENT_8
                         "tick",                                                                 // RTEMS_EVENT_9

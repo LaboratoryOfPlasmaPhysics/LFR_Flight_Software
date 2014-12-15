@@ -50,6 +50,8 @@ void spectral_matrices_isr_f0( void )
     case 0:
         break;
     case 3:
+        // send a message if two buffers are ready
+        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         if ( time_0 < time_1 )
         {
             close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
@@ -175,12 +177,14 @@ void spectral_matrices_isr_f2( void )
 
 void spectral_matrix_isr_error_handler( void )
 {
-    rtems_status_code status_code;
+//    rtems_status_code status_code;
 
-    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
-    {
-        status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-    }
+//    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
+//    {
+//        status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+//    }
+
+//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0x7c0;
 }
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
@@ -197,7 +201,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     spectral_matrices_isr_f2();
 
-//    spectral_matrix_isr_error_handler();
+    spectral_matrix_isr_error_handler();
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
