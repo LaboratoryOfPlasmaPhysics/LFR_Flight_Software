@@ -11,8 +11,8 @@ include(./sparc.pri)
 SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=2 # major
 DEFINES += SW_VERSION_N2=0 # minor
-DEFINES += SW_VERSION_N3=1 # patch
-DEFINES += SW_VERSION_N4=1 # internal
+DEFINES += SW_VERSION_N3=2 # patch
+DEFINES += SW_VERSION_N4=0 # internal
 
 # <GCOV>
 #QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
@@ -62,7 +62,7 @@ TARGET = fsw
 INCLUDEPATH += \
     $${PWD}/../src \
     $${PWD}/../header \
-    $${PWD}/../header/common_lfr_headers \
+    $${PWD}/../header/lfr_common_headers \
     $${PWD}/../header/processing \
     $${PWD}/../src/LFR_basic-parameters
 
@@ -87,16 +87,12 @@ HEADERS += \
     ../header/wf_handler.h \
     ../header/tc_handler.h \
     ../header/grlib_regs.h \
-    ../header/fsw_params.h \
     ../header/fsw_misc.h \
     ../header/fsw_init.h \
-    ../header/ccsds_types.h \
     ../header/fsw_spacewire.h \
     ../header/tc_load_dump_parameters.h \
     ../header/tm_lfr_tc_exe.h \
     ../header/tc_acceptance.h \
-    ../header/fsw_params_nb_bytes.h \
-    ../header/fsw_params_processing.h \
     ../header/processing/fsw_processing.h \
     ../header/processing/avf0_prc0.h \
     ../header/processing/avf1_prc1.h \
@@ -105,5 +101,10 @@ HEADERS += \
     ../header/lfr_cpu_usage_report.h \
     ../src/LFR_basic-parameters/basic_parameters.h \
     ../src/LFR_basic-parameters/basic_parameters_params.h \
-    ../header/tm_byte_positions.h
+    ../header/lfr_common_headers/ccsds_types.h \
+    ../header/lfr_common_headers/fsw_params.h \
+    ../header/lfr_common_headers/fsw_params_nb_bytes.h \
+    ../header/lfr_common_headers/fsw_params_processing.h \
+    ../header/lfr_common_headers/TC_types.h \
+    ../header/lfr_common_headers/tm_byte_positions.h
 
