@@ -108,6 +108,9 @@ rtems_task Init( rtems_task_argument ignored )
     init_parameter_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
+    init_k_coefficients_f0();
+    init_k_coefficients_f1();
+    init_k_coefficients_f2();
 
     // waveform picker initialization
     WFP_init_rings();      // initialize the waveform rings
@@ -214,6 +217,8 @@ rtems_task Init( rtems_task_argument ignored )
     }
 
     BOOT_PRINTF("delete INIT\n")
+
+//    test_TCH();
 
     status = rtems_task_delete(RTEMS_SELF);
 

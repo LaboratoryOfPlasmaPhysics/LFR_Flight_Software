@@ -12,7 +12,7 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=2 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=2 # patch
-DEFINES += SW_VERSION_N4=0 # internal
+DEFINES += SW_VERSION_N4=1 # internal
 
 # <GCOV>
 #QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
@@ -28,6 +28,7 @@ contains( CONFIG, lpp_dpu_destid ) {
 contains( CONFIG, debug_tch ) {
     DEFINES += DEBUG_TCH
 }
+DEFINES += LSB_FIRST_TCH
 
 contains( CONFIG, vhdl_dev ) {
     DEFINES += VHDL_DEV
@@ -64,7 +65,7 @@ INCLUDEPATH += \
     $${PWD}/../header \
     $${PWD}/../header/lfr_common_headers \
     $${PWD}/../header/processing \
-    $${PWD}/../src/LFR_basic-parameters
+    $${PWD}/../LFR_basic-parameters
 
 SOURCES += \
     ../src/wf_handler.c \
@@ -81,7 +82,7 @@ SOURCES += \
     ../src/processing/avf1_prc1.c \
     ../src/processing/avf2_prc2.c \
     ../src/lfr_cpu_usage_report.c \
-    ../src/LFR_basic-parameters/basic_parameters.c
+    ../LFR_basic-parameters/basic_parameters.c
 
 HEADERS += \
     ../header/wf_handler.h \
@@ -99,12 +100,12 @@ HEADERS += \
     ../header/processing/avf2_prc2.h \
     ../header/fsw_params_wf_handler.h \
     ../header/lfr_cpu_usage_report.h \
-    ../src/LFR_basic-parameters/basic_parameters.h \
-    ../src/LFR_basic-parameters/basic_parameters_params.h \
     ../header/lfr_common_headers/ccsds_types.h \
     ../header/lfr_common_headers/fsw_params.h \
     ../header/lfr_common_headers/fsw_params_nb_bytes.h \
     ../header/lfr_common_headers/fsw_params_processing.h \
     ../header/lfr_common_headers/TC_types.h \
-    ../header/lfr_common_headers/tm_byte_positions.h
+    ../header/lfr_common_headers/tm_byte_positions.h \
+    ../LFR_basic-parameters/basic_parameters.h \
+    ../LFR_basic-parameters/basic_parameters_params.h
 

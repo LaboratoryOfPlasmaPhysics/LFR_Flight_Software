@@ -2,6 +2,7 @@
 #define AVF1_PRC1_H
 
 #include "fsw_processing.h"
+#include "basic_parameters.h"
 
 typedef struct {
     unsigned int norm_bp1;
@@ -24,10 +25,10 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode );
 // FUNCTIONS
 
 void reset_nb_sm_f1( unsigned char lfrMode );
+void init_k_coefficients_f1( void );
 
 //*******
 // EXTERN
-extern struct ring_node *ring_node_for_averaging_sm_f1;
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 
 #endif // AVF1_PRC1_H

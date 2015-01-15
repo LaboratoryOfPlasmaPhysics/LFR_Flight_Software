@@ -11,18 +11,22 @@
 
 nb_sm_before_bp_asm_f2 nb_sm_before_f2;
 
+extern ring_node sm_ring_f2[ ];
+
 //***
 // F2
 ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ];
 ring_node_asm asm_ring_burst_sbm_f2[ NB_RING_NODES_ASM_BURST_SBM_F2 ];
 
-ring_node ring_to_send_asm_f2       [ NB_RING_NODES_ASM_F2 ];
-int buffer_asm_f2                   [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
+ring_node ring_to_send_asm_f2      [ NB_RING_NODES_ASM_F2 ];
+int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
 
 float asm_f2_reorganized   [ TOTAL_SIZE_SM ];
 char  asm_f2_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
 float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
 float compressed_sm_sbm_f2 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F2 ];
+
+float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ];   // 12 * 32 = 384
 
 //************
 // RTEMS TASKS
@@ -35,6 +39,7 @@ rtems_task avf2_task( rtems_task_argument argument )
     rtems_status_code status;
     rtems_id queue_id_prc2;
     asm_msg msgForMATR;
+    ring_node *nodeForAveraging;
     ring_node_asm *current_ring_node_asm_norm_f2;
 
     unsigned int nb_norm_bp1;
@@ -65,15 +70,28 @@ rtems_task avf2_task( rtems_task_argument argument )
         msgForMATR.norm       = current_ring_node_asm_norm_f2;
         msgForMATR.burst_sbm  = NULL;
         msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC2 task
-        msgForMATR.coarseTime = ring_node_for_averaging_sm_f2->coarseTime;
-        msgForMATR.fineTime   = ring_node_for_averaging_sm_f2->fineTime;
         //
         //****************************************
 
+        nodeForAveraging = getRingNodeForAveraging( 2 );
+
+//        printf(" **0** %x . %x", sm_ring_f2[0].coarseTime, sm_ring_f2[0].fineTime);
+//        printf(" **1** %x . %x", sm_ring_f2[1].coarseTime, sm_ring_f2[1].fineTime);
+//        printf(" **2** %x . %x", sm_ring_f2[2].coarseTime, sm_ring_f2[2].fineTime);
+//        printf(" **3** %x . %x", sm_ring_f2[3].coarseTime, sm_ring_f2[3].fineTime);
+//        printf(" **4** %x . %x", sm_ring_f2[4].coarseTime, sm_ring_f2[4].fineTime);
+//        printf(" **5** %x . %x", sm_ring_f2[5].coarseTime, sm_ring_f2[5].fineTime);
+//        printf(" **6** %x . %x", sm_ring_f2[6].coarseTime, sm_ring_f2[6].fineTime);
+//        printf(" **7** %x . %x", sm_ring_f2[7].coarseTime, sm_ring_f2[7].fineTime);
+//        printf(" **8** %x . %x", sm_ring_f2[8].coarseTime, sm_ring_f2[8].fineTime);
+//        printf(" **9** %x . %x", sm_ring_f2[9].coarseTime, sm_ring_f2[9].fineTime);
+//        printf(" **10** %x . %x\n", sm_ring_f2[10].coarseTime, sm_ring_f2[10].fineTime);
+
         // compute the average and store it in the averaged_sm_f2 buffer
         SM_average_f2( current_ring_node_asm_norm_f2->matrix,
-                       ring_node_for_averaging_sm_f2,
-                       nb_norm_bp1 );
+                       nodeForAveraging,
+                       nb_norm_bp1,
+                       &msgForMATR );
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF2;
@@ -108,7 +126,6 @@ rtems_task avf2_task( rtems_task_argument argument )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                  || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-//                PRINTF1("%lld\n", localTime)
                 msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F2;
             }
         }
@@ -135,8 +152,8 @@ rtems_task prc2_task( rtems_task_argument argument )
     rtems_status_code status;
     rtems_id queue_id;
     rtems_id queue_id_q_p2;
-    bp_packet                   packet_norm_bp1_f2;
-    bp_packet                   packet_norm_bp2_f2;
+    bp_packet                   packet_norm_bp1;
+    bp_packet                   packet_norm_bp2;
     ring_node                   *current_ring_node_to_send_asm_f2;
 
     unsigned long long int localTime;
@@ -149,10 +166,10 @@ rtems_task prc2_task( rtems_task_argument argument )
 
     //*************
     // NORM headers
-    BP_init_header( &packet_norm_bp1_f2.header,
+    BP_init_header( &packet_norm_bp1,
                     APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP1_F2,
                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2, NB_BINS_COMPRESSED_SM_F2 );
-    BP_init_header( &packet_norm_bp2_f2.header,
+    BP_init_header( &packet_norm_bp2,
                     APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP2_F2,
                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2, NB_BINS_COMPRESSED_SM_F2 );
 
@@ -190,21 +207,21 @@ rtems_task prc2_task( rtems_task_argument argument )
                                          NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
                                          ASM_F2_INDICE_START );
             // 2) compute the BP1 set
-
+            BP1_set( compressed_sm_norm_f2, k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp1.data );
             // 3) send the BP1 set
-            set_time( packet_norm_bp1_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-            set_time( packet_norm_bp1_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
-            BP_send( (char *) &packet_norm_bp1_f2, queue_id,
+            set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
+            set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            BP_send( (char *) &packet_norm_bp1, queue_id,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F2 );
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
             {
                 // 1) compute the BP2 set using the same ASM as the one used for BP1
-
+                BP2_set( compressed_sm_norm_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp2.data );
                 // 2) send the BP2 set
-                set_time( packet_norm_bp2_f2.header.time,            (unsigned char *) &incomingMsg->coarseTime );
-                set_time( packet_norm_bp2_f2.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTime );
-                BP_send( (char *) &packet_norm_bp2_f2, queue_id,
+                set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
+                set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+                BP_send( (char *) &packet_norm_bp2, queue_id,
                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
                          SID_NORM_BP2_F2 );
             }
@@ -218,8 +235,8 @@ rtems_task prc2_task( rtems_task_argument argument )
                                        nb_sm_before_f2.norm_bp1 );
             // 2) convert the float array in a char array
             ASM_convert( asm_f2_reorganized, (char*) current_ring_node_to_send_asm_f2->buffer_address );
-            current_ring_node_to_send_asm_f2->coarseTime    = incomingMsg->coarseTime;
-            current_ring_node_to_send_asm_f2->fineTime      = incomingMsg->fineTime;
+            current_ring_node_to_send_asm_f2->coarseTime    = incomingMsg->coarseTimeNORM;
+            current_ring_node_to_send_asm_f2->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f2->sid           = SID_NORM_ASM_F2;
             // 3) send the spectral matrix packets
             status =  rtems_message_queue_send( queue_id, &current_ring_node_to_send_asm_f2, sizeof( ring_node* ) );
@@ -241,8 +258,9 @@ void reset_nb_sm_f2( void )
 }
 
 void SM_average_f2( float *averaged_spec_mat_f2,
-                  ring_node *ring_node,
-                  unsigned int nbAverageNormF2 )
+                    ring_node *ring_node,
+                    unsigned int nbAverageNormF2,
+                    asm_msg *msgForMATR )
 {
     float sum;
     unsigned int i;
@@ -253,10 +271,17 @@ void SM_average_f2( float *averaged_spec_mat_f2,
         if ( (nbAverageNormF2 == 0) )
         {
             averaged_spec_mat_f2[ i ] = sum;
+            msgForMATR->coarseTimeNORM  = ring_node->coarseTime;
+            msgForMATR->fineTimeNORM    = ring_node->fineTime;
         }
         else
         {
             averaged_spec_mat_f2[ i ] = ( averaged_spec_mat_f2[  i ] + sum );
         }
     }
+}
+
+void init_k_coefficients_f2( void )
+{
+    init_k_coefficients( k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2);
 }

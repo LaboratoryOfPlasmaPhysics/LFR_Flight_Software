@@ -21,7 +21,25 @@ typedef struct ring_node_asm
 
 typedef struct
 {
-    Header_TM_LFR_SCIENCE_BP_t header;
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    // AUXILIARY HEADER
+    unsigned char sid;
+    unsigned char biaStatusInfo;
+    unsigned char acquisitionTime[6];
+    unsigned char pa_lfr_bp_blk_nr[2];
+    // SOURCE DATA
     unsigned char data[ 30 * 22 ];   // MAX size is 22 * 30 [TM_LFR_SCIENCE_BURST_BP2_F1]
 } bp_packet;
 
@@ -36,8 +54,10 @@ typedef struct
     ring_node_asm *norm;
     ring_node_asm *burst_sbm;
     rtems_event_set event;
-    unsigned int coarseTime;
-    unsigned int fineTime;
+    unsigned int coarseTimeNORM;
+    unsigned int fineTimeNORM;
+    unsigned int coarseTimeSBM;
+    unsigned int fineTimeSBM;
 } asm_msg;
 
 extern volatile int sm_f0[ ];
@@ -49,11 +69,13 @@ extern struct param_local_str param_local;
 
 // registers
 extern time_management_regs_t *time_management_regs;
-extern spectral_matrix_regs_t *spectral_matrix_regs;
+extern volatile spectral_matrix_regs_t *spectral_matrix_regs;
 
 extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
 
+//
+ring_node * getRingNodeForAveraging( unsigned char frequencyChannel);
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
@@ -71,7 +93,7 @@ void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
 // Basic Parameters
 
 void BP_reset_current_ring_nodes( void );
-void BP_init_header( Header_TM_LFR_SCIENCE_BP_t *header,
+void BP_init_header(bp_packet *header,
                      unsigned int apid, unsigned char sid,
                      unsigned int packetLength , unsigned char blkNr);
 void BP_init_header_with_spare( Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
@@ -87,8 +109,6 @@ void reset_sm_status( void );
 void reset_spectral_matrix_regs( void );
 void set_time(unsigned char *time, unsigned char *timeInBuffer );
 unsigned long long int get_acquisition_time( unsigned char *timePtr );
-void close_matrix_actions( unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id avf_task_id,
-                           ring_node *node_for_averaging, ring_node *ringNode, unsigned long long int time );
 unsigned char getSID( rtems_event_set event );
 
 extern rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
@@ -97,11 +117,12 @@ extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 //***************************************
 // DEFINITIONS OF STATIC INLINE FUNCTIONS
 static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node *ring_node_tab[],
-                  unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+                              ring_node *ring_node_tab[],
+                              unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+                              asm_msg *msgForMATR );
 static inline void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node *ring_node_tab[],
-                  unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+                                     ring_node *ring_node_tab[],
+                                     unsigned int nbAverageNORM, unsigned int nbAverageSBM );
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
 static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,
@@ -110,8 +131,9 @@ static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, 
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
 void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node *ring_node_tab[],
-                  unsigned int nbAverageNORM, unsigned int nbAverageSBM )
+                 ring_node *ring_node_tab[],
+                 unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+                 asm_msg *msgForMATR )
 {
     float sum;
     unsigned int i;
@@ -131,6 +153,10 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
         {
             averaged_spec_mat_NORM[ i ] = sum;
             averaged_spec_mat_SBM[  i ] = sum;
+            msgForMATR->coarseTimeNORM  = ring_node_tab[0]->coarseTime;
+            msgForMATR->fineTimeNORM    = ring_node_tab[0]->fineTime;
+            msgForMATR->coarseTimeSBM   = ring_node_tab[0]->coarseTime;
+            msgForMATR->fineTimeSBM     = ring_node_tab[0]->fineTime;
         }
         else if ( (nbAverageNORM != 0) && (nbAverageSBM != 0) )
         {
@@ -141,6 +167,8 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
         {
             averaged_spec_mat_NORM[ i ] = ( averaged_spec_mat_NORM[ i ] + sum );
             averaged_spec_mat_SBM[  i ] = sum;
+            msgForMATR->coarseTimeSBM   = ring_node_tab[0]->coarseTime;
+            msgForMATR->fineTimeSBM     = ring_node_tab[0]->fineTime;
         }
         else
         {
@@ -186,21 +214,22 @@ void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_m
 {
     int frequencyBin;
     int asmComponent;
-    unsigned int offsetAveragedSpecMatReorganized;
-    unsigned int offsetAveragedSpecMat;
+    unsigned int offsetASM;
+    unsigned int offsetASMReorganized;
 
+    // BUILD DATA
     for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
     {
         for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
         {
-            offsetAveragedSpecMatReorganized =
+            offsetASMReorganized =
                     frequencyBin * NB_VALUES_PER_SM
                     + asmComponent;
-            offsetAveragedSpecMat            =
+            offsetASM            =
                     asmComponent * NB_BINS_PER_SM
                     + frequencyBin;
-            averaged_spec_mat_reorganized[offsetAveragedSpecMatReorganized  ] =
-                    averaged_spec_mat[ offsetAveragedSpecMat ] / divider;
+            averaged_spec_mat_reorganized[offsetASMReorganized  ] =
+                    averaged_spec_mat[ offsetASM ] / divider;
         }
     }
 }
@@ -214,7 +243,7 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compres
     int offsetCompressed;
     int k;
 
-    // build data
+    // BUILD DATA
     for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
     {
         for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
@@ -231,8 +260,10 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compres
             {
                 compressed_spec_mat[offsetCompressed ] =
                         ( compressed_spec_mat[ offsetCompressed ]
-                        + averaged_spec_mat[ offsetASM + k ] ) / (divider * nbBinsToAverage);
+                        + averaged_spec_mat[ offsetASM + k ] );
             }
+            compressed_spec_mat[ offsetCompressed ] =
+                    compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage);
         }
     }
 }

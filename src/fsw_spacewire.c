@@ -690,8 +690,8 @@ void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
     header->userApplication = CCSDS_USER_APP;
     header->packetSequenceControl[0]    = TM_PACKET_SEQ_CTRL_STANDALONE;
     header->packetSequenceControl[1]    = TM_PACKET_SEQ_CNT_DEFAULT;
-    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
-    header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
+    header->packetLength[0] = 0x00;
+    header->packetLength[1] = 0x00;
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
@@ -706,8 +706,8 @@ void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
     // AUXILIARY DATA HEADER
     header->sid = 0x00;
     header->hkBIA = DEFAULT_HKBIA;
-    header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
-    header->blkNr[1] = (unsigned char) (BLK_NR_CWF     );
+    header->blkNr[0] = 0x00;
+    header->blkNr[1] = 0x00;
 }
 
 void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
@@ -807,6 +807,11 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
     coarseTime  = ring_node_to_send->coarseTime;
     fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (int*) ring_node_to_send->buffer_address;
+
+    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
+    header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
+    header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
+    header->blkNr[1] = (unsigned char) (BLK_NR_CWF     );
 
     for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF; i++) // send waveform
     {
@@ -973,6 +978,11 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     coarseTime  = ring_node_to_send->coarseTime;
     fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (char*) ring_node_to_send->buffer_address;
+
+    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);
+    header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
+    header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
+    header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
 
     //*********************
     // SEND CWF3_light DATA

@@ -225,7 +225,7 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
-//            get_v_e1_e2_f3( housekeeping_packet.hk_lfr_sc_v_f3 );
+            get_v_e1_e2_f3( housekeeping_packet.hk_lfr_sc_v_f3 );
             get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );
 
             // SEND PACKET
@@ -443,107 +443,20 @@ void send_dumb_hk( void )
 
 void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
 {
-    unsigned long long int localTime_asLong;
-    unsigned long long int f3_0_AcquisitionTime_asLong;
-    unsigned long long int f3_1_AcquisitionTime_asLong;
-    unsigned long long int deltaT;
-    unsigned long long int deltaT_f3_0;
-    unsigned long long int deltaT_f3_1;
-    unsigned char *bufferPtr;
+    unsigned char* v_ptr;
+    unsigned char* e1_ptr;
+    unsigned char* e2_ptr;
 
-    unsigned int offset_in_samples;
-    unsigned int offset_in_bytes;
-    unsigned char f3;
+    v_ptr  = (unsigned char *) &waveform_picker_regs->v;
+    e1_ptr = (unsigned char *) &waveform_picker_regs->e1;
+    e2_ptr = (unsigned char *) &waveform_picker_regs->e2;
 
-    bufferPtr = NULL;
-    deltaT = 0;
-    deltaT_f3_0 = 0xffffffff;
-    deltaT_f3_1 = 0xffffffff;
-    f3 = 16;    // v, e1 and e2 will be picked up each second, f3 = 16 Hz
-
-    if (lfrCurrentMode == LFR_MODE_STANDBY)
-    {
-        spacecraft_potential[0] = 0x00;
-        spacecraft_potential[1] = 0x00;
-        spacecraft_potential[2] = 0x00;
-        spacecraft_potential[3] = 0x00;
-        spacecraft_potential[4] = 0x00;
-        spacecraft_potential[5] = 0x00;
-    }
-    else
-    {
-        localTime_asLong = get_acquisition_time( (unsigned char *) &time_management_regs->coarse_time );
-        f3_0_AcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &waveform_picker_regs->f3_0_coarse_time );
-        f3_1_AcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &waveform_picker_regs->f3_1_coarse_time );
-        printf("localTime 0x%llx, f3_0 0x%llx, f3_1 0x%llx\n",
-               localTime_asLong,
-               f3_0_AcquisitionTime_asLong,
-               f3_1_AcquisitionTime_asLong);
-
-        if ( localTime_asLong >= f3_0_AcquisitionTime_asLong )
-        {
-            deltaT_f3_0 = localTime_asLong - f3_0_AcquisitionTime_asLong;
-        }
-
-        if ( localTime_asLong > f3_1_AcquisitionTime_asLong )
-        {
-            deltaT_f3_1 = localTime_asLong - f3_1_AcquisitionTime_asLong;
-        }
-
-        if ( (deltaT_f3_0 != 0xffffffff) && (deltaT_f3_1 != 0xffffffff) )
-        {
-            if ( deltaT_f3_0 > deltaT_f3_1 )
-            {
-                deltaT = deltaT_f3_1;
-                bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3_1;
-            }
-            else
-            {
-                deltaT = deltaT_f3_0;
-                bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3_0;
-            }
-        }
-        else if ( (deltaT_f3_0 == 0xffffffff) && (deltaT_f3_1 != 0xffffffff) )
-        {
-            deltaT = deltaT_f3_1;
-            bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3_1;
-        }
-        else if ( (deltaT_f3_0 != 0xffffffff) && (deltaT_f3_1 == 0xffffffff) )
-        {
-            deltaT = deltaT_f3_0;
-            bufferPtr = (unsigned char*) waveform_picker_regs->addr_data_f3_1;
-        }
-        else
-        {
-            deltaT = 0xffffffff;
-        }
-
-        if ( deltaT == 0xffffffff )
-        {
-            spacecraft_potential[0] = 0x00;
-            spacecraft_potential[1] = 0x00;
-            spacecraft_potential[2] = 0x00;
-            spacecraft_potential[3] = 0x00;
-            spacecraft_potential[4] = 0x00;
-            spacecraft_potential[5] = 0x00;
-        }
-        else
-        {
-            offset_in_samples = ( (double) deltaT ) / 65536. * f3;
-            if ( offset_in_samples > (NB_SAMPLES_PER_SNAPSHOT - 1) )
-            {
-                PRINTF1("ERR *** in get_v_e1_e2_f3 *** trying to read out of the buffer, counter = %d\n", offset_in_samples)
-                offset_in_samples = NB_SAMPLES_PER_SNAPSHOT - 1;
-            }
-            offset_in_bytes = offset_in_samples * NB_WORDS_SWF_BLK * 4;
-            spacecraft_potential[0] = bufferPtr[ offset_in_bytes + 0];
-            spacecraft_potential[1] = bufferPtr[ offset_in_bytes + 1];
-            spacecraft_potential[2] = bufferPtr[ offset_in_bytes + 2];
-            spacecraft_potential[3] = bufferPtr[ offset_in_bytes + 3];
-            spacecraft_potential[4] = bufferPtr[ offset_in_bytes + 4];
-            spacecraft_potential[5] = bufferPtr[ offset_in_bytes + 5];
-        }
-    }
+    spacecraft_potential[0] = v_ptr[2];
+    spacecraft_potential[1] = v_ptr[3];
+    spacecraft_potential[2] = e1_ptr[2];
+    spacecraft_potential[3] = e1_ptr[3];
+    spacecraft_potential[4] = e2_ptr[2];
+    spacecraft_potential[5] = e2_ptr[3];
 }
 
 void get_cpu_load( unsigned char *resource_statistics )

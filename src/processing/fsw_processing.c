@@ -27,78 +27,91 @@ ring_node *ring_node_for_averaging_sm_f0;
 ring_node *ring_node_for_averaging_sm_f1;
 ring_node *ring_node_for_averaging_sm_f2;
 
+//
+ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
+{
+    ring_node *node;
+
+    node = NULL;
+    switch ( frequencyChannel ) {
+    case 0:
+        node = ring_node_for_averaging_sm_f0;
+        break;
+    case 1:
+        node = ring_node_for_averaging_sm_f1;
+        break;
+    case 2:
+        node = ring_node_for_averaging_sm_f2;
+        break;
+    default:
+        break;
+    }
+
+    return node;
+}
+
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
 
 void spectral_matrices_isr_f0( void )
 {
     unsigned char status;
-    unsigned long long int time_0;
-    unsigned long long int time_1;
-    unsigned long long int syncBit0;
-    unsigned long long int syncBit1;
+    rtems_status_code status_code;
 
     status = spectral_matrix_regs->status & 0x03;   // [0011] get the status_ready_matrix_f0_x bits
-
-    time_0 = get_acquisition_time( (unsigned char *) &spectral_matrix_regs->f0_0_coarse_time );
-    time_1 = get_acquisition_time( (unsigned char *) &spectral_matrix_regs->f0_1_coarse_time );
-    syncBit0 = ( (unsigned long long int) (spectral_matrix_regs->f0_0_coarse_time & 0x80000000) ) << 16;
-    syncBit1 = ( (unsigned long long int) (spectral_matrix_regs->f0_1_coarse_time & 0x80000000) ) << 16;
 
     switch(status)
     {
     case 0:
         break;
     case 3:
-        // send a message if two buffers are ready
-        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
-        if ( time_0 < time_1 )
-        {
-            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                                  ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_0 | syncBit0);
-            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
-            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                                  ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_1 | syncBit1);
-            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
-        }
-        else
-        {
-            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                                  ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_1 | syncBit1);
-            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
-            close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                                  ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_0 | syncBit0);
-            current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
-        }
+        // UNEXPECTED VALUE
         spectral_matrix_regs->status = 0x03;   // [0011]
+        status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
     case 1:
-        close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                              ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_0 | syncBit0);
+        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0->previous;
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
+        ring_node_for_averaging_sm_f0->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
+        ring_node_for_averaging_sm_f0->fineTime = spectral_matrix_regs->f0_0_fine_time;
         spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
-        spectral_matrix_regs->status = 0x01;   // [0001]
+        spectral_matrix_regs->status = 0x01;   // [0000 0001]
+        // if there are enough ring nodes ready, wake up an AVFx task
+        nb_sm_f0 = nb_sm_f0 + 1;
+        if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
+        {
+            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f0 = 0;
+        }
         break;
     case 2:
-        close_matrix_actions( &nb_sm_f0, NB_SM_BEFORE_AVF0, Task_id[TASKID_AVF0],
-                              ring_node_for_averaging_sm_f0, current_ring_node_sm_f0, time_1 | syncBit1);
+        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0->previous;
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-        spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
-        spectral_matrix_regs->status = 0x02;   // [0010]
+        ring_node_for_averaging_sm_f0->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
+        ring_node_for_averaging_sm_f0->fineTime = spectral_matrix_regs->f0_1_fine_time;
+        spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
+        spectral_matrix_regs->status = 0x02;   // [0000 0010]
+        // if there are enough ring nodes ready, wake up an AVFx task
+        nb_sm_f0 = nb_sm_f0 + 1;
+        if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
+        {
+            if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f0 = 0;
+        }
         break;
     }
 }
 
 void spectral_matrices_isr_f1( void )
 {
-    unsigned char status;
-    unsigned long long int time;
-    unsigned long long int syncBit;
     rtems_status_code status_code;
+    unsigned char status;
 
     status = (spectral_matrix_regs->status & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f0_x bits
 
@@ -112,22 +125,40 @@ void spectral_matrices_isr_f1( void )
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
     case 1:
-        time = get_acquisition_time( (unsigned char *) &spectral_matrix_regs->f1_0_coarse_time );
-        syncBit = ( (unsigned long long int) (spectral_matrix_regs->f1_0_coarse_time & 0x80000000) ) << 16;
-        close_matrix_actions( &nb_sm_f1, NB_SM_BEFORE_AVF1, Task_id[TASKID_AVF1],
-                              ring_node_for_averaging_sm_f1, current_ring_node_sm_f1, time | syncBit);
+        ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1->previous;
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
+        ring_node_for_averaging_sm_f1->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
+        ring_node_for_averaging_sm_f1->fineTime = spectral_matrix_regs->f1_0_fine_time;
         spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
-        spectral_matrix_regs->status = 0x04;   // [0100]
+        spectral_matrix_regs->status = 0x04;   // [0000 0100]
+        // if there are enough ring nodes ready, wake up an AVFx task
+        nb_sm_f1 = nb_sm_f1 + 1;
+        if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
+        {
+            if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f1 = 0;
+        }
         break;
     case 2:
-        time = get_acquisition_time( (unsigned char *) &spectral_matrix_regs->f1_1_coarse_time );
-        syncBit = ( (unsigned long long int) (spectral_matrix_regs->f1_1_coarse_time & 0x80000000) ) << 16;
-        close_matrix_actions( &nb_sm_f1, NB_SM_BEFORE_AVF1, Task_id[TASKID_AVF1],
-                              ring_node_for_averaging_sm_f1, current_ring_node_sm_f1, time | syncBit);
+        ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1->previous;
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
+        ring_node_for_averaging_sm_f1->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
+        ring_node_for_averaging_sm_f1->fineTime = spectral_matrix_regs->f1_1_fine_time;
         spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
-        spectral_matrix_regs->status = 0x08;   // [1000]
+        spectral_matrix_regs->status = 0x08;   // [1000 0000]
+        // if there are enough ring nodes ready, wake up an AVFx task
+        nb_sm_f1 = nb_sm_f1 + 1;
+        if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
+        {
+            if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
+            {
+                status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
+            }
+            nb_sm_f1 = 0;
+        }
         break;
     }
 }
@@ -139,10 +170,6 @@ void spectral_matrices_isr_f2( void )
 
     status = (spectral_matrix_regs->status & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
 
-    ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-
-    current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
-
     switch(status)
     {
     case 0:
@@ -153,6 +180,8 @@ void spectral_matrices_isr_f2( void )
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
     case 1:
+        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
+        current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
         ring_node_for_averaging_sm_f2->coarseTime = spectral_matrix_regs->f2_0_coarse_time;
         ring_node_for_averaging_sm_f2->fineTime = spectral_matrix_regs->f2_0_fine_time;
         spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->buffer_address;
@@ -163,6 +192,8 @@ void spectral_matrices_isr_f2( void )
         }
         break;
     case 2:
+        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
+        current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
         ring_node_for_averaging_sm_f2->coarseTime = spectral_matrix_regs->f2_1_coarse_time;
         ring_node_for_averaging_sm_f2->fineTime = spectral_matrix_regs->f2_1_fine_time;
         spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
@@ -177,14 +208,14 @@ void spectral_matrices_isr_f2( void )
 
 void spectral_matrix_isr_error_handler( void )
 {
-//    rtems_status_code status_code;
+    rtems_status_code status_code;
 
-//    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
-//    {
-//        status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
-//    }
+    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
+    {
+        status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
+    }
 
-//    spectral_matrix_regs->status = spectral_matrix_regs->status & 0x7c0;
+    spectral_matrix_regs->status = spectral_matrix_regs->status & 0x7c0;
 }
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
@@ -306,7 +337,7 @@ void SM_reset_current_ring_nodes( void )
 //*****************
 // Basic Parameters
 
-void BP_init_header( Header_TM_LFR_SCIENCE_BP_t *header,
+void BP_init_header( bp_packet *header,
                      unsigned int apid, unsigned char sid,
                      unsigned int packetLength, unsigned char blkNr )
 {
@@ -325,15 +356,21 @@ void BP_init_header( Header_TM_LFR_SCIENCE_BP_t *header,
     header->serviceType = TM_TYPE_LFR_SCIENCE; // service type
     header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
     header->destinationID = TM_DESTINATION_ID_GROUND;
+    header->time[0] = 0x00;
+    header->time[1] = 0x00;
+    header->time[2] = 0x00;
+    header->time[3] = 0x00;
+    header->time[4] = 0x00;
+    header->time[5] = 0x00;
     // AUXILIARY DATA HEADER
     header->sid = sid;
     header->biaStatusInfo = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
+    header->acquisitionTime[0] = 0x00;
+    header->acquisitionTime[1] = 0x00;
+    header->acquisitionTime[2] = 0x00;
+    header->acquisitionTime[3] = 0x00;
+    header->acquisitionTime[4] = 0x00;
+    header->acquisitionTime[5] = 0x00;
     header->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
     header->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
@@ -420,10 +457,13 @@ void reset_spectral_matrix_regs( void )
 
     reset_sm_status();
 
+    // F1
     spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->previous->buffer_address;
     spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+    // F2
     spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->previous->buffer_address;
     spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
+    // F3
     spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
     spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
 
@@ -451,37 +491,6 @@ unsigned long long int get_acquisition_time( unsigned char *timePtr )
             + ( (unsigned long long int) timePtr[6] << 8  )
             + ( (unsigned long long int) timePtr[7]       );
     return acquisitionTimeAslong;
-}
-
-void close_matrix_actions(unsigned int *nb_sm, unsigned int nb_sm_before_avf, rtems_id avf_task_id,
-                           ring_node *node_for_averaging, ring_node *ringNode,
-                           unsigned long long int time )
-{
-    unsigned char *timePtr;
-    unsigned char *coarseTimePtr;
-    unsigned char *fineTimePtr;
-    rtems_status_code status_code;
-
-    timePtr = (unsigned char *) &time;
-    coarseTimePtr = (unsigned char *) &node_for_averaging->coarseTime;
-    fineTimePtr = (unsigned char *) &node_for_averaging->fineTime;
-
-    *nb_sm = *nb_sm + 1;
-    if (*nb_sm == nb_sm_before_avf)
-    {
-        node_for_averaging = ringNode;
-        coarseTimePtr[0] = timePtr[2];
-        coarseTimePtr[1] = timePtr[3];
-        coarseTimePtr[2] = timePtr[4];
-        coarseTimePtr[3] = timePtr[5];
-        fineTimePtr[2] = timePtr[6];
-        fineTimePtr[3] = timePtr[7];
-        if (rtems_event_send( avf_task_id, RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        *nb_sm = 0;
-    }
 }
 
 unsigned char getSID( rtems_event_set event )

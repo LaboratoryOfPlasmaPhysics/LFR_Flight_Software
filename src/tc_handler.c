@@ -466,9 +466,6 @@ int stop_current_mode( void )
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
     LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
-    // reset lfr VHDL module
-    reset_lfr();
-
     // (2) reset waveform picker registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
@@ -476,6 +473,9 @@ int stop_current_mode( void )
     // (3) reset spectral matrices registers
     set_sm_irq_onNewMatrix( 0 );               // stop the spectral matrices
     reset_sm_status();
+
+    // reset lfr VHDL module
+    reset_lfr();
 
     reset_extractSWF();                             // reset the extractSWF flag to false
 
@@ -769,7 +769,7 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
         waveform_picker_regs->start_date = transitionCoarseTime;
     }
 
-    PRINTF1("commutation coarse time = %d\n", transitionCoarseTime)
+    PRINTF1("commutation coarse time = %x\n", transitionCoarseTime)
 }
 
 void launch_spectral_matrix( void )

@@ -41,6 +41,50 @@ ring_node ring_node_wf_snap_extracted;
 //*********************
 // Interrupt SubRoutine
 
+ring_node * getRingNodeToSendCWF( unsigned char frequencyChannel)
+{
+    ring_node *node;
+
+    node = NULL;
+    switch ( frequencyChannel ) {
+    case 1:
+        node = ring_node_to_send_cwf_f1;
+        break;
+    case 2:
+        node = ring_node_to_send_cwf_f2;
+        break;
+    case 3:
+        node = ring_node_to_send_cwf_f3;
+        break;
+    default:
+        break;
+    }
+
+    return node;
+}
+
+ring_node * getRingNodeToSendSWF( unsigned char frequencyChannel)
+{
+    ring_node *node;
+
+    node = NULL;
+    switch ( frequencyChannel ) {
+    case 0:
+        node = ring_node_to_send_swf_f0;
+        break;
+    case 1:
+        node = ring_node_to_send_swf_f1;
+        break;
+    case 2:
+        node = ring_node_to_send_swf_f2;
+        break;
+    default:
+        break;
+    }
+
+    return node;
+}
+
 void reset_extractSWF( void )
 {
     extractSWF = false;
@@ -157,30 +201,37 @@ inline void waveforms_isr_normal( void )
 
 inline void waveforms_isr_burst( void )
 {
+    unsigned char status;
     rtems_status_code spare_status;
 
-    if ( (waveform_picker_regs->status & 0x30) != 0 ){ // [0100] check the f2 full bit
-        // (1) change the receiving buffer for the waveform picker
+    status = (waveform_picker_regs->status & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
+
+    switch(status)
+    {
+    case 1:
         ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
         current_ring_node_f2        = current_ring_node_f2->next;
-        if ( (waveform_picker_regs->status & 0x10) == 0x10)
-        {
-            ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
-            ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
-            waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
-        }
-        else if ( (waveform_picker_regs->status & 0x20) == 0x20)
-        {
-            ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
-            ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
-            waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
-        }
-        // (2) send an event for the waveforms transmission
+        ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
+        ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
+        waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
+        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
         if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
         }
+        break;
+    case 2:
+        ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
+        current_ring_node_f2        = current_ring_node_f2->next;
+        ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
+        ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
+        waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
+        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
+        if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
+            spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -442,13 +493,13 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if(resynchronisationEngaged == false)
         {   // engage resynchronisation
-//            snapshot_resynchronization( (unsigned char *)  ring_node_to_send_swf_f0->coarseTime );
+            snapshot_resynchronization( (unsigned char *)  &ring_node_to_send_swf_f0->coarseTime );
             resynchronisationEngaged = true;
         }
         else
         {   // reset delta_snapshot to the nominal value
             PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n")
-//            set_wfp_delta_snapshot();
+            set_wfp_delta_snapshot();
             resynchronisationEngaged = false;
         }
         //
@@ -532,12 +583,11 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             {
                 PRINTF("send CWF_LONG_F3\n")
                 ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
-                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
+                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f3, sizeof( ring_node* ) );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
-                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_F3;
                 send_waveform_CWF3_light( ring_node_to_send_cwf_f3, &ring_node_cwf3_light, queue_id );
             }
 
@@ -564,6 +614,7 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
+    ring_node *ring_node_to_send;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -577,21 +628,26 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_BURST | RTEMS_EVENT_MODE_SBM2,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        ring_node_to_send = getRingNodeToSendCWF( 2 );
+        printf("ring_node_to_send_cwf === coarse = %x, fine = %x\n", ring_node_to_send->coarseTime, ring_node_to_send->fineTime);
+        printf("**0** %x . %x", waveform_ring_f2[0].coarseTime, waveform_ring_f2[0].fineTime);
+        printf(" **1** %x . %x", waveform_ring_f2[1].coarseTime, waveform_ring_f2[1].fineTime);
+        printf(" **2** %x . %x", waveform_ring_f2[2].coarseTime, waveform_ring_f2[2].fineTime);
+        printf(" **3** %x . %x", waveform_ring_f2[3].coarseTime, waveform_ring_f2[3].fineTime);
+        printf(" **4** %x . %x\n", waveform_ring_f2[4].coarseTime, waveform_ring_f2[4].fineTime);
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
-//            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_BURST_CWF_F2, headerCWF_F2_BURST, queue_id );
-            ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
+            ring_node_to_send->sid = SID_BURST_CWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
-//            send_waveform_CWF( ring_node_to_send_cwf_f2, SID_SBM2_CWF_F2, headerCWF_F2_SBM2, queue_id );
-            ring_node_to_send_cwf_f2->sid = SID_SBM2_CWF_F2;
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f2, sizeof( ring_node* ) );
+            ring_node_to_send->sid = SID_SBM2_CWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
             // launch snapshot extraction if needed
             if (extractSWF == true)
             {
-                ring_node_to_send_swf_f2 = ring_node_to_send_cwf_f2;
+                ring_node_to_send_swf_f2 = ring_node_to_send;
                 // extract the snapshot
                 build_snapshot_from_ring( ring_node_to_send_swf_f2, 2 );
                 // send the snapshot when built
@@ -623,7 +679,7 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
     rtems_id queue_id;
     rtems_status_code status;
 
-//    init_header_continuous_wf_table( SID_SBM1_CWF_F1, headerCWF_F1 );
+    ring_node * ring_node_to_send_cwf;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -637,12 +693,19 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        ring_node_to_send_cwf = getRingNodeToSendCWF( 1 );
+        printf("ring_node_to_send_cwf === coarse = %x, fine = %x\n", ring_node_to_send_cwf->coarseTime, ring_node_to_send_cwf->fineTime);
+        printf("**0** %x . %x", waveform_ring_f1[0].coarseTime, waveform_ring_f1[0].fineTime);
+        printf(" **1** %x . %x", waveform_ring_f1[1].coarseTime, waveform_ring_f1[1].fineTime);
+        printf(" **2** %x . %x", waveform_ring_f1[2].coarseTime, waveform_ring_f1[2].fineTime);
+        printf(" **3** %x . %x", waveform_ring_f1[3].coarseTime, waveform_ring_f1[3].fineTime);
+        printf(" **4** %x . %x\n\n", waveform_ring_f1[4].coarseTime, waveform_ring_f1[4].fineTime);
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
-        status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f1, sizeof( ring_node* ) );
+        status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
         // launch snapshot extraction if needed
         if (extractSWF == true)
         {
-            ring_node_to_send_swf_f1 = ring_node_to_send_cwf_f1;
+            ring_node_to_send_swf_f1 = ring_node_to_send_cwf;
             // launch the snapshot extraction
             status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_SBM1 );
             extractSWF = false;
@@ -750,18 +813,17 @@ void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], u
 
 void WFP_reset_current_ring_nodes( void )
 {
-    current_ring_node_f0      = waveform_ring_f0;
+    current_ring_node_f0      = waveform_ring_f0[0].next;
+    current_ring_node_f1      = waveform_ring_f1[0].next;
+    current_ring_node_f2      = waveform_ring_f2[0].next;
+    current_ring_node_f3      = waveform_ring_f3[0].next;
+
     ring_node_to_send_swf_f0  = waveform_ring_f0;
-
-    current_ring_node_f1      = waveform_ring_f1;
-    ring_node_to_send_cwf_f1  = waveform_ring_f1;
     ring_node_to_send_swf_f1  = waveform_ring_f1;
-
-    current_ring_node_f2      = waveform_ring_f2;
-    ring_node_to_send_cwf_f2  = waveform_ring_f2;
     ring_node_to_send_swf_f2  = waveform_ring_f2;
 
-    current_ring_node_f3      = waveform_ring_f3;
+    ring_node_to_send_cwf_f1  = waveform_ring_f1;
+    ring_node_to_send_cwf_f2  = waveform_ring_f2;
     ring_node_to_send_cwf_f3  = waveform_ring_f3;
 }
 
@@ -782,12 +844,9 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, ring_node *ring_node
     unsigned int i;
     int ret;
     rtems_status_code status;
-    spw_ioctl_pkt_send spw_ioctl_send_CWF;
+
     char *sample;
     int *dataPtr;
-
-    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
-    spw_ioctl_send_CWF.options = 0;
 
     ret = LFR_DEFAULT;
 
@@ -1076,21 +1135,17 @@ void reset_wfp_status( void )
 void reset_wfp_buffer_addresses( void )
 {
     // F0
-    waveform_picker_regs->addr_data_f0_0 = current_ring_node_f0->buffer_address; // 0x08
-    current_ring_node_f0 = current_ring_node_f0->next;
-    waveform_picker_regs->addr_data_f0_1 = current_ring_node_f0->buffer_address; // 0x0c
+    waveform_picker_regs->addr_data_f0_0 = current_ring_node_f0->previous->buffer_address;  // 0x08
+    waveform_picker_regs->addr_data_f0_1 = current_ring_node_f0->buffer_address;            // 0x0c
     // F1
-    waveform_picker_regs->addr_data_f1_0 = current_ring_node_f1->buffer_address; // 0x10
-    current_ring_node_f1 = current_ring_node_f1->next;
-    waveform_picker_regs->addr_data_f1_1 = current_ring_node_f1->buffer_address; // 0x14
+    waveform_picker_regs->addr_data_f1_0 = current_ring_node_f1->previous->buffer_address;  // 0x10
+    waveform_picker_regs->addr_data_f1_1 = current_ring_node_f1->buffer_address;            // 0x14
     // F2
-    waveform_picker_regs->addr_data_f2_0 = current_ring_node_f2->buffer_address; // 0x18
-    current_ring_node_f2 = current_ring_node_f2->next;
-    waveform_picker_regs->addr_data_f2_1 = current_ring_node_f2->buffer_address; // 0x1c
+    waveform_picker_regs->addr_data_f2_0 = current_ring_node_f2->previous->buffer_address;  // 0x18
+    waveform_picker_regs->addr_data_f2_1 = current_ring_node_f2->buffer_address;            // 0x1c
     // F3
-    waveform_picker_regs->addr_data_f3_0 = current_ring_node_f3->buffer_address; // 0x20
-    current_ring_node_f3 = current_ring_node_f3->next;
-    waveform_picker_regs->addr_data_f3_1 = current_ring_node_f3->buffer_address; // 0x24
+    waveform_picker_regs->addr_data_f3_0 = current_ring_node_f3->previous->buffer_address;  // 0x20
+    waveform_picker_regs->addr_data_f3_1 = current_ring_node_f3->buffer_address;            // 0x24
 }
 
 void reset_waveform_picker_regs( void )

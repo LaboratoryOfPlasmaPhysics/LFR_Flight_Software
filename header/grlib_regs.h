@@ -90,6 +90,10 @@ typedef struct{
     volatile unsigned int f3_1_fine_time;   // 0x88
     //
     unsigned int buffer_length;             // 0x8c = buffer length in burst 2688 / 16 = 168
+    //
+    volatile unsigned int v;                // 0x90
+    volatile unsigned int e1;               // 0x94
+    volatile unsigned int e2;               // 0x98
 } waveform_picker_regs_0_1_18_t;
 
 typedef struct {
@@ -111,7 +115,7 @@ typedef struct {
     volatile unsigned int f1_0_coarse_time; // 0x30
     volatile unsigned int f1_0_fine_time;   // 0x34
     volatile unsigned int f1_1_coarse_time; // 0x38
-    volatile unsigned int f1_1_time_time;   // 0x3C
+    volatile unsigned int f1_1_fine_time;   // 0x3C
     //
     volatile unsigned int f2_0_coarse_time; // 0x40
     volatile unsigned int f2_0_fine_time;   // 0x44
