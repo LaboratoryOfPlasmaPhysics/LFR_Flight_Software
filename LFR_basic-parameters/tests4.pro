@@ -13,7 +13,8 @@ SOURCES += main.c \
 
 HEADERS += \
     basic_parameters.h \
-    file_utilities.h \
-    basic_parameters_params.h
+    basic_parameters_params.h \
+    basic_parameters_utilities.h \
+    file_utilities.h
 
 

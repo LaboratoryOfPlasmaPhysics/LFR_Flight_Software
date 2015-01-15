@@ -796,7 +796,7 @@ void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], u
 
     //*****
     // NEXT
-     ring[nbNodes-1].next  = (ring_node*) &ring[ 0 ];
+     ring[ nbNodes - 1 ].next  = (ring_node*) &ring[ 0 ];
      for(i=0; i<nbNodes-1; i++)
      {
          ring[i].next      = (ring_node*) &ring[ i + 1 ];
@@ -804,7 +804,7 @@ void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], u
 
     //*********
     // PREVIOUS
-    ring[0].previous       = (ring_node*) &ring[ nbNodes - 1 ];
+    ring[ 0 ].previous       = (ring_node*) &ring[ nbNodes - 1 ];
     for(i=1; i<nbNodes; i++)
     {
         ring[i].previous   = (ring_node*) &ring[ i - 1 ];

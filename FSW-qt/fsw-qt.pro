@@ -2,7 +2,7 @@ TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
 # lpp_dpu_destid
-CONFIG += console verbose lpp_dpu_destid
+CONFIG += console verbose lpp_dpu_destid cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -28,7 +28,7 @@ contains( CONFIG, lpp_dpu_destid ) {
 contains( CONFIG, debug_tch ) {
     DEFINES += DEBUG_TCH
 }
-DEFINES += LSB_FIRST_TCH
+DEFINES += MSB_FIRST_TCH
 
 contains( CONFIG, vhdl_dev ) {
     DEFINES += VHDL_DEV

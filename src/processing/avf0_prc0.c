@@ -193,8 +193,6 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
     bp_packet               packet_sbm_bp2;
     ring_node               *current_ring_node_to_send_asm_f0;
 
-    unsigned long long int localTime;
-
     // init the ring of the averaged spectral matrices which will be transmitted to the DPU
     init_ring( ring_to_send_asm_f0, NB_RING_NODES_ASM_F0, (volatile int*) buffer_asm_f0, TOTAL_SIZE_SM );
     current_ring_node_to_send_asm_f0 = ring_to_send_asm_f0;
@@ -261,8 +259,6 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
 
         incomingMsg = (asm_msg*) incomingData;
 
-        localTime = getTimeAsUnsignedLongLongInt( );
-
         //****************
         //****************
         // BURST SBM1 SBM2
@@ -328,46 +324,6 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                 BP_send( (char *) &packet_norm_bp2, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0 + PACKET_LENGTH_DELTA,
                          SID_NORM_BP2_F0);
-
-                // < TMP DATA>
-#define INDEX_COMPRESSED 1
-                unsigned int signif;
-                float significand;
-                unsigned int nbitexp = 6;
-                unsigned int nbitsig = 16 - nbitexp;       // number of bits for the significand
-                unsigned int rangesig = (1 << nbitsig)-1;  // == 2^nbitsig - 1
-                int expmax = 32;
-                int expmin = expmax - ((int) (1 << nbitexp)) + 1;
-                int exponent;
-                float auto_a0;
-                exponent = ( (int) ( (packet_norm_bp2.data[INDEX_COMPRESSED * NB_BYTES_PER_BP2] & 0xfc) >> 2) ) + expmin; // [1111 1100]
-                printf("exponent = %x, computed with exp = %x, expmin = %d\n",
-                       exponent,
-                       (packet_norm_bp2.data[INDEX_COMPRESSED * NB_BYTES_PER_BP2] & 0xfc) >> 2,
-                       expmin);
-                signif = ( (packet_norm_bp2.data[INDEX_COMPRESSED * NB_BYTES_PER_BP2] & 0x3) << 8 ) + packet_norm_bp2.data[INDEX_COMPRESSED * NB_BYTES_PER_BP2+1];
-                significand = ( ( (float) signif ) / ( (float) rangesig) + 1) / 2;
-                auto_a0 = significand * pow(2,exponent);
-                printf("(BP2) [%d] compressed = %f *** AUTO A0 = %x, %x, exponent = %x, significand = %f ===> %f\n",
-                       INDEX_COMPRESSED,
-                       compressed_sm_norm_f0[INDEX_COMPRESSED * NB_VALUES_PER_SM],
-                       packet_norm_bp2.data[ INDEX_COMPRESSED * NB_BYTES_PER_BP2],
-                       packet_norm_bp2.data[ INDEX_COMPRESSED * NB_BYTES_PER_BP2 + 1],
-                       exponent, significand, auto_a0 );
-//                printf("(BP2) 0 = %f, 1 = %f, 2 = %f, 3 = %f, 4 = %f, 5 = %f, 6 = %f, 7 = %f, 8 = %f, 9 = %f, 10 = %f,\n",
-//                        compressed_sm_norm_f0[0 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[1 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[2 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[3 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[4 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[5 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[6 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[7 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[8 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[9 * NB_VALUES_PER_SM],
-//                        compressed_sm_norm_f0[10 * NB_VALUES_PER_SM]);
-                // </TMP DATA>
-
             }
         }
 
@@ -383,27 +339,11 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             current_ring_node_to_send_asm_f0->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f0->sid           = SID_NORM_ASM_F0;
 
-            // < TMP DATA>
-#define INDEX_TO_LOOK_AT 31
-            float b11;
-            unsigned char *b11_charPtr;
-            b11_charPtr = (unsigned char*) &b11;
-            b11_charPtr[0] = ((unsigned char *) current_ring_node_to_send_asm_f0->buffer_address)[(INDEX_TO_LOOK_AT * NB_VALUES_PER_SM) * 2];
-            b11_charPtr[1] = ((unsigned char *) current_ring_node_to_send_asm_f0->buffer_address)[(INDEX_TO_LOOK_AT * NB_VALUES_PER_SM) * 2 +1];
-            b11_charPtr[2] = 0x00;
-            b11_charPtr[3] = 0x00;
-            printf("(ASM) initial = %f, reorganized and divided = %f, converted = %f\n",
-                   incomingMsg->norm->matrix[INDEX_TO_LOOK_AT],   // 32 * 96 = 3072 Hz
-                   asm_f0_reorganized[ INDEX_TO_LOOK_AT * NB_VALUES_PER_SM ],
-                    b11);
-            // </TMP DATA>
-
             // 3) send the spectral matrix packets
             status =  rtems_message_queue_send( queue_id, &current_ring_node_to_send_asm_f0, sizeof( ring_node* ) );
             // change asm ring node
             current_ring_node_to_send_asm_f0 = current_ring_node_to_send_asm_f0->next;
         }
-
     }
 }
 
@@ -448,51 +388,4 @@ void init_k_coefficients_f0( void )
 {
     init_k_coefficients( k_coeff_intercalib_f0_norm, NB_BINS_COMPRESSED_SM_F0    );
     init_k_coefficients( k_coeff_intercalib_f0_sbm,  NB_BINS_COMPRESSED_SM_SBM_F0);
-}
-
-void test_TCH( void )
-{
-#define NB_BINS_COMPRESSED_MATRIX_TCH 1
-
-    unsigned char LFR_BP1_f0[NB_BINS_COMPRESSED_MATRIX_TCH*NB_BYTES_BP1];
-    unsigned char LFR_BP2_f0[NB_BINS_COMPRESSED_MATRIX_TCH*NB_BYTES_BP2];
-    float k_coefficients[NB_BINS_COMPRESSED_MATRIX_TCH * NB_K_COEFF_PER_BIN];
-
-    float compressed_spectral_matrix_TCH[ NB_BINS_COMPRESSED_MATRIX_TCH * NB_VALUES_PER_SPECTRAL_MATRIX ] = {
-        1.02217712e+06,
-        -8.58216250e+04,
-        -3.22199043e+04,
-        1.01597820e+05,
-        8.10333875e+05,
-        1.19030141e+05,
-        -8.69636688e+05,
-        5.01504031e+05,
-        -1.01948547e+05,
-        1.35475020e+04,
-        -3.67825469e+04,
-        -1.10950273e+05,
-        2.10715000e+04,
-        4.49727383e+04,
-        -4.37282031e+04,
-        3.83337695e+03,
-        1.05317175e+06,
-        -4.04155312e+05,
-        -1.32987891e+05,
-        1.49277250e+05,
-        -4.39122625e+05,
-        9.46006250e+05,
-        2.64386625e+05,
-        3.71843125e+05,
-        3.39770000e+05
-    };
-
-    init_k_coefficients( k_coefficients, NB_BINS_COMPRESSED_MATRIX_TCH );
-
-    printf("\n");
-
-    BP1_set(compressed_spectral_matrix_TCH, k_coefficients, NB_BINS_COMPRESSED_MATRIX_TCH, LFR_BP1_f0);
-
-    printf("\n");
-
-    BP2_set(compressed_spectral_matrix_TCH, NB_BINS_COMPRESSED_MATRIX_TCH, LFR_BP2_f0);
 }

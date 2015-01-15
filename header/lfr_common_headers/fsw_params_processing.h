@@ -8,16 +8,18 @@
 #define TOTAL_SIZE_NORM_BP1_F1  117     // 13 * 9 = 117
 #define TOTAL_SIZE_NORM_BP1_F2  108     // 12 * 9 = 108
 #define TOTAL_SIZE_SBM1_BP1_F0  198     // 22 * 9 = 198
-//
-#define NB_RING_NODES_SM_F0             12  // AT LEAST 8 due to the way the averaging is done
+// F0
+#define NB_RING_NODES_SM_F0             20  // AT LEAST 8 due to the way the averaging is done
 #define NB_RING_NODES_ASM_BURST_SBM_F0  10  // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F0       10  // AT LEAST 3
-#define NB_RING_NODES_ASM_F0            3  // AT LEAST 3
+#define NB_RING_NODES_ASM_F0            3   // AT LEAST 3
+// F1
 #define NB_RING_NODES_SM_F1             12  // AT LEAST 8 due to the way the averaging is done
 #define NB_RING_NODES_ASM_BURST_SBM_F1  5   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F1       5   // AT LEAST 3
 #define NB_RING_NODES_ASM_F1            3   // AT LEAST 3
-#define NB_RING_NODES_SM_F2             3   // AT LEAST 3
+// F2
+#define NB_RING_NODES_SM_F2             5   // AT LEAST 3
 #define NB_RING_NODES_ASM_BURST_SBM_F2  3   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F2       3   // AT LEAST 3
 #define NB_RING_NODES_ASM_F2            3   // AT LEAST 3
@@ -48,6 +50,7 @@
 #define NB_BINS_COMPRESSED_SM_SBM_F2    24
 //
 #define NB_BYTES_PER_BP1                9
+#define NB_BYTES_PER_BP2                30
 //
 #define NB_BINS_TO_AVERAGE_ASM_F0       8
 #define NB_BINS_TO_AVERAGE_ASM_F1       8
@@ -63,6 +66,7 @@
 #define TOTAL_SIZE_COMPRESSED_ASM_SBM_F1    650     // 26 * 25 WORDS
 #define TOTAL_SIZE_COMPRESSED_ASM_SBM_F2    600     // 24 * 25 WORDS
 #define TOTAL_SIZE_BP1_NORM_F0              99      // 9  * 11 UNSIGNED CHAR
+#define TOTAL_SIZE_BP2_NORM_F0              330     // 30 * 11 UNSIGNED CHAR
 #define TOTAL_SIZE_BP1_SBM_F0               198     // 9  * 22 UNSIGNED CHAR
 // GENERAL
 #define NB_SM_BEFORE_AVF0               8   // must be 8 due to the SM_average() function
