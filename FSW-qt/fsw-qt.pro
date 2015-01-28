@@ -2,7 +2,7 @@ TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
 # lpp_dpu_destid
-CONFIG += console verbose lpp_dpu_destid cpu_usage_report
+CONFIG += console verbose lpp_dpu_destid cpu_usage_report stack_report
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -107,5 +107,6 @@ HEADERS += \
     ../header/lfr_common_headers/TC_types.h \
     ../header/lfr_common_headers/tm_byte_positions.h \
     ../LFR_basic-parameters/basic_parameters.h \
-    ../LFR_basic-parameters/basic_parameters_params.h
+    ../LFR_basic-parameters/basic_parameters_params.h \
+    ../header/GscMemoryLPP.hpp
 

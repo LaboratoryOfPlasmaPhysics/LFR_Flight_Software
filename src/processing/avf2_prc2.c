@@ -16,15 +16,13 @@ extern ring_node sm_ring_f2[ ];
 //***
 // F2
 ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ];
-ring_node_asm asm_ring_burst_sbm_f2[ NB_RING_NODES_ASM_BURST_SBM_F2 ];
 
 ring_node ring_to_send_asm_f2      [ NB_RING_NODES_ASM_F2 ];
 int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
 
 float asm_f2_reorganized   [ TOTAL_SIZE_SM ];
-char  asm_f2_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
+char  asm_f2_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
-float compressed_sm_sbm_f2 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F2 ];
 
 float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ];   // 12 * 32 = 384
 
@@ -134,7 +132,7 @@ rtems_task avf2_task( rtems_task_argument argument )
         // send the message to MATR
         if (msgForMATR.event != 0x00)
         {
-            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC0);
+            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC2);
         }
 
         if (status != RTEMS_SUCCESSFUL) {
@@ -150,7 +148,7 @@ rtems_task prc2_task( rtems_task_argument argument )
     asm_msg *incomingMsg;
     //
     rtems_status_code status;
-    rtems_id queue_id;
+    rtems_id queue_id_send;
     rtems_id queue_id_q_p2;
     bp_packet                   packet_norm_bp1;
     bp_packet                   packet_norm_bp2;
@@ -162,8 +160,6 @@ rtems_task prc2_task( rtems_task_argument argument )
     init_ring( ring_to_send_asm_f2, NB_RING_NODES_ASM_F2, (volatile int*) buffer_asm_f2, TOTAL_SIZE_SM );
     current_ring_node_to_send_asm_f2 = ring_to_send_asm_f2;
 
-    incomingMsg = NULL;
-
     //*************
     // NORM headers
     BP_init_header( &packet_norm_bp1,
@@ -173,7 +169,7 @@ rtems_task prc2_task( rtems_task_argument argument )
                     APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP2_F2,
                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2, NB_BINS_COMPRESSED_SM_F2 );
 
-    status =  get_message_queue_id_send( &queue_id );
+    status =  get_message_queue_id_send( &queue_id_send );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in PRC2 *** ERR get_message_queue_id_send %d\n", status)
@@ -211,7 +207,7 @@ rtems_task prc2_task( rtems_task_argument argument )
             // 3) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
-            BP_send( (char *) &packet_norm_bp1, queue_id,
+            BP_send( (char *) &packet_norm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F2 );
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
@@ -221,7 +217,7 @@ rtems_task prc2_task( rtems_task_argument argument )
                 // 2) send the BP2 set
                 set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
                 set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
-                BP_send( (char *) &packet_norm_bp2, queue_id,
+                BP_send( (char *) &packet_norm_bp2, queue_id_send,
                          PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
                          SID_NORM_BP2_F2 );
             }
@@ -239,7 +235,7 @@ rtems_task prc2_task( rtems_task_argument argument )
             current_ring_node_to_send_asm_f2->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f2->sid           = SID_NORM_ASM_F2;
             // 3) send the spectral matrix packets
-            status =  rtems_message_queue_send( queue_id, &current_ring_node_to_send_asm_f2, sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id_send, &current_ring_node_to_send_asm_f2, sizeof( ring_node* ) );
             // change asm ring node
             current_ring_node_to_send_asm_f2 = current_ring_node_to_send_asm_f2->next;
         }

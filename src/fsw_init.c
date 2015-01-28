@@ -61,6 +61,21 @@
 #include "fsw_init.h"
 #include "fsw_config.c"
 
+void initCache()
+{
+//    unsigned int cacheControlRegister;
+
+//    cacheControlRegister = getCacheControlRegister();
+//    printf("(0) cacheControlRegister = %x\n", cacheControlRegister);
+
+    enableInstructionCache();
+    enableDataCache();
+    enableInstructionBurstFetch();
+
+//    cacheControlRegister = getCacheControlRegister();
+//    printf("(1) cacheControlRegister = %x\n", cacheControlRegister);
+}
+
 rtems_task Init( rtems_task_argument ignored )
 {
     /** This is the RTEMS INIT taks, it the first task launched by the system.
@@ -70,6 +85,9 @@ rtems_task Init( rtems_task_argument ignored )
      * The INIT task create and run all other RTEMS tasks.
      *
      */
+
+    //***********
+    // INIT CACHE
 
     unsigned char *vhdlVersion;
 
@@ -87,9 +105,14 @@ rtems_task Init( rtems_task_argument ignored )
     send_console_outputs_on_apbuart_port();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
     enable_apbuart_transmitter();
+
     DEBUG_PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 
+
     PRINTF("\n\n\n\n\n")
+
+    initCache();
+
     PRINTF("*************************\n")
     PRINTF("** LFR Flight Software **\n")
     PRINTF1("** %d.", SW_VERSION_N1)
@@ -324,8 +347,8 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // SEND
     {
         status = rtems_task_create(
-            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE * 2,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SEND]
         );
     }
@@ -360,7 +383,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]
         );
     }
@@ -376,7 +399,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_AVF1], TASK_PRIORITY_AVF1, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF1]
         );
     }
@@ -392,7 +415,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_AVF2], TASK_PRIORITY_AVF2, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES  | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF2]
         );
     }
@@ -470,7 +493,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS, RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
+            RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_HOUS]
         );
     }

@@ -21,7 +21,6 @@ extern volatile int wf_buffer_f0[ ];
 extern volatile int wf_buffer_f1[ ];
 extern volatile int wf_buffer_f2[ ];
 extern volatile int wf_buffer_f3[ ];
-extern char wf_cont_f3_light[ ];
 
 extern waveform_picker_regs_0_1_18_t *waveform_picker_regs;
 extern time_management_regs_t *time_management_regs;
@@ -61,7 +60,7 @@ int send_waveform_CWF3_light(ring_node *ring_node_to_send, ring_node *ring_node_
 //
 void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
-void build_snapshot_from_ring(ring_node *ring_node_to_send , unsigned char frequencyChannel );
+void build_snapshot_from_ring(ring_node *ring_node_to_send, unsigned char frequencyChannel , unsigned long long acquisitionTimeF0_asLong);
 void snapshot_resynchronization( unsigned char *timePtr );
 //
 rtems_id get_pkts_queue_id( void );

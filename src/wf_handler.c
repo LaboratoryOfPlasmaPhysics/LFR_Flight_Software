@@ -29,6 +29,7 @@ ring_node *ring_node_to_send_cwf_f2;
 ring_node waveform_ring_f3[NB_RING_NODES_F3];
 ring_node *current_ring_node_f3;
 ring_node *ring_node_to_send_cwf_f3;
+char wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK ];
 
 bool extractSWF = false;
 bool swf_f0_ready = false;
@@ -120,7 +121,6 @@ inline void waveforms_isr_f3( void )
             if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
                 spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
             }
-            rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_2);
         }
     }
 }
@@ -204,31 +204,34 @@ inline void waveforms_isr_burst( void )
     unsigned char status;
     rtems_status_code spare_status;
 
-    status = (waveform_picker_regs->status & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
+    status = (waveform_picker_regs->status & 0x30) >> 4;   // [0011 0000] get the status bits for f2
+
 
     switch(status)
     {
     case 1:
         ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
+        ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
         current_ring_node_f2        = current_ring_node_f2->next;
         ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
         ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
         waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
-        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
         if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
         }
+        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
         break;
     case 2:
         ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
+        ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
         current_ring_node_f2        = current_ring_node_f2->next;
         ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
         ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
         waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
-        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
         if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
         }
+        waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
         break;
     default:
         break;
@@ -319,8 +322,9 @@ inline void waveforms_isr_sbm2( void )
     // F2
     if ( (waveform_picker_regs->status & 0x30) != 0x00 ) {  // [0011 0000] check the f2 full bit
         // (1) change the receiving buffer for the waveform picker
-        ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
-        current_ring_node_f2        = current_ring_node_f2->next;
+        ring_node_to_send_cwf_f2      = current_ring_node_f2->previous;
+        ring_node_to_send_cwf_f2->sid = SID_SBM2_CWF_F2;
+        current_ring_node_f2          = current_ring_node_f2->next;
         if ( (waveform_picker_regs->status & 0x10) == 0x10)
         {
             ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
@@ -615,6 +619,9 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
     rtems_id queue_id;
     rtems_status_code status;
     ring_node *ring_node_to_send;
+    unsigned long long int acquisitionTimeF0_asLong;
+
+    acquisitionTimeF0_asLong = 0x00;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -629,27 +636,19 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
         rtems_event_receive( RTEMS_EVENT_MODE_BURST | RTEMS_EVENT_MODE_SBM2,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send = getRingNodeToSendCWF( 2 );
-        printf("ring_node_to_send_cwf === coarse = %x, fine = %x\n", ring_node_to_send->coarseTime, ring_node_to_send->fineTime);
-        printf("**0** %x . %x", waveform_ring_f2[0].coarseTime, waveform_ring_f2[0].fineTime);
-        printf(" **1** %x . %x", waveform_ring_f2[1].coarseTime, waveform_ring_f2[1].fineTime);
-        printf(" **2** %x . %x", waveform_ring_f2[2].coarseTime, waveform_ring_f2[2].fineTime);
-        printf(" **3** %x . %x", waveform_ring_f2[3].coarseTime, waveform_ring_f2[3].fineTime);
-        printf(" **4** %x . %x\n", waveform_ring_f2[4].coarseTime, waveform_ring_f2[4].fineTime);
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
-            ring_node_to_send->sid = SID_BURST_CWF_F2;
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
         }
         if (event_out == RTEMS_EVENT_MODE_SBM2)
         {
-            ring_node_to_send->sid = SID_SBM2_CWF_F2;
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
             // launch snapshot extraction if needed
             if (extractSWF == true)
             {
-                ring_node_to_send_swf_f2 = ring_node_to_send;
+                ring_node_to_send_swf_f2 = ring_node_to_send_cwf_f2;
                 // extract the snapshot
-                build_snapshot_from_ring( ring_node_to_send_swf_f2, 2 );
+                build_snapshot_from_ring( ring_node_to_send_swf_f2, 2, acquisitionTimeF0_asLong );
                 // send the snapshot when built
                 status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
                 extractSWF = false;
@@ -657,6 +656,8 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
             if (swf_f0_ready && swf_f1_ready)
             {
                 extractSWF = true;
+                // record the acquition time of the fà snapshot to use to build the snapshot at f2
+                acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send_swf_f0->coarseTime );
                 swf_f0_ready = false;
                 swf_f1_ready = false;
             }
@@ -694,12 +695,6 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send_cwf = getRingNodeToSendCWF( 1 );
-        printf("ring_node_to_send_cwf === coarse = %x, fine = %x\n", ring_node_to_send_cwf->coarseTime, ring_node_to_send_cwf->fineTime);
-        printf("**0** %x . %x", waveform_ring_f1[0].coarseTime, waveform_ring_f1[0].fineTime);
-        printf(" **1** %x . %x", waveform_ring_f1[1].coarseTime, waveform_ring_f1[1].fineTime);
-        printf(" **2** %x . %x", waveform_ring_f1[2].coarseTime, waveform_ring_f1[2].fineTime);
-        printf(" **3** %x . %x", waveform_ring_f1[3].coarseTime, waveform_ring_f1[3].fineTime);
-        printf(" **4** %x . %x\n\n", waveform_ring_f1[4].coarseTime, waveform_ring_f1[4].fineTime);
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
         status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
         // launch snapshot extraction if needed
@@ -733,6 +728,9 @@ rtems_task swbd_task(rtems_task_argument argument)
      */
 
     rtems_event_set event_out;
+    unsigned long long int acquisitionTimeF0_asLong;
+
+    acquisitionTimeF0_asLong = 0x00;
 
     BOOT_PRINTF("in SWBD ***\n")
 
@@ -742,7 +740,8 @@ rtems_task swbd_task(rtems_task_argument argument)
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if (event_out == RTEMS_EVENT_MODE_SBM1)
         {
-            build_snapshot_from_ring( ring_node_to_send_swf_f1, 1 );
+            acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send_swf_f0->coarseTime );
+            build_snapshot_from_ring( ring_node_to_send_swf_f1, 1, acquisitionTimeF0_asLong );
             swf_f1_ready = true;    // the snapshot has been extracted and is ready to be sent
         }
         else
@@ -868,6 +867,8 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, ring_node *ring_node
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 5 ] = sample[ 5 ];
     }
 
+    printf("send_waveform_CWF3_light => [0] = %x, [1] = %x, [2] = %x\n", dataPtr[0], dataPtr[1], dataPtr[2]);
+
     // SEND PACKET
     status =  rtems_message_queue_send( queue_id, &ring_node_cwf3_light, sizeof( ring_node* ) );
     if (status != RTEMS_SUCCESSFUL) {
@@ -952,11 +953,10 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
 
 }
 
-void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequencyChannel )
+void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequencyChannel, unsigned long long int acquisitionTimeF0_asLong )
 {
     unsigned int i;
     unsigned long long int centerTime_asLong;
-    unsigned long long int acquisitionTimeF0_asLong;
     unsigned long long int acquisitionTime_asLong;
     unsigned long long int bufferAcquisitionTime_asLong;
     unsigned char *ptr1;
@@ -977,11 +977,11 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     deltaT_F2 = 262144; // (2048. / 256.   / 2.) * 65536. = 262144;
     sampleOffset_asLong = 0x00;
 
-    // (1) get the f0 acquisition time
-    acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
+    // (1) get the f0 acquisition time => the value is passed in argument
 
     // (2) compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
+    printf("centerTime_asLong = %llx\n", centerTime_asLong);
 
     // (3) compute the acquisition time of the current snapshot
     switch(frequencyChannel)
@@ -1010,7 +1010,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     for (i=0; i<nb_ring_nodes; i++)
     {
         PRINTF1("%d ... ", i)
-        bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) ring_node_to_send->coarseTime );
+        bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
             PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong)
@@ -1022,7 +1022,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     // (5) compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> 16;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
-    PRINTF2("sampleOffset_asLong = %llx, nbSamplesPart1_asLong = %llx\n", sampleOffset_asLong, nbSamplesPart1_asLong)
+    PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
 
     // (6) compute the final acquisition time
     acquisitionTime_asLong = bufferAcquisitionTime_asLong +

@@ -199,7 +199,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
 
     //*************
     // NORM headers
-    BP_init_header_with_spare( &packet_norm_bp1.header,
+    BP_init_header_with_spare( &packet_norm_bp1,
                                APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP1_F0,
                                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0, NB_BINS_COMPRESSED_SM_F0 );
     BP_init_header( &packet_norm_bp2,
@@ -309,8 +309,8 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             // 2) compute the BP1 set
             BP1_set( compressed_sm_norm_f0, k_coeff_intercalib_f0_norm, NB_BINS_COMPRESSED_SM_F0, packet_norm_bp1.data );
             // 3) send the BP1 set
-            set_time( packet_norm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
-            set_time( packet_norm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
+            set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
             BP_send( (char *) &packet_norm_bp1, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F0 );

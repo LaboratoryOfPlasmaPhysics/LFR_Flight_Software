@@ -255,7 +255,6 @@ rtems_task send_task( rtems_task_argument argument)
                 charPtr[3] = incomingData[3];
                 incomingRingNodePtr = (ring_node*) ring_node_address;
                 sid = incomingRingNodePtr->sid;
-//                printf("sid = %d\n", incomingRingNodePtr->sid);
                 if ( (sid==SID_NORM_CWF_LONG_F3)
                      || (sid==SID_BURST_CWF_F2 )
                      || (sid==SID_SBM1_CWF_F1  )
@@ -439,7 +438,7 @@ int spacewire_configure_link( int fd )
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_EVENT_ID, Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
     if (status!=RTEMS_SUCCESSFUL) {
-        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n") // link-error interrupt occurs
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n")          // link-error interrupt occurs
     }
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_DISABLE_ERR, 0);          // automatic link-disabling due to link-error interrupts
@@ -684,12 +683,12 @@ rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
 
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
 {
-    header->targetLogicalAddress        = CCSDS_DESTINATION_ID;
-    header->protocolIdentifier          = CCSDS_PROTOCOLE_ID;
-    header->reserved        = DEFAULT_RESERVED;
-    header->userApplication = CCSDS_USER_APP;
-    header->packetSequenceControl[0]    = TM_PACKET_SEQ_CTRL_STANDALONE;
-    header->packetSequenceControl[1]    = TM_PACKET_SEQ_CNT_DEFAULT;
+    header->targetLogicalAddress    = CCSDS_DESTINATION_ID;
+    header->protocolIdentifier      = CCSDS_PROTOCOLE_ID;
+    header->reserved                = DEFAULT_RESERVED;
+    header->userApplication         = CCSDS_USER_APP;
+    header->packetSequenceControl[0]= TM_PACKET_SEQ_CTRL_STANDALONE;
+    header->packetSequenceControl[1]= TM_PACKET_SEQ_CNT_DEFAULT;
     header->packetLength[0] = 0x00;
     header->packetLength[1] = 0x00;
     // DATA FIELD HEADER
@@ -983,6 +982,9 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
+
+    printf("spw_send_waveform_CWF3_light => [0] = %x, [1] = %x, [2] = %x, [3] = %x, [4] = %x, [5] = %x\n",
+           dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], dataPtr[4], dataPtr[5]);
 
     //*********************
     // SEND CWF3_light DATA

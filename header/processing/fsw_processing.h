@@ -40,13 +40,32 @@ typedef struct
     unsigned char acquisitionTime[6];
     unsigned char pa_lfr_bp_blk_nr[2];
     // SOURCE DATA
-    unsigned char data[ 30 * 22 ];   // MAX size is 22 * 30 [TM_LFR_SCIENCE_BURST_BP2_F1]
+    unsigned char data[ 780 ];   // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
 } bp_packet;
 
 typedef struct
 {
-    Header_TM_LFR_SCIENCE_BP_with_spare_t header;
-    unsigned char data[ 9 * 13 ];   // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    // AUXILIARY HEADER
+    unsigned char sid;
+    unsigned char biaStatusInfo;
+    unsigned char acquisitionTime[6];
+    unsigned char source_data_spare;
+    unsigned char pa_lfr_bp_blk_nr[2];
+    // SOURCE DATA
+    unsigned char data[ 117 ];   // 13 bins  * 9 Bytes only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 } bp_packet_with_spare;
 
 typedef struct
@@ -93,10 +112,10 @@ void ASM_generic_init_ring(ring_node_asm *ring, unsigned char nbNodes );
 // Basic Parameters
 
 void BP_reset_current_ring_nodes( void );
-void BP_init_header(bp_packet *header,
+void BP_init_header(bp_packet *packet,
                      unsigned int apid, unsigned char sid,
                      unsigned int packetLength , unsigned char blkNr);
-void BP_init_header_with_spare( Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
+void BP_init_header_with_spare(bp_packet_with_spare *packet,
                                 unsigned int apid, unsigned char sid,
                                 unsigned int packetLength, unsigned char blkNr );
 void BP_send( char *data,

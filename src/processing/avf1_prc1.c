@@ -202,7 +202,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
     //*************
     // NORM headers
-    BP_init_header_with_spare( &packet_norm_bp1.header,
+    BP_init_header_with_spare( &packet_norm_bp1,
                                APID_TM_SCIENCE_NORMAL_BURST, SID_NORM_BP1_F1,
                                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1, NB_BINS_COMPRESSED_SM_F1 );
     BP_init_header( &packet_norm_bp2,
@@ -299,13 +299,13 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f1,
                                          nb_sm_before_f1.norm_bp1,
-                                         NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
-                                         ASM_F0_INDICE_START );
+                                         NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1,
+                                         ASM_F1_INDICE_START );
             // 2) compute the BP1 set
             BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
             // 3) send the BP1 set
-            set_time( packet_norm_bp1.header.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
-            set_time( packet_norm_bp1.header.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM   );
+            set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
+            set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM   );
             BP_send( (char *) &packet_norm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F1 );

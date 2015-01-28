@@ -72,6 +72,8 @@ void spectral_matrices_isr_f0( void )
         break;
     case 1:
         full_ring_node = current_ring_node_sm_f0->previous;
+        full_ring_node->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
+        full_ring_node->fineTime = spectral_matrix_regs->f0_0_fine_time;
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
         spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
@@ -79,8 +81,6 @@ void spectral_matrices_isr_f0( void )
         if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
         {
             ring_node_for_averaging_sm_f0 = full_ring_node;
-            ring_node_for_averaging_sm_f0->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
-            ring_node_for_averaging_sm_f0->fineTime = spectral_matrix_regs->f0_0_fine_time;
             if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -91,6 +91,8 @@ void spectral_matrices_isr_f0( void )
         break;
     case 2:
         full_ring_node = current_ring_node_sm_f0->previous;
+        full_ring_node->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
+        full_ring_node->fineTime = spectral_matrix_regs->f0_1_fine_time;
         current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
         spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
@@ -98,8 +100,6 @@ void spectral_matrices_isr_f0( void )
         if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
         {
             ring_node_for_averaging_sm_f0 = full_ring_node;
-            ring_node_for_averaging_sm_f0->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
-            ring_node_for_averaging_sm_f0->fineTime = spectral_matrix_regs->f0_1_fine_time;
             if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -130,6 +130,8 @@ void spectral_matrices_isr_f1( void )
         break;
     case 1:
         full_ring_node = current_ring_node_sm_f1->previous;
+        full_ring_node->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
+        full_ring_node->fineTime = spectral_matrix_regs->f1_0_fine_time;
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
         spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
@@ -137,8 +139,6 @@ void spectral_matrices_isr_f1( void )
         if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
         {
             ring_node_for_averaging_sm_f1 = full_ring_node;
-            ring_node_for_averaging_sm_f1->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
-            ring_node_for_averaging_sm_f1->fineTime = spectral_matrix_regs->f1_0_fine_time;
             if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -149,6 +149,8 @@ void spectral_matrices_isr_f1( void )
         break;
     case 2:
         full_ring_node = current_ring_node_sm_f1->previous;
+        full_ring_node->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
+        full_ring_node->fineTime = spectral_matrix_regs->f1_1_fine_time;
         current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
         spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
@@ -156,8 +158,6 @@ void spectral_matrices_isr_f1( void )
         if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
         {
             ring_node_for_averaging_sm_f1 = full_ring_node;
-            ring_node_for_averaging_sm_f1->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
-            ring_node_for_averaging_sm_f1->fineTime = spectral_matrix_regs->f1_1_fine_time;
             if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
             {
                 status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -343,75 +343,75 @@ void SM_reset_current_ring_nodes( void )
 //*****************
 // Basic Parameters
 
-void BP_init_header( bp_packet *header,
+void BP_init_header( bp_packet *packet,
                      unsigned int apid, unsigned char sid,
                      unsigned int packetLength, unsigned char blkNr )
 {
-    header->targetLogicalAddress = CCSDS_DESTINATION_ID;
-    header->protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    header->reserved = 0x00;
-    header->userApplication = CCSDS_USER_APP;
-    header->packetID[0] = (unsigned char) (apid >> 8);
-    header->packetID[1] = (unsigned char) (apid);
-    header->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    header->packetSequenceControl[1] = 0x00;
-    header->packetLength[0] = (unsigned char) (packetLength >> 8);
-    header->packetLength[1] = (unsigned char) (packetLength);
+    packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    packet->protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    packet->reserved = 0x00;
+    packet->userApplication = CCSDS_USER_APP;
+    packet->packetID[0] = (unsigned char) (apid >> 8);
+    packet->packetID[1] = (unsigned char) (apid);
+    packet->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    packet->packetSequenceControl[1] = 0x00;
+    packet->packetLength[0] = (unsigned char) (packetLength >> 8);
+    packet->packetLength[1] = (unsigned char) (packetLength);
     // DATA FIELD HEADER
-    header->spare1_pusVersion_spare2 = 0x10;
-    header->serviceType = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
-    header->destinationID = TM_DESTINATION_ID_GROUND;
-    header->time[0] = 0x00;
-    header->time[1] = 0x00;
-    header->time[2] = 0x00;
-    header->time[3] = 0x00;
-    header->time[4] = 0x00;
-    header->time[5] = 0x00;
+    packet->spare1_pusVersion_spare2 = 0x10;
+    packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
+    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    packet->destinationID = TM_DESTINATION_ID_GROUND;
+    packet->time[0] = 0x00;
+    packet->time[1] = 0x00;
+    packet->time[2] = 0x00;
+    packet->time[3] = 0x00;
+    packet->time[4] = 0x00;
+    packet->time[5] = 0x00;
     // AUXILIARY DATA HEADER
-    header->sid = sid;
-    header->biaStatusInfo = 0x00;
-    header->acquisitionTime[0] = 0x00;
-    header->acquisitionTime[1] = 0x00;
-    header->acquisitionTime[2] = 0x00;
-    header->acquisitionTime[3] = 0x00;
-    header->acquisitionTime[4] = 0x00;
-    header->acquisitionTime[5] = 0x00;
-    header->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
-    header->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
+    packet->sid = sid;
+    packet->biaStatusInfo = 0x00;
+    packet->acquisitionTime[0] = 0x00;
+    packet->acquisitionTime[1] = 0x00;
+    packet->acquisitionTime[2] = 0x00;
+    packet->acquisitionTime[3] = 0x00;
+    packet->acquisitionTime[4] = 0x00;
+    packet->acquisitionTime[5] = 0x00;
+    packet->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
+    packet->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
 
-void BP_init_header_with_spare(Header_TM_LFR_SCIENCE_BP_with_spare_t *header,
+void BP_init_header_with_spare( bp_packet_with_spare *packet,
                                 unsigned int apid, unsigned char sid,
                                 unsigned int packetLength , unsigned char blkNr)
 {
-    header->targetLogicalAddress = CCSDS_DESTINATION_ID;
-    header->protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    header->reserved = 0x00;
-    header->userApplication = CCSDS_USER_APP;
-    header->packetID[0] = (unsigned char) (apid >> 8);
-    header->packetID[1] = (unsigned char) (apid);
-    header->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    header->packetSequenceControl[1] = 0x00;
-    header->packetLength[0] = (unsigned char) (packetLength >> 8);
-    header->packetLength[1] = (unsigned char) (packetLength);
+    packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    packet->protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    packet->reserved = 0x00;
+    packet->userApplication = CCSDS_USER_APP;
+    packet->packetID[0] = (unsigned char) (apid >> 8);
+    packet->packetID[1] = (unsigned char) (apid);
+    packet->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    packet->packetSequenceControl[1] = 0x00;
+    packet->packetLength[0] = (unsigned char) (packetLength >> 8);
+    packet->packetLength[1] = (unsigned char) (packetLength);
     // DATA FIELD HEADER
-    header->spare1_pusVersion_spare2 = 0x10;
-    header->serviceType = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
-    header->destinationID = TM_DESTINATION_ID_GROUND;
+    packet->spare1_pusVersion_spare2 = 0x10;
+    packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
+    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    packet->destinationID = TM_DESTINATION_ID_GROUND;
     // AUXILIARY DATA HEADER
-    header->sid = sid;
-    header->biaStatusInfo = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->source_data_spare = 0x00;
-    header->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
-    header->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
+    packet->sid = sid;
+    packet->biaStatusInfo = 0x00;
+    packet->time[0] = 0x00;
+    packet->time[0] = 0x00;
+    packet->time[0] = 0x00;
+    packet->time[0] = 0x00;
+    packet->time[0] = 0x00;
+    packet->time[0] = 0x00;
+    packet->source_data_spare = 0x00;
+    packet->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
+    packet->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
 
 void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid )

@@ -41,7 +41,6 @@ volatile int wf_buffer_f0[ NB_RING_NODES_F0 * WFRM_BUFFER ] __attribute__((align
 volatile int wf_buffer_f1[ NB_RING_NODES_F1 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
 volatile int wf_buffer_f2[ NB_RING_NODES_F2 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
 volatile int wf_buffer_f3[ NB_RING_NODES_F3 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
-char         wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK + TIME_OFFSET_IN_BYTES ] __attribute__((aligned(0x100)));
 
 //***********************************
 // SPECTRAL MATRICES GLOBAL VARIABLES
