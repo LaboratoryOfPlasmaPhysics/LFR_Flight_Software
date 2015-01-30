@@ -391,7 +391,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_PRC0], TASK_PRIORITY_PRC0, RTEMS_MINIMUM_STACK_SIZE * 2,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC0]
         );
     }
@@ -407,7 +407,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_PRC1], TASK_PRIORITY_PRC1, RTEMS_MINIMUM_STACK_SIZE * 2,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC1]
         );
     }
@@ -423,7 +423,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     {
         status = rtems_task_create(
             Task_name[TASKID_PRC2], TASK_PRIORITY_PRC2, RTEMS_MINIMUM_STACK_SIZE * 2,
-            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC2]
         );
     }

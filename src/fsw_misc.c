@@ -226,6 +226,7 @@ rtems_task hous_task(rtems_task_argument argument)
             spacewire_update_statistics();
 
             get_v_e1_e2_f3( housekeeping_packet.hk_lfr_sc_v_f3 );
+            get_temperatures( housekeeping_packet.hk_lfr_temp_scm);
             get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );
 
             // SEND PACKET
@@ -457,6 +458,24 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     spacecraft_potential[3] = e1_ptr[3];
     spacecraft_potential[4] = e2_ptr[2];
     spacecraft_potential[5] = e2_ptr[3];
+}
+
+void get_temperatures( unsigned char *temperatures )
+{
+    unsigned char* temp_scm_ptr;
+    unsigned char* temp_pcb_ptr;
+    unsigned char* temp_fpga_ptr;
+
+    temp_scm_ptr  = (unsigned char *) &time_management_regs->temp_scm;
+    temp_pcb_ptr =  (unsigned char *) &time_management_regs->temp_pcb;
+    temp_fpga_ptr = (unsigned char *) &time_management_regs->temp_fpga;
+
+    temperatures[0] = temp_scm_ptr[2];
+    temperatures[1] = temp_scm_ptr[3];
+    temperatures[2] = temp_pcb_ptr[2];
+    temperatures[3] = temp_pcb_ptr[3];
+    temperatures[4] = temp_fpga_ptr[2];
+    temperatures[5] = temp_fpga_ptr[3];
 }
 
 void get_cpu_load( unsigned char *resource_statistics )

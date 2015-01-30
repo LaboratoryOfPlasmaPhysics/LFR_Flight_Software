@@ -142,6 +142,10 @@ static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spe
 static inline void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                                      ring_node *ring_node_tab[],
                                      unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+
+void ASM_patch( float *inputASM, float *outputASM );
+void extractReImVectors(float *inputASM, float *outputASM, unsigned int asmComponent );
+
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
 static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,

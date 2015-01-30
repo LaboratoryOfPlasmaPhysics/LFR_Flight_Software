@@ -22,7 +22,7 @@ ring_node ring_to_send_asm_f1       [ NB_RING_NODES_ASM_F1 ];
 int buffer_asm_f1                   [ NB_RING_NODES_ASM_F1 * TOTAL_SIZE_SM ];
 
 float asm_f1_reorganized   [ TOTAL_SIZE_SM ];
-char  asm_f1_char          [ TIME_OFFSET_IN_BYTES + (TOTAL_SIZE_SM * 2) ];
+char  asm_f1_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f1[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F1];
 float compressed_sm_sbm_f1 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 ];
 
@@ -302,7 +302,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
                                          NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1,
                                          ASM_F1_INDICE_START );
             // 2) compute the BP1 set
-            BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
+//            BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
             // 3) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM   );

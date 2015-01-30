@@ -12,6 +12,7 @@ int main(void)
 
     float input_ASM             [ NB_VALUES_PER_SM * NB_BINS_PER_SM           ];
     float output_ASM            [ NB_VALUES_PER_SM * NB_BINS_PER_SM           ];
+    float patched_ASM           [ NB_VALUES_PER_SM * NB_BINS_PER_SM           ];
     float output_ASM_compressed [ NB_VALUES_PER_SM * NB_BINS_COMPRESSED_SM_F0 ];
 
     //*******
@@ -27,6 +28,8 @@ int main(void)
             input_ASM[ offset_input_ASM ] = asmComponent;
         }
     }
+
+    ASM_patch( input_ASM, patched_ASM );
 
     ASM_reorganize_and_divide( input_ASM, output_ASM,
                                1 ); // divider
@@ -58,6 +61,8 @@ int main(void)
                                         NB_BINS_COMPRESSED_SM_F0,
                                         NB_BINS_TO_AVERAGE_ASM_F0,
                                         ASM_F0_INDICE_START);
+
+    ASM_patch( input_ASM, patched_ASM );
 
     return 0;
 }

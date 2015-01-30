@@ -184,7 +184,7 @@ rtems_task prc2_task( rtems_task_argument argument )
 
     while(1){
         status = rtems_message_queue_receive( queue_id_q_p2, incomingData, &size, //************************************
-                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );      // wait for a message coming from AVF0
+                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT );      // wait for a message coming from AVF2
 
         incomingMsg = (asm_msg*) incomingData;
 
@@ -195,32 +195,34 @@ rtems_task prc2_task( rtems_task_argument argument )
         // NORM
         //*****
         //*****
+        // 1)  compress the matrix for Basic Parameters calculation
+        ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f2,
+                                     nb_sm_before_f2.norm_bp1,
+                                     NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
+                                     ASM_F2_INDICE_START );
+        // BP1_F2
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F2)
         {
-            // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f2,
-                                         nb_sm_before_f2.norm_bp1,
-                                         NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
-                                         ASM_F2_INDICE_START );
-            // 2) compute the BP1 set
-            BP1_set( compressed_sm_norm_f2, k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp1.data );
-            // 3) send the BP1 set
+            // 1) compute the BP1 set
+//            BP1_set( compressed_sm_norm_f2, k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp1.data );
+            // 2) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
             BP_send( (char *) &packet_norm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
                      SID_NORM_BP1_F2 );
-            if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
-            {
-                // 1) compute the BP2 set using the same ASM as the one used for BP1
-                BP2_set( compressed_sm_norm_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp2.data );
-                // 2) send the BP2 set
-                set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
-                set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
-                BP_send( (char *) &packet_norm_bp2, queue_id_send,
-                         PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
-                         SID_NORM_BP2_F2 );
-            }
+        }
+        // BP2_F2
+        if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
+        {
+            // 1) compute the BP2 set
+            BP2_set( compressed_sm_norm_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp2.data );
+            // 2) send the BP2 set
+            set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
+            set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            BP_send( (char *) &packet_norm_bp2, queue_id_send,
+                     PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,
+                     SID_NORM_BP2_F2 );
         }
 
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F2)

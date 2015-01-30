@@ -53,13 +53,13 @@ ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
 
-void spectral_matrices_isr_f0( void )
+void spectral_matrices_isr_f0( unsigned char statusReg )
 {
     unsigned char status;
     rtems_status_code status_code;
     ring_node *full_ring_node;
 
-    status = spectral_matrix_regs->status & 0x03;   // [0011] get the status_ready_matrix_f0_x bits
+    status = statusReg & 0x03;   // [0011] get the status_ready_matrix_f0_x bits
 
     switch(status)
     {
@@ -111,13 +111,13 @@ void spectral_matrices_isr_f0( void )
     }
 }
 
-void spectral_matrices_isr_f1( void )
+void spectral_matrices_isr_f1( unsigned char statusReg )
 {
     rtems_status_code status_code;
     unsigned char status;
     ring_node *full_ring_node;
 
-    status = (spectral_matrix_regs->status & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f0_x bits
+    status = (statusReg & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f0_x bits
 
     switch(status)
     {
@@ -169,12 +169,12 @@ void spectral_matrices_isr_f1( void )
     }
 }
 
-void spectral_matrices_isr_f2( void )
+void spectral_matrices_isr_f2( unsigned char statusReg )
 {
     unsigned char status;
     rtems_status_code status_code;
 
-    status = (spectral_matrix_regs->status & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
+    status = (statusReg & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
 
     switch(status)
     {
@@ -212,11 +212,11 @@ void spectral_matrices_isr_f2( void )
     }
 }
 
-void spectral_matrix_isr_error_handler( void )
+void spectral_matrix_isr_error_handler( unsigned char statusReg )
 {
     rtems_status_code status_code;
 
-    if (spectral_matrix_regs->status & 0x7c0)    // [0111 1100 0000]
+    if (statusReg & 0x7c0)    // [0111 1100 0000]
     {
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
     }
@@ -232,13 +232,17 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
     //      7                  6             5       4       3       2       1       0
 
-    spectral_matrices_isr_f0();
+    unsigned char statusReg;
 
-    spectral_matrices_isr_f1();
+    statusReg = spectral_matrix_regs->status;
 
-    spectral_matrices_isr_f2();
+    spectral_matrices_isr_f0( statusReg );
 
-    spectral_matrix_isr_error_handler();
+    spectral_matrices_isr_f1( statusReg );
+
+    spectral_matrices_isr_f2( statusReg );
+
+    spectral_matrix_isr_error_handler( statusReg );
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
@@ -536,3 +540,47 @@ unsigned char getSID( rtems_event_set event )
     return sid;
 }
 
+void extractReImVectors( float *inputASM, float *outputASM, unsigned int asmComponent )
+{
+    unsigned int i;
+    float re;
+    float im;
+
+    for (i=0; i<NB_BINS_PER_SM; i++){
+        re = inputASM[ (asmComponent*NB_BINS_PER_SM) + i * 2    ];
+        im = inputASM[ (asmComponent*NB_BINS_PER_SM) + i * 2 + 1];
+        outputASM[ (asmComponent   *NB_BINS_PER_SM)  +  i] = re;
+        outputASM[ (asmComponent+1)*NB_BINS_PER_SM   +  i] = im;
+    }
+}
+
+void copyReVectors( float *inputASM, float *outputASM, unsigned int asmComponent )
+{
+    unsigned int i;
+    float re;
+
+    for (i=0; i<NB_BINS_PER_SM; i++){
+        re = inputASM[ (asmComponent*NB_BINS_PER_SM) + i];
+        outputASM[ (asmComponent*NB_BINS_PER_SM)  +  i] = re;
+    }
+}
+
+void ASM_patch( float *inputASM, float *outputASM )
+{
+    extractReImVectors( inputASM, outputASM, 1);    // b1b2
+    extractReImVectors( inputASM, outputASM, 3 );   // b1b3
+    extractReImVectors( inputASM, outputASM, 5 );   // b1e1
+    extractReImVectors( inputASM, outputASM, 7 );   // b1e2
+    extractReImVectors( inputASM, outputASM, 10 );  // b2b3
+    extractReImVectors( inputASM, outputASM, 12 );  // b2e1
+    extractReImVectors( inputASM, outputASM, 14 );  // b2e2
+    extractReImVectors( inputASM, outputASM, 17 );  // b3e1
+    extractReImVectors( inputASM, outputASM, 19 );  // b3e2
+    extractReImVectors( inputASM, outputASM, 22 );  // e1e2
+
+    copyReVectors(inputASM, outputASM, 0 );    // b1b1
+    copyReVectors(inputASM, outputASM, 9 );    // b2b2
+    copyReVectors(inputASM, outputASM, 16);    // b3b3
+    copyReVectors(inputASM, outputASM, 21);    // e1e1
+    copyReVectors(inputASM, outputASM, 24);    // e2e2
+}

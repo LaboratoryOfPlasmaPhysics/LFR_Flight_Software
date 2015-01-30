@@ -45,6 +45,9 @@ typedef struct {
     volatile int coarse_time_load;
     volatile int coarse_time;
     volatile int fine_time;
+    volatile int temp_scm;
+    volatile int temp_pcb;
+    volatile int temp_fpga;
 } time_management_regs_t;
 
 // PDB >= 0.1.28
