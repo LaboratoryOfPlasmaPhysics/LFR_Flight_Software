@@ -20,7 +20,9 @@ ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ];
 ring_node ring_to_send_asm_f2      [ NB_RING_NODES_ASM_F2 ];
 int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
 
-float asm_f2_reorganized   [ TOTAL_SIZE_SM ];
+float asm_f2_patched_norm   [ TOTAL_SIZE_SM ];
+float asm_f2_reorganized    [ TOTAL_SIZE_SM ];
+
 char  asm_f2_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
 
@@ -188,6 +190,8 @@ rtems_task prc2_task( rtems_task_argument argument )
 
         incomingMsg = (asm_msg*) incomingData;
 
+        ASM_patch( incomingMsg->norm->matrix, asm_f2_patched_norm );
+
         localTime = getTimeAsUnsignedLongLongInt( );
 
         //*****
@@ -196,7 +200,7 @@ rtems_task prc2_task( rtems_task_argument argument )
         //*****
         //*****
         // 1)  compress the matrix for Basic Parameters calculation
-        ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f2,
+        ASM_compress_reorganize_and_divide( asm_f2_patched_norm, compressed_sm_norm_f2,
                                      nb_sm_before_f2.norm_bp1,
                                      NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
                                      ASM_F2_INDICE_START );
@@ -204,7 +208,7 @@ rtems_task prc2_task( rtems_task_argument argument )
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F2)
         {
             // 1) compute the BP1 set
-//            BP1_set( compressed_sm_norm_f2, k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp1.data );
+            BP1_set( compressed_sm_norm_f2, k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp1.data );
             // 2) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
@@ -228,7 +232,7 @@ rtems_task prc2_task( rtems_task_argument argument )
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F2)
         {
             // 1) reorganize the ASM and divide
-            ASM_reorganize_and_divide( incomingMsg->norm->matrix,
+            ASM_reorganize_and_divide( asm_f2_patched_norm,
                                        asm_f2_reorganized,
                                        nb_sm_before_f2.norm_bp1 );
             // 2) convert the float array in a char array

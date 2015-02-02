@@ -279,7 +279,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                                          NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,
                                          ASM_F0_INDICE_START);
             // 2) compute the BP1 set
-//            BP1_set( compressed_sm_sbm_f0, k_coeff_intercalib_f0_sbm, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp1.data );
+            BP1_set( compressed_sm_sbm_f0, k_coeff_intercalib_f0_sbm, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp1.data );
             // 3) send the BP1 set
             set_time( packet_sbm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeSBM );
             set_time( packet_sbm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
@@ -313,7 +313,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                                          NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
                                          ASM_F0_INDICE_START );
             // 2) compute the BP1 set
-//            BP1_set( compressed_sm_norm_f0, k_coeff_intercalib_f0_norm, NB_BINS_COMPRESSED_SM_F0, packet_norm_bp1.data );
+            BP1_set( compressed_sm_norm_f0, k_coeff_intercalib_f0_norm, NB_BINS_COMPRESSED_SM_F0, packet_norm_bp1.data );
             // 3) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );

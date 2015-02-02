@@ -21,7 +21,10 @@ ring_node_asm asm_ring_burst_sbm_f1 [ NB_RING_NODES_ASM_BURST_SBM_F1 ];
 ring_node ring_to_send_asm_f1       [ NB_RING_NODES_ASM_F1 ];
 int buffer_asm_f1                   [ NB_RING_NODES_ASM_F1 * TOTAL_SIZE_SM ];
 
-float asm_f1_reorganized   [ TOTAL_SIZE_SM ];
+float asm_f1_patched_norm       [ TOTAL_SIZE_SM ];
+float asm_f1_patched_burst_sbm  [ TOTAL_SIZE_SM ];
+float asm_f1_reorganized        [ TOTAL_SIZE_SM ];
+
 char  asm_f1_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f1[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F1];
 float compressed_sm_sbm_f1 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 ];
@@ -253,6 +256,9 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
         incomingMsg = (asm_msg*) incomingData;
 
+        ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
+        ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
+
         localTime = getTimeAsUnsignedLongLongInt( );
         //***********
         //***********
@@ -263,7 +269,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         {
             sid = getSID( incomingMsg->event );
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( incomingMsg->burst_sbm->matrix, compressed_sm_sbm_f1,
+            ASM_compress_reorganize_and_divide( asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
                                          nb_sm_before_f1.burst_sbm_bp1,
                                          NB_BINS_COMPRESSED_SM_SBM_F1, NB_BINS_TO_AVERAGE_ASM_SBM_F1,
                                          ASM_F1_INDICE_START);
@@ -297,12 +303,12 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( incomingMsg->norm->matrix, compressed_sm_norm_f1,
+            ASM_compress_reorganize_and_divide( asm_f1_patched_norm, compressed_sm_norm_f1,
                                          nb_sm_before_f1.norm_bp1,
                                          NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1,
                                          ASM_F1_INDICE_START );
             // 2) compute the BP1 set
-//            BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
+            BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
             // 3) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM   );
@@ -325,7 +331,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1)
         {
             // 1) reorganize the ASM and divide
-            ASM_reorganize_and_divide( incomingMsg->norm->matrix,
+            ASM_reorganize_and_divide( asm_f1_patched_norm,
                                        asm_f1_reorganized,
                                        nb_sm_before_f1.norm_bp1 );
             // 2) convert the float array in a char array
