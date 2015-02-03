@@ -7,6 +7,7 @@
 // version 1.5: 20/05/2014
 // version 1.6: 19/12/2014
 // version 1.7: 15/01/2015 (modifs de Paul + correction erreurs qui se compensaient (LSB <=> MSB + indices [0,2] <=> [1,3])
+// version 1.8: 02/02/2015 (gestion des divisions par zéro)
 
 #ifndef BASIC_PARAMETERS_H_INCLUDED
 #define BASIC_PARAMETERS_H_INCLUDED
@@ -191,10 +192,17 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
                    +compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+4] *compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+4]   //Im S13
                    +compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11]  //Im S23
                    );
-        NVEC_V0 =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11]/ tmp;  // S23 Im  => n1
-        NVEC_V1 = -compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+4] / tmp;  // S13 Im  => n2
-        NVEC_V2 =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+2] / tmp;  // S12 Im  => n3
-
+        if (tmp != 0.) { // no division by 0.
+            NVEC_V0 =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11]/ tmp;  // S23 Im  => n1
+            NVEC_V1 = -compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+4] / tmp;  // S13 Im  => n2
+            NVEC_V2 =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+2] / tmp;  // S12 Im  => n3
+        }
+        else
+        {
+            NVEC_V0 = 0.;
+            NVEC_V1 = 0.;
+            NVEC_V2 = 0.;
+        }
         lfr_bp1[i*NB_BYTES_BP1+4] = (uint8_t) (NVEC_V0*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp1[i*NB_BYTES_BP1+5] = (uint8_t) (NVEC_V1*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         pt_uint8 = (uint8_t*) &NVEC_V2;                              // Affect an uint8_t pointer with the adress of NVEC_V2
@@ -216,8 +224,13 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 #endif
         //=======================================================
         // BP1 ellipticity == PA_LFR_SC_BP1_ELLIP_F0 == 4 bits
-        aux = 2*tmp / PSDB;                   // Compute the ellipticity
-
+        if (PSDB != 0.) { // no division by 0.
+            aux = 2*tmp / PSDB;                   // Compute the ellipticity
+        }
+        else
+        {
+            aux = 0.;
+        }
         tmp_uint8 = (uint8_t) (aux*15 + 0.5); // Shift and cast into a 8-bit uint8_t with rounding
                                               // where just the first 4 bits are used (0, ..., 15)
         lfr_bp1[i*NB_BYTES_BP1+6] = lfr_bp1[i*NB_BYTES_BP1+6] | (tmp_uint8 << 3); // Put these 4 bits next to the right place
@@ -240,8 +253,13 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
                  + 2 * compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+10]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+10]
                  + 2 * compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11];
         aux = PSDB*PSDB;
-        tmp = ( 3*tr_SB_SB - aux ) / ( 2 * aux );  // Compute the degree of polarisation
-
+        if (aux != 0.) { // no division by 0.
+            tmp = ( 3*tr_SB_SB - aux ) / ( 2 * aux );  // Compute the degree of polarisation
+        }
+        else
+        {
+            tmp = 0.;
+        }
         tmp_uint8 = (uint8_t) (tmp*7 + 0.5);       // Shift and cast into a 8-bit uint8_t with rounding
                                                    // where just the first 3 bits are used (0, ..., 7)
         lfr_bp1[i*NB_BYTES_BP1+6] = lfr_bp1[i*NB_BYTES_BP1+6] | tmp_uint8; // Record these 3 bits at the 3 first bit positions
@@ -411,8 +429,13 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
                                                                         // of lfr_bp1[i*NB_BYTES_BP1+2]
         pt_uint8[0] = (pt_uint8[0] & 0x7f);     // Make n_cross_e_scal_b_re be positive in any case: |n_cross_e_scal_b_re|
 #endif
-        vphi = n_cross_e_scal_b_re / bx_bx_star;  // Compute |VPHI|
-
+        if (bx_bx_star != 0.) { // no division by 0.
+            vphi = n_cross_e_scal_b_re / bx_bx_star;  // Compute |VPHI|
+        }
+        else
+        {
+            vphi = 1.e+20;                         // Put a huge value
+        }
         significand = frexpf(vphi/2, &exponent);  // 0.5 <= significand < 1
                                                   // vphi/2 = significand * 2^exponent
         // The division by 2 is to ensure that max value <= 2^30 (rough estimate)
@@ -529,8 +552,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
                                           // == PA_LFR_SC_BP2_CROSS_IM_9_F0 == 8 bits
         // S12
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+1] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+2] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+10] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+20] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -540,8 +570,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S13
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+3] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+4] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+11] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+21] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -550,8 +587,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S14
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+5] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+6] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+12] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+22] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -560,8 +604,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S15
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+7] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+8] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+13] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+23] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -570,8 +621,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S23
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+10] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+11] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+14] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+24] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -580,8 +638,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S24
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+12] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+13] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+15] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+25] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -590,8 +655,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S25
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+14] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+15] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+16] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+26] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -600,8 +672,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S34
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+17] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+18] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+17] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+27] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -610,8 +689,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S35
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+19] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+20] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+18] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+28] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH
@@ -620,8 +706,15 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
 #endif
         // S45
         aux = sqrt(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21]*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24]);
+        if (aux != 0.) { // no division by 0.
         cross_re = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+22] / aux;
         cross_im = compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+23] / aux;
+        }
+        else
+        {
+        cross_re = 0.;
+        cross_im = 0.;
+        }
         lfr_bp2[i*NB_BYTES_BP2+19] = (uint8_t) (cross_re*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
         lfr_bp2[i*NB_BYTES_BP2+29] = (uint8_t) (cross_im*127.5 + 128); // Shift and cast into a 8-bit uint8_t (0, ..., 255) with rounding
 #ifdef DEBUG_TCH

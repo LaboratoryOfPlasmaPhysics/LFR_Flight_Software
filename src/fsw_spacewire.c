@@ -332,11 +332,11 @@ rtems_task wtdg_task( rtems_task_argument argument )
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         PRINTF("in WTDG *** wait for the link\n")
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);        // get the link status
-        while( linkStatus != 5)                                             // wait for the link
+        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);       // get the link status
+        while( linkStatus != 5)                                                     // wait for the link
         {
-            rtems_task_wake_after( 10 );
-            status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status
+            status = rtems_task_wake_after( 10 );                                   // monitor the link each 100ms
+            status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
         }
 
         status = spacewire_stop_and_start_link( fdSPW );
@@ -480,6 +480,7 @@ int spacewire_reset_link( void )
      */
 
     rtems_status_code status_spw;
+    rtems_status_code status;
     int i;
 
     for ( i=0; i<SY_LFR_DPU_CONNECT_ATTEMPT; i++ )
@@ -487,6 +488,8 @@ int spacewire_reset_link( void )
         PRINTF1("in spacewire_reset_link *** link recovery, try %d\n", i);
 
         // CLOSING THE DRIVER AT THIS POINT WILL MAKE THE SEND TASK BLOCK THE SYSTEM
+
+        status = rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
 
         status_spw = spacewire_stop_and_start_link( fdSPW );
         if (  status_spw != RTEMS_SUCCESSFUL )
@@ -652,19 +655,21 @@ void spacewire_update_statistics( void )
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
-//    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_9 );
-    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
+    // a valid timecode has been received, write it in the HK report
+    unsigned int * grspwPtr;
 
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x04; // [0000 0100], 0 = output disabled, 1 = output enabled
+    grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);
 
-    if ( (grgpio_regs->io_port_output_register & 0x04) == 0x04 )
+    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0x3f);   // [11 1111]
+
+    // update the number of valid timecodes that have been received
+    if (housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt == 255)
     {
-        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xfb; // [1111 1011]
+        housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = 0;
     }
     else
     {
-        grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x04; // [0000 0100]
+        housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt + 1;
     }
 }
 

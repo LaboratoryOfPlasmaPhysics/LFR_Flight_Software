@@ -120,6 +120,7 @@ typedef struct ring_node
 #define REGS_ADDR_APBUART           0x80000100
 #define REGS_ADDR_GPTIMER           0x80000300
 #define REGS_ADDR_GRSPW             0x80000500
+#define APB_OFFSET_GRSPW_TIME_REGISTER 0x14
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
 #define REGS_ADDR_GRGPIO            0x80000b00
 
@@ -179,22 +180,22 @@ typedef struct ring_node
 #define TASKID_PRC2 19
 
 #define TASK_PRIORITY_SPIQ 5
-#define TASK_PRIORITY_WTDG 20
-#define TASK_PRIORITY_HOUS 30
+#define TASK_PRIORITY_WTDG 10
+#define TASK_PRIORITY_HOUS 20
+#define TASK_PRIORITY_AVF0 25
+#define TASK_PRIORITY_AVF1 30
+#define TASK_PRIORITY_AVF2 33
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //
 #define TASK_PRIORITY_SWBD 37   // SWBD has a lower priority than WFRM, this is to extract the snapshot before sending it
 #define TASK_PRIORITY_WFRM 40
 #define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
-#define TASK_PRIORITY_SEND 45
-#define TASK_PRIORITY_RECV 50
 #define TASK_PRIORITY_ACTN 50
-#define TASK_PRIORITY_AVF0 60
-#define TASK_PRIORITY_AVF1 70
+#define TASK_PRIORITY_PRC2 90
 #define TASK_PRIORITY_PRC0 100
-#define TASK_PRIORITY_PRC1 100
-#define TASK_PRIORITY_AVF2 110
-#define TASK_PRIORITY_PRC2 110
+#define TASK_PRIORITY_PRC1 105
+#define TASK_PRIORITY_RECV 120
+#define TASK_PRIORITY_SEND 130
 #define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
 
@@ -205,9 +206,9 @@ typedef struct ring_node
 #define MSG_QUEUE_COUNT_PRC2  5
 #define MSG_QUEUE_SIZE_SEND             810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
-#define MSG_QUEUE_SIZE_PRC0             20  // two pointers and one rtems_event + 2 integers
-#define MSG_QUEUE_SIZE_PRC1             20  // two pointers and one rtems_event + 2 integers
-#define MSG_QUEUE_SIZE_PRC2             20  // two pointers and one rtems_event + 2 integers
+#define MSG_QUEUE_SIZE_PRC0             28  // two pointers, one rtems_event + 4 integers
+#define MSG_QUEUE_SIZE_PRC1             28  // two pointers, one rtems_event + 4 integers
+#define MSG_QUEUE_SIZE_PRC2             28  // two pointers, one rtems_event + 4 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1

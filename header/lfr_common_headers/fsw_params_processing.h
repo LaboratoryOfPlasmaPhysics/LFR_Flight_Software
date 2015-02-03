@@ -20,7 +20,6 @@
 #define NB_RING_NODES_ASM_F1            3   // AT LEAST 3
 // F2
 #define NB_RING_NODES_SM_F2             5   // AT LEAST 3
-#define NB_RING_NODES_ASM_BURST_SBM_F2  3   // AT LEAST 3
 #define NB_RING_NODES_ASM_NORM_F2       3   // AT LEAST 3
 #define NB_RING_NODES_ASM_F2            3   // AT LEAST 3
 //
@@ -64,7 +63,6 @@
 #define TOTAL_SIZE_COMPRESSED_ASM_NORM_F2   300     // 12 * 25 WORDS
 #define TOTAL_SIZE_COMPRESSED_ASM_SBM_F0    550     // 22 * 25 WORDS
 #define TOTAL_SIZE_COMPRESSED_ASM_SBM_F1    650     // 26 * 25 WORDS
-#define TOTAL_SIZE_COMPRESSED_ASM_SBM_F2    600     // 24 * 25 WORDS
 #define TOTAL_SIZE_BP1_NORM_F0              99      // 9  * 11 UNSIGNED CHAR
 #define TOTAL_SIZE_BP2_NORM_F0              330     // 30 * 11 UNSIGNED CHAR
 #define TOTAL_SIZE_BP1_SBM_F0               198     // 9  * 22 UNSIGNED CHAR
