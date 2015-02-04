@@ -139,9 +139,10 @@ static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spe
                               ring_node *ring_node_tab[],
                               unsigned int nbAverageNORM, unsigned int nbAverageSBM,
                               asm_msg *msgForMATR );
-static inline void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                                     ring_node *ring_node_tab[],
-                                     unsigned int nbAverageNORM, unsigned int nbAverageSBM );
+static inline void SM_average_debug(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
+                              ring_node *ring_node_tab[],
+                              unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+                              asm_msg *msgForMATR );
 
 void ASM_patch( float *inputASM, float *outputASM );
 void extractReImVectors(float *inputASM, float *outputASM, unsigned int asmComponent );
@@ -201,8 +202,9 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
 }
 
 void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                  ring_node *ring_node_tab[],
-                  unsigned int nbAverageNORM, unsigned int nbAverageSBM )
+                 ring_node *ring_node_tab[],
+                 unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+                 asm_msg *msgForMATR )
 {
     float sum;
     unsigned int i;
@@ -210,26 +212,12 @@ void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_S
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
         sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ];
-
-        if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
-        {
-            averaged_spec_mat_NORM[ i ] = sum;
-            averaged_spec_mat_SBM[  i ] = sum;
-        }
-        else if ( (nbAverageNORM != 0) && (nbAverageSBM != 0) )
-        {
-            averaged_spec_mat_NORM[ i ] = sum;
-            averaged_spec_mat_SBM[  i ] = sum;
-        }
-        else if ( (nbAverageNORM != 0) && (nbAverageSBM == 0) )
-        {
-            averaged_spec_mat_NORM[ i ] = sum;
-            averaged_spec_mat_SBM[  i ] = sum;
-        }
-        else
-        {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNORM, nbAverageSBM)
-        }
+        averaged_spec_mat_NORM[ i ] = sum;
+        averaged_spec_mat_SBM[  i ] = sum;
+        msgForMATR->coarseTimeNORM  = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeNORM    = ring_node_tab[0]->fineTime;
+        msgForMATR->coarseTimeSBM   = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeSBM     = ring_node_tab[0]->fineTime;
     }
 }
 

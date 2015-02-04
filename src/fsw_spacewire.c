@@ -988,9 +988,6 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
 
-    printf("spw_send_waveform_CWF3_light => [0] = %x, [1] = %x, [2] = %x, [3] = %x, [4] = %x, [5] = %x\n",
-           dataPtr[0], dataPtr[1], dataPtr[2], dataPtr[3], dataPtr[4], dataPtr[5]);
-
     //*********************
     // SEND CWF3_light DATA
     for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF_LIGHT; i++) // send waveform

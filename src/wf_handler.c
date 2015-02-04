@@ -210,11 +210,11 @@ inline void waveforms_isr_burst( void )
     switch(status)
     {
     case 1:
-        ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
-        ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
-        current_ring_node_f2        = current_ring_node_f2->next;
+        ring_node_to_send_cwf_f2                = current_ring_node_f2->previous;
+        ring_node_to_send_cwf_f2->sid           = SID_BURST_CWF_F2;
         ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
         ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
+        current_ring_node_f2                    = current_ring_node_f2->next;
         waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
         if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
@@ -222,11 +222,11 @@ inline void waveforms_isr_burst( void )
         waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
         break;
     case 2:
-        ring_node_to_send_cwf_f2    = current_ring_node_f2->previous;
-        ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
-        current_ring_node_f2        = current_ring_node_f2->next;
+        ring_node_to_send_cwf_f2                = current_ring_node_f2->previous;
+        ring_node_to_send_cwf_f2->sid           = SID_BURST_CWF_F2;
         ring_node_to_send_cwf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
         ring_node_to_send_cwf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
+        current_ring_node_f2                    = current_ring_node_f2->next;
         waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
         if (rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST ) != RTEMS_SUCCESSFUL) {
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
@@ -867,8 +867,6 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, ring_node *ring_node
         wf_cont_f3_light[ (i * NB_BYTES_CWF3_LIGHT_BLK) + 5 ] = sample[ 5 ];
     }
 
-    printf("send_waveform_CWF3_light => [0] = %x, [1] = %x, [2] = %x\n", dataPtr[0], dataPtr[1], dataPtr[2]);
-
     // SEND PACKET
     status =  rtems_message_queue_send( queue_id, &ring_node_cwf3_light, sizeof( ring_node* ) );
     if (status != RTEMS_SUCCESSFUL) {
@@ -981,7 +979,6 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
 
     // (2) compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
-    printf("centerTime_asLong = %llx\n", centerTime_asLong);
 
     // (3) compute the acquisition time of the current snapshot
     switch(frequencyChannel)
@@ -1089,8 +1086,8 @@ void snapshot_resynchronization( unsigned char *timePtr )
     deltaPrevious       = ((double) deltaPreviousTick) / 65536. * 1000.;
     deltaNext           = ((double) deltaNextTick) / 65536. * 1000.;
 
-    printf("delta previous = %f ms, delta next = %f ms\n", deltaPrevious, deltaNext);
-    printf("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick);
+    PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious, deltaNext)
+    PRINTF2("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick)
 
     // which tick is the closest
     if (deltaPreviousTick > deltaNextTick)
@@ -1225,6 +1222,9 @@ void set_wfp_data_shaping( void )
             + ( (data_shaping & 0x04)      )     // SP1
             + ( (data_shaping & 0x02) << 2 )     // R0
             + ( (data_shaping & 0x01) << 4 );    // R1
+
+    // this is a temporary way to set R2, compatible with the release 2 of the flight software
+    waveform_picker_regs->data_shaping = waveform_picker_regs->data_shaping + ( (0x1) << 5 );    // R2
 }
 
 void set_wfp_burst_enable_register( unsigned char mode )

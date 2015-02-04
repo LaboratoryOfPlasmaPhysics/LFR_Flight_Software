@@ -225,8 +225,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
-            get_v_e1_e2_f3( housekeeping_packet.hk_lfr_sc_v_f3 );
-            get_temperatures( housekeeping_packet.hk_lfr_temp_scm);
+            get_temperatures( housekeeping_packet.hk_lfr_temp_scm );
+            get_v_e1_e2_f3(   housekeeping_packet.hk_lfr_sc_v_f3  );
             get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );
 
             // SEND PACKET
@@ -442,24 +442,6 @@ void send_dumb_hk( void )
                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
 
-void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
-{
-    unsigned char* v_ptr;
-    unsigned char* e1_ptr;
-    unsigned char* e2_ptr;
-
-    v_ptr  = (unsigned char *) &waveform_picker_regs->v;
-    e1_ptr = (unsigned char *) &waveform_picker_regs->e1;
-    e2_ptr = (unsigned char *) &waveform_picker_regs->e2;
-
-    spacecraft_potential[0] = v_ptr[2];
-    spacecraft_potential[1] = v_ptr[3];
-    spacecraft_potential[2] = e1_ptr[2];
-    spacecraft_potential[3] = e1_ptr[3];
-    spacecraft_potential[4] = e2_ptr[2];
-    spacecraft_potential[5] = e2_ptr[3];
-}
-
 void get_temperatures( unsigned char *temperatures )
 {
     unsigned char* temp_scm_ptr;
@@ -476,6 +458,24 @@ void get_temperatures( unsigned char *temperatures )
     temperatures[3] = temp_pcb_ptr[3];
     temperatures[4] = temp_fpga_ptr[2];
     temperatures[5] = temp_fpga_ptr[3];
+}
+
+void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
+{
+    unsigned char* v_ptr;
+    unsigned char* e1_ptr;
+    unsigned char* e2_ptr;
+
+    v_ptr  = (unsigned char *) &waveform_picker_regs->v;
+    e1_ptr = (unsigned char *) &waveform_picker_regs->e1;
+    e2_ptr = (unsigned char *) &waveform_picker_regs->e2;
+
+    spacecraft_potential[0] = v_ptr[2];
+    spacecraft_potential[1] = v_ptr[3];
+    spacecraft_potential[2] = e1_ptr[2];
+    spacecraft_potential[3] = e1_ptr[3];
+    spacecraft_potential[4] = e2_ptr[2];
+    spacecraft_potential[5] = e2_ptr[3];
 }
 
 void get_cpu_load( unsigned char *resource_statistics )
