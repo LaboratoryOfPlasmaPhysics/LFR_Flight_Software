@@ -11,6 +11,7 @@
  */
 
 #include "tc_handler.h"
+#include "math.h"
 
 //***********
 // RTEMS TASK
@@ -267,13 +268,12 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
      */
 
     int result;
-    unsigned char lfrMode;
 
     result = LFR_DEFAULT;
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
-    result = LFR_DEFAULT;
+    startCalibration();
+
+    result = LFR_SUCCESSFUL;
 
     return result;
 }
@@ -288,13 +288,12 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, 
      */
 
     int result;
-    unsigned char lfrMode;
 
     result = LFR_DEFAULT;
-    lfrMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
 
-    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
-    result = LFR_DEFAULT;
+    stopCalibration();
+
+    result = LFR_SUCCESSFUL;
 
     return result;
 }
@@ -820,6 +819,153 @@ void set_sm_irq_onError( unsigned char value )
     else
     {
         spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffd;   // 1101
+    }
+}
+
+//*****************************
+// CONFIGURE CALIBRATION SIGNAL
+void setCalibrationPrescaler( unsigned int prescaler )
+{
+    // prescaling of the master clock (25 MHz)
+    // master clock is divided by 2^prescaler
+    time_management_regs->calPrescaler = prescaler;
+}
+
+void setCalibrationDivisor( unsigned int divisionFactor )
+{
+    // division of the prescaled clock by the division factor
+    time_management_regs->calDivisor = divisionFactor;
+}
+
+void setCalibrationData( void ){
+    unsigned int k;
+    unsigned short data;
+    float val;
+    float f0;
+    float f1;
+    float fs;
+    float Ts;
+    float scaleFactor;
+
+    f0 = 625;
+    f1 = 10000;
+    fs = 160256.410;
+    Ts = 1. / fs;
+    scaleFactor = 0.125 / 0.000654; // 191, 500 mVpp, 2 sinus waves => 250 mVpp each, amplitude = 125 mV
+
+    time_management_regs->calDataPtr = 0x00;
+
+    // build the signal for the SCM calibration
+    for (k=0; k<256; k++)
+    {
+        val = sin( 2 * pi * f0 * k * Ts )
+                + sin(  2 * pi * f1 * k * Ts );
+        data = (unsigned short) ((val * scaleFactor) + 2048);
+        time_management_regs->calData = data & 0xfff;
+    }
+}
+
+void setCalibrationDataInterleaved( void ){
+    unsigned int k;
+    float val;
+    float f0;
+    float f1;
+    float fs;
+    float Ts;
+    unsigned short data[384];
+    unsigned char *dataPtr;
+
+    f0 = 625;
+    f1 = 10000;
+    fs = 240384.615;
+    Ts = 1. / fs;
+
+    time_management_regs->calDataPtr = 0x00;
+
+    // build the signal for the SCM calibration
+    for (k=0; k<384; k++)
+    {
+        val = sin( 2 * pi * f0 * k * Ts )
+                + sin(  2 * pi * f1 * k * Ts );
+        data[k] = (unsigned short) (val * 512 + 2048);
+    }
+
+    // write the signal in interleaved mode
+    for (k=0; k<128; k++)
+    {
+        dataPtr = (unsigned char*) &data[k*3 + 2];
+        time_management_regs->calData = (data[k*3] & 0xfff)
+                + ( (dataPtr[0] & 0x3f) << 12);
+        time_management_regs->calData = (data[k*3 + 1] & 0xfff)
+                + ( (dataPtr[1] & 0x3f) << 12);
+    }
+}
+
+void setCalibrationReload( bool state)
+{
+    if (state == true)
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000010;   // [0001 0000]
+    }
+    else
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffef;   // [1110 1111]
+    }
+}
+
+void setCalibrationEnable( bool state )
+{
+    // this bit drives the multiplexer
+    if (state == true)
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000040;   // [0100 0000]
+    }
+    else
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffbf; // [1011 1111]
+    }
+}
+
+void setCalibrationInterleaved( bool state )
+{
+    // this bit drives the multiplexer
+    if (state == true)
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000020;   // [0010 0000]
+    }
+    else
+    {
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffdf; // [1101 1111]
+    }
+}
+
+void startCalibration( void )
+{
+    setCalibrationEnable( true );
+    setCalibrationReload( false );
+}
+
+void stopCalibration( void )
+{
+    setCalibrationEnable( false );
+    setCalibrationReload( true );
+}
+
+void configureCalibration( bool interleaved )
+{
+    stopCalibration();
+    if ( interleaved == true )
+    {
+        setCalibrationInterleaved( true );
+        setCalibrationPrescaler( 0 );   // 25 MHz   => 25 000 000
+        setCalibrationDivisor(  26 );   //          => 240 384
+        setCalibrationDataInterleaved();
+    }
+    else
+    {
+        setCalibrationPrescaler( 0 );   // 25 MHz   => 25 000 000
+        setCalibrationDivisor(  38 );   //          => 160 256 (39 - 1)
+        setCalibrationData();
     }
 }
 

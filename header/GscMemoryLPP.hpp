@@ -1,12 +1,11 @@
 #ifndef GSCMEMORY_HPP_
 #define GSCMEMORY_HPP_
 
-static unsigned int getCacheControlRegister(){
-
 #ifndef LEON3
 #define LEON3
 #endif
 
+static unsigned int getCacheControlRegister(){
 #ifdef LEON3
     unsigned int cacheControlRegister = 0;
     __asm__ __volatile__("lda [%%g0] 2, %0" : "=r"(cacheControlRegister) : );
@@ -14,8 +13,8 @@ static unsigned int getCacheControlRegister(){
 #endif
 }
 
-static void setCacheControlRegister(unsigned int cacheControlRegister){
-
+static void setCacheControlRegister(unsigned int cacheControlRegister)
+{
 #ifdef LEON3
     __asm__ __volatile__("sta %0, [%%g0] 2" : : "r"(cacheControlRegister));
 #endif
@@ -23,17 +22,16 @@ static void setCacheControlRegister(unsigned int cacheControlRegister){
 
 
 /**
-                 * Flush the data cache and the instruction cache.
-                 *
-                 * @return
-                 */
+* Flush the data cache and the instruction cache.
+*
+* @return
+*/
 static inline void flushCache() {
     asm("flush");
 }
 
 
 static void enableInstructionCache() {
-
 #ifdef LEON3
     unsigned int cacheControlRegister;
     cacheControlRegister = getCacheControlRegister();
@@ -43,7 +41,6 @@ static void enableInstructionCache() {
 }
 
 static void enableDataCache() {
-
 #ifdef LEON3
     unsigned int cacheControlRegister;
     cacheControlRegister = getCacheControlRegister();
@@ -53,7 +50,6 @@ static void enableDataCache() {
 }
 
 static void enableInstructionBurstFetch() {
-
 #ifdef LEON3
     unsigned int cacheControlRegister;
     cacheControlRegister = getCacheControlRegister();

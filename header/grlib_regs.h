@@ -45,9 +45,16 @@ typedef struct {
     volatile int coarse_time_load;
     volatile int coarse_time;
     volatile int fine_time;
-    volatile int temp_scm;
-    volatile int temp_pcb;
-    volatile int temp_fpga;
+    // TEMPERATURES
+    volatile int temp_pcb;  // SEL1 = 0 SEL0 = 0
+    volatile int temp_fpga; // SEL1 = 0 SEL0 = 1
+    volatile int temp_scm;  // SEL1 = 1 SEL0 = 0
+    // CALIBRATION
+    volatile unsigned int calDACCtrl;
+    volatile unsigned int calPrescaler;
+    volatile unsigned int calDivisor;
+    volatile unsigned int calDataPtr;
+    volatile unsigned int calData;
 } time_management_regs_t;
 
 // PDB >= 0.1.28

@@ -51,6 +51,17 @@ void set_sm_irq_onError( unsigned char value );
 void updateLFRCurrentMode();
 void set_lfr_soft_reset( unsigned char value );
 void reset_lfr( void );
+// CALIBRATION
+void setCalibrationPrescaler( unsigned int prescaler );
+void setCalibrationDivisor( unsigned int divisionFactor );
+void setCalibrationData( void );
+void setCalibrationReload( bool state);
+void setCalibrationEnable( bool state );
+void setCalibrationInterleaved( bool state );
+void startCalibration( void );
+void stopCalibration( void );
+void configureCalibration( bool interleaved );
+//
 void update_last_TC_exe( ccsdsTelecommandPacket_t *TC , unsigned char *time );
 void update_last_TC_rej(ccsdsTelecommandPacket_t *TC , unsigned char *time );
 void close_action( ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id );

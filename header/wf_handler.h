@@ -11,7 +11,7 @@
 #include "fsw_misc.h"
 #include "fsw_params_wf_handler.h"
 
-#define pi 3.1415
+#define pi 3.14159265359
 
 extern int fdSPW;
 

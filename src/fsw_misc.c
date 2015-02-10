@@ -448,6 +448,11 @@ void get_temperatures( unsigned char *temperatures )
     unsigned char* temp_pcb_ptr;
     unsigned char* temp_fpga_ptr;
 
+    // SEL1 SEL0
+    // 0    0       => PCB
+    // 0    1       => FPGA
+    // 1    0       => SCM
+
     temp_scm_ptr  = (unsigned char *) &time_management_regs->temp_scm;
     temp_pcb_ptr =  (unsigned char *) &time_management_regs->temp_pcb;
     temp_fpga_ptr = (unsigned char *) &time_management_regs->temp_fpga;

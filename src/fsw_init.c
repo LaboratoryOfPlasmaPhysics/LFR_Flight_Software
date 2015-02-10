@@ -145,6 +145,9 @@ rtems_task Init( rtems_task_argument ignored )
     SM_reset_current_ring_nodes();
     reset_spectral_matrix_regs();
 
+    // configure calibration
+    configureCalibration( false );   // true means interleaved mode, false is for normal mode
+
     updateLFRCurrentMode();
 
     BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
