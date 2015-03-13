@@ -660,7 +660,7 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 
     grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);
 
-    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0x3f);   // [11 1111]
+    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0xff);   // [11 1111]
 
     // update the number of valid timecodes that have been received
     if (housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt == 255)

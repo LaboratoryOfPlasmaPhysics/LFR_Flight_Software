@@ -615,6 +615,8 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
     struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
 
+    incrementLocalCoarseTime();
+
     //*******
     // GPIO 2
     if ( get_transitionCoarseTime() == getLocalCoarseTime() )
@@ -659,6 +661,7 @@ rtems_task updt_task(rtems_task_argument unused)
     rtems_event_set event_out;
     rtems_status_code status;
     rtems_id queue_id;
+    unsigned int coarseTimeToSend;
 
     Packet_TC_LFR_UPDATE_TIME_WITH_HEADER_t update_time_packet;
 
@@ -692,9 +695,9 @@ rtems_task updt_task(rtems_task_argument unused)
     while(true){
         rtems_event_receive(RTEMS_EVENT_0, RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an SPW_LINKERR_EVENT
 
-        incrementLocalCoarseTime();
-        updateTimePacket( getLocalCoarseTime() , &update_time_packet);
-        printf("UPDT will send %x as coarse time in 700 ms\n", getLocalCoarseTime());
+        coarseTimeToSend = getLocalCoarseTime() + 1;
+        updateTimePacket( coarseTimeToSend, &update_time_packet);
+        printf("UPDT will send %x as coarse time in 700 ms\n", coarseTimeToSend);
 
         rtems_task_wake_after( 70 ); // 70 => 700 ms
 

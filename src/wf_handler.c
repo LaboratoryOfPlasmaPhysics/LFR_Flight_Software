@@ -1294,7 +1294,7 @@ void set_wfp_delta_f0_f0_2( void )
     delta_f0_in_float =nb_samples_per_snapshot / 2. * ( 1. / 256. - 1. / 24576.) * 256.;
 
     waveform_picker_regs->delta_f0      =  delta_snapshot - floor( delta_f0_in_float );
-    waveform_picker_regs->delta_f0_2    = 0x7;         // max 7 bits
+    waveform_picker_regs->delta_f0_2    = 0x30;         // 48 = 11 0000, max 7 bits
 }
 
 void set_wfp_delta_f1( void )

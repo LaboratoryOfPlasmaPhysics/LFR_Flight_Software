@@ -141,14 +141,16 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, 
 int action_update_time(ccsdsTelecommandPacket_t *TC)
 {
     unsigned int incomingCoarseTime;
+    unsigned int currentLocalCoarseTime;
 
     incomingCoarseTime = (TC->dataAndCRC[0] << 24)
             + (TC->dataAndCRC[1] << 16)
             + (TC->dataAndCRC[2] << 8)
             + TC->dataAndCRC[3];
 
+    currentLocalCoarseTime = getLocalCoarseTime();
     setLocalCoarseTime( incomingCoarseTime );
-    printf( "localCoarseTime set to: %x\n", getLocalCoarseTime() );
+    printf( "currentLocalCoarseTime = %x, localCoarseTime set to: %x\n", currentLocalCoarseTime, getLocalCoarseTime() );
 
     return LFR_SUCCESSFUL;
 }

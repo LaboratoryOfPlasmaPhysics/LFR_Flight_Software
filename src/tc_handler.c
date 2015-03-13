@@ -426,10 +426,12 @@ int check_transition_date( unsigned int transitionCoarseTime )
     {
         localCoarseTime = time_management_regs->coarse_time & 0x7fffffff;
 
+        PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime)
+
         if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
         {
             status = LFR_DEFAULT;
-            PRINTF2("ERR *** in check_transition_date *** transition = %x, local = %x\n", transitionCoarseTime, localCoarseTime)
+            PRINTF("ERR *** in check_transition_date *** transitionCoarseTime <= localCoarseTime\n")
         }
 
         if (status == LFR_SUCCESSFUL)
@@ -768,7 +770,6 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
         waveform_picker_regs->start_date = transitionCoarseTime;
     }
 
-    PRINTF1("commutation coarse time = %x\n", transitionCoarseTime)
 }
 
 void launch_spectral_matrix( void )
