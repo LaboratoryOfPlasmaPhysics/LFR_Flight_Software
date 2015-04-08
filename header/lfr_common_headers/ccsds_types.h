@@ -20,16 +20,10 @@
 // PACKET ID
 #define APID_TM_TC_EXE                  0x0cc1 // PID 76 CAT 1
 #define APID_TM_HK                      0x0cc4 // PID 76 CAT 4
-#define APID_TM_PARAMETER_DUMP          0x0cc9 // PID 76 CAT 9
 #define APID_TM_SCIENCE_NORMAL_BURST    0x0ccc // PID 76 CAT 12
 #define APID_TM_SCIENCE_SBM1_SBM2       0x0cfc // PID 79 CAT 12
-#define TM_PACKET_PID_DEFAULT           76
-#define TM_PACKET_PID_BURST_SBM1_SBM2   79
-#define TM_PACKET_CAT_TC_EXE            1
-#define TM_PACKET_CAT_HK                4
-#define TM_PACKET_CAT_PARAMETER_DUMP    9
-#define TM_PACKET_CAT_SCIENCE           12
-#define TC_PACKET_CAT                   12
+#define APID_TM_PARAMETER_DUMP          0x0cc6 // PID 76 CAT 6
+#define APID_TM_KCOEFFICIENTS_DUMP      0x0cc6 // PID 76 CAT 6
 
 // PACKET SEQUENCE CONTROL
 #define TM_PACKET_SEQ_CTRL_CONTINUATION 0x00    // [0000 0000]
@@ -39,19 +33,21 @@
 #define TM_PACKET_SEQ_CNT_DEFAULT       0x00    // [0000 0000]
 
 // DESTINATION ID
-#define TM_DESTINATION_ID_GROUND 0
-#define TM_DESTINATION_ID_MISSION_TIMELINE 110
-#define TM_DESTINATION_ID_TC_SEQUENCES 111
-#define TM_DESTINATION_ID_RECOVERY_ACTION_COMMAND 112
-#define TM_DESTINATION_ID_BACKUP_MISSION_TIMELINE 113
-#define TM_DESTINATION_ID_DIRECT_CMD 120
-#define TM_DESTINATION_ID_SPARE_GRD_SRC1 121
-#define TM_DESTINATION_ID_SPARE_GRD_SRC2 122
-#define TM_DESTINATION_ID_OBCP 15
-#define TM_DESTINATION_ID_SYSTEM_CONTROL 14
-#define TM_DESTINATION_ID_AOCS 11
+#define TM_DESTINATION_ID_GROUND                    0
+#define TM_DESTINATION_ID_MISSION_TIMELINE          110
+#define TM_DESTINATION_ID_TC_SEQUENCES              111
+#define TM_DESTINATION_ID_RECOVERY_ACTION_COMMAND   112
+#define TM_DESTINATION_ID_BACKUP_MISSION_TIMELINE   113
+#define TM_DESTINATION_ID_DIRECT_CMD                120
+#define TM_DESTINATION_ID_SPARE_GRD_SRC1            121
+#define TM_DESTINATION_ID_SPARE_GRD_SRC2            122
+#define TM_DESTINATION_ID_OBCP                      15
+#define TM_DESTINATION_ID_SYSTEM_CONTROL            14
+#define TM_DESTINATION_ID_AOCS                      11
 
-
+//*********************************************************
+//*** /!\ change CCSDS_DESTINATION_ID before flight /!\ ***
+//*********************************************************
 #ifdef LPP_DPU_DESTID
 #define CCSDS_DESTINATION_ID 32
 #else
@@ -66,50 +62,58 @@
 #define SIZE_HK_PARAMETERS 112
 
 // TC TYPES
-#define TC_TYPE_GEN 181
-#define TC_TYPE_TIME 9
+#define TC_TYPE_GEN     181
+#define TC_TYPE_TIME    9
 
 // TC SUBTYPES
-#define TC_SUBTYPE_RESET 1
-#define TC_SUBTYPE_LOAD_COMM 11
-#define TC_SUBTYPE_LOAD_NORM 13
-#define TC_SUBTYPE_LOAD_BURST 19
-#define TC_SUBTYPE_LOAD_SBM1 25
-#define TC_SUBTYPE_LOAD_SBM2 27
-#define TC_SUBTYPE_DUMP 31
-#define TC_SUBTYPE_ENTER 41
-#define TC_SUBTYPE_UPDT_INFO 51
-#define TC_SUBTYPE_EN_CAL 61
-#define TC_SUBTYPE_DIS_CAL 63
-#define TC_SUBTYPE_UPDT_TIME 129
+#define TC_SUBTYPE_RESET        1
+#define TC_SUBTYPE_LOAD_COMM    11
+#define TC_SUBTYPE_LOAD_NORM    13
+#define TC_SUBTYPE_LOAD_BURST   19
+#define TC_SUBTYPE_LOAD_SBM1    25
+#define TC_SUBTYPE_LOAD_SBM2    27
+#define TC_SUBTYPE_DUMP         31
+#define TC_SUBTYPE_ENTER        41
+#define TC_SUBTYPE_UPDT_INFO    51
+#define TC_SUBTYPE_EN_CAL       61
+#define TC_SUBTYPE_DIS_CAL      63
+#define TC_SUBTYPE_LOAD_K       93
+#define TC_SUBTYPE_DUMP_K       95
+#define TC_SUBTYPE_LOAD_FBINS   91
+#define TC_SUBTYPE_UPDT_TIME    129
 
 // TC LEN
-#define TC_LEN_RESET 12
-#define TC_LEN_LOAD_COMM 14
-#define TC_LEN_LOAD_NORM 22
-#define TC_LEN_LOAD_BURST 14
-#define TC_LEN_LOAD_SBM1 14
-#define TC_LEN_LOAD_SBM2 14
-#define TC_LEN_DUMP 12
-#define TC_LEN_ENTER 20
-#define TC_LEN_UPDT_INFO 46
-#define TC_LEN_EN_CAL 12
-#define TC_LEN_DIS_CAL 12
-#define TC_LEN_UPDT_TIME 18
+#define TC_LEN_RESET        12
+#define TC_LEN_LOAD_COMM    14
+#define TC_LEN_LOAD_NORM    22
+#define TC_LEN_LOAD_BURST   14
+#define TC_LEN_LOAD_SBM1    14
+#define TC_LEN_LOAD_SBM2    14
+#define TC_LEN_DUMP         12
+#define TC_LEN_ENTER        20
+#define TC_LEN_UPDT_INFO    46
+#define TC_LEN_EN_CAL       12
+#define TC_LEN_DIS_CAL      12
+#define TC_LEN_LOAD_K       142
+#define TC_LEN_DUMP_K       12
+#define TC_LEN_LOAD_FBINS   60
+#define TC_LEN_UPDT_TIME    18
 
 // TM TYPES
-#define TM_TYPE_TC_EXE 1
-#define TM_TYPE_HK 3
-#define TM_TYPE_PARAMETER_DUMP 3
-#define TM_TYPE_LFR_SCIENCE 21
+#define TM_TYPE_TC_EXE              1
+#define TM_TYPE_HK                  3
+#define TM_TYPE_LFR_SCIENCE         21
+#define TM_TYPE_PARAMETER_DUMP      181
+#define TM_TYPE_KCOEFFICIENTD_DUMP  181
 
 // TM SUBTYPES
-#define TM_SUBTYPE_EXE_OK 7
-#define TM_SUBTYPE_EXE_NOK 8
-#define TM_SUBTYPE_HK 25
-#define TM_SUBTYPE_PARAMETER_DUMP 25
-#define TM_SUBTYPE_SCIENCE 3
-#define TM_SUBTYPE_LFR_SCIENCE 3
+#define TM_SUBTYPE_EXE_OK           7
+#define TM_SUBTYPE_EXE_NOK          8
+#define TM_SUBTYPE_HK               25
+#define TM_SUBTYPE_LFR_SCIENCE_3    3   // TM packets with fixed size
+#define TM_SUBTYPE_LFR_SCIENCE_6    6   // TM packets with variable size
+#define TM_SUBTYPE_PARAMETER_DUMP   32
+#define TM_SUBTYPE_K_DUMP           96
 
 // FAILURE CODES
 #define ILLEGAL_APID        0
@@ -160,39 +164,37 @@ enum apid_destid{
 
 // TM SID
 #define SID_HK 1
-#define SID_PARAMETER_DUMP 10
 
-#define SID_NORM_SWF_F0 3
-#define SID_NORM_SWF_F1 4
-#define SID_NORM_SWF_F2 5
-#define SID_NORM_CWF_F3 1
-#define SID_BURST_CWF_F2 2
-#define SID_SBM1_CWF_F1 24
-#define SID_SBM2_CWF_F2 25
-#define SID_NORM_ASM_F0 11
-#define SID_NORM_ASM_F1 12
-#define SID_NORM_ASM_F2 13
-#define SID_NORM_BP1_F0 14
-#define SID_NORM_BP1_F1 15
-#define SID_NORM_BP1_F2 16
-#define SID_NORM_BP2_F0 19
-#define SID_NORM_BP2_F1 20
-#define SID_NORM_BP2_F2 21
-#define SID_BURST_BP1_F0 17
-#define SID_BURST_BP2_F0 22
-#define SID_BURST_BP1_F1 18
-#define SID_BURST_BP2_F1 23
-#define SID_SBM1_BP1_F0 28
-#define SID_SBM1_BP2_F0 31
-#define SID_SBM2_BP1_F0 29
-#define SID_SBM2_BP2_F0 32
-#define SID_SBM2_BP1_F1 30
-#define SID_SBM2_BP2_F1 33
+#define SID_NORM_SWF_F0     3
+#define SID_NORM_SWF_F1     4
+#define SID_NORM_SWF_F2     5
+#define SID_NORM_CWF_F3     1
+#define SID_BURST_CWF_F2    2
+#define SID_SBM1_CWF_F1     24
+#define SID_SBM2_CWF_F2     25
+#define SID_NORM_ASM_F0     11
+#define SID_NORM_ASM_F1     12
+#define SID_NORM_ASM_F2     13
+#define SID_NORM_BP1_F0     14
+#define SID_NORM_BP1_F1     15
+#define SID_NORM_BP1_F2     16
+#define SID_NORM_BP2_F0     19
+#define SID_NORM_BP2_F1     20
+#define SID_NORM_BP2_F2     21
+#define SID_BURST_BP1_F0    17
+#define SID_BURST_BP2_F0    22
+#define SID_BURST_BP1_F1    18
+#define SID_BURST_BP2_F1    23
+#define SID_SBM1_BP1_F0     28
+#define SID_SBM1_BP2_F0     31
+#define SID_SBM2_BP1_F0     29
+#define SID_SBM2_BP2_F0     32
+#define SID_SBM2_BP1_F1     30
+#define SID_SBM2_BP2_F1     33
 #define SID_NORM_CWF_LONG_F3 34
 
-// LENGTH (BYTES)
-#define LENGTH_TM_LFR_TC_EXE_MAX 32
-#define LENGTH_TM_LFR_HK 126
+#define SID_PARAMETER_DUMP  10
+#define SID_K_DUMP          11
 
 // HEADER_LENGTH
 #define TM_HEADER_LEN 16
@@ -204,38 +206,37 @@ enum apid_destid{
 #define PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED        (24   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_ERROR                  (24   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_CORRUPTED              (32   - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_HK                            (124  - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_PARAMETER_DUMP                (36   - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0         (2228 - CCSDS_TC_TM_PACKET_OFFSET)  // 44 * 25 * 2 + 28
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1         (2628 - CCSDS_TC_TM_PACKET_OFFSET)  // 52 * 25 * 2 + 28
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2         (2428 - CCSDS_TC_TM_PACKET_OFFSET)  // 48 * 25 * 2 + 28
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0    (126  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 9      + 27 (1 spare bit in the header)
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0    (356  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 30     + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1    (144  - CCSDS_TC_TM_PACKET_OFFSET)  // 13 * 9      + 27 (1 spare bit in the header)
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1    (416  - CCSDS_TC_TM_PACKET_OFFSET)  // 13 * 30     + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2    (134  - CCSDS_TC_TM_PACKET_OFFSET)  // 12 * 9      + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2    (386  - CCSDS_TC_TM_PACKET_OFFSET)  // 12 * 30     + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0     (224  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 9      + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0     (686  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 30     + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1     (260  - CCSDS_TC_TM_PACKET_OFFSET)  // 26 * 9      + 26
-#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1     (806  - CCSDS_TC_TM_PACKET_OFFSET)  // 26 * 30     + 26
+#define PACKET_LENGTH_HK                            (136  - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP                (84   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_K_DUMP                        (3920 - CCSDS_TC_TM_PACKET_OFFSET)
+// SCIENCE ASM
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0         (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 88 bins  (32 + 32 + 24 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1         (3630 - CCSDS_TC_TM_PACKET_OFFSET)  // 52 * 25 * 2 + 30 => 104 bins (36 + 36 + 32 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2         (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 96 bins  (32 + 32 + 32 ), 3 packets
+// SCIENCE NORM
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0    (150  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 11     + 29 (1 spare byte in the header)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1    (172  - CCSDS_TC_TM_PACKET_OFFSET)  // 13 * 11     + 29 (1 spare byte in the header)
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2    (160  - CCSDS_TC_TM_PACKET_OFFSET)  // 12 * 11     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0    (358  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 30     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1    (418  - CCSDS_TC_TM_PACKET_OFFSET)  // 13 * 30     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2    (388  - CCSDS_TC_TM_PACKET_OFFSET)  // 12 * 30     + 28
+// SCIENCE SBM
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0     (270  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 11     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0     (688  - CCSDS_TC_TM_PACKET_OFFSET)  // 22 * 30     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1     (314  - CCSDS_TC_TM_PACKET_OFFSET)  // 26 * 11     + 28
+#define PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1     (808  - CCSDS_TC_TM_PACKET_OFFSET)  // 26 * 30     + 28
 
 #define PACKET_LENGTH_DELTA                         11                                  // 7 + 4
 
 #define SPARE1_PUSVERSION_SPARE2 0x10
 
-// R1
-#define TM_LEN_SCI_SWF_340          4101    // 340 * 12 + 10 + 12 - 1
-#define TM_LEN_SCI_SWF_8            117     //   8 * 12 + 10 + 12 - 1
-#define TM_LEN_SCI_CWF_340          4099    // 340 * 12 + 10 + 10 - 1
-#define TM_LEN_SCI_CWF_8            115     //   8 * 12 + 10 + 10 - 1
-#define TM_LEN_SCI_CWF3_LIGHT_340   2059    // 340 * 6  + 10 + 10 - 1
-#define TM_LEN_SCI_CWF3_LIGHT_8     67      //   8 * 6  + 10 + 10 - 1
-// R2
-#define TM_LEN_SCI_SWF_304          3669    // 304 * 12 + 10 + 12 - 1
-#define TM_LEN_SCI_SWF_224          2709    // 224 * 12 + 10 + 12 - 1
-#define TM_LEN_SCI_CWF_336          4051    // 336 * 12 + 10 + 10 - 1
-#define TM_LEN_SCI_CWF_672          4051    // 672 * 6 + 10 + 10 - 1
+// R3
+// one snapshot          = 2048 samples = 6 packets * 304 + 224
+#define TM_LEN_SCI_SWF_304  (3678 - CCSDS_TC_TM_PACKET_OFFSET)    // 304 * 12 + 30
+#define TM_LEN_SCI_SWF_224  (2718 - CCSDS_TC_TM_PACKET_OFFSET)    // 224 * 12 + 30
+// one continuous buffer = 2688 samples = 8 packets * 336
+#define TM_LEN_SCI_CWF_336  (4060 - CCSDS_TC_TM_PACKET_OFFSET)    // 336 * 12 + 28
+#define TM_LEN_SCI_CWF_672  (4060 - CCSDS_TC_TM_PACKET_OFFSET)    // 672 * 6  + 28
 //
 #define DEFAULT_PKTCNT      0x07
 #define BLK_NR_304          0x0130
@@ -411,6 +412,8 @@ typedef struct {
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char hkBIA;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char pktCnt;
     unsigned char pktNr;
     unsigned char acquisitionTime[6];
@@ -434,6 +437,8 @@ typedef struct {
     // AUXILIARY DATA HEADER
     unsigned char sid;
     unsigned char hkBIA;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
     unsigned char blkNr[2];
 } Header_TM_LFR_SCIENCE_CWF_t;
@@ -455,6 +460,8 @@ typedef struct {
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char pa_lfr_pkt_cnt_asm;
     unsigned char pa_lfr_pkt_nr_asm;
     unsigned char acquisitionTime[6];
@@ -478,6 +485,8 @@ typedef struct {
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
     unsigned char source_data_spare;
     unsigned char pa_lfr_bp_blk_nr[2];
@@ -500,6 +509,8 @@ typedef struct {
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
     unsigned char pa_lfr_bp_blk_nr[2];
 } Header_TM_LFR_SCIENCE_BP_t;
@@ -544,6 +555,16 @@ typedef struct {
     unsigned char hk_lfr_cpu_load;
     unsigned char hk_lfr_cpu_load_max;
     unsigned char hk_lfr_cpu_load_aver;
+    unsigned char hk_lfr_q_sd_fifo_size_max;
+    unsigned char hk_lfr_q_sd_fifo_size;
+    unsigned char hk_lfr_q_rv_fifo_size_max;
+    unsigned char hk_lfr_q_rv_fifo_size;
+    unsigned char hk_lfr_q_p0_fifo_size_max;
+    unsigned char hk_lfr_q_p0_fifo_size;
+    unsigned char hk_lfr_q_p1_fifo_size_max;
+    unsigned char hk_lfr_q_p1_fifo_size;
+    unsigned char hk_lfr_q_p2_fifo_size_max;
+    unsigned char hk_lfr_q_p2_fifo_size;
     // tc statistics
     unsigned char hk_lfr_update_info_tc_cnt[2];
     unsigned char hk_lfr_update_time_tc_cnt[2];
@@ -584,6 +605,9 @@ typedef struct {
     unsigned char hk_lfr_sc_v_f3[2];
     unsigned char hk_lfr_sc_e1_f3[2];
     unsigned char hk_lfr_sc_e2_f3[2];
+    // lfr common parameters
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     // error counters
     unsigned char hk_lfr_dpu_spw_parity;
     unsigned char hk_lfr_dpu_spw_disconnect;
@@ -633,7 +657,7 @@ typedef struct {
     //******************
     // COMMON PARAMETERS
     unsigned char unused0;
-    unsigned char bw_sp0_sp1_r0_r1;
+    unsigned char sy_lfr_common_parameters;
 
     //******************
     // NORMAL PARAMETERS
@@ -659,6 +683,22 @@ typedef struct {
     // SBM2 PARAMETERS
     unsigned char sy_lfr_s2_bp_p0;
     unsigned char sy_lfr_s2_bp_p1;
+
+    // mask F0
+    unsigned int sy_lfr_fbins_f0_word1;
+    unsigned int sy_lfr_fbins_f0_word2;
+    unsigned int sy_lfr_fbins_f0_word3;
+    unsigned int sy_lfr_fbins_f0_word4;
+    // mask F1
+    unsigned int sy_lfr_fbins_f1_word1;
+    unsigned int sy_lfr_fbins_f1_word2;
+    unsigned int sy_lfr_fbins_f1_word3;
+    unsigned int sy_lfr_fbins_f1_word4;
+    // mask F2
+    unsigned int sy_lfr_fbins_f2_word1;
+    unsigned int sy_lfr_fbins_f2_word2;
+    unsigned int sy_lfr_fbins_f2_word3;
+    unsigned int sy_lfr_fbins_f2_word4;
 
     // SPARE
     unsigned char source_data_spare;

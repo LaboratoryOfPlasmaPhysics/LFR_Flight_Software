@@ -364,7 +364,7 @@ void BP_init_header( bp_packet *packet,
     // DATA FIELD HEADER
     packet->spare1_pusVersion_spare2 = 0x10;
     packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
-    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     packet->destinationID = TM_DESTINATION_ID_GROUND;
     packet->time[0] = 0x00;
     packet->time[1] = 0x00;
@@ -402,7 +402,7 @@ void BP_init_header_with_spare( bp_packet_with_spare *packet,
     // DATA FIELD HEADER
     packet->spare1_pusVersion_spare2 = 0x10;
     packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
-    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     packet->destinationID = TM_DESTINATION_ID_GROUND;
     // AUXILIARY DATA HEADER
     packet->sid = sid;

@@ -1214,7 +1214,7 @@ void set_wfp_data_shaping( void )
     // get the parameters for the data shaping [BW SP0 SP1 R0 R1] in sy_lfr_common1 and configure the register
     // waveform picker : [R1 R0 SP1 SP0 BW]
 
-    data_shaping = parameter_dump_packet.bw_sp0_sp1_r0_r1;
+    data_shaping = parameter_dump_packet.sy_lfr_common_parameters;
 
     waveform_picker_regs->data_shaping =
               ( (data_shaping & 0x10) >> 4 )     // BW

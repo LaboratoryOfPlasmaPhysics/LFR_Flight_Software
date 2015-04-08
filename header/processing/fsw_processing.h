@@ -37,6 +37,8 @@ typedef struct
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
     unsigned char pa_lfr_bp_blk_nr[2];
     // SOURCE DATA
@@ -61,6 +63,8 @@ typedef struct
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char biaStatusInfo;
+    unsigned char sy_lfr_common_parameters_spare;
+    unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
     unsigned char source_data_spare;
     unsigned char pa_lfr_bp_blk_nr[2];

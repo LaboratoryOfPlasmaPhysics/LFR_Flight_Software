@@ -699,7 +699,7 @@ void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_6; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
@@ -729,7 +729,7 @@ void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
@@ -761,7 +761,7 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header )
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE; // service subtype
+    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
@@ -814,6 +814,7 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
 
     header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF     );
 
@@ -895,6 +896,8 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
     fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (int*) ring_node_to_send->buffer_address;
     sid = ring_node_to_send->sid;
+
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
     for (i=0; i<7; i++) // send waveform
     {
@@ -985,6 +988,7 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
 
     header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
 
@@ -1045,6 +1049,8 @@ void spw_send_asm( ring_node *ring_node_to_send,
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
 
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
+
     for (i=0; i<2; i++)
     {
         // (1) BUILD THE DATA
@@ -1056,6 +1062,7 @@ void spw_send_asm( ring_node *ring_node_to_send,
                     ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0) ) * NB_VALUES_PER_SM ) * 2
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
             header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0) >> 8 ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0);        // BLK_NR LSB
             break;
@@ -1065,6 +1072,7 @@ void spw_send_asm( ring_node *ring_node_to_send,
                     ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1) ) * NB_VALUES_PER_SM ) * 2
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
             header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1) >> 8 ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1);        // BLK_NR LSB
             break;
@@ -1074,6 +1082,7 @@ void spw_send_asm( ring_node *ring_node_to_send,
                     ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_VALUES_PER_SM ) * 2
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3;
             header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> 8 ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F2);        // BLK_NR LSB
             break;

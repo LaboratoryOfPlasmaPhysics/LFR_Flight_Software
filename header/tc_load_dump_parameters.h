@@ -18,6 +18,9 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , uns
 int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
 int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
 int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
+int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_dump_par(rtems_id queue_id );
 
 // NORMAL

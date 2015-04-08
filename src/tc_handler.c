@@ -67,68 +67,68 @@ rtems_task actn_task( rtems_task_argument unused )
             subtype = TC.serviceSubType;
             switch(subtype)
             {
-                case TC_SUBTYPE_RESET:
-                    result = action_reset( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_LOAD_COMM:
-                    result = action_load_common_par( &TC );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_LOAD_NORM:
-                    result = action_load_normal_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_LOAD_BURST:
-                    result = action_load_burst_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_LOAD_SBM1:
-                    result = action_load_sbm1_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_LOAD_SBM2:
-                    result = action_load_sbm2_par( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_DUMP:
-                    result = action_dump_par( queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_ENTER:
-                    result = action_enter_mode( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_UPDT_INFO:
-                    result = action_update_info( &TC, queue_snd_id );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_EN_CAL:
-                    result = action_enable_calibration( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_DIS_CAL:
-                    result = action_disable_calibration( &TC, queue_snd_id, time );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                case TC_SUBTYPE_UPDT_TIME:
-                    result = action_update_time( &TC );
-                    close_action( &TC, result, queue_snd_id );
-                    break;
-                    //
-                default:
-                    break;
+            case TC_SUBTYPE_RESET:
+                result = action_reset( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_COMM:
+                result = action_load_common_par( &TC );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_NORM:
+                result = action_load_normal_par( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_BURST:
+                result = action_load_burst_par( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_SBM1:
+                result = action_load_sbm1_par( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_SBM2:
+                result = action_load_sbm2_par( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_DUMP:
+                result = action_dump_par( queue_snd_id );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_ENTER:
+                result = action_enter_mode( &TC, queue_snd_id );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_UPDT_INFO:
+                result = action_update_info( &TC, queue_snd_id );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_EN_CAL:
+                result = action_enable_calibration( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_DIS_CAL:
+                result = action_disable_calibration( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_K:
+                result = action_load_kcoefficients( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_DUMP_K:
+                result = action_dump_kcoefficients( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_LOAD_FBINS:
+                result = action_load_fbins_mask( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            case TC_SUBTYPE_UPDT_TIME:
+                result = action_update_time( &TC );
+                close_action( &TC, result, queue_snd_id );
+                break;
+            default:
+                break;
             }
         }
     }
@@ -166,6 +166,8 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned int *transitionCoarseTime_ptr;
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
+
+    printTaskID();
 
     bytePosPtr = (unsigned char *) &TC->packetID;
 
@@ -669,6 +671,9 @@ int suspend_science_tasks()
 
     rtems_status_code status;
 
+    printf("in suspend_science_tasks\n");
+    printTaskID();
+
     status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -1115,4 +1120,14 @@ void reset_lfr( void )
     set_lfr_soft_reset( 1 );
 
     set_lfr_soft_reset( 0 );
+}
+
+void printTaskID( void )
+{
+    unsigned int i;
+
+    for (i=0; i<20;i++)
+    {
+        printf("ID %d = %d\n", i, (unsigned int) Task_id[i]);
+    }
 }

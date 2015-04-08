@@ -24,7 +24,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t *TC)
      */
 
     parameter_dump_packet.unused0 = TC->dataAndCRC[0];
-    parameter_dump_packet.bw_sp0_sp1_r0_r1 = TC->dataAndCRC[1];
+    parameter_dump_packet.sy_lfr_common_parameters = TC->dataAndCRC[1];
     set_wfp_data_shaping( );
     return LFR_SUCCESSFUL;
 }
@@ -265,6 +265,60 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsign
         flag = set_sy_lfr_s2_bp_p0( TC );
         flag = set_sy_lfr_s2_bp_p1( TC );
     }
+
+    return flag;
+}
+
+int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+{
+    /** This function updates the LFR registers with the incoming sbm2 parameters.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     * @param queue_id is the id of the queue which handles TM related to this execution step
+     *
+     */
+
+    int flag;
+
+    flag = LFR_DEFAULT;
+
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+
+    return flag;
+}
+
+int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+{
+    /** This function updates the LFR registers with the incoming sbm2 parameters.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     * @param queue_id is the id of the queue which handles TM related to this execution step
+     *
+     */
+
+    int flag;
+
+    flag = LFR_DEFAULT;
+
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+
+    return flag;
+}
+
+int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+{
+    /** This function updates the LFR registers with the incoming sbm2 parameters.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     * @param queue_id is the id of the queue which handles TM related to this execution step
+     *
+     */
+
+    int flag;
+
+    flag = LFR_DEFAULT;
+
+    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
 
     return flag;
 }
@@ -734,7 +788,7 @@ void init_parameter_dump( void )
     //******************
     // COMMON PARAMETERS
     parameter_dump_packet.unused0 = DEFAULT_SY_LFR_COMMON0;
-    parameter_dump_packet.bw_sp0_sp1_r0_r1 = DEFAULT_SY_LFR_COMMON1;
+    parameter_dump_packet.sy_lfr_common_parameters = DEFAULT_SY_LFR_COMMON1;
 
     //******************
     // NORMAL PARAMETERS
