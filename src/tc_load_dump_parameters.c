@@ -14,6 +14,11 @@
 
 #include "tc_load_dump_parameters.h"
 
+Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1;
+Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2;
+ring_node kcoefficient_node_1;
+ring_node kcoefficient_node_2;
+
 int action_load_common_par(ccsdsTelecommandPacket_t *TC)
 {
     /** This function updates the LFR registers with the incoming common parameters.
@@ -282,11 +287,7 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
 
     flag = LFR_DEFAULT;
 
-//    NB_BINS_COMPRESSED_SM_F0;
-//    NB_BINS_COMPRESSED_SM_F1;
-//    NB_BINS_COMPRESSED_SM_F2;
-
-    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+    flag = set_sy_lfr_kcoeff( TC );
 
     return flag;
 }
@@ -309,6 +310,18 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     return flag;
 }
 
+void printKCoefficients(unsigned int freq, unsigned int bin, float *k_coeff)
+{
+    printf("freq = %d *** bin = %d *** (0) %f *** (1) %f *** (2) %f *** (3) %f *** (4) %f\n",
+           freq,
+           bin,
+           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 0 ],
+           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 1 ],
+           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 2 ],
+           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 3 ],
+           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 4 ]);
+}
+
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
@@ -318,13 +331,127 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
      *
      */
 
-    int flag;
+    unsigned int address;
+    rtems_status_code status;
+    unsigned int freq;
+    unsigned int bin;
+    unsigned int coeff;
+    unsigned char *kCoeffPtr;
+    unsigned char *kCoeffDumpPtr;
 
-    flag = LFR_DEFAULT;
+    // for each sy_lfr_kcoeff_frequency there is 32 kcoeff
+    // F0 => 11 bins
+    // F1 => 13 bins
+    // F2 => 12 bins
+    // 36 bins to dump in two packets (30 bins max per packet)
 
-    send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+    //*********
+    // PACKET 1
+    // 11 F0 bins, 13 F1 bins and 6 F2 bins
+    kcoefficients_dump_1.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
+    kcoefficients_dump_1.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
+    increment_seq_counter( &sequenceCounterParameterDump );
+    for( freq=0;
+         freq<NB_BINS_COMPRESSED_SM_F0;
+         freq++ )
+    {
+        kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + 1] = freq;
+        bin = freq;
+        printKCoefficients( freq, bin, k_coeff_intercalib_f0_norm);
+        for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
+        {
+            kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + coeff*NB_BYTES_PER_FLOAT + 2 ]; // 2 for the kcoeff_frequency
+            kCoeffPtr     = (unsigned char*) &k_coeff_intercalib_f0_norm[ (bin*NB_K_COEFF_PER_BIN) + coeff ];
+            kCoeffDumpPtr[0] = kCoeffPtr[0];
+            kCoeffDumpPtr[1] = kCoeffPtr[1];
+            kCoeffDumpPtr[2] = kCoeffPtr[2];
+            kCoeffDumpPtr[3] = kCoeffPtr[3];
+        }
+    }
+    for( freq=NB_BINS_COMPRESSED_SM_F0;
+         freq<(NB_BINS_COMPRESSED_SM_F0+NB_BINS_COMPRESSED_SM_F1);
+         freq++ )
+    {
+        kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + 1 ] = freq;
+        bin = freq - NB_BINS_COMPRESSED_SM_F0;
+        printKCoefficients( freq, bin, k_coeff_intercalib_f1_norm);
+        for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
+        {
+            kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + coeff*NB_BYTES_PER_FLOAT + 2 ]; // 2 for the kcoeff_frequency
+            kCoeffPtr     = (unsigned char*) &k_coeff_intercalib_f1_norm[ (bin*NB_K_COEFF_PER_BIN) + coeff ];
+            kCoeffDumpPtr[0] = kCoeffPtr[0];
+            kCoeffDumpPtr[1] = kCoeffPtr[1];
+            kCoeffDumpPtr[2] = kCoeffPtr[2];
+            kCoeffDumpPtr[3] = kCoeffPtr[3];
+        }
+    }
+    for( freq=(NB_BINS_COMPRESSED_SM_F0+NB_BINS_COMPRESSED_SM_F1);
+         freq<(NB_BINS_COMPRESSED_SM_F0+NB_BINS_COMPRESSED_SM_F1+6);
+         freq++ )
+    {
+        kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + 1 ] = freq;
+        bin = freq - (NB_BINS_COMPRESSED_SM_F0+NB_BINS_COMPRESSED_SM_F1);
+        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
+        for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
+        {
+            kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + coeff*NB_BYTES_PER_FLOAT + 2 ]; // 2 for the kcoeff_frequency
+            kCoeffPtr     = (unsigned char*) &k_coeff_intercalib_f2[ (bin*NB_K_COEFF_PER_BIN) + coeff ];
+            kCoeffDumpPtr[0] = kCoeffPtr[0];
+            kCoeffDumpPtr[1] = kCoeffPtr[1];
+            kCoeffDumpPtr[2] = kCoeffPtr[2];
+            kCoeffDumpPtr[3] = kCoeffPtr[3];
+        }
+    }
+    kcoefficients_dump_1.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    kcoefficients_dump_1.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    kcoefficients_dump_1.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    kcoefficients_dump_1.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    kcoefficients_dump_1.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    kcoefficients_dump_1.time[5] = (unsigned char) (time_management_regs->fine_time);
+    // SEND DATA
+    kcoefficient_node_1.status = 1;
+    address = (unsigned int) &kcoefficient_node_1;
+    status =  rtems_message_queue_send( queue_id, &address, sizeof( ring_node* ) );
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF1("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status)
+    }
 
-    return flag;
+     //********
+    // PACKET 2
+    // 6 F2 bins
+    kcoefficients_dump_2.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
+    kcoefficients_dump_2.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
+    increment_seq_counter( &sequenceCounterParameterDump );
+    for( freq=0; freq<6; freq++ )
+    {
+        kcoefficients_dump_2.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + 1 ] = NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1 + 6 + freq;
+        bin = freq + 6;
+        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
+        for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
+        {
+            kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_2.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + coeff*NB_BYTES_PER_FLOAT + 2 ]; // 2 for the kcoeff_frequency
+            kCoeffPtr     = (unsigned char*) &k_coeff_intercalib_f2[ (bin*NB_K_COEFF_PER_BIN) + coeff ];
+            kCoeffDumpPtr[0] = kCoeffPtr[0];
+            kCoeffDumpPtr[1] = kCoeffPtr[1];
+            kCoeffDumpPtr[2] = kCoeffPtr[2];
+            kCoeffDumpPtr[3] = kCoeffPtr[3];
+        }
+    }
+    kcoefficients_dump_2.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
+    kcoefficients_dump_2.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
+    kcoefficients_dump_2.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    kcoefficients_dump_2.time[3] = (unsigned char) (time_management_regs->coarse_time);
+    kcoefficients_dump_2.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    kcoefficients_dump_2.time[5] = (unsigned char) (time_management_regs->fine_time);
+    // SEND DATA
+    kcoefficient_node_2.status = 1;
+    address = (unsigned int) &kcoefficient_node_2;
+    status =  rtems_message_queue_send( queue_id, &address, sizeof( ring_node* ) );
+    if (status != RTEMS_SUCCESSFUL) {
+        PRINTF1("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status)
+    }
+
+    return status;
 }
 
 int action_dump_par( rtems_id queue_id )
@@ -760,20 +887,72 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode )
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC )
 {
+    unsigned int i;
     unsigned short sy_lfr_kcoeff_frequency;
+    unsigned short bin;
     unsigned short *freqPtr;
+    float *kcoeffPtr_norm;
+    float *kcoeffPtr_sbm;
     int status;
+    unsigned char *kcoeffLoadPtr;
+    unsigned char *kcoeffNormPtr;
 
     status = LFR_SUCCESSFUL;
 
-    freqPtr = (unsigned short *) &TC->dataAndCRC[0];
+    kcoeffPtr_norm = NULL;
+    kcoeffPtr_sbm  = NULL;
+    bin = 0;
+
+    freqPtr = (unsigned short *) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY];
     sy_lfr_kcoeff_frequency = *freqPtr;
 
-    PRINTF1("sy_lfr_kcoeff_frequency = %d\n", sy_lfr_kcoeff_frequency)
-
-    if (sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM)
+    if ( sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM )
     {
         PRINTF1("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n", sy_lfr_kcoeff_frequency)
+    }
+    else
+    {
+        if       ( ( sy_lfr_kcoeff_frequency >= 0 )
+                && ( sy_lfr_kcoeff_frequency < NB_BINS_COMPRESSED_SM_F0 ) )
+        {
+            kcoeffPtr_norm = k_coeff_intercalib_f0_norm;
+            kcoeffPtr_sbm  = k_coeff_intercalib_f0_sbm;
+            bin   = sy_lfr_kcoeff_frequency;
+        }
+        else if   ( ( sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM_F0 )
+                 && ( sy_lfr_kcoeff_frequency < (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1) ) )
+        {
+            kcoeffPtr_norm = k_coeff_intercalib_f1_norm;
+            kcoeffPtr_sbm  = k_coeff_intercalib_f1_sbm;
+            bin   = sy_lfr_kcoeff_frequency -  NB_BINS_COMPRESSED_SM_F0;
+        }
+        else if   ( ( sy_lfr_kcoeff_frequency >= (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1) )
+                 && ( sy_lfr_kcoeff_frequency <  (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1 + NB_BINS_COMPRESSED_SM_F2) ) )
+        {
+            kcoeffPtr_norm = k_coeff_intercalib_f2;
+            kcoeffPtr_sbm  = NULL;
+            bin   = sy_lfr_kcoeff_frequency - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
+        }
+    }
+
+    if (kcoeffPtr_norm != NULL )
+    {
+        printf("freq = %d, bin = %d\n", sy_lfr_kcoeff_frequency, bin);
+        for (i=0; i<NB_K_COEFF_PER_BIN; i++)
+        {
+            kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * i];
+            kcoeffNormPtr = (unsigned char*) &kcoeffPtr_norm[ (bin * NB_K_COEFF_PER_BIN) + i ];
+            kcoeffNormPtr[0] = kcoeffLoadPtr[0];
+            kcoeffNormPtr[1] = kcoeffLoadPtr[1];
+            kcoeffNormPtr[2] = kcoeffLoadPtr[2];
+            kcoeffNormPtr[3] = kcoeffLoadPtr[3];
+            printf("kcoeffPtr: %x %x %x %x *** %f \n",
+                    kcoeffLoadPtr[0],
+                    kcoeffLoadPtr[1],
+                    kcoeffLoadPtr[2],
+                    kcoeffLoadPtr[3],
+                    kcoeffPtr_norm[ (bin * NB_K_COEFF_PER_BIN) + i ]);
+        }
     }
 
     return status;
@@ -844,9 +1023,70 @@ void init_parameter_dump( void )
     parameter_dump_packet.sy_lfr_s2_bp_p1 = (unsigned char) DEFAULT_SY_LFR_S2_BP_P1;
 }
 
+void init_kcoefficients_dump( void )
+{   
+    init_kcoefficients_dump_packet( &kcoefficients_dump_1, 1, 30 );
+    init_kcoefficients_dump_packet( &kcoefficients_dump_2, 2, 6  );
 
+    kcoefficient_node_1.previous = NULL;
+    kcoefficient_node_1.next = NULL;
+    kcoefficient_node_1.sid = TM_CODE_K_DUMP;
+    kcoefficient_node_1.coarseTime = 0x00;
+    kcoefficient_node_1.fineTime = 0x00;
+    kcoefficient_node_1.buffer_address = (int) &kcoefficients_dump_1;
+    kcoefficient_node_1.status = 0x00;
 
+    kcoefficient_node_2.previous = NULL;
+    kcoefficient_node_2.next = NULL;
+    kcoefficient_node_2.sid = TM_CODE_K_DUMP;
+    kcoefficient_node_2.coarseTime = 0x00;
+    kcoefficient_node_2.fineTime = 0x00;
+    kcoefficient_node_2.buffer_address = (int) &kcoefficients_dump_2;
+    kcoefficient_node_2.status = 0x00;
+}
 
+void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoefficients_dump, unsigned char pkt_nr, unsigned char blk_nr )
+{
+    unsigned int k;
+    unsigned int packetLength;
+
+    packetLength = blk_nr * 130 + 20 - CCSDS_TC_TM_PACKET_OFFSET; // 4 bytes for the CCSDS header
+
+    kcoefficients_dump->targetLogicalAddress = CCSDS_DESTINATION_ID;
+    kcoefficients_dump->protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    kcoefficients_dump->reserved = CCSDS_RESERVED;
+    kcoefficients_dump->userApplication = CCSDS_USER_APP;
+    kcoefficients_dump->packetID[0] = (unsigned char) (APID_TM_PARAMETER_DUMP >> 8);;
+    kcoefficients_dump->packetID[1] = (unsigned char) APID_TM_PARAMETER_DUMP;;
+    kcoefficients_dump->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    kcoefficients_dump->packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    kcoefficients_dump->packetLength[0] = (unsigned char) (packetLength >> 8);
+    kcoefficients_dump->packetLength[1] = (unsigned char) packetLength;
+    // DATA FIELD HEADER
+    kcoefficients_dump->spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
+    kcoefficients_dump->serviceType = TM_TYPE_K_DUMP;
+    kcoefficients_dump->serviceSubType = TM_SUBTYPE_K_DUMP;
+    kcoefficients_dump->destinationID= TM_DESTINATION_ID_GROUND;
+    kcoefficients_dump->time[0] = 0x00;
+    kcoefficients_dump->time[1] = 0x00;
+    kcoefficients_dump->time[2] = 0x00;
+    kcoefficients_dump->time[3] = 0x00;
+    kcoefficients_dump->time[4] = 0x00;
+    kcoefficients_dump->time[5] = 0x00;
+    kcoefficients_dump->sid = SID_K_DUMP;
+
+    kcoefficients_dump->pkt_cnt = 2;
+    kcoefficients_dump->pkt_nr = pkt_nr;
+    kcoefficients_dump->blk_nr = blk_nr;
+
+    //******************
+    // SOURCE DATA repeated N times with N in [0 .. PA_LFR_KCOEFF_BLK_NR]
+    // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 = 3900)
+    for (k=0; k<3900; k++)
+    {
+        kcoefficients_dump->kcoeff_blks[k] = 0x00;
+    }
+}
 
 
 

@@ -217,7 +217,7 @@ rtems_task send_task( rtems_task_argument argument)
     size_t size;                            // size of the incoming TC packet
     u_int32_t count;
     rtems_id queue_id;
-    unsigned char sid;
+    unsigned int sid;
 
     incomingRingNodePtr = NULL;
     ring_node_address = 0;
@@ -270,9 +270,13 @@ rtems_task send_task( rtems_task_argument argument)
                 {
                     spw_send_waveform_CWF3_light( incomingRingNodePtr, &headerCWF );
                 }
-                else if ( (sid==SID_NORM_ASM_F0) || (SID_NORM_ASM_F1) || (SID_NORM_ASM_F2) )
+                else if ( (sid==SID_NORM_ASM_F0) || (sid==SID_NORM_ASM_F1) || (sid==SID_NORM_ASM_F2) )
                 {
                     spw_send_asm( incomingRingNodePtr, &headerASM );
+                }
+                else if ( sid==TM_CODE_K_DUMP )
+                {
+                    spw_send_k_dump( incomingRingNodePtr );
                 }
                 else
                 {
@@ -1123,4 +1127,30 @@ void spw_send_asm( ring_node *ring_node_to_send,
             printf("in ASM_send *** ERR %d\n", (int) status);
         }
     }
+}
+
+void spw_send_k_dump( ring_node *ring_node_to_send )
+{
+    rtems_status_code status;
+    Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoefficients_dump;
+    unsigned int packetLength;
+    unsigned int size;
+
+    printf("spw_send_k_dump\n");
+
+    kcoefficients_dump = (Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *) ring_node_to_send->buffer_address;
+
+    packetLength = kcoefficients_dump->packetLength[0] * 256 + kcoefficients_dump->packetLength[1];
+
+    size = packetLength + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
+
+    printf("packetLength %d, size %d\n", packetLength, size );
+
+    status = write( fdSPW, (char *) ring_node_to_send->buffer_address, size );
+
+    if (status == -1){
+        PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)
+    }
+
+    ring_node_to_send->status = 0x00;
 }

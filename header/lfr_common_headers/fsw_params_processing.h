@@ -41,6 +41,7 @@
 #define ASM_F2_INDICE_START         6       //   7 - 1, (-1) due to the VHDL behaviour
 #define ASM_F2_INDICE_STOP          101     // 102 - 1, 2 packets of 48 bins
 //
+#define KCOEFF_BLK_SIZE                 130
 #define NB_BINS_COMPRESSED_SM_F0        11
 #define NB_BINS_COMPRESSED_SM_F1        13
 #define NB_BINS_COMPRESSED_SM_F2        12

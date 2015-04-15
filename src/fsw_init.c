@@ -129,6 +129,7 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF("\n\n")
 
     init_parameter_dump();
+    init_kcoefficients_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
     init_k_coefficients_f0();

@@ -8,10 +8,16 @@
 #include "wf_handler.h"
 #include "tm_lfr_tc_exe.h"
 #include "fsw_misc.h"
+#include "basic_parameters_params.h"
 
 #define FLOAT_EQUAL_ZERO 0.001
 
 extern unsigned short sequenceCounterParameterDump;
+extern float k_coeff_intercalib_f0_norm[ ];
+extern float k_coeff_intercalib_f0_sbm[ ];
+extern float k_coeff_intercalib_f1_norm[ ];
+extern float k_coeff_intercalib_f1_sbm[ ];
+extern float k_coeff_intercalib_f2[ ];
 
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
@@ -49,6 +55,11 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 
+// KCOEFFICIENTS
+int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC );
+
 void init_parameter_dump( void );
+void init_kcoefficients_dump( void );
+void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoefficients_dump, unsigned char pkt_nr, unsigned char blk_nr );
 
 #endif // TC_LOAD_DUMP_PARAMETERS_H

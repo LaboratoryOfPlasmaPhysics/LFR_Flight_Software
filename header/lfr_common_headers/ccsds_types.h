@@ -99,12 +99,15 @@
 #define TC_LEN_LOAD_FBINS   60
 #define TC_LEN_UPDT_TIME    18
 
+// PACKET CODES
+#define TM_CODE_K_DUMP  0xb5600b00 // 181 (0xb5) ** 96 (0x60) ** 11 (0x0b) ** 0 (0x00)
+
 // TM TYPES
 #define TM_TYPE_TC_EXE              1
 #define TM_TYPE_HK                  3
 #define TM_TYPE_LFR_SCIENCE         21
 #define TM_TYPE_PARAMETER_DUMP      181
-#define TM_TYPE_KCOEFFICIENTD_DUMP  181
+#define TM_TYPE_K_DUMP              181
 
 // TM SUBTYPES
 #define TM_SUBTYPE_EXE_OK           7
@@ -704,5 +707,29 @@ typedef struct {
     unsigned char source_data_spare;
 } Packet_TM_LFR_PARAMETER_DUMP_t;
 
+typedef struct {
+    unsigned char targetLogicalAddress;
+    unsigned char protocolIdentifier;
+    unsigned char reserved;
+    unsigned char userApplication;
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char spare1_pusVersion_spare2;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char destinationID;
+    unsigned char time[6];
+    unsigned char sid;
+    unsigned char pkt_cnt;
+    unsigned char pkt_nr;
+    unsigned char blk_nr;
+
+    //******************
+    // SOURCE DATA repeated N times with N in [0 .. PA_LFR_KCOEFF_BLK_NR]
+    unsigned char kcoeff_blks[3900]; // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 = 3900)
+
+} Packet_TM_LFR_KCOEFFICIENTS_DUMP_t;
 
 #endif // CCSDS_TYPES_H_INCLUDED

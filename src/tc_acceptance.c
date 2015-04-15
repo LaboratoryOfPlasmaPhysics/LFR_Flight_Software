@@ -226,7 +226,9 @@ int tc_check_type_subtype( unsigned char packetType, unsigned char packetSubType
              || (packetSubType == TC_SUBTYPE_DUMP)
              || (packetSubType == TC_SUBTYPE_ENTER)
              || (packetSubType == TC_SUBTYPE_UPDT_INFO)
-             || (packetSubType == TC_SUBTYPE_EN_CAL)    || (packetSubType == TC_SUBTYPE_DIS_CAL) )
+             || (packetSubType == TC_SUBTYPE_EN_CAL)    || (packetSubType == TC_SUBTYPE_DIS_CAL)
+             || (packetSubType == TC_SUBTYPE_LOAD_K)    || (packetSubType == TC_SUBTYPE_DUMP_K)
+             || (packetSubType == TC_SUBTYPE_LOAD_FBINS) )
         {
             status = CCSDS_TM_VALID;
         }
@@ -382,6 +384,30 @@ int tc_check_length( unsigned char packetSubType, unsigned int length )
         break;
     case TC_SUBTYPE_DIS_CAL:
         if (length!=(TC_LEN_DIS_CAL-CCSDS_TC_TM_PACKET_OFFSET)) {
+            status = WRONG_LEN_PKT;
+        }
+        else {
+            status = CCSDS_TM_VALID;
+        }
+        break;
+    case TC_SUBTYPE_LOAD_K:
+        if (length!=(TC_LEN_LOAD_K-CCSDS_TC_TM_PACKET_OFFSET)) {
+            status = WRONG_LEN_PKT;
+        }
+        else {
+            status = CCSDS_TM_VALID;
+        }
+        break;
+    case TC_SUBTYPE_DUMP_K:
+        if (length!=(TC_LEN_DUMP_K-CCSDS_TC_TM_PACKET_OFFSET)) {
+            status = WRONG_LEN_PKT;
+        }
+        else {
+            status = CCSDS_TM_VALID;
+        }
+        break;
+    case TC_SUBTYPE_LOAD_FBINS:
+        if (length!=(TC_LEN_LOAD_FBINS-CCSDS_TC_TM_PACKET_OFFSET)) {
             status = WRONG_LEN_PKT;
         }
         else {

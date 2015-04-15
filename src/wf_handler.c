@@ -680,7 +680,7 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
     rtems_id queue_id;
     rtems_status_code status;
 
-    ring_node * ring_node_to_send_cwf;
+    ring_node *ring_node_to_send_cwf;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)

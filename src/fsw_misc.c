@@ -335,7 +335,7 @@ void init_housekeeping_parameters( void )
 
 void increment_seq_counter( unsigned short *packetSequenceControl )
 {
-    /** This function increment the sequence counter psased in argument.
+    /** This function increment the sequence counter passes in argument.
      *
      * The increment does not affect the grouping flag. In case of an overflow, the counter is reset to 0.
      *

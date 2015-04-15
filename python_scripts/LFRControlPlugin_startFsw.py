@@ -22,6 +22,7 @@ SpwPlugin0.TCPServerConnect()
 LFRControlPlugin0.TCPServerConnect()
 
 dsu3plugin0.openFile("/opt/DEV_PLE/FSW-qt/bin/fsw")
+#dsu3plugin0.openFile("/opt/LFR/LFR-FSW/2.0.2.3/fsw")
 dsu3plugin0.loadFile()
 dsu3plugin0.run()
 

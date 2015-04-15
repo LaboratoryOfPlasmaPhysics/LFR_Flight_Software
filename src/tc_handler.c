@@ -112,6 +112,7 @@ rtems_task actn_task( rtems_task_argument unused )
                 close_action( &TC, result, queue_snd_id );
                 break;
             case TC_SUBTYPE_LOAD_K:
+                printf("TC_SUBTYPE_LOAD_K\n");
                 result = action_load_kcoefficients( &TC, queue_snd_id, time );
                 close_action( &TC, result, queue_snd_id );
                 break;
@@ -166,8 +167,6 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned int *transitionCoarseTime_ptr;
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
-
-    printTaskID();
 
     bytePosPtr = (unsigned char *) &TC->packetID;
 
@@ -672,7 +671,6 @@ int suspend_science_tasks()
     rtems_status_code status;
 
     printf("in suspend_science_tasks\n");
-    printTaskID();
 
     status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
     if (status != RTEMS_SUCCESSFUL)
@@ -1120,14 +1118,4 @@ void reset_lfr( void )
     set_lfr_soft_reset( 1 );
 
     set_lfr_soft_reset( 0 );
-}
-
-void printTaskID( void )
-{
-    unsigned int i;
-
-    for (i=0; i<20;i++)
-    {
-        printf("ID %d = %d\n", i, (unsigned int) Task_id[i]);
-    }
 }
