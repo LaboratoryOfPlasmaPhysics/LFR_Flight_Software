@@ -225,6 +225,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
+            housekeeping_packet.sy_lfr_common_parameters_spare  = parameter_dump_packet.sy_lfr_common_parameters_spare;
+            housekeeping_packet.sy_lfr_common_parameters        = parameter_dump_packet.sy_lfr_common_parameters;
             get_temperatures( housekeeping_packet.hk_lfr_temp_scm );
             get_v_e1_e2_f3(   housekeeping_packet.hk_lfr_sc_v_f3  );
             get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );

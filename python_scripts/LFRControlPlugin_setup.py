@@ -11,6 +11,7 @@ print str(availableBrickCount) + " SpaceWire brick(s) found"
 
 SpwPlugin0.StarDundeeSelectBrick(1)
 SpwPlugin0.StarDundeeSetBrickAsARouter(1)
+SpwPlugin0.StarDundeeSelectLinkNumber( 2 )
 SpwPlugin0.connectBridge()
 
 #SpwPlugin0.TCPServerSetIP("127.0.0.1")

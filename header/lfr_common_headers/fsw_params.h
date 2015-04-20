@@ -86,7 +86,7 @@ typedef struct ring_node
 // LFR DEFAULT MODE PARAMETERS
 // COMMON
 #define DEFAULT_SY_LFR_COMMON0 0x00
-#define DEFAULT_SY_LFR_COMMON1 0x10 // default value 0 0 0 1 0 0 0 0
+#define DEFAULT_SY_LFR_COMMON1 0x20 // default value bw sp0 sp1 r0 r1 r2 = 1 0 0 0 0 0
 // NORM
 #define DFLT_SY_LFR_N_SWF_L 2048 // nb sample
 #define DFLT_SY_LFR_N_SWF_P 300  // sec

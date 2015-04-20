@@ -9,6 +9,7 @@
 #include "tm_lfr_tc_exe.h"
 #include "fsw_misc.h"
 #include "basic_parameters_params.h"
+#include "avf0_prc0.h"
 
 #define FLOAT_EQUAL_ZERO 0.001
 
@@ -55,8 +56,12 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 
+// FBINS_MASK
+int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
+
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC );
+void copyFloatByChar( unsigned char *destination, unsigned char *source );
 
 void init_parameter_dump( void );
 void init_kcoefficients_dump( void );

@@ -18,12 +18,19 @@
 #define DEFAULT_HKBIA 0x1e  // 0001 1110
 
 // PACKET ID
+#define TM_PACKET_PID_DEFAULT           76
+#define TM_PACKET_PID_BURST_SBM1_SBM2   79
 #define APID_TM_TC_EXE                  0x0cc1 // PID 76 CAT 1
 #define APID_TM_HK                      0x0cc4 // PID 76 CAT 4
 #define APID_TM_SCIENCE_NORMAL_BURST    0x0ccc // PID 76 CAT 12
 #define APID_TM_SCIENCE_SBM1_SBM2       0x0cfc // PID 79 CAT 12
 #define APID_TM_PARAMETER_DUMP          0x0cc6 // PID 76 CAT 6
 #define APID_TM_KCOEFFICIENTS_DUMP      0x0cc6 // PID 76 CAT 6
+// PACKET CAT
+#define TM_PACKET_CAT_TC_EXE    1
+#define TM_PACKET_CAT_HK        4
+#define TM_PACKET_CAT_SCIENCE   12
+#define TM_PACKET_CAT_DUMP      6
 
 // PACKET SEQUENCE CONTROL
 #define TM_PACKET_SEQ_CTRL_CONTINUATION 0x00    // [0000 0000]
@@ -659,7 +666,7 @@ typedef struct {
 
     //******************
     // COMMON PARAMETERS
-    unsigned char unused0;
+    unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
 
     //******************
@@ -688,20 +695,20 @@ typedef struct {
     unsigned char sy_lfr_s2_bp_p1;
 
     // mask F0
-    unsigned int sy_lfr_fbins_f0_word1;
-    unsigned int sy_lfr_fbins_f0_word2;
-    unsigned int sy_lfr_fbins_f0_word3;
-    unsigned int sy_lfr_fbins_f0_word4;
+    unsigned char sy_lfr_fbins_f0_word1[4];
+    unsigned char sy_lfr_fbins_f0_word2[4];
+    unsigned char sy_lfr_fbins_f0_word3[4];
+    unsigned char sy_lfr_fbins_f0_word4[4];
     // mask F1
-    unsigned int sy_lfr_fbins_f1_word1;
-    unsigned int sy_lfr_fbins_f1_word2;
-    unsigned int sy_lfr_fbins_f1_word3;
-    unsigned int sy_lfr_fbins_f1_word4;
+    unsigned char sy_lfr_fbins_f1_word1[4];
+    unsigned char sy_lfr_fbins_f1_word2[4];
+    unsigned char sy_lfr_fbins_f1_word3[4];
+    unsigned char sy_lfr_fbins_f1_word4[4];
     // mask F2
-    unsigned int sy_lfr_fbins_f2_word1;
-    unsigned int sy_lfr_fbins_f2_word2;
-    unsigned int sy_lfr_fbins_f2_word3;
-    unsigned int sy_lfr_fbins_f2_word4;
+    unsigned char sy_lfr_fbins_f2_word1[4];
+    unsigned char sy_lfr_fbins_f2_word2[4];
+    unsigned char sy_lfr_fbins_f2_word3[4];
+    unsigned char sy_lfr_fbins_f2_word4[4];
 
     // SPARE
     unsigned char source_data_spare;

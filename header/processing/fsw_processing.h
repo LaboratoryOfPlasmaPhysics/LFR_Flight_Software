@@ -89,6 +89,7 @@ extern volatile int sm_f2[ ];
 
 // parameters
 extern struct param_local_str param_local;
+extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 
 // registers
 extern time_management_regs_t *time_management_regs;
@@ -143,19 +144,23 @@ static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spe
                               ring_node *ring_node_tab[],
                               unsigned int nbAverageNORM, unsigned int nbAverageSBM,
                               asm_msg *msgForMATR );
+
 static inline void SM_average_debug(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                               ring_node *ring_node_tab[],
                               unsigned int nbAverageNORM, unsigned int nbAverageSBM,
                               asm_msg *msgForMATR );
 
 void ASM_patch( float *inputASM, float *outputASM );
+
 void extractReImVectors(float *inputASM, float *outputASM, unsigned int asmComponent );
 
 static inline void ASM_reorganize_and_divide(float *averaged_spec_mat, float *averaged_spec_mat_reorganized,
                                float divider );
+
 static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compressed_spec_mat,
                                   float divider,
                                   unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart);
+
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
 void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
@@ -309,5 +314,11 @@ void ASM_convert( volatile float *input_matrix, char *output_matrix)
         }
     }
 }
+
+void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *compressed_spec_mat,
+                                  float divider,
+                                  unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart);
+
+int getFBinMask(int k);
 
 #endif // FSW_PROCESSING_H_INCLUDED

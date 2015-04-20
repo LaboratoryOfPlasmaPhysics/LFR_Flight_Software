@@ -19,6 +19,7 @@
 #define PACKET_LENGTH_TC_LFR_UPDATE_INFO            (46 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_ENABLE_CALIBRATION     (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DISABLE_CALIBRATION    (12 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_LFR_DUMP_KCOEFFICIENTS     (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_UPDATE_TIME            (18 - CCSDS_TC_TM_PACKET_OFFSET)
 
 // TC TYPES
@@ -106,7 +107,6 @@ typedef struct
     unsigned char serviceSubType;
     unsigned char sourceID;
     unsigned char crc[2];
-
 } Packet_TC_LFR_DUMP_PAR_t;
 
 typedef struct
@@ -120,9 +120,8 @@ typedef struct
     unsigned char serviceSubType;
     unsigned char sourceID;
     unsigned char spare;
-    unsigned char bw_sp0_sp1_r0_r1;
+    unsigned char bw_sp0_sp1_r0_r1_r2;
     unsigned char crc[2];
-
 } Packet_TC_LFR_LOAD_COMMON_PAR_t;
 
 typedef struct
@@ -183,10 +182,9 @@ typedef struct
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char sourceID;
-    unsigned char spare;
-    unsigned char bw_sp0_sp1_r0_r1;
+    unsigned char cp_rpw_time[6];
     unsigned char crc[2];
-} Packet_TC_LFR_LOAD_KCOEFFICIENT_t;
+} Packet_TC_LFR_UPDATE_TIME_t;
 
 typedef struct
 {   // the CCSDS header is added by LPPMON
@@ -198,8 +196,8 @@ typedef struct
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char sourceID;
-    unsigned char cp_rpw_time[6];
     unsigned char crc[2];
-} Packet_TC_LFR_UPDATE_TIME_t;
+
+} Packet_TC_LFR_DUMP_KCOEFFICIENTS_t;
 
 #endif // TC_TYPES_H

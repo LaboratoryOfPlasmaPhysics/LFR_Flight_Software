@@ -1221,10 +1221,8 @@ void set_wfp_data_shaping( void )
             + ( (data_shaping & 0x08) >> 2 )     // SP0
             + ( (data_shaping & 0x04)      )     // SP1
             + ( (data_shaping & 0x02) << 2 )     // R0
-            + ( (data_shaping & 0x01) << 4 );    // R1
-
-    // this is a temporary way to set R2, compatible with the release 2 of the flight software
-    waveform_picker_regs->data_shaping = waveform_picker_regs->data_shaping + ( (0x1) << 5 );    // R2
+            + ( (data_shaping & 0x01) << 4 )     // R1
+            + ( (data_shaping & 0x01) << 5 );    // R2
 }
 
 void set_wfp_burst_enable_register( unsigned char mode )

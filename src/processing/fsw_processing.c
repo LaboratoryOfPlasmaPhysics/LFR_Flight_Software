@@ -584,3 +584,68 @@ void ASM_patch( float *inputASM, float *outputASM )
     copyReVectors(inputASM, outputASM, 21);    // e1e1
     copyReVectors(inputASM, outputASM, 24);    // e2e2
 }
+
+void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *compressed_spec_mat , float divider,
+                                 unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage, unsigned char ASMIndexStart )
+{
+    //*************
+    // input format
+    // component0[0 .. 127] component1[0 .. 127] .. component24[0 .. 127]
+    //**************
+    // output format
+    // matr0[0 .. 24]      matr1[0 .. 24]       .. matr127[0 .. 24]
+    //************
+    // compression
+    // matr0[0 .. 24]      matr1[0 .. 24]       .. matr11[0 .. 24] => f0 NORM
+    // matr0[0 .. 24]      matr1[0 .. 24]       .. matr22[0 .. 24] => f0 BURST, SBM
+
+    int frequencyBin;
+    int asmComponent;
+    int offsetASM;
+    int offsetCompressed;
+    int offsetFBin;
+    int fBinMask;
+    int k;
+
+    // BUILD DATA
+    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
+    {
+        for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
+        {
+            offsetCompressed =  // NO TIME OFFSET
+                    frequencyBin * NB_VALUES_PER_SM
+                    + asmComponent;
+            offsetASM =         // NO TIME OFFSET
+                    asmComponent * NB_BINS_PER_SM
+                    + ASMIndexStart
+                    + frequencyBin * nbBinsToAverage;
+            offsetFBin = ASMIndexStart
+                    + frequencyBin * nbBinsToAverage;
+            compressed_spec_mat[ offsetCompressed ] = 0;
+            for ( k = 0; k < nbBinsToAverage; k++ )
+            {
+                fBinMask = getFBinMask( offsetFBin + k );
+                compressed_spec_mat[offsetCompressed ] =
+                        ( compressed_spec_mat[ offsetCompressed ]
+                        + averaged_spec_mat[ offsetASM + k ] * fBinMask );
+            }
+            compressed_spec_mat[ offsetCompressed ] =
+                    compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage);
+        }
+    }
+
+}
+
+int getFBinMask( int index )
+{
+    unsigned int indexInChar;
+    unsigned int indexInTheChar;
+    int fbin;
+
+    indexInChar = index >> 3;
+    indexInTheChar = index - indexInChar * 8;
+
+    fbin = (int) ((parameter_dump_packet.sy_lfr_fbins_f0_word1[ NB_BYTES_PER_FREQ_MASK - 1 - indexInChar] >> indexInTheChar) & 0x1);
+
+    return fbin;
+}
