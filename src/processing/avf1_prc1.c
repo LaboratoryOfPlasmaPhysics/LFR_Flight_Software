@@ -336,10 +336,8 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         {
             // 1) reorganize the ASM and divide
             ASM_reorganize_and_divide( asm_f1_patched_norm,
-                                       asm_f1_reorganized,
+                                       (float*) current_ring_node_to_send_asm_f1->buffer_address,
                                        nb_sm_before_f1.norm_bp1 );
-            // 2) convert the float array in a char array
-            ASM_convert( asm_f1_reorganized, (char*) current_ring_node_to_send_asm_f1->buffer_address );
             current_ring_node_to_send_asm_f1->coarseTime    = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f1->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f1->sid           = SID_NORM_ASM_F1;

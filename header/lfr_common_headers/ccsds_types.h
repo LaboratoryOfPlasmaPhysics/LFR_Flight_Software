@@ -207,8 +207,10 @@ enum apid_destid{
 #define SID_K_DUMP          11
 
 // HEADER_LENGTH
-#define TM_HEADER_LEN 16
-#define HEADER_LENGTH_TM_LFR_SCIENCE_ASM 28
+//#define TM_HEADER_LEN 16
+#define HEADER_LENGTH_TM_LFR_SCIENCE_CWF 32
+#define HEADER_LENGTH_TM_LFR_SCIENCE_SWF 34
+#define HEADER_LENGTH_TM_LFR_SCIENCE_ASM 34
 // PACKET_LENGTH
 #define PACKET_LENGTH_TC_EXE_SUCCESS                (20   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_INCONSISTENT           (26   - CCSDS_TC_TM_PACKET_OFFSET)
@@ -220,8 +222,10 @@ enum apid_destid{
 #define PACKET_LENGTH_PARAMETER_DUMP                (84   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_K_DUMP                        (3920 - CCSDS_TC_TM_PACKET_OFFSET)
 // SCIENCE ASM
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0         (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 88 bins  (32 + 32 + 24 ), 3 packets
-#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1         (3630 - CCSDS_TC_TM_PACKET_OFFSET)  // 52 * 25 * 2 + 30 => 104 bins (36 + 36 + 32 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1       (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 32 bins  (32 + 32 + 24 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_2       (2430 - CCSDS_TC_TM_PACKET_OFFSET)  // 24 * 25 * 4 + 30 => 24 bins  (32 + 32 + 24 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_1       (3630 - CCSDS_TC_TM_PACKET_OFFSET)  // 36 * 25 * 4 + 30 => 36 bins  (36 + 36 + 32 ), 3 packets
+#define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_2       (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 32 bins  (36 + 36 + 32 ), 3 packets
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2         (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 96 bins  (32 + 32 + 32 ), 3 packets
 // SCIENCE NORM
 #define PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0    (150  - CCSDS_TC_TM_PACKET_OFFSET)  // 11 * 11     + 29 (1 spare byte in the header)

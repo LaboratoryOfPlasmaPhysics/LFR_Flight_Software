@@ -270,9 +270,17 @@ rtems_task send_task( rtems_task_argument argument)
                 {
                     spw_send_waveform_CWF3_light( incomingRingNodePtr, &headerCWF );
                 }
-                else if ( (sid==SID_NORM_ASM_F0) || (sid==SID_NORM_ASM_F1) || (sid==SID_NORM_ASM_F2) )
+                else if (sid==SID_NORM_ASM_F0)
                 {
-                    spw_send_asm( incomingRingNodePtr, &headerASM );
+                    spw_send_asm_f0( incomingRingNodePtr, &headerASM );
+                }
+                else if (sid==SID_NORM_ASM_F1)
+                {
+                    spw_send_asm_f1( incomingRingNodePtr, &headerASM );
+                }
+                else if (sid==SID_NORM_ASM_F2)
+                {
+                    spw_send_asm_f2( incomingRingNodePtr, &headerASM );
                 }
                 else if ( sid==TM_CODE_K_DUMP )
                 {
@@ -806,7 +814,7 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
     int *dataPtr;
     unsigned char sid;
 
-    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
+    spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
 
     ret = LFR_DEFAULT;
@@ -891,7 +899,7 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
     int *dataPtr;
     unsigned char sid;
 
-    spw_ioctl_send_SWF.hlen = TM_HEADER_LEN + 4 + 12; // + 4 is for the protocole extra header, + 12 is for the auxiliary header
+    spw_ioctl_send_SWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_SWF;
     spw_ioctl_send_SWF.options = 0;
 
     ret = LFR_DEFAULT;
@@ -980,7 +988,7 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     char *dataPtr;
     unsigned char sid;
 
-    spw_ioctl_send_CWF.hlen = TM_HEADER_LEN + 4 + 10; // + 4 is for the protocole extra header, + 10 is for the auxiliary header
+    spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
 
     ret = LFR_DEFAULT;
@@ -1036,65 +1044,51 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     return ret;
 }
 
-void spw_send_asm( ring_node *ring_node_to_send,
+void spw_send_asm_f0( ring_node *ring_node_to_send,
                    Header_TM_LFR_SCIENCE_ASM_t *header )
 {
     unsigned int i;
     unsigned int length = 0;
     rtems_status_code status;
     unsigned int sid;
-    char *spectral_matrix;
+    float *spectral_matrix;
     int coarseTime;
     int fineTime;
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
 
     sid = ring_node_to_send->sid;
-    spectral_matrix = (char*) ring_node_to_send->buffer_address;
+    spectral_matrix = (float*) ring_node_to_send->buffer_address;
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
 
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i=0; i<2; i++)
+    for (i=0; i<3; i++)
     {
-        // (1) BUILD THE DATA
-        switch(sid)
+        if ((i==0) || (i==1))
         {
-        case SID_NORM_ASM_F0:
-            spw_ioctl_send_ASM.dlen = TOTAL_SIZE_ASM_F0_IN_BYTES / 2;  // 2 packets will be sent
-            spw_ioctl_send_ASM.data = &spectral_matrix[
-                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0) ) * NB_VALUES_PER_SM ) * 2
+            spw_ioctl_send_ASM.dlen = DLEN_ASM_F0_PKT_1;
+            spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
+                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_VALUES_PER_SM )
                     ];
-            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0;
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0) >> 8 ); // BLK_NR MSB
-            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0);        // BLK_NR LSB
-            break;
-        case SID_NORM_ASM_F1:
-            spw_ioctl_send_ASM.dlen = TOTAL_SIZE_ASM_F1_IN_BYTES / 2;  // 2 packets will be sent
-            spw_ioctl_send_ASM.data = &spectral_matrix[
-                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1) ) * NB_VALUES_PER_SM ) * 2
-                    ];
-            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1;
-            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1) >> 8 ); // BLK_NR MSB
-            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1);        // BLK_NR LSB
-            break;
-        case SID_NORM_ASM_F2:
-            spw_ioctl_send_ASM.dlen = TOTAL_SIZE_ASM_F2_IN_BYTES / 2;  // 2 packets will be sent
-            spw_ioctl_send_ASM.data = &spectral_matrix[
-                    ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_VALUES_PER_SM ) * 2
-                    ];
-            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
-            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> 8 ); // BLK_NR MSB
-            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F2);        // BLK_NR LSB
-            break;
-        default:
-            PRINTF1("ERR *** in spw_send_asm *** unexpected sid %d\n", sid)
-            break;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_1) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0_1);        // BLK_NR LSB
         }
-        spw_ioctl_send_ASM.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM + CCSDS_PROTOCOLE_EXTRA_BYTES;
+        else
+        {
+            spw_ioctl_send_ASM.dlen = DLEN_ASM_F0_PKT_2;
+            spw_ioctl_send_ASM.data = (char*) &spectral_matrix[
+                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_VALUES_PER_SM )
+                    ];
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_2;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0_2);        // BLK_NR LSB
+        }
+
+        spw_ioctl_send_ASM.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM;
         spw_ioctl_send_ASM.hdr = (char *) header;
         spw_ioctl_send_ASM.options = 0;
 
@@ -1103,7 +1097,152 @@ void spw_send_asm( ring_node *ring_node_to_send,
         header->packetLength[0] = (unsigned char) (length>>8);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
-        header->pa_lfr_pkt_cnt_asm = 2;
+        header->pa_lfr_pkt_cnt_asm = 3;
+        header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
+
+        // (3) SET PACKET TIME
+        header->time[0] = (unsigned char) (coarseTime>>24);
+        header->time[1] = (unsigned char) (coarseTime>>16);
+        header->time[2] = (unsigned char) (coarseTime>>8);
+        header->time[3] = (unsigned char) (coarseTime);
+        header->time[4] = (unsigned char) (fineTime>>8);
+        header->time[5] = (unsigned char) (fineTime);
+        //
+        header->acquisitionTime[0] = header->time[0];
+        header->acquisitionTime[1] = header->time[1];
+        header->acquisitionTime[2] = header->time[2];
+        header->acquisitionTime[3] = header->time[3];
+        header->acquisitionTime[4] = header->time[4];
+        header->acquisitionTime[5] = header->time[5];
+
+        // (4) SEND PACKET
+        status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
+        if (status != RTEMS_SUCCESSFUL) {
+            printf("in ASM_send *** ERR %d\n", (int) status);
+        }
+    }
+}
+
+void spw_send_asm_f1( ring_node *ring_node_to_send,
+                   Header_TM_LFR_SCIENCE_ASM_t *header )
+{
+    unsigned int i;
+    unsigned int length = 0;
+    rtems_status_code status;
+    unsigned int sid;
+    float *spectral_matrix;
+    int coarseTime;
+    int fineTime;
+    spw_ioctl_pkt_send spw_ioctl_send_ASM;
+
+    sid = ring_node_to_send->sid;
+    spectral_matrix = (float*) ring_node_to_send->buffer_address;
+    coarseTime = ring_node_to_send->coarseTime;
+    fineTime = ring_node_to_send->fineTime;
+
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
+
+    for (i=0; i<3; i++)
+    {
+        if ((i==0) || (i==1))
+        {
+            spw_ioctl_send_ASM.dlen = DLEN_ASM_F1_PKT_1;
+            spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
+                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_VALUES_PER_SM )
+                    ];
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_1;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_1) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1_1);        // BLK_NR LSB
+        }
+        else
+        {
+            spw_ioctl_send_ASM.dlen = DLEN_ASM_F1_PKT_2;
+            spw_ioctl_send_ASM.data = (char*) &spectral_matrix[
+                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_VALUES_PER_SM )
+                    ];
+            length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_2;
+            header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1_2);        // BLK_NR LSB
+        }
+
+        spw_ioctl_send_ASM.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM;
+        spw_ioctl_send_ASM.hdr = (char *) header;
+        spw_ioctl_send_ASM.options = 0;
+
+        // (2) BUILD THE HEADER
+        increment_seq_counter_source_id( header->packetSequenceControl, sid );
+        header->packetLength[0] = (unsigned char) (length>>8);
+        header->packetLength[1] = (unsigned char) (length);
+        header->sid = (unsigned char) sid;   // SID
+        header->pa_lfr_pkt_cnt_asm = 3;
+        header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
+
+        // (3) SET PACKET TIME
+        header->time[0] = (unsigned char) (coarseTime>>24);
+        header->time[1] = (unsigned char) (coarseTime>>16);
+        header->time[2] = (unsigned char) (coarseTime>>8);
+        header->time[3] = (unsigned char) (coarseTime);
+        header->time[4] = (unsigned char) (fineTime>>8);
+        header->time[5] = (unsigned char) (fineTime);
+        //
+        header->acquisitionTime[0] = header->time[0];
+        header->acquisitionTime[1] = header->time[1];
+        header->acquisitionTime[2] = header->time[2];
+        header->acquisitionTime[3] = header->time[3];
+        header->acquisitionTime[4] = header->time[4];
+        header->acquisitionTime[5] = header->time[5];
+
+        // (4) SEND PACKET
+        status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
+        if (status != RTEMS_SUCCESSFUL) {
+            printf("in ASM_send *** ERR %d\n", (int) status);
+        }
+    }
+}
+
+void spw_send_asm_f2( ring_node *ring_node_to_send,
+                   Header_TM_LFR_SCIENCE_ASM_t *header )
+{
+    unsigned int i;
+    unsigned int length = 0;
+    rtems_status_code status;
+    unsigned int sid;
+    float *spectral_matrix;
+    int coarseTime;
+    int fineTime;
+    spw_ioctl_pkt_send spw_ioctl_send_ASM;
+
+    sid = ring_node_to_send->sid;
+    spectral_matrix = (float*) ring_node_to_send->buffer_address;
+    coarseTime = ring_node_to_send->coarseTime;
+    fineTime = ring_node_to_send->fineTime;
+
+    header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
+
+    for (i=0; i<3; i++)
+    {
+
+        spw_ioctl_send_ASM.dlen = DLEN_ASM_F2_PKT;
+        spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
+                ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_VALUES_PER_SM )
+                ];
+        length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
+        header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3;
+        header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> 8 ); // BLK_NR MSB
+        header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F2);        // BLK_NR LSB
+
+        spw_ioctl_send_ASM.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM;
+        spw_ioctl_send_ASM.hdr = (char *) header;
+        spw_ioctl_send_ASM.options = 0;
+
+        // (2) BUILD THE HEADER
+        increment_seq_counter_source_id( header->packetSequenceControl, sid );
+        header->packetLength[0] = (unsigned char) (length>>8);
+        header->packetLength[1] = (unsigned char) (length);
+        header->sid = (unsigned char) sid;   // SID
+        header->pa_lfr_pkt_cnt_asm = 3;
         header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
 
         // (3) SET PACKET TIME

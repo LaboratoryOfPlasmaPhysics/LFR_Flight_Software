@@ -224,7 +224,7 @@ typedef struct ring_node
 #define MSG_QUEUE_COUNT_PRC0  10
 #define MSG_QUEUE_COUNT_PRC1  10
 #define MSG_QUEUE_COUNT_PRC2  5
-#define MSG_QUEUE_SIZE_SEND             810 // 806 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
+#define MSG_QUEUE_SIZE_SEND             812 // 808 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
 #define MSG_QUEUE_SIZE_PRC0             28  // two pointers, one rtems_event + 4 integers
 #define MSG_QUEUE_SIZE_PRC1             28  // two pointers, one rtems_event + 4 integers

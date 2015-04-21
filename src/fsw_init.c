@@ -63,22 +63,24 @@
 
 void initCache()
 {
-//    unsigned int cacheControlRegister;
+    unsigned int cacheControlRegister;
 
-//    cacheControlRegister = getCacheControlRegister();
-//    printf("(0) cacheControlRegister = %x\n", cacheControlRegister);
+    cacheControlRegister = getCacheControlRegister();
+    printf("(0) cacheControlRegister = %x\n", cacheControlRegister);
+
+    resetCacheControlRegister();
 
     enableInstructionCache();
     enableDataCache();
     enableInstructionBurstFetch();
 
-//    cacheControlRegister = getCacheControlRegister();
-//    printf("(1) cacheControlRegister = %x\n", cacheControlRegister);
+    cacheControlRegister = getCacheControlRegister();
+    printf("(1) cacheControlRegister = %x\n", cacheControlRegister);
 }
 
 rtems_task Init( rtems_task_argument ignored )
 {
-    /** This is the RTEMS INIT taks, it the first task launched by the system.
+    /** This is the RTEMS INIT taks, it is the first task launched by the system.
      *
      * @param unused is the starting argument of the RTEMS task
      *

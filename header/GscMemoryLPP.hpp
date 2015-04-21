@@ -30,6 +30,13 @@ static inline void flushCache() {
     asm("flush");
 }
 
+static void resetCacheControlRegister() {
+#ifdef LEON3
+    unsigned int cacheControlRegister;
+    cacheControlRegister = 0x00;
+    setCacheControlRegister(cacheControlRegister);
+#endif
+}
 
 static void enableInstructionCache() {
 #ifdef LEON3

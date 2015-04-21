@@ -37,7 +37,9 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header );
 int spw_send_waveform_CWF( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_CWF_t *header );
 int spw_send_waveform_SWF( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_SWF_t *header );
 int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_CWF_t *header );
-void spw_send_asm( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t *header );
+void spw_send_asm_f0( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t *header );
+void spw_send_asm_f1( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t *header );
+void spw_send_asm_f2( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t *header );
 void spw_send_k_dump( ring_node *ring_node_to_send );
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc );
