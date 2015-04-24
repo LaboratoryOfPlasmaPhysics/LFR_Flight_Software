@@ -12,9 +12,6 @@
 
 #include "lfr_cpu_usage_report.h"
 
-// MODE PARAMETERS
-extern unsigned int maxCount;
-
 //****
 // ISR
 rtems_isr commutation_isr1( rtems_vector_number vector );

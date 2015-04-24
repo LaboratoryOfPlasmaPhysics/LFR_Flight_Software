@@ -71,7 +71,7 @@ rtems_task spiq_task(rtems_task_argument unused)
             status = spacewire_stop_and_start_link( fdSPW ); // start the link
             if ( status != RTEMS_SUCCESSFUL)
             {
-                PRINTF1("in SPIQ *** ERR spacewire_start_link %d\n", status)
+                PRINTF1("in SPIQ *** ERR spacewire_stop_and_start_link %d\n", status)
             }
         }
 
@@ -89,10 +89,6 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else                                // [3.b] the link is not in run state, go in STANDBY mode
         {
-            status = stop_current_mode();
-            if ( status != RTEMS_SUCCESSFUL ) {
-                PRINTF1("in SPIQ *** ERR stop_current_mode *** code %d\n", status)
-            }
             status = enter_mode( LFR_MODE_STANDBY, 0 );
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
@@ -191,6 +187,9 @@ rtems_task recv_task( rtems_task_argument unused )
                 }
             }
         }
+
+        update_queue_max_count( queue_recv_id, &hk_lfr_q_rv_fifo_size_max );
+
     }
 }
 
@@ -215,8 +214,7 @@ rtems_task send_task( rtems_task_argument argument)
     char *charPtr;
     spw_ioctl_pkt_send *spw_ioctl_send;
     size_t size;                            // size of the incoming TC packet
-    u_int32_t count;
-    rtems_id queue_id;
+    rtems_id queue_send_id;
     unsigned int sid;
 
     incomingRingNodePtr = NULL;
@@ -228,7 +226,7 @@ rtems_task send_task( rtems_task_argument argument)
     init_header_swf( &headerSWF );
     init_header_asm( &headerASM );
 
-    status =  get_message_queue_id_send( &queue_id );
+    status =  get_message_queue_id_send( &queue_send_id );
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
@@ -238,7 +236,7 @@ rtems_task send_task( rtems_task_argument argument)
 
     while(1)
     {
-        status = rtems_message_queue_receive( queue_id, incomingData, &size,
+        status = rtems_message_queue_receive( queue_send_id, incomingData, &size,
                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT );
 
         if (status!=RTEMS_SUCCESSFUL)
@@ -315,18 +313,8 @@ rtems_task send_task( rtems_task_argument argument)
             }
         }
 
-        status = rtems_message_queue_get_number_pending( queue_id, &count );
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            PRINTF1("in SEND *** (3) ERR = %d\n", status)
-        }
-        else
-        {
-            if (count > maxCount)
-            {
-                maxCount = count;
-            }
-        }
+        update_queue_max_count( queue_send_id, &hk_lfr_q_sd_fifo_size_max );
+
     }
 }
 

@@ -6,6 +6,9 @@ SpwPlugin0.selectBridge("STAR-Dundee Spw USB Brick")
 proxy.loadSysDriverToParent("dsu3plugin","SpwPlugin0")
 proxy.loadSysDriverToParent("LFRControlPlugin","SpwPlugin0")
 
+proxy.loadSysDriverToParent("APB_UART_PLUGIN","SpwPlugin0")
+APB_UART_PLUGIN0.setFifoDebugEnabled( 1 )
+
 availableBrickCount = SpwPlugin0.StarDundeeGetAvailableBrickCount()
 print str(availableBrickCount) + " SpaceWire brick(s) found"
 

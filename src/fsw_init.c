@@ -60,6 +60,7 @@
 
 #include "fsw_init.h"
 #include "fsw_config.c"
+#include "GscMemoryLPP.hpp"
 
 void initCache()
 {
@@ -811,4 +812,58 @@ rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id )
     status =  rtems_message_queue_ident( queue_name, 0, queue_id );
 
     return status;
+}
+
+void update_queue_max_count( rtems_id queue_id, unsigned char*fifo_size_max )
+{
+    u_int32_t count;
+    rtems_status_code status;
+
+    status = rtems_message_queue_get_number_pending( queue_id, &count );
+
+    count = count + 1;
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in update_queue_max_count *** ERR = %d\n", status)
+    }
+    else
+    {
+        if (count > *fifo_size_max)
+        {
+            *fifo_size_max = count;
+        }
+    }
+}
+
+void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize )
+{
+    unsigned char i;
+
+    //***************
+    // BUFFER ADDRESS
+    for(i=0; i<nbNodes; i++)
+    {
+        ring[i].coarseTime = 0x00;
+        ring[i].fineTime = 0x00;
+        ring[i].sid = 0x00;
+        ring[i].status = 0x00;
+        ring[i].buffer_address  = (int) &buffer[ i * bufferSize ];
+    }
+
+    //*****
+    // NEXT
+     ring[ nbNodes - 1 ].next  = (ring_node*) &ring[ 0 ];
+     for(i=0; i<nbNodes-1; i++)
+     {
+         ring[i].next      = (ring_node*) &ring[ i + 1 ];
+     }
+
+    //*********
+    // PREVIOUS
+    ring[ 0 ].previous       = (ring_node*) &ring[ nbNodes - 1 ];
+    for(i=1; i<nbNodes; i++)
+    {
+        ring[i].previous   = (ring_node*) &ring[ i - 1 ];
+    }
 }

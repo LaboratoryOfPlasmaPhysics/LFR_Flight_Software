@@ -11,6 +11,7 @@
 
 #include "fsw_params.h"
 #include "tc_handler.h"
+#include "fsw_init.h"
 
 extern spw_stats spacewire_stats;
 extern spw_stats spacewire_stats_backup;

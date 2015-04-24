@@ -697,6 +697,8 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         ring_node_to_send_cwf = getRingNodeToSendCWF( 1 );
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
         status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
+        if (status != 0)
+            printf("cwf sending failed\n");
         // launch snapshot extraction if needed
         if (extractSWF == true)
         {
@@ -776,38 +778,6 @@ void WFP_init_rings( void )
     DEBUG_PRINTF1("wf_buffer_f2 @%x\n", (unsigned int) wf_buffer_f2)
     DEBUG_PRINTF1("wf_buffer_f3 @%x\n", (unsigned int) wf_buffer_f3)
 
-}
-
-void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize )
-{
-    unsigned char i;
-
-    //***************
-    // BUFFER ADDRESS
-    for(i=0; i<nbNodes; i++)
-    {
-        ring[i].coarseTime = 0x00;
-        ring[i].fineTime = 0x00;
-        ring[i].sid = 0x00;
-        ring[i].status = 0x00;
-        ring[i].buffer_address  = (int) &buffer[ i * bufferSize ];
-    }
-
-    //*****
-    // NEXT
-     ring[ nbNodes - 1 ].next  = (ring_node*) &ring[ 0 ];
-     for(i=0; i<nbNodes-1; i++)
-     {
-         ring[i].next      = (ring_node*) &ring[ i + 1 ];
-     }
-
-    //*********
-    // PREVIOUS
-    ring[ 0 ].previous       = (ring_node*) &ring[ nbNodes - 1 ];
-    for(i=1; i<nbNodes; i++)
-    {
-        ring[i].previous   = (ring_node*) &ring[ i - 1 ];
-    }
 }
 
 void WFP_reset_current_ring_nodes( void )

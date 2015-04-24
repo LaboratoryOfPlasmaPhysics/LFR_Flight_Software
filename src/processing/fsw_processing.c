@@ -9,6 +9,7 @@
 
 #include "fsw_processing.h"
 #include "fsw_processing_globals.c"
+#include "fsw_init.h"
 
 unsigned int nb_sm_f0;
 unsigned int nb_sm_f0_aux_f1;

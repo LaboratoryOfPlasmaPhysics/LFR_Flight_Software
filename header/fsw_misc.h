@@ -34,8 +34,8 @@ void increment_seq_counter(unsigned short *packetSequenceControl);
 void getTime( unsigned char *time);
 unsigned long long int getTimeAsUnsignedLongLongInt( );
 void send_dumb_hk( void );
-void get_v_e1_e2_f3( unsigned char *spacecraft_potential );
 void get_temperatures( unsigned char *temperatures );
+void get_v_e1_e2_f3( unsigned char *spacecraft_potential );
 void get_cpu_load( unsigned char *resource_statistics );
 
 extern int sched_yield( void );
@@ -44,5 +44,11 @@ extern ring_node *current_ring_node_f3;
 extern ring_node *ring_node_to_send_cwf_f3;
 extern ring_node waveform_ring_f3[];
 extern unsigned short sequenceCounterHK;
+
+extern unsigned char hk_lfr_q_sd_fifo_size_max;
+extern unsigned char hk_lfr_q_rv_fifo_size_max;
+extern unsigned char hk_lfr_q_p0_fifo_size_max;
+extern unsigned char hk_lfr_q_p1_fifo_size_max;
+extern unsigned char hk_lfr_q_p2_fifo_size_max;
 
 #endif // FSW_MISC_H_INCLUDED

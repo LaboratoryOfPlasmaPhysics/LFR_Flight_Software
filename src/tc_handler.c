@@ -533,7 +533,6 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
     {
 #ifdef PRINT_TASK_STATISTICS
         rtems_cpu_usage_reset();
-        maxCount = 0;
 #endif
         status = restart_science_tasks( mode );
         launch_spectral_matrix( );
@@ -550,7 +549,6 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
         PRINTF("stack report selected\n")
         rtems_stack_checker_report_usage();
 #endif
-        PRINTF1("maxCount = %d\n", maxCount)
     }
     else
     {
@@ -673,80 +671,120 @@ int suspend_science_tasks()
     printf("in suspend_science_tasks\n");
 
     status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
-    if (status != RTEMS_SUCCESSFUL)
+    if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
         PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
+    }
+    else
+    {
+        status = RTEMS_SUCCESSFUL;
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend PRC0
     {
         status = rtems_task_suspend( Task_id[TASKID_PRC0] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** PRC0 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend AVF1
     {
         status = rtems_task_suspend( Task_id[TASKID_AVF1] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** AVF1 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend PRC1
     {
         status = rtems_task_suspend( Task_id[TASKID_PRC1] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend AVF2
     {
         status = rtems_task_suspend( Task_id[TASKID_AVF2] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend PRC2
     {
         status = rtems_task_suspend( Task_id[TASKID_PRC2] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend WFRM
     {
         status = rtems_task_suspend( Task_id[TASKID_WFRM] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** WFRM ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF3
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF3] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** CWF3 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF2
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF2] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** CWF2 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
     if (status == RTEMS_SUCCESSFUL)        // suspend CWF1
     {
         status = rtems_task_suspend( Task_id[TASKID_CWF1] );
-        if (status != RTEMS_SUCCESSFUL)
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
             PRINTF1("in suspend_science_task *** CWF1 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
         }
     }
 

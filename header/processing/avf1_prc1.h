@@ -3,6 +3,7 @@
 
 #include "fsw_processing.h"
 #include "basic_parameters.h"
+#include "fsw_init.h"
 
 typedef struct {
     unsigned int norm_bp1;

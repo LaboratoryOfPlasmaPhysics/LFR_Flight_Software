@@ -10,7 +10,6 @@
 #include <grlib_regs.h>
 
 #include "fsw_params.h"
-#include "fsw_spacewire.h"
 
 typedef struct ring_node_asm
 {
@@ -72,7 +71,7 @@ typedef struct
     unsigned char data[ 117 ];   // 13 bins  * 9 Bytes only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 } bp_packet_with_spare;
 
-typedef struct
+typedef struct asm_msg
 {
     ring_node_asm *norm;
     ring_node_asm *burst_sbm;

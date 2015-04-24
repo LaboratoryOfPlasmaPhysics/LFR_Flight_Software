@@ -26,7 +26,6 @@
 rtems_name  misc_name[5];
 rtems_name  Task_name[20];       /* array of task names */
 rtems_id    Task_id[20];         /* array of task ids */
-unsigned int maxCount;
 int fdSPW = 0;
 int fdUART = 0;
 unsigned char lfrCurrentMode;
@@ -61,6 +60,12 @@ struct param_local_str param_local;
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
+// message queues occupancy
+unsigned char hk_lfr_q_sd_fifo_size_max;
+unsigned char hk_lfr_q_rv_fifo_size_max;
+unsigned char hk_lfr_q_p0_fifo_size_max;
+unsigned char hk_lfr_q_p1_fifo_size_max;
+unsigned char hk_lfr_q_p2_fifo_size_max;
 // sequence counters are incremented by APID (PID + CAT) and destination ID
 unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
 unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;

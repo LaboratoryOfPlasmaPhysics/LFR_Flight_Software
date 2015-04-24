@@ -347,6 +347,8 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
             current_ring_node_to_send_asm_f1 = current_ring_node_to_send_asm_f1->next;
         }
 
+        update_queue_max_count( queue_id_q_p1, &hk_lfr_q_p1_fifo_size_max );
+
     }
 }
 

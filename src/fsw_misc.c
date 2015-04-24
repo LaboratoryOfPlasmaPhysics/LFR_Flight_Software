@@ -161,22 +161,6 @@ rtems_task hous_task(rtems_task_argument argument)
         }
     }
 
-    housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    housekeeping_packet.reserved = DEFAULT_RESERVED;
-    housekeeping_packet.userApplication = CCSDS_USER_APP;
-    housekeeping_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
-    housekeeping_packet.packetID[1] = (unsigned char) (APID_TM_HK);
-    housekeeping_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    housekeeping_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
-    housekeeping_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
-    housekeeping_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-    housekeeping_packet.serviceType = TM_TYPE_HK;
-    housekeeping_packet.serviceSubType = TM_SUBTYPE_HK;
-    housekeeping_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    housekeeping_packet.sid = SID_HK;
-
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL ) {
         PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status )
@@ -224,6 +208,12 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
 
             spacewire_update_statistics();
+
+            housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
+            housekeeping_packet.hk_lfr_q_rv_fifo_size_max = hk_lfr_q_rv_fifo_size_max;
+            housekeeping_packet.hk_lfr_q_p0_fifo_size_max = hk_lfr_q_p0_fifo_size_max;
+            housekeeping_packet.hk_lfr_q_p1_fifo_size_max = hk_lfr_q_p1_fifo_size_max;
+            housekeeping_packet.hk_lfr_q_p2_fifo_size_max = hk_lfr_q_p2_fifo_size_max;
 
             housekeeping_packet.sy_lfr_common_parameters_spare  = parameter_dump_packet.sy_lfr_common_parameters_spare;
             housekeeping_packet.sy_lfr_common_parameters        = parameter_dump_packet.sy_lfr_common_parameters;
@@ -314,12 +304,33 @@ void init_housekeeping_parameters( void )
 
     unsigned int i = 0;
     unsigned char *parameters;
+    unsigned char sizeOfHK;
 
-    parameters = (unsigned char*) &housekeeping_packet.lfr_status_word;
-    for(i = 0; i< SIZE_HK_PARAMETERS; i++)
+    sizeOfHK = sizeof( Packet_TM_LFR_HK_t );
+
+    parameters = (unsigned char*) &housekeeping_packet;
+
+    for(i = 0; i< sizeOfHK; i++)
     {
         parameters[i] = 0x00;
     }
+
+    housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
+    housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
+    housekeeping_packet.reserved = DEFAULT_RESERVED;
+    housekeeping_packet.userApplication = CCSDS_USER_APP;
+    housekeeping_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
+    housekeeping_packet.packetID[1] = (unsigned char) (APID_TM_HK);
+    housekeeping_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
+    housekeeping_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
+    housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
+    housekeeping_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
+    housekeeping_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
+    housekeeping_packet.serviceType = TM_TYPE_HK;
+    housekeeping_packet.serviceSubType = TM_SUBTYPE_HK;
+    housekeeping_packet.destinationID = TM_DESTINATION_ID_GROUND;
+    housekeeping_packet.sid = SID_HK;
+
     // init status word
     housekeeping_packet.lfr_status_word[0] = DEFAULT_STATUS_WORD_BYTE0;
     housekeeping_packet.lfr_status_word[1] = DEFAULT_STATUS_WORD_BYTE1;
@@ -333,6 +344,12 @@ void init_housekeeping_parameters( void )
     housekeeping_packet.lfr_fpga_version[0] = parameters[1]; // n1
     housekeeping_packet.lfr_fpga_version[1] = parameters[2]; // n2
     housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3
+
+    housekeeping_packet.hk_lfr_q_sd_fifo_size = MSG_QUEUE_COUNT_SEND;
+    housekeeping_packet.hk_lfr_q_rv_fifo_size = MSG_QUEUE_COUNT_RECV;
+    housekeeping_packet.hk_lfr_q_p0_fifo_size = MSG_QUEUE_COUNT_PRC0;
+    housekeeping_packet.hk_lfr_q_p1_fifo_size = MSG_QUEUE_COUNT_PRC1;
+    housekeeping_packet.hk_lfr_q_p2_fifo_size = MSG_QUEUE_COUNT_PRC2;
 }
 
 void increment_seq_counter( unsigned short *packetSequenceControl )

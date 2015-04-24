@@ -16,8 +16,6 @@
 #include "avf1_prc1.h"
 #include "avf2_prc2.h"
 
-#include "GscMemoryLPP.hpp"
-
 extern rtems_name  Task_name[20];       /* array of task names */
 extern rtems_id    Task_id[20];         /* array of task ids */
 
@@ -35,6 +33,8 @@ rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc1( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
+void update_queue_max_count( rtems_id queue_id, unsigned char*fifo_size_max );
+void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize );
 //
 int start_recv_send_tasks( void );
 //
