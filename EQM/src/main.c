@@ -30,11 +30,13 @@ void force_irq (int irq) { lreg[IFORCE/4] = (1 << irq); }	// force irq
 /* NOTE: NEVER put printf() or other stdio routines in interrupt handlers,
    they are not re-entrant. This (bad) example is just a demo */
 
-unsigned char processTimecode = 0;
+volatile unsigned char processTimecode = 0;
+unsigned int counter = 0;
 
 void irqhandler(int irq)
 {
     processTimecode = 1;
+    counter ++;
 }
 
 int main( void )
@@ -43,7 +45,6 @@ int main( void )
     unsigned int k;
     volatile unsigned int *reg;
     float aux;
-    unsigned int counter = 0;
 
     printf("hello world!\n");
 
@@ -60,20 +61,10 @@ int main( void )
 
     while(1)
     {
-        if (processTimecode == 1)
-        {
-            counter ++;
-            printf("timecode counter = %d\n", counter);
-            processTimecode = 0;
-        }
-        else
-        {
-            printf(".");
-        }
-
-//        for (k=0; k<100000;k++)
+//        if (processTimecode == 1)
 //        {
-//            aux = aux + *reg ;
+//            printf("timecode counter = %d\n", counter);
+//            processTimecode = 0;
 //        }
     }
 
