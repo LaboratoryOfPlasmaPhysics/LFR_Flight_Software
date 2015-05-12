@@ -61,11 +61,11 @@ int main( void )
 
     while(1)
     {
-//        if (processTimecode == 1)
-//        {
-//            printf("timecode counter = %d\n", counter);
-//            processTimecode = 0;
-//        }
+        if (processTimecode == 1)
+        {
+            printf("timecode counter = %d\n", counter);
+            processTimecode = 0;
+        }
     }
 
     return 0;

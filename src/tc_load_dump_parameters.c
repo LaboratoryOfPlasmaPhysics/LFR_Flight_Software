@@ -914,6 +914,8 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC )
     int status;
     unsigned char *kcoeffLoadPtr;
     unsigned char *kcoeffNormPtr;
+    unsigned char *kcoeffSbmPtr_a;
+    unsigned char *kcoeffSbmPtr_b;
 
     status = LFR_SUCCESSFUL;
 
@@ -959,10 +961,15 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC )
         for (i=0; i<NB_K_COEFF_PER_BIN; i++)
         {
             // destination
-            kcoeffNormPtr = (unsigned char*) &kcoeffPtr_norm[ (bin * NB_K_COEFF_PER_BIN) + i ];
+            kcoeffNormPtr = (unsigned char*) &kcoeffPtr_norm[   (bin * NB_K_COEFF_PER_BIN) + i          ];
+            kcoeffSbmPtr_a= (unsigned char*) &kcoeffPtr_sbm[  ( (bin * NB_K_COEFF_PER_BIN) + i) * 2     ];
+            kcoeffSbmPtr_b= (unsigned char*) &kcoeffPtr_sbm[  ( (bin * NB_K_COEFF_PER_BIN) + i) * 2 + 1 ];
             // source
             kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * i];
-            copyFloatByChar( kcoeffNormPtr, kcoeffLoadPtr );
+            // copy source to destination
+            copyFloatByChar( kcoeffNormPtr,  kcoeffLoadPtr );
+            copyFloatByChar( kcoeffSbmPtr_a, kcoeffLoadPtr );
+            copyFloatByChar( kcoeffSbmPtr_b, kcoeffLoadPtr );
         }
     }
 
