@@ -729,7 +729,7 @@ void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
-    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
+    header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_6; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
     header->time[0] = 0x00;
     header->time[0] = 0x00;
