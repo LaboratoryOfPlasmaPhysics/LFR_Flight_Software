@@ -376,6 +376,8 @@ void BP_init_header( bp_packet *packet,
     // AUXILIARY DATA HEADER
     packet->sid = sid;
     packet->biaStatusInfo = 0x00;
+    packet->sy_lfr_common_parameters_spare = 0x00;
+    packet->sy_lfr_common_parameters = 0x00;
     packet->acquisitionTime[0] = 0x00;
     packet->acquisitionTime[1] = 0x00;
     packet->acquisitionTime[2] = 0x00;
@@ -408,6 +410,8 @@ void BP_init_header_with_spare( bp_packet_with_spare *packet,
     // AUXILIARY DATA HEADER
     packet->sid = sid;
     packet->biaStatusInfo = 0x00;
+    packet->sy_lfr_common_parameters_spare = 0x00;
+    packet->sy_lfr_common_parameters = 0x00;
     packet->time[0] = 0x00;
     packet->time[0] = 0x00;
     packet->time[0] = 0x00;
