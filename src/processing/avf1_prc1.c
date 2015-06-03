@@ -286,7 +286,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
             if ( (incomingMsg->event & RTEMS_EVENT_BURST_BP2_F1) || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F1) )
             {
                 // 1) compute the BP2 set
-                BP2_set( compressed_sm_sbm_f1, NB_BINS_COMPRESSED_SM_SBM_F1, packet_norm_bp2.data );
+                BP2_set( compressed_sm_sbm_f1, NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp2.data );
                 // 2) send the BP2 set
                 set_time( packet_sbm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeSBM );
                 set_time( packet_sbm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
