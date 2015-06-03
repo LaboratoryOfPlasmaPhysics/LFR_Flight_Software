@@ -844,8 +844,8 @@ void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], u
     // BUFFER ADDRESS
     for(i=0; i<nbNodes; i++)
     {
-        ring[i].coarseTime = 0x00;
-        ring[i].fineTime = 0x00;
+        ring[i].coarseTime = 0xffffffff;
+        ring[i].fineTime = 0xffffffff;
         ring[i].sid = 0x00;
         ring[i].status = 0x00;
         ring[i].buffer_address  = (int) &buffer[ i * bufferSize ];

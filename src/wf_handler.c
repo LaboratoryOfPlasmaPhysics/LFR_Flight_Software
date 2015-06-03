@@ -556,6 +556,7 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     rtems_id queue_id;
     rtems_status_code status;
     ring_node ring_node_cwf3_light;
+    ring_node *ring_node_to_send_cwf;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -583,16 +584,17 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
         if ( (lfrCurrentMode == LFR_MODE_NORMAL)
              || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode==LFR_MODE_SBM2) )
         {
+            ring_node_to_send_cwf = getRingNodeToSendCWF( 3 );
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
                 PRINTF("send CWF_LONG_F3\n")
                 ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
-                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf_f3, sizeof( ring_node* ) );
+                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
-                send_waveform_CWF3_light( ring_node_to_send_cwf_f3, &ring_node_cwf3_light, queue_id );
+                send_waveform_CWF3_light( ring_node_to_send_cwf, &ring_node_cwf3_light, queue_id );
             }
 
         }
