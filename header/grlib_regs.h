@@ -57,7 +57,7 @@ typedef struct {
     volatile unsigned int calData;
 } time_management_regs_t;
 
-// PDB >= 0.1.28
+// PDB >= 0.1.28, 0x80000f54
 typedef struct{
     int data_shaping;       // 0x00 00 *** R1 R0 SP1 SP0 BW
     int run_burst_enable;   // 0x04 01 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
@@ -94,7 +94,7 @@ typedef struct{
     volatile unsigned int f2_1_coarse_time; // 0x74
     volatile unsigned int f2_1_fine_time;   // 0x78
     //
-    volatile unsigned int f3_0_coarse_time; // 0x7c
+    volatile unsigned int f3_0_coarse_time; // 0x7c => 0x7c + 0xf54 = 0xd0
     volatile unsigned int f3_0_fine_time;   // 0x80
     volatile unsigned int f3_1_coarse_time; // 0x84
     volatile unsigned int f3_1_fine_time;   // 0x88

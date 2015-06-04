@@ -55,8 +55,8 @@ void setCalibrationData( void );
 void setCalibrationReload( bool state);
 void setCalibrationEnable( bool state );
 void setCalibrationInterleaved( bool state );
-void startCalibration( void );
-void stopCalibration( void );
+void setCalibration( bool state );
+void set_hk_lfr_calib_enable( bool state );
 void configureCalibration( bool interleaved );
 //
 void update_last_TC_exe( ccsdsTelecommandPacket_t *TC , unsigned char *time );

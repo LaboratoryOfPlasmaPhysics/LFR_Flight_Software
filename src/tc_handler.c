@@ -272,7 +272,7 @@ int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
 
     result = LFR_DEFAULT;
 
-    startCalibration();
+    setCalibration( true );
 
     result = LFR_SUCCESSFUL;
 
@@ -292,7 +292,7 @@ int action_disable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, 
 
     result = LFR_DEFAULT;
 
-    stopCalibration();
+    setCalibration( false );
 
     result = LFR_SUCCESSFUL;
 
@@ -981,21 +981,37 @@ void setCalibrationInterleaved( bool state )
     }
 }
 
-void startCalibration( void )
+void setCalibration( bool state )
 {
-    setCalibrationEnable( true );
-    setCalibrationReload( false );
+    if (state == true)
+    {
+        setCalibrationEnable( true );
+        setCalibrationReload( false );
+        set_hk_lfr_calib_enable( true );
+    }
+    else
+    {
+        setCalibrationEnable( false );
+        setCalibrationReload( true );
+        set_hk_lfr_calib_enable( false );
+    }
 }
 
-void stopCalibration( void )
+void set_hk_lfr_calib_enable( bool state )
 {
-    setCalibrationEnable( false );
-    setCalibrationReload( true );
+    if (state == true)
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x08;   // [0000 1000]
+    }
+    else
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf7;   // [1111 0111]
+    }
 }
 
 void configureCalibration( bool interleaved )
 {
-    stopCalibration();
+    setCalibration( false );
     if ( interleaved == true )
     {
         setCalibrationInterleaved( true );
