@@ -112,7 +112,6 @@ rtems_task actn_task( rtems_task_argument unused )
                 close_action( &TC, result, queue_snd_id );
                 break;
             case TC_SUBTYPE_LOAD_K:
-                printf("TC_SUBTYPE_LOAD_K\n");
                 result = action_load_kcoefficients( &TC, queue_snd_id, time );
                 close_action( &TC, result, queue_snd_id );
                 break;
