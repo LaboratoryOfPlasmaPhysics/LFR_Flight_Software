@@ -98,7 +98,7 @@
 #define TC_LEN_LOAD_SBM2    14
 #define TC_LEN_DUMP         12
 #define TC_LEN_ENTER        20
-#define TC_LEN_UPDT_INFO    46
+#define TC_LEN_UPDT_INFO    110
 #define TC_LEN_EN_CAL       12
 #define TC_LEN_DIS_CAL      12
 #define TC_LEN_LOAD_K       142
@@ -303,9 +303,9 @@ typedef struct {
     unsigned char destinationID;
     unsigned char time[6];
     //
-    unsigned char tc_failure_code[2];
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
+    unsigned char tc_failure_code[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char byte_position;
@@ -328,9 +328,9 @@ typedef struct {
     unsigned char destinationID;
     unsigned char time[6];
     //
-    unsigned char tc_failure_code[2];
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
+    unsigned char tc_failure_code[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char lfr_status_word[2];
@@ -352,9 +352,9 @@ typedef struct {
     unsigned char destinationID;
     unsigned char time[6];
     //
-    unsigned char tc_failure_code[2];
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
+    unsigned char tc_failure_code[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
 } Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
@@ -375,9 +375,9 @@ typedef struct {
     unsigned char destinationID;
     unsigned char time[6];
     //
-    unsigned char tc_failure_code[2];
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
+    unsigned char tc_failure_code[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
 } Packet_TM_LFR_TC_EXE_ERROR_t;
@@ -398,9 +398,9 @@ typedef struct {
     unsigned char destinationID;
     unsigned char time[6];
     //
-    unsigned char tc_failure_code[2];
     unsigned char telecommand_pkt_id[2];
     unsigned char pkt_seq_control[2];
+    unsigned char tc_failure_code[2];
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char pkt_len_rcv_value[2];

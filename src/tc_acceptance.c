@@ -8,6 +8,7 @@
  */
 
 #include "tc_acceptance.h"
+#include <stdio.h>
 
 unsigned int lookUpTableForCRC[256];
 
@@ -446,6 +447,7 @@ int tc_check_crc( ccsdsTelecommandPacket_t * TCPacket, unsigned int length, unsi
 
     CCSDSContent = (unsigned char*) TCPacket->packetID;
     GetCRCAsTwoBytes(CCSDSContent, computed_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
+
     if (computed_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
         status = INCOR_CHECKSUM;
     }

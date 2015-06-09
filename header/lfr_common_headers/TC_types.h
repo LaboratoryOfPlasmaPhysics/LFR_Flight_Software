@@ -16,7 +16,7 @@
 #define PACKET_LENGTH_TC_LFR_LOAD_SBM2_PAR          (14 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DUMP_PAR               (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_ENTER_MODE             (20 - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_TC_LFR_UPDATE_INFO            (46 - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_TC_LFR_UPDATE_INFO            (110- CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_ENABLE_CALIBRATION     (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DISABLE_CALIBRATION    (12 - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_LFR_DUMP_KCOEFFICIENTS     (12 - CCSDS_TC_TM_PACKET_OFFSET)
@@ -88,11 +88,43 @@ typedef struct
     unsigned char set2;
     unsigned char set3_bias_setting_set1[6];
     unsigned char set3_bias_setting_set2[6];
-    unsigned char set3_bias_voltage[4];
+    unsigned char set3_bias_voltage[2];
     unsigned char set4[8];
     unsigned char set5;
     unsigned char set6;
     unsigned char set7[8];
+    unsigned char spare1[2];
+    unsigned char spare2[2];
+    unsigned char spare3[2];
+    unsigned char spare4[2];
+    unsigned char spare5[2];
+    unsigned char spare6[2];
+    unsigned char spare7[2];
+    unsigned char spare8[2];
+    unsigned char spare9[2];
+    unsigned char spare10[2];
+    unsigned char spare11[2];
+    unsigned char spare12[2];
+    unsigned char spare13[2];
+    unsigned char spare14[2];
+    unsigned char spare15[2];
+    unsigned char spare16[2];
+    unsigned char spare17[2];
+    unsigned char spare18[2];
+    unsigned char spare19[2];
+    unsigned char spare20[2];
+    unsigned char spare21[2];
+    unsigned char spare22[2];
+    unsigned char spare23[2];
+    unsigned char spare24[2];
+    unsigned char spare25[2];
+    unsigned char spare26[2];
+    unsigned char spare27[2];
+    unsigned char spare28[2];
+    unsigned char spare29[2];
+    unsigned char spare30[2];
+    unsigned char spare31[2];
+    unsigned char spare32[2];
     unsigned char crc[2];
 } Packet_TC_LFR_UPDATE_INFO_t;
 
