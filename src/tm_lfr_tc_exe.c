@@ -373,9 +373,11 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     Packet_TM_LFR_TC_EXE_CORRUPTED_t TM;
     unsigned char messageSize;
     unsigned int packetLength;
+    unsigned int estimatedPacketLength;
     unsigned char *packetDataField;
 
-    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];   // compute the packet length parameter
+    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];   // compute the packet length parameter written in the TC
+    estimatedPacketLength = (unsigned int) (currentTC_LEN_RCV[0] * 256 + currentTC_LEN_RCV[1]);
     packetDataField = (unsigned char *) &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
@@ -412,8 +414,10 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.pkt_len_rcv_value[1] = TC->packetLength[1];
     TM.pkt_datafieldsize_cnt[0] = currentTC_LEN_RCV[0];
     TM.pkt_datafieldsize_cnt[1] = currentTC_LEN_RCV[1];
-    TM.rcv_crc[0] = packetDataField[ packetLength - 1 ];
-    TM.rcv_crc[1] = packetDataField[ packetLength ];
+//    TM.rcv_crc[0] = packetDataField[ packetLength - 1 ];
+//    TM.rcv_crc[1] = packetDataField[ packetLength ];
+    TM.rcv_crc[0] = packetDataField[ estimatedPacketLength - 1 ];
+    TM.rcv_crc[1] = packetDataField[ estimatedPacketLength     ];
     TM.computed_crc[0] = computed_CRC[0];
     TM.computed_crc[1] = computed_CRC[1];
 
