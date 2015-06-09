@@ -287,7 +287,7 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
 
     flag = LFR_DEFAULT;
 
-    flag = set_sy_lfr_kcoeff( TC );
+    flag = set_sy_lfr_kcoeff( TC, queue_id );
 
     return flag;
 }
@@ -903,7 +903,7 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 
 //**************
 // KCOEFFICIENTS
-int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC )
+int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
 {
     unsigned int i;
     unsigned short sy_lfr_kcoeff_frequency;
@@ -929,6 +929,9 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC )
     if ( sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM )
     {
         PRINTF1("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n", sy_lfr_kcoeff_frequency)
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + 10,
+                                                  TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY]  );
+        status = LFR_DEFAULT;
     }
     else
     {

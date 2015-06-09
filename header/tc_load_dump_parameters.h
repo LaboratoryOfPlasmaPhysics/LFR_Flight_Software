@@ -60,7 +60,7 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
 
 // KCOEFFICIENTS
-int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC );
+int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t *TC , rtems_id queue_id);
 void copyFloatByChar( unsigned char *destination, unsigned char *source );
 
 void init_parameter_dump( void );
