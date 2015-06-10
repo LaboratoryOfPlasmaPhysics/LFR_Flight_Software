@@ -996,18 +996,6 @@ void setCalibration( bool state )
     }
 }
 
-void set_hk_lfr_calib_enable( bool state )
-{
-    if (state == true)
-    {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x08;   // [0000 1000]
-    }
-    else
-    {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf7;   // [1111 0111]
-    }
-}
-
 void configureCalibration( bool interleaved )
 {
     setCalibration( false );
@@ -1171,4 +1159,6 @@ void reset_lfr( void )
     set_lfr_soft_reset( 1 );
 
     set_lfr_soft_reset( 0 );
+
+    set_hk_lfr_sc_potential_flag( true );
 }

@@ -526,5 +526,26 @@ void get_cpu_load( unsigned char *resource_statistics )
 
 }
 
+void set_hk_lfr_sc_potential_flag( bool state )
+{
+    if (state == true)
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x40;   // [0100 0000]
+    }
+    else
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xbf;   // [1011 1111]
+    }
+}
 
-
+void set_hk_lfr_calib_enable( bool state )
+{
+    if (state == true)
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x08;   // [0000 1000]
+    }
+    else
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf7;   // [1111 0111]
+    }
+}
