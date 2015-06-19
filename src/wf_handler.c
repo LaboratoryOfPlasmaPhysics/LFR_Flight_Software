@@ -1192,7 +1192,7 @@ void set_wfp_data_shaping( void )
               ( (data_shaping & 0x20) >> 5 )     // BW
             + ( (data_shaping & 0x10) >> 3 )     // SP0
             + ( (data_shaping & 0x08) >> 1 )     // SP1
-            + ( (data_shaping & 0x04)      )     // R0
+            + ( (data_shaping & 0x04) << 1 )     // R0
             + ( (data_shaping & 0x02) << 3 )     // R1
             + ( (data_shaping & 0x01) << 5 );    // R2
 }
