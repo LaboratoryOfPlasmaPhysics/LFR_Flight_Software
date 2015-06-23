@@ -929,8 +929,8 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
     if ( sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM )
     {
         PRINTF1("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n", sy_lfr_kcoeff_frequency)
-        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + 10,
-                                                  TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY]  );
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + 10 + 1,
+                                                  TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + 1]  ); // +1 to get the LSB instead of the MSB
         status = LFR_DEFAULT;
     }
     else
