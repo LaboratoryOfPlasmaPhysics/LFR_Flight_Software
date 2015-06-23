@@ -905,7 +905,7 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
 {
-    unsigned int i;
+    unsigned int kcoeff;
     unsigned short sy_lfr_kcoeff_frequency;
     unsigned short bin;
     unsigned short *freqPtr;
@@ -962,12 +962,12 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
 
     if (kcoeffPtr_norm != NULL )    // update K coefficient for NORMAL data products
     {
-        for (i=0; i<NB_K_COEFF_PER_BIN; i++)
+        for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
         {
             // destination
-            kcoeffNormPtr = (unsigned char*) &kcoeffPtr_norm[   (bin * NB_K_COEFF_PER_BIN) + i          ];
+            kcoeffNormPtr = (unsigned char*) &kcoeffPtr_norm[ (bin * NB_K_COEFF_PER_BIN) + kcoeff ];
             // source
-            kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * i];
+            kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * kcoeff];
             // copy source to destination
             copyFloatByChar( kcoeffNormPtr,  kcoeffLoadPtr );
         }
@@ -975,18 +975,20 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
 
     if (kcoeffPtr_sbm != NULL )     // update K coefficient for SBM data products
     {
-        for (i=0; i<NB_K_COEFF_PER_BIN; i++)
+        for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
         {
             // destination
-            kcoeffSbmPtr_a= (unsigned char*) &kcoeffPtr_sbm[  ( (bin * NB_K_COEFF_PER_BIN) + i) * 2     ];
-            kcoeffSbmPtr_b= (unsigned char*) &kcoeffPtr_sbm[  ( (bin * NB_K_COEFF_PER_BIN) + i) * 2 + 1 ];
+            kcoeffSbmPtr_a= (unsigned char*) &kcoeffPtr_sbm[ ( (bin * NB_K_COEFF_PER_BIN) + kcoeff) * 2     ];
+            kcoeffSbmPtr_b= (unsigned char*) &kcoeffPtr_sbm[ ( (bin * NB_K_COEFF_PER_BIN) + kcoeff) * 2 + 1 ];
             // source
-            kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * i];
+            kcoeffLoadPtr = (unsigned char*) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + NB_BYTES_PER_FLOAT * kcoeff];
             // copy source to destination
             copyFloatByChar( kcoeffSbmPtr_a, kcoeffLoadPtr );
             copyFloatByChar( kcoeffSbmPtr_b, kcoeffLoadPtr );
         }
     }
+
+//    print_k_coeff();
 
     return status;
 }
@@ -1138,5 +1140,33 @@ void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoeffi
     }
 }
 
+void print_k_coeff()
+{
+    unsigned int kcoeff;
+    unsigned int bin;
 
+    for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
+    {
+        printf("kcoeff = %d *** ", kcoeff);
+        for (bin=0; bin<NB_BINS_COMPRESSED_SM_F0; bin++)
+        {
+            printf( "%f ", k_coeff_intercalib_f0_norm[bin*NB_K_COEFF_PER_BIN+kcoeff] );
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+
+    for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
+    {
+        printf("kcoeff = %d *** ", kcoeff);
+        for (bin=0; bin<NB_BINS_COMPRESSED_SM_F0; bin++)
+        {
+            printf( "[%f, %f] ",
+                    k_coeff_intercalib_f0_sbm[(bin*NB_K_COEFF_PER_BIN  )*2 + kcoeff],
+                    k_coeff_intercalib_f0_sbm[(bin*NB_K_COEFF_PER_BIN+1)*2 + kcoeff]);
+        }
+        printf("\n");
+    }
+}
 

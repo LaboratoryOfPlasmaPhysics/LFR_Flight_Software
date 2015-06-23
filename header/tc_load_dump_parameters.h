@@ -66,5 +66,6 @@ void copyFloatByChar( unsigned char *destination, unsigned char *source );
 void init_parameter_dump( void );
 void init_kcoefficients_dump( void );
 void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoefficients_dump, unsigned char pkt_nr, unsigned char blk_nr );
+void print_k_coeff();
 
 #endif // TC_LOAD_DUMP_PARAMETERS_H

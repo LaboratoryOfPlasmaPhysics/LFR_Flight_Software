@@ -320,4 +320,6 @@ void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *co
 
 int getFBinMask(int k);
 
+void init_kcoeff_sbm_from_kcoeff_norm( float *input_kcoeff, float *output_kcoeff, unsigned char nb_bins_norm);
+
 #endif // FSW_PROCESSING_H_INCLUDED

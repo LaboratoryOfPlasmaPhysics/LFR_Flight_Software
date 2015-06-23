@@ -1,4 +1,4 @@
-// In the frame of RPW LFR Sofware ICD Issue1 Rev8 (05/07/2013)
+// In the frame of RPW LFR Sofware ICD Issue1 Rev8 (05/07/2013) => R2 FSW
 // version 1.0: 31/07/2013
 // version 1.1: 02/04/2014
 // version 1.2: 30/04/2014
@@ -8,6 +8,10 @@
 // version 1.6: 19/12/2014
 // version 1.7: 15/01/2015 (modifs de Paul + correction erreurs qui se compensaient (LSB <=> MSB + indices [0,2] <=> [1,3])
 // version 1.8: 02/02/2015 (gestion des divisions par zéro)
+// In the frame of RPW LFR Sofware ICD Issue3 Rev6 (27/01/2015) => R3 FSW
+// version 2.0: 19/06/2015
+// version 2.1: 22/06/2015 (modifs de Paul)
+
 
 #ifndef BASIC_PARAMETERS_H_INCLUDED
 #define BASIC_PARAMETERS_H_INCLUDED
@@ -21,7 +25,11 @@
 static inline void BP1_set(float * compressed_spec_mat, float * k_coeff_intercalib, unsigned char nb_bins_compressed_spec_mat, unsigned char * lfr_bp1);
 static inline void BP2_set(float * compressed_spec_mat, unsigned char nb_bins_compressed_spec_mat, unsigned char * lfr_bp2);
 
-void init_k_coefficients( float *k_coefficients_f0, unsigned char nb_binscompressed_matrix );
+void init_k_coefficients_f0( float *k_coeff_intercalib, unsigned char nb_binscompressed_matrix );
+void init_k_coefficients_f1( float *k_coeff_intercalib, unsigned char nb_binscompressed_matrix );
+void init_k_coefficients_f2( float *k_coeff_intercalib, unsigned char nb_binscompressed_matrix );
+
+void init_k_coefficients( float *k_coeff_intercalib, unsigned char nb_binscompressed_matrix );
 
 //***********************************
 // STATIC INLINE FUNCTION DEFINITIONS
@@ -67,11 +75,11 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 #endif
 
     // initialization for managing the exponents of the floating point data:
-    nbitexp = 5;                           // number of bits for the exponent
-    expmax = 30;                           // maximum value of the exponent
+    nbitexp = 6;                           // number of bits for the exponent
+    expmax = 32+5;                         // maximum value of the exponent
     expmin = expmax - (1 << nbitexp) + 1;  // accordingly the minimum exponent value
-    // for floating point data to be recorded on 12-bit words:
-    nbitsig = 12 - nbitexp;       // number of bits for the significand
+    // for floating point data to be recorded on 16-bit words:
+    nbitsig = 16 - nbitexp;       // number of bits for the significand
     rangesig = (1 << nbitsig)-1;  // == 2^nbitsig - 1
 
 #ifdef DEBUG_TCH
@@ -81,14 +89,13 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 
     for(i=0; i<nb_bins_compressed_spec_mat; i++){
         //==============================================
-        // BP1 PSDB == PA_LFR_SC_BP1_PB_F0 == 12 bits = 5 bits (exponent) + 7 bits (significand)
+        // BP1 PSDB == PA_LFR_SC_BP1_PB_F0 == 16 bits = 6 bits (exponent) + 10 bits (significand)
         PSDB =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX]          // S11
               + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]        // S22
               + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16];      // S33
 
-        significand = frexpf(PSDB/3, &exponent);  // 0.5 <= significand < 1
-                                                  // PSDB/3 = significand * 2^exponent
-        // the division by 3 is to ensure that max value <= 2^30
+        significand = frexpf(PSDB, &exponent);  // 0.5 <= significand < 1
+                                                  // PSDB = significand * 2^exponent
 
         if (exponent < expmin) { // value should be >= 0.5 * 2^expmin
           exponent = expmin;
@@ -121,27 +128,25 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 #endif
 #ifdef DEBUG_TCH
         printf("\nBin number: %d\n", i);
-        printf("PSDB / 3    : %16.8e\n",PSDB/3);
+        printf("PSDB        : %16.8e\n",PSDB);
         printf("significand : %16.8e\n",significand);
         printf("exponent    : %d\n"    ,exponent);
         printf("psd for PSDB significand : %d\n",psd);
         printf("exp for PSDB exponent : %d\n",exp);
         printf("pt_uint8[1] for PSDB exponent + significand: %.3d or %.2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for PSDB exponent + significand: %.3d or %.2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp1[i*NB_BYTES_BP1+3] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+3], lfr_bp1[i*NB_BYTES_BP1+3]);
+        printf("pt_uint8[0] for PSDB            significand: %.3d or %.2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp1[i*NB_BYTES_BP1+2] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+2], lfr_bp1[i*NB_BYTES_BP1+2]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+3] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+3], lfr_bp1[i*NB_BYTES_BP1+3]);
 #endif
         //==============================================
-        // BP1 PSDE == PA_LFR_SC_BP1_PE_F0 == 12 bits = 5 bits (exponent) + 7 bits (significand)
+        // BP1 PSDE == PA_LFR_SC_BP1_PE_F0 == 16 bits = 6 bits (exponent) + 10 bits (significand)
         PSDE =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21] * k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K44_PE]        // S44
               + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24] * k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K55_PE]        // S55
               + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+22] * k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K45_PE_RE]     // S45 Re
               - compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+23] * k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K45_PE_IM];    // S45 Im
 
-        significand = frexpf(PSDE/2, &exponent); // 0.5 <= significand < 1
-                                                 // PSDE/2 = significand * 2^exponent
-        // the division by 2 is to ensure that max value <= 2^30
-        // should be reconsidered by taking into account the k-coefficients ...
+        significand = frexpf(PSDE, &exponent); // 0.5 <= significand < 1
+                                               // PSDE = significand * 2^exponent
 
         if (exponent < expmin) { // value should be >= 0.5 * 2^expmin
           exponent = expmin;
@@ -173,16 +178,15 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
         lfr_bp1[i*NB_BYTES_BP1+1] = pt_uint8[0]; // Record LSB of tmp_uint16
 #endif
 #ifdef DEBUG_TCH
-        printf("Bin number: %d\n", i);
-        printf("PSDE/2      : %16.8e\n",PSDE/2);
+        printf("PSDE        : %16.8e\n",PSDE);
         printf("significand : %16.8e\n",significand);
         printf("exponent    : %d\n"    ,exponent);
         printf("psd for PSDE significand : %d\n",psd);
         printf("exp for PSDE exponent : %d\n",exp);
         printf("pt_uint8[1] for PSDE exponent + significand: %.3d or %.2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for PSDE exponent + significand: %.3d or %.2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp1[i*NB_BYTES_BP1+1] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+1], lfr_bp1[i*NB_BYTES_BP1+1]);
+        printf("pt_uint8[0] for PSDE            significand: %.3d or %.2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp1[i*NB_BYTES_BP1+0] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+0], lfr_bp1[i*NB_BYTES_BP1+0]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+1] : %.3d or %.2x\n",lfr_bp1[i*NB_BYTES_BP1+1], lfr_bp1[i*NB_BYTES_BP1+1]);
 #endif
         //==============================================================================
         // BP1 normal wave vector == PA_LFR_SC_BP1_NVEC_V0_F0 == 8 bits
@@ -270,9 +274,9 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
         printf("lfr_bp1[i*NB_BYTES_BP1+6] for NVEC_V2 + ellipticity + DOP : %u\n",lfr_bp1[i*NB_BYTES_BP1+6]);
 #endif
         //=======================================================================================
-        // BP1 X_SO-component of the Poynting flux == PA_LFR_SC_BP1_SX_F0 == 8 (+ 2) bits
-        //                                          = 5 bits (exponent) + 3 bits (significand)
-        //                                          + 1 sign bit + 1 argument bit (two sectors)
+        // BP1 X_SO-component of the Poynting flux == PA_LFR_SC_BP1_SX_F0 == 16 bits
+        //                                          = 1 sign bit + 1 argument bit (two sectors)
+        //                                          + 6 bits (exponent) + 8 bits (significand)
         e_cross_b_re =  compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+17]*k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K34_SX_RE]  //S34 Re
                       + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+19]*k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K35_SX_RE]  //S35 Re
                       + compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+5] *k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K14_SX_RE]  //S14 Re
@@ -300,26 +304,23 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
                       - compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+13]*k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K24_SX_RE]  //S24 Im
                       - compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+15]*k_coeff_intercalib[i*NB_K_COEFF_PER_BIN+K25_SX_RE]; //S25 Im
 #ifdef DEBUG_TCH
-        printf("ReaSX / 2   : %16.8e\n",e_cross_b_re/2);
+        printf("ReaSX       : %16.8e\n",e_cross_b_re);
 #endif
         pt_uint8 = (uint8_t*) &e_cross_b_re;      // Affect an uint8_t pointer with the adress of e_cross_b_re
 #ifdef LSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+0] = lfr_bp1[i*NB_BYTES_BP1+0] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
+        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
                                                                           // Record it at the 8th bit position (from the right to the left)
-                                                                          // of lfr_bp1[i*NB_BYTES_BP1+0]
+                                                                          // of lfr_bp1[i*NB_BYTES_BP1+7]
         pt_uint8[3] = (pt_uint8[3] & 0x7f);       // Make e_cross_b_re be positive in any case: |ReaSX|
 #endif
 #ifdef MSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+0] = lfr_bp1[i*NB_BYTES_BP1+0] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
+        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
                                                                           // Record it at the 8th bit position (from the right to the left)
-                                                                          // of lfr_bp1[i*NB_BYTES_BP1+0]
+                                                                          // of lfr_bp1[i*NB_BYTES_BP1+7]
         pt_uint8[0] = (pt_uint8[0] & 0x7f);       // Make e_cross_b_re be positive in any case: |ReaSX|
 #endif
-        significand = frexpf(e_cross_b_re/2, &exponent); // 0.5 <= significand < 1
-                                                         // ReaSX/2 = significand * 2^exponent
-        // The division by 2 is to ensure that max value <= 2^30 (rough estimate)
-        // Should be reconsidered by taking into account the k-coefficients ...
-
+        significand = frexpf(e_cross_b_re, &exponent); // 0.5 <= significand < 1
+                                                       // ReaSX = significand * 2^exponent
         if (exponent < expmin) { // value should be >= 0.5 * 2^expmin
           exponent = expmin;
           significand = 0.5;     // min value that can be recorded
@@ -333,23 +334,22 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
           significand = 0.5;     // min value that can be recorded
         }
 
-        lfr_bp1[i*NB_BYTES_BP1+7] = (uint8_t) ((significand*2-1)*7 + 0.5); // Shift and cast into a 8-bit uint8_t with rounding
-                                                                           // where just the first 3 bits are used (0, ..., 7)
+        lfr_bp1[i*NB_BYTES_BP1+8] = (uint8_t) ((significand*2-1)*255 + 0.5); // Shift and cast into a 8-bit uint8_t with rounding
+                                                                             // where all bits are used (0, ..., 255)
         tmp_uint8 = (uint8_t) (exponent-expmin); // Shift and cast into a 8-bit uint8_t where
-                                                 // just the first 5 bits are used (0, ..., 2^5-1)
+                                                 // just the first nbitexp bits are used (0, ..., 2^nbitexp-1)
 #ifdef DEBUG_TCH
-        printf("|ReaSX| / 2 : %16.8e\n",e_cross_b_re/2);
+        printf("|ReaSX|     : %16.8e\n",e_cross_b_re);
         printf("significand : %16.8e\n",significand);
         printf("exponent    : %d\n"    ,exponent);
-        printf("lfr_bp1[i*NB_BYTES_BP1+7] for ReaSX significand : %u\n",lfr_bp1[i*NB_BYTES_BP1+7]);
         printf("tmp_uint8        for ReaSX exponent    : %d\n",tmp_uint8);
 #endif
-        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | (tmp_uint8 << 3); // Shift these 5 bits to the left before logical addition
-                                                                                  // with lfr_bp1[i*NB_BYTES_BP1+7]
+        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | tmp_uint8; // Record these nbitexp bits in the nbitexp first bits
+                                                                           // (from the right to the left) of lfr_bp1[i*NB_BYTES_BP1+7]
 #ifdef DEBUG_TCH
-        printf("lfr_bp1[i*NB_BYTES_BP1+7] for ReaSX exponent + significand : %u\n",lfr_bp1[i*NB_BYTES_BP1+7]);
-        printf("lfr_bp1[i*NB_BYTES_BP1+0] for ReaSX sign + PSDE 'exponent' : %u\n",lfr_bp1[i*NB_BYTES_BP1+0]);
-        printf("ImaSX / 2   : %16.8e\n",e_cross_b_im/2);
+        printf("lfr_bp1[i*NB_BYTES_BP1+7] for ReaSX sign + RealSX exponent : %u\n",lfr_bp1[i*NB_BYTES_BP1+7]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+8] for ReaSX significand            : %u\n",lfr_bp1[i*NB_BYTES_BP1+8]);
+        printf("ImaSX       : %16.8e\n",e_cross_b_im);
 #endif
         pt_uint8 = (uint8_t*) &e_cross_b_im; // Affect an uint8_t pointer with the adress of e_cross_b_im
 #ifdef LSB_FIRST_TCH
@@ -360,17 +360,17 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 #endif
         tmp_uint8 = (e_cross_b_im > e_cross_b_re) ? 0x40 : 0x00; // Determine the sector argument of SX. If |Im| > |Re| affect
                                                                  // an unsigned 8-bit char with 01000000; otherwise with null.
-        lfr_bp1[i*NB_BYTES_BP1+0] = lfr_bp1[i*NB_BYTES_BP1+0] |  tmp_uint8; // Record it as a sign bit at the 7th bit position (from the right
-                                                                            // to the left) of lfr_bp1[i*NB_BYTES_BP1+0], by simple logical addition.
+        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] |  tmp_uint8; // Record it as a sign bit at the 7th bit position (from the right
+                                                                            // to the left) of lfr_bp1[i*NB_BYTES_BP1+7], by simple logical addition.
 #ifdef DEBUG_TCH
-        printf("|ImaSX| / 2 : %16.8e\n",e_cross_b_im/2);
+        printf("|ImaSX|     : %16.8e\n",e_cross_b_im);
         printf("ArgSX sign  : %u\n",tmp_uint8);
-        printf("lfr_bp1[i*NB_BYTES_BP1+0] for ReaSX & ArgSX signs + PSDE 'exponent'  : %u\n",lfr_bp1[i*NB_BYTES_BP1+0]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+7] for ReaSX & ArgSX signs + ReaSX exponent  : %u\n",lfr_bp1[i*NB_BYTES_BP1+7]);
 #endif
         //======================================================================
-        // BP1 phase velocity estimator == PA_LFR_SC_BP1_VPHI_F0 == 8 (+ 2) bits
-        //                                          = 5 bits (exponent) + 3 bits (significand)
-        //                                          + 1 sign bit + 1 argument bit (two sectors)
+        // BP1 phase velocity estimator == PA_LFR_SC_BP1_VPHI_F0 == 16 bits
+        //                                          = 1 sign bit + 1 argument bit (two sectors)
+        //                                          + 6 bits (exponent) + 8 bits (significand)
         ny = sin(alpha_M)*NVEC_V1 + cos(alpha_M)*NVEC_V2;
         nz = NVEC_V0;
         bx_bx_star = cos(alpha_M)*cos(alpha_M)*compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9]   // S22 Re
@@ -418,15 +418,15 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
         // vphi = n_cross_e_scal_b_re / bx_bx_star => sign(VPHI) = sign(n_cross_e_scal_b_re)
         pt_uint8 = (uint8_t*) &n_cross_e_scal_b_re; // Affect an uint8_t pointer with the adress of n_cross_e_scal_b_re
 #ifdef LSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+2] = lfr_bp1[i*NB_BYTES_BP1+2] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
+        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
                                                                         // Record it at the 8th bit position (from the right to the left)
-                                                                        // of lfr_bp1[i*NB_BYTES_BP1+2]
+                                                                        // of lfr_bp1[i*NB_BYTES_BP1+9]
         pt_uint8[3] = (pt_uint8[3] & 0x7f);     // Make n_cross_e_scal_b_re be positive in any case: |n_cross_e_scal_b_re|
 #endif
 #ifdef MSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+2] = lfr_bp1[i*NB_BYTES_BP1+2] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
+        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
                                                                         // Record it at the 8th bit position (from the right to the left)
-                                                                        // of lfr_bp1[i*NB_BYTES_BP1+2]
+                                                                        // of lfr_bp1[i*NB_BYTES_BP1+9]
         pt_uint8[0] = (pt_uint8[0] & 0x7f);     // Make n_cross_e_scal_b_re be positive in any case: |n_cross_e_scal_b_re|
 #endif
         if (bx_bx_star != 0.) { // no division by 0.
@@ -436,11 +436,8 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
         {
             vphi = 1.e+20;                         // Put a huge value
         }
-        significand = frexpf(vphi/2, &exponent);  // 0.5 <= significand < 1
-                                                  // vphi/2 = significand * 2^exponent
-        // The division by 2 is to ensure that max value <= 2^30 (rough estimate)
-        // Should be reconsidered by taking into account the k-coefficients ...
-
+        significand = frexpf(vphi, &exponent);  // 0.5 <= significand < 1
+                                                // vphi = significand * 2^exponent
         if (exponent < expmin) { // value should be >= 0.5 * 2^expmin
           exponent = expmin;
           significand = 0.5;     // min value that can be recorded
@@ -453,41 +450,39 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
           exponent = expmin;
           significand = 0.5;   // min value that can be recorded
         }
+
+        lfr_bp1[i*NB_BYTES_BP1+10] = (uint8_t) ((significand*2-1)*255 + 0.5); // Shift and cast into a 8-bit uint8_t with rounding
+                                                                           // where all the bits are used (0, ..., 255)
+        tmp_uint8 = (uint8_t) (exponent-expmin); // Shift and cast into a 8-bit uint8_t where
+                                                 // just the first nbitexp bits are used (0, ..., 2^nbitexp-1)
 #ifdef DEBUG_TCH
-        printf("|VPHI| / 2  : %16.8e\n",vphi/2);
+        printf("|VPHI|      : %16.8e\n",vphi);
         printf("significand : %16.8e\n",significand);
         printf("exponent    : %d\n"    ,exponent);
-#endif
-        lfr_bp1[i*NB_BYTES_BP1+8] = (uint8_t) ((significand*2-1)*7 + 0.5); // Shift and cast into a 8-bit uint8_t with rounding
-                                                                           // where just the first 3 bits are used (0, ..., 7)
-        tmp_uint8 = (uint8_t) (exponent-expmin); // Shift and cast into a 8-bit uint8_t where
-                                                 // just the first 5 bits are used (0, ..., 2^5-1)
-#ifdef DEBUG_TCH
-        printf("lfr_bp1[i*NB_BYTES_BP1+8] for VPHI significand : %u\n",lfr_bp1[i*NB_BYTES_BP1+8]);
         printf("tmp_uint8        for VPHI exponent    : %d\n",tmp_uint8);
 #endif
-        lfr_bp1[i*NB_BYTES_BP1+8] = lfr_bp1[i*NB_BYTES_BP1+8] | (tmp_uint8 << 3); // shift these 5 bits to the left before logical addition
-                                                                   // with lfr_bp1[i*NB_BYTES_BP1+8]
+        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] | tmp_uint8; // Record these nbitexp bits in the nbitexp first bits
+                                                                           // (from the right to the left) of lfr_bp1[i*NB_BYTES_BP1+9]
 #ifdef DEBUG_TCH
-        printf("lfr_bp1[i*NB_BYTES_BP1+8] for VPHI exponent + significand : %u\n",lfr_bp1[i*NB_BYTES_BP1+8]);
-        printf("lfr_bp1[i*NB_BYTES_BP1+2] for VPHI sign + PSDB 'exponent' : %u\n",lfr_bp1[i*NB_BYTES_BP1+2]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+9]  for VPHI sign + VPHI exponent : %u\n",lfr_bp1[i*NB_BYTES_BP1+9]);
+        printf("lfr_bp1[i*NB_BYTES_BP1+10] for VPHI significand          : %u\n",lfr_bp1[i*NB_BYTES_BP1+10]);
 #endif
         pt_uint8 = (uint8_t*) &n_cross_e_scal_b_im; // Affect an uint8_t pointer with the adress of n_cross_e_scal_b_im
 #ifdef LSB_FIRST_TCH
-        pt_uint8[3] = pt_uint8[3] & 0x7f;           // Make n_cross_e_scal_b_im be positive in any case: |ImaSX| (32-bit float, sign bit in the 4th octet:PC convention)
+        pt_uint8[3] = pt_uint8[3] & 0x7f;           // Make n_cross_e_scal_b_im be positive in any case: |ImaNEBX| (32-bit float, sign bit in the 4th octet:PC convention)
 #endif
 #ifdef MSB_FIRST_TCH
-        pt_uint8[0] = pt_uint8[0] & 0x7f;           // Make n_cross_e_scal_b_im be positive in any case: |ImaSX| (32-bit float, sign bit in the 1th octet:SPARC convention)
+        pt_uint8[0] = pt_uint8[0] & 0x7f;           // Make n_cross_e_scal_b_im be positive in any case: |ImaNEBX| (32-bit float, sign bit in the 1th octet:SPARC convention)
 #endif
-        tmp_uint8 = (n_cross_e_scal_b_im > n_cross_e_scal_b_re) ? 0x40 : 0x00; // Determine the sector argument of SX. If |Im| > |Re| affect
+        tmp_uint8 = (n_cross_e_scal_b_im > n_cross_e_scal_b_re) ? 0x40 : 0x00; // Determine the sector argument of NEBX. If |Im| > |Re| affect
                                                                                // an unsigned 8-bit char with 01000000; otherwise with null.
-        lfr_bp1[i*NB_BYTES_BP1+2] = lfr_bp1[i*NB_BYTES_BP1+2] |  tmp_uint8;    // Record it as a sign bit at the 7th bit position (from the right
-                                                                               // to the left) of lfr_bp1[i*NB_BYTES_BP1+3], by simple logical addition.
+        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] |  tmp_uint8;    // Record it as a sign bit at the 7th bit position (from the right
+                                                                               // to the left) of lfr_bp1[i*NB_BYTES_BP1+9], by simple logical addition.
 #ifdef DEBUG_TCH
         printf("|n_cross_e_scal_b_im|             : %16.8e\n",n_cross_e_scal_b_im);
-        printf("|n_cross_e_scal_b_im|/bx_bx_star/2: %16.8e\n",n_cross_e_scal_b_im/bx_bx_star/2);
-        printf("ArgNEBX sign          : %u\n",tmp_uint8);
-        printf("lfr_bp1[i*NB_BYTES_BP1+2] for VPHI & ArgNEBX signs + PSDB 'exponent'  : %u\n",lfr_bp1[i*NB_BYTES_BP1+2]);
+        printf("|n_cross_e_scal_b_im|/bx_bx_star  : %16.8e\n",n_cross_e_scal_b_im/bx_bx_star);
+        printf("ArgNEBX sign                      : %u\n",tmp_uint8);
+        printf("lfr_bp1[i*NB_BYTES_BP1+9] for VPHI & ArgNEBX signs + VPHI exponent : %u\n",lfr_bp1[i*NB_BYTES_BP1+9]);
 #endif
     }
 }
@@ -519,12 +514,13 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
     nbitexp = 6;                  // number of bits for the exponent
     nbitsig = 16 - nbitexp;       // number of bits for the significand
     rangesig = (1 << nbitsig)-1;  // == 2^nbitsig - 1
-    expmax = 32;
+    expmax = 32 + 5;
     expmin = expmax - (1 << nbitexp) + 1;
 
 #ifdef DEBUG_TCH
-    printf("nbitexp : %d, nbitsig : %d, rangesig : %d\n", nbitexp, nbitsig, rangesig);
-    printf("expmin : %d, expmax : %d\n", expmin, expmax);
+
+    printf("nbitexp : %d, expmax : %d, expmin : %d\n", nbitexp, expmax, expmin);
+    printf("nbitsig : %d, rangesig : %d\n", nbitsig, rangesig);
 #endif
 
     for(i = 0; i<nb_bins_compressed_spec_mat; i++){
@@ -769,9 +765,9 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
         printf("autocor for S11 significand : %u\n",autocor);
         printf("exp for S11 exponent : %u\n",exp);
         printf("pt_uint8[1] for S11 exponent + significand : %.3d or %2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for S11 exponent + significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp2[i*NB_BYTES_BP2+1] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+1], lfr_bp2[i*NB_BYTES_BP2+1]);
+        printf("pt_uint8[0] for S11            significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp2[i*NB_BYTES_BP2+0] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+0], lfr_bp2[i*NB_BYTES_BP2+0]);
+        printf("lfr_bp2[i*NB_BYTES_BP2+1] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+1], lfr_bp2[i*NB_BYTES_BP2+1]);
 #endif
         // S22
         significand = frexpf(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+9], &exponent);  // 0.5 <= significand < 1
@@ -814,9 +810,9 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
         printf("autocor for S22 significand : %u\n",autocor);
         printf("exp for S11 exponent : %u\n",exp);
         printf("pt_uint8[1] for S22 exponent + significand : %.3d or %2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for S22 exponent + significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp2[i*NB_BYTES_BP2+3] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+3], lfr_bp2[i*NB_BYTES_BP2+3]);
+        printf("pt_uint8[0] for S22            significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp2[i*NB_BYTES_BP2+2] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+2], lfr_bp2[i*NB_BYTES_BP2+2]);
+        printf("lfr_bp2[i*NB_BYTES_BP2+3] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+3], lfr_bp2[i*NB_BYTES_BP2+3]);
 #endif
         // S33
         significand = frexpf(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+16], &exponent);  // 0.5 <= significand < 1
@@ -859,9 +855,9 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
         printf("autocor for S33 significand : %u\n",autocor);
         printf("exp for S33 exponent : %u\n",exp);
         printf("pt_uint8[1] for S33 exponent + significand : %.3d or %2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for S33 exponent + significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp2[i*NB_BYTES_BP2+5] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+5], lfr_bp2[i*NB_BYTES_BP2+5]);
+        printf("pt_uint8[0] for S33            significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp2[i*NB_BYTES_BP2+4] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+4], lfr_bp2[i*NB_BYTES_BP2+4]);
+        printf("lfr_bp2[i*NB_BYTES_BP2+5] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+5], lfr_bp2[i*NB_BYTES_BP2+5]);
 #endif
         // S44
         significand = frexpf(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+21], &exponent);  // 0.5 <= significand < 1
@@ -905,9 +901,9 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
         printf("autocor for S44 significand : %u\n",autocor);
         printf("exp for S44 exponent : %u\n",exp);
         printf("pt_uint8[1] for S44 exponent + significand : %.3d or %2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for S44 exponent + significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp2[i*NB_BYTES_BP2+7] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+7], lfr_bp2[i*NB_BYTES_BP2+7]);
+        printf("pt_uint8[0] for S44            significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp2[i*NB_BYTES_BP2+6] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+6], lfr_bp2[i*NB_BYTES_BP2+6]);
+        printf("lfr_bp2[i*NB_BYTES_BP2+7] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+7], lfr_bp2[i*NB_BYTES_BP2+7]);
 #endif
         // S55
         significand = frexpf(compressed_spec_mat[i*NB_VALUES_PER_SPECTRAL_MATRIX+24], &exponent);  // 0.5 <= significand < 1
@@ -952,9 +948,9 @@ void BP2_set( float * compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, 
         printf("autocor for S55 significand : %u\n",autocor);
         printf("exp for S55 exponent : %u\n",exp);
         printf("pt_uint8[1] for S55 exponent + significand : %.3d or %2x\n",pt_uint8[1], pt_uint8[1]);
-        printf("pt_uint8[0] for S55 exponent + significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
-        printf("lfr_bp2[i*NB_BYTES_BP2+9] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+9], lfr_bp2[i*NB_BYTES_BP2+9]);
+        printf("pt_uint8[0] for S55            significand : %.3d or %2x\n",pt_uint8[0], pt_uint8[0]);
         printf("lfr_bp2[i*NB_BYTES_BP2+8] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+8], lfr_bp2[i*NB_BYTES_BP2+8]);
+        printf("lfr_bp2[i*NB_BYTES_BP2+9] : %3u or %2x\n",lfr_bp2[i*NB_BYTES_BP2+9], lfr_bp2[i*NB_BYTES_BP2+9]);
 #endif
     }
 }

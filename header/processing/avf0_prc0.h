@@ -28,7 +28,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode );
 // FUNCTIONS
 
 void reset_nb_sm_f0( unsigned char lfrMode );
-void init_k_coefficients_f0( void );
+void init_k_coefficients_prc0( void );
 void test_TCH( void );
 
 //*******

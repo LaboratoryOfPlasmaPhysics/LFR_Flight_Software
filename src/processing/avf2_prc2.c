@@ -285,7 +285,7 @@ void SM_average_f2( float *averaged_spec_mat_f2,
     }
 }
 
-void init_k_coefficients_f2( void )
+void init_k_coefficients_prc2( void )
 {
     init_k_coefficients( k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2);
 }

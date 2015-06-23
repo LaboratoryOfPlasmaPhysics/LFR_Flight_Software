@@ -382,8 +382,9 @@ void reset_nb_sm_f1( unsigned char lfrMode )
     }
 }
 
-void init_k_coefficients_f1( void )
+void init_k_coefficients_prc1( void )
 {
-    init_k_coefficients( k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1    );
-    init_k_coefficients( k_coeff_intercalib_f1_sbm,  NB_BINS_COMPRESSED_SM_SBM_F1);
+    init_k_coefficients( k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1 );
+
+    init_kcoeff_sbm_from_kcoeff_norm( k_coeff_intercalib_f1_norm, k_coeff_intercalib_f1_sbm, NB_BINS_COMPRESSED_SM_F1);
 }

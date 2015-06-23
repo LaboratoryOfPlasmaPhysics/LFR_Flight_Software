@@ -135,9 +135,9 @@ rtems_task Init( rtems_task_argument ignored )
     init_kcoefficients_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
-    init_k_coefficients_f0();
-    init_k_coefficients_f1();
-    init_k_coefficients_f2();
+    init_k_coefficients_prc0();
+    init_k_coefficients_prc1();
+    init_k_coefficients_prc2();
 
     // waveform picker initialization
     WFP_init_rings();      // initialize the waveform rings

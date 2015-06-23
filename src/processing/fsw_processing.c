@@ -654,3 +654,18 @@ int getFBinMask( int index )
 
     return fbin;
 }
+
+void init_kcoeff_sbm_from_kcoeff_norm(float *input_kcoeff, float *output_kcoeff, unsigned char nb_bins_norm)
+{
+    unsigned char bin;
+    unsigned char kcoeff;
+
+    for (bin=0; bin<nb_bins_norm; bin++)
+    {
+        for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
+        {
+            output_kcoeff[ (bin*NB_K_COEFF_PER_BIN + kcoeff)*2     ] = input_kcoeff[ bin*NB_K_COEFF_PER_BIN + kcoeff ];
+            output_kcoeff[ (bin*NB_K_COEFF_PER_BIN + kcoeff)*2 + 1 ] = input_kcoeff[ bin*NB_K_COEFF_PER_BIN + kcoeff ];
+        }
+    }
+}

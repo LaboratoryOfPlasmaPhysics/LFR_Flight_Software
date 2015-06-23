@@ -21,7 +21,7 @@ rtems_task prc2_task( rtems_task_argument lfrRequestedMode );
 
 void reset_nb_sm_f2( void );
 void SM_average_f2(float *averaged_spec_mat_f2, ring_node *ring_node, unsigned int nbAverageNormF2 , asm_msg *msgForMATR);
-void init_k_coefficients_f2( void );
+void init_k_coefficients_prc2( void );
 
 //*******
 // EXTERN
