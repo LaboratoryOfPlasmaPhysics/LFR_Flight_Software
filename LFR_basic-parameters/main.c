@@ -11,6 +11,7 @@
 // In the frame of RPW LFR Sofware ICD Issue3 Rev6 (27/01/2015) => R3 FSW
 // version 2.0: 19/06/2015
 // version 2.1: 22/06/2015 (modifs de Paul)
+// version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
 
 #include <stdio.h>
 

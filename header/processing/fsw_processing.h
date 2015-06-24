@@ -68,8 +68,8 @@ typedef struct
     unsigned char source_data_spare;
     unsigned char pa_lfr_bp_blk_nr[2];
     // SOURCE DATA
-    unsigned char data[ 117 ];   // 13 bins  * 9 Bytes only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
-} bp_packet_with_spare;
+    unsigned char data[ 143 ];   // 13 bins  * 11 Bytes
+} bp_packet_with_spare; // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 
 typedef struct asm_msg
 {

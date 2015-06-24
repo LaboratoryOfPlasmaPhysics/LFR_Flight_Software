@@ -11,46 +11,12 @@
 // In the frame of RPW LFR Sofware ICD Issue3 Rev6 (27/01/2015) => R3 FSW
 // version 2.0: 19/06/2015
 // version 2.1: 22/06/2015 (modifs de Paul)
-
+// version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
 
 #include <stdio.h>
 #include <stdint.h>
+
 #include "basic_parameters_params.h"
-
-void init_k_coefficients(float *k_coefficients,
-                         unsigned char nb_binscompressed_matrix )
-{
-    switch (nb_binscompressed_matrix)
-    {  
-    case NB_BINS_COMPRESSED_MATRIX_f0:
-#ifdef DEBUG_TCH
-    printf("F0 data: initialization of the intercalibration k-coefficients\n");
-#endif
-    init_k_coefficients_f0(k_coefficients, nb_binscompressed_matrix);
-    break;
-
-    case NB_BINS_COMPRESSED_MATRIX_f1:
-#ifdef DEBUG_TCH
-    printf("F1 data: initialization of the intercalibration k-coefficients\n");
-#endif
-    init_k_coefficients_f1(k_coefficients, nb_binscompressed_matrix);
-    break;
-
-    case NB_BINS_COMPRESSED_MATRIX_f2:
-#ifdef DEBUG_TCH
-    printf("F2 data: initialization of the intercalibration k-coefficients\n");
-#endif
-    init_k_coefficients_f2(k_coefficients, nb_binscompressed_matrix);
-    break;
-
-    default:
-#ifdef DEBUG_TCH
-    printf("there is a problème !!?\n");
-#endif
-    break;
-    }
-}
-
 
 void init_k_coefficients_f0(float *k_coefficients,
                             unsigned char nb_binscompressed_matrix )
@@ -181,4 +147,37 @@ void init_k_coefficients_f2(float *k_coefficients,
 }
 
 
+void init_k_coefficients(float *k_coefficients,
+                         unsigned char nb_binscompressed_matrix )
+{
+    switch (nb_binscompressed_matrix)
+    {
+    case NB_BINS_COMPRESSED_MATRIX_f0:
+#ifdef DEBUG_TCH
+    printf("F0 data: initialization of the intercalibration k-coefficients\n");
+#endif
+    init_k_coefficients_f0(k_coefficients, nb_binscompressed_matrix);
+    break;
+
+    case NB_BINS_COMPRESSED_MATRIX_f1:
+#ifdef DEBUG_TCH
+    printf("F1 data: initialization of the intercalibration k-coefficients\n");
+#endif
+    init_k_coefficients_f1(k_coefficients, nb_binscompressed_matrix);
+    break;
+
+    case NB_BINS_COMPRESSED_MATRIX_f2:
+#ifdef DEBUG_TCH
+    printf("F2 data: initialization of the intercalibration k-coefficients\n");
+#endif
+    init_k_coefficients_f2(k_coefficients, nb_binscompressed_matrix);
+    break;
+
+    default:
+#ifdef DEBUG_TCH
+    printf("there is a problème !!?\n");
+#endif
+    break;
+    }
+}
 
