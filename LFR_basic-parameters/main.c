@@ -12,6 +12,7 @@
 // version 2.0: 19/06/2015
 // version 2.1: 22/06/2015 (modifs de Paul)
 // version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
+// version 2.3: 01/07/2015 (affectation initiale des octets 7 et 9 dans les BP1 corrigée ...)
 
 #include <stdio.h>
 
@@ -35,6 +36,8 @@ int main(void)
 #endif
 
     filename="/WIN/Users/chust/DD CHUST/Missions/Solar Orbiter/LFR/Prog C/tests bp Paul/tests7/sm_test2_R3.dat";
+    //filename="/home/chust/DD pc-p-chust/Missions/Solar Orbiter/LFR/Prog C/tests bp Paul/tests7/sm_test2_R3.dat";
+
     lecture_file_sm(filename);
 
     printf("\n");

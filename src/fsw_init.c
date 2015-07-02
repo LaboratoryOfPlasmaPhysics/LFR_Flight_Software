@@ -62,6 +62,41 @@
 #include "fsw_config.c"
 #include "GscMemoryLPP.hpp"
 
+void test_bp1()
+{
+    float test_matrix[25] = {
+        4.00109575e+06,
+        -2.19891187e+03,
+        1.73193325e+06,
+        1.88106079e+03,
+        -1.00001638e+06,
+        6.23724854e+02,
+        2.00016860e+07,
+        -3.46422920e+07,
+        -1.44333826e+03,
+        7.54424812e+05,
+        -4.36785375e+05,
+        2.34538879e+02,
+        8.65882200e+06,
+        -3.31611108e+03,
+        2.71719702e+03,
+        1.50027590e+07,
+        2.53229094e+05,
+        -4.99895450e+06,
+        2.90329712e+03,
+        -2.17048022e+03,
+        -8.66275100e+06,
+        1.00002952e+08,
+        -2.94739111e+03,
+        1.73206224e+08,
+        3.00003392e+08
+    };
+
+    uint8_t lfr_bp1[11];
+
+    BP1_set(test_matrix, k_coeff_intercalib_f0_norm, 1, lfr_bp1);
+}
+
 void initCache()
 {
     unsigned int cacheControlRegister;
@@ -247,6 +282,8 @@ rtems_task Init( rtems_task_argument ignored )
     }
 
     BOOT_PRINTF("delete INIT\n")
+
+    test_bp1();
 
     status = rtems_task_delete(RTEMS_SELF);
 

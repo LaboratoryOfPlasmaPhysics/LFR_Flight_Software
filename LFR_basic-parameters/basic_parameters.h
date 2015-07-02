@@ -12,6 +12,7 @@
 // version 2.0: 19/06/2015
 // version 2.1: 22/06/2015 (modifs de Paul)
 // version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
+// version 2.3: 01/07/2015 (affectation initiale des octets 7 et 9 dans les BP1 corrigée ...)
 
 #ifndef BASIC_PARAMETERS_H_INCLUDED
 #define BASIC_PARAMETERS_H_INCLUDED
@@ -308,15 +309,16 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
 #endif
         pt_uint8 = (uint8_t*) &e_cross_b_re;      // Affect an uint8_t pointer with the adress of e_cross_b_re
 #ifdef LSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
-                                                                          // Record it at the 8th bit position (from the right to the left)
-                                                                          // of lfr_bp1[i*NB_BYTES_BP1+7]
+
+        lfr_bp1[i*NB_BYTES_BP1+7] = (uint8_t) (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
+                                                                     // Record it at the 8th bit position (from the right to the left)
+                                                                     // of lfr_bp1[i*NB_BYTES_BP1+7]
         pt_uint8[3] = (pt_uint8[3] & 0x7f);       // Make e_cross_b_re be positive in any case: |ReaSX|
 #endif
 #ifdef MSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+7] = lfr_bp1[i*NB_BYTES_BP1+7] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
-                                                                          // Record it at the 8th bit position (from the right to the left)
-                                                                          // of lfr_bp1[i*NB_BYTES_BP1+7]
+        lfr_bp1[i*NB_BYTES_BP1+7] = (uint8_t) (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
+                                                                     // Record it at the 8th bit position (from the right to the left)
+                                                                     // of lfr_bp1[i*NB_BYTES_BP1+7]
         pt_uint8[0] = (pt_uint8[0] & 0x7f);       // Make e_cross_b_re be positive in any case: |ReaSX|
 #endif
         significand = frexpf(e_cross_b_re, &exponent); // 0.5 <= significand < 1
@@ -418,15 +420,15 @@ void BP1_set( float * compressed_spec_mat, float * k_coeff_intercalib, uint8_t n
         // vphi = n_cross_e_scal_b_re / bx_bx_star => sign(VPHI) = sign(n_cross_e_scal_b_re)
         pt_uint8 = (uint8_t*) &n_cross_e_scal_b_re; // Affect an uint8_t pointer with the adress of n_cross_e_scal_b_re
 #ifdef LSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] | (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
-                                                                        // Record it at the 8th bit position (from the right to the left)
-                                                                        // of lfr_bp1[i*NB_BYTES_BP1+9]
+        lfr_bp1[i*NB_BYTES_BP1+9] = (uint8_t) (pt_uint8[3] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 4th octet:PC convention)
+                                                                     // Record it at the 8th bit position (from the right to the left)
+                                                                     // of lfr_bp1[i*NB_BYTES_BP1+9]
         pt_uint8[3] = (pt_uint8[3] & 0x7f);     // Make n_cross_e_scal_b_re be positive in any case: |n_cross_e_scal_b_re|
 #endif
 #ifdef MSB_FIRST_TCH
-        lfr_bp1[i*NB_BYTES_BP1+9] = lfr_bp1[i*NB_BYTES_BP1+9] | (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
-                                                                        // Record it at the 8th bit position (from the right to the left)
-                                                                        // of lfr_bp1[i*NB_BYTES_BP1+9]
+        lfr_bp1[i*NB_BYTES_BP1+9] = (uint8_t) (pt_uint8[0] & 0x80);  // Extract its sign bit (32-bit float, sign bit in the 1th octet:SPARC convention)
+                                                                     // Record it at the 8th bit position (from the right to the left)
+                                                                     // of lfr_bp1[i*NB_BYTES_BP1+9]
         pt_uint8[0] = (pt_uint8[0] & 0x7f);     // Make n_cross_e_scal_b_re be positive in any case: |n_cross_e_scal_b_re|
 #endif
         if (bx_bx_star != 0.) { // no division by 0.
