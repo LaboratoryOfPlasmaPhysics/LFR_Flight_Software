@@ -15,9 +15,9 @@ DEFINES += SW_VERSION_N3=0 # patch
 DEFINES += SW_VERSION_N4=8 # internal
 
 # <GCOV>
-QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
+#QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
 #LIBS += -lgcov /opt/GCOV/01A/lib/overload.o -lc
-LIBS += -lgcov /opt/GCOV/HOWTO_gcov_for_lfr_test/01A/lib/overload.o -lc
+#LIBS += -lgcov /opt/GCOV/HOWTO_gcov_for_lfr_test/01A/lib/overload.o -lc
 # </GCOV>
 
 # <CHANGE BEFORE FLIGHT>

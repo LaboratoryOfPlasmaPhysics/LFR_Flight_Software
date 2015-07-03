@@ -179,7 +179,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     {
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode );
     }
-    else                                // the mode value is consistent, check the transition
+    else                                // the mode value is valid, check the transition
     {
         status = check_mode_transition(requestedMode);
         if (status != LFR_SUCCESSFUL)
@@ -189,7 +189,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         }
     }
 
-    if ( status == LFR_SUCCESSFUL )     // the transition is valid, enter the mode
+    if ( status == LFR_SUCCESSFUL )     // the transition is valid, check the date
     {
         status = check_transition_date( transitionCoarseTime );
         if (status != LFR_SUCCESSFUL)
@@ -527,31 +527,36 @@ int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
 
     //*************************
     // ENTER THE REQUESTED MODE
-    if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
-         || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
+    if (status == RTEMS_SUCCESSFUL) // if the current mode has been successfully stopped
     {
+        if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
+             || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
+        {
 #ifdef PRINT_TASK_STATISTICS
-        rtems_cpu_usage_reset();
+            rtems_cpu_usage_reset();
 #endif
-        status = restart_science_tasks( mode );
-        launch_spectral_matrix( );
-        launch_waveform_picker( mode, transitionCoarseTime );
-//        launch_spectral_matrix_simu( );
-    }
-    else if ( mode == LFR_MODE_STANDBY )
-    {
+            status = restart_science_tasks( mode );
+            if (status == RTEMS_SUCCESSFUL)
+            {
+                launch_spectral_matrix( );
+                launch_waveform_picker( mode, transitionCoarseTime );
+            }
+        }
+        else if ( mode == LFR_MODE_STANDBY )
+        {
 #ifdef PRINT_TASK_STATISTICS
-        rtems_cpu_usage_report();
+            rtems_cpu_usage_report();
 #endif
 
 #ifdef PRINT_STACK_REPORT
-        PRINTF("stack report selected\n")
-        rtems_stack_checker_report_usage();
+            PRINTF("stack report selected\n")
+                    rtems_stack_checker_report_usage();
 #endif
-    }
-    else
-    {
-        status = RTEMS_UNSATISFIED;
+        }
+        else
+        {
+            status = RTEMS_UNSATISFIED;
+        }
     }
 
     if (status != RTEMS_SUCCESSFUL)
