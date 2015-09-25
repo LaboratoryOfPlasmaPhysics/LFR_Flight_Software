@@ -92,7 +92,7 @@ rtems_task actn_task( rtems_task_argument unused )
                 close_action( &TC, result, queue_snd_id );
                 break;
             case TC_SUBTYPE_DUMP:
-                result = action_dump_par( queue_snd_id );
+                result = action_dump_par( &TC,  queue_snd_id );
                 close_action( &TC, result, queue_snd_id );
                 break;
             case TC_SUBTYPE_ENTER:
@@ -897,7 +897,7 @@ void setCalibrationData( void ){
     f1 = 10000;
     fs = 160256.410;
     Ts = 1. / fs;
-    scaleFactor = 0.125 / 0.000654; // 191, 500 mVpp, 2 sinus waves => 250 mVpp each, amplitude = 125 mV
+    scaleFactor = 0.250 / 0.000654; // 191, 500 mVpp, 2 sinus waves => 500 mVpp each, amplitude = 250 mV
 
     time_management_regs->calDataPtr = 0x00;
 

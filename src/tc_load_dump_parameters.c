@@ -444,7 +444,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     return status;
 }
 
-int action_dump_par( rtems_id queue_id )
+int action_dump_par( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     /** This function dumps the LFR parameters by sending the appropriate TM packet to the dedicated RTEMS message queue.
      *
@@ -466,6 +466,7 @@ int action_dump_par( rtems_id queue_id )
     parameter_dump_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
     parameter_dump_packet.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
     increment_seq_counter( &sequenceCounterParameterDump );
+    parameter_dump_packet.destinationID = TC->sourceID;
 
     parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
