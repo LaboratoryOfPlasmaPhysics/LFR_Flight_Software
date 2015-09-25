@@ -350,6 +350,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     // 11 F0 bins, 13 F1 bins and 6 F2 bins
     kcoefficients_dump_1.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
     kcoefficients_dump_1.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
+    kcoefficients_dump_1.destinationID = TC->sourceID;
     increment_seq_counter( &sequenceCounterParameterDump );
     for( freq=0;
          freq<NB_BINS_COMPRESSED_SM_F0;
@@ -412,6 +413,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     // 6 F2 bins
     kcoefficients_dump_2.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
     kcoefficients_dump_2.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
+    kcoefficients_dump_2.destinationID = TC->sourceID;
     increment_seq_counter( &sequenceCounterParameterDump );
     for( freq=0; freq<6; freq++ )
     {
