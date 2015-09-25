@@ -204,7 +204,11 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
         }
         else
         {
-            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNORM, nbAverageSBM)
+            averaged_spec_mat_NORM[ i ] = sum;
+            averaged_spec_mat_SBM[  i ] = ( averaged_spec_mat_SBM[   i ] + sum );
+            msgForMATR->coarseTimeSBM   = ring_node_tab[0]->coarseTime;
+            msgForMATR->fineTimeSBM     = ring_node_tab[0]->fineTime;
+//            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNORM, nbAverageSBM)
         }
     }
 }

@@ -100,7 +100,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
     sy_lfr_b_bp_p0 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P0 ];
     sy_lfr_b_bp_p1 = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_B_BP_P1 ];
 
-    // sy_lfr_b_bp_p0
+    // sy_lfr_b_bp_p0 shall not be lower than its default value
     if (flag == LFR_SUCCESSFUL)
     {
         if (sy_lfr_b_bp_p0 < DEFAULT_SY_LFR_B_BP_P0 )
@@ -109,7 +109,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
             flag = WRONG_APP_DATA;
         }
     }
-    // sy_lfr_b_bp_p1
+    // sy_lfr_b_bp_p1 shall not be lower than its default value
     if (flag == LFR_SUCCESSFUL)
     {
         if (sy_lfr_b_bp_p1 < DEFAULT_SY_LFR_B_BP_P1 )
@@ -132,7 +132,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsig
         }
     }
 
-    // SET HTE PARAMETERS
+    // SET THE PARAMETERS
     if (flag == LFR_SUCCESSFUL)
     {
         flag = set_sy_lfr_b_bp_p0( TC );
