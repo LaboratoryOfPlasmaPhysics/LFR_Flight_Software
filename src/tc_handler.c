@@ -146,7 +146,7 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      *
      */
 
-    printf("this is the end!!!\n");
+    PRINTF("this is the end!!!\n")
     exit(0);
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
     return LFR_DEFAULT;
@@ -683,7 +683,7 @@ int suspend_science_tasks()
 
     rtems_status_code status;
 
-    printf("in suspend_science_tasks\n");
+    PRINTF("in suspend_science_tasks\n")
 
     status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
@@ -1134,14 +1134,14 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
 rtems_isr commutation_isr1( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        printf("In commutation_isr1 *** Error sending event to DUMB\n");
+        PRINTF("In commutation_isr1 *** Error sending event to DUMB\n")
     }
 }
 
 rtems_isr commutation_isr2( rtems_vector_number vector )
 {
     if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        printf("In commutation_isr2 *** Error sending event to DUMB\n");
+        PRINTF("In commutation_isr2 *** Error sending event to DUMB\n")
     }
 }
 

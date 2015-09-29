@@ -14,6 +14,7 @@
 #define FLOAT_EQUAL_ZERO 0.001
 
 extern unsigned short sequenceCounterParameterDump;
+extern unsigned short sequenceCounters_TM_DUMP[];
 extern float k_coeff_intercalib_f0_norm[ ];
 extern float k_coeff_intercalib_f0_sbm[ ];
 extern float k_coeff_intercalib_f1_norm[ ];
@@ -66,6 +67,6 @@ void copyFloatByChar( unsigned char *destination, unsigned char *source );
 void init_parameter_dump( void );
 void init_kcoefficients_dump( void );
 void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoefficients_dump, unsigned char pkt_nr, unsigned char blk_nr );
-void print_k_coeff();
+void increment_seq_counter_destination_id_dump( unsigned char *packet_sequence_control, unsigned char destination_id );
 
 #endif // TC_LOAD_DUMP_PARAMETERS_H

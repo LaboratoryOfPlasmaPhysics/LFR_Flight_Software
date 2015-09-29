@@ -67,7 +67,7 @@ void initCache()
     unsigned int cacheControlRegister;
 
     cacheControlRegister = getCacheControlRegister();
-    printf("(0) cacheControlRegister = %x\n", cacheControlRegister);
+    PRINTF1("(0) cacheControlRegister = %x\n", cacheControlRegister)
 
     resetCacheControlRegister();
 
@@ -76,7 +76,7 @@ void initCache()
     enableInstructionBurstFetch();
 
     cacheControlRegister = getCacheControlRegister();
-    printf("(1) cacheControlRegister = %x\n", cacheControlRegister);
+    PRINTF1("(1) cacheControlRegister = %x\n", cacheControlRegister)
 }
 
 rtems_task Init( rtems_task_argument ignored )
@@ -274,11 +274,11 @@ void init_local_mode_parameters( void )
     for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
     {
         sequenceCounters_TC_EXE[i] = 0x00;
+        sequenceCounters_TM_DUMP[i] = 0x00;
     }
     sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
     sequenceCounters_SCIENCE_SBM1_SBM2 =    0x00;
     sequenceCounterHK =                     TM_PACKET_SEQ_CTRL_STANDALONE << 8;
-    sequenceCounterParameterDump =          TM_PACKET_SEQ_CTRL_STANDALONE << 8;
 }
 
 void reset_local_time( void )

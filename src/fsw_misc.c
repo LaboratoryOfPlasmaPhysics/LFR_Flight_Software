@@ -235,7 +235,7 @@ rtems_task hous_task(rtems_task_argument argument)
     PRINTF("in HOUS *** deleting task\n")
 
     status = rtems_task_delete( RTEMS_SELF ); // should not return
-    printf( "rtems_task_delete returned with status of %d.\n", status );
+
     return;
 }
 
@@ -283,7 +283,6 @@ rtems_task dumb_task( rtems_task_argument unused )
             {
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
-                printf("in DUMB *** coarse: %x, fine: %x, %s\n", coarse_time, fine_time, DumbMessages[i]);
                 if (i==8)
                 {
                 }

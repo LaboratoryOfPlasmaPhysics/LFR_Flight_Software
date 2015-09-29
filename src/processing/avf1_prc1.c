@@ -176,7 +176,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         }
 
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in AVF1 *** Error sending message to PRC1, code %d\n", status);
+            PRINTF1("in AVF1 *** Error sending message to PRC1, code %d\n", status)
         }
     }
 }

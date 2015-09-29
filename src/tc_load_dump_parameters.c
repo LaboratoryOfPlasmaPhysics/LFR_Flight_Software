@@ -310,18 +310,6 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     return flag;
 }
 
-void printKCoefficients(unsigned int freq, unsigned int bin, float *k_coeff)
-{
-    printf("freq = %d *** bin = %d *** (0) %f *** (1) %f *** (2) %f *** (3) %f *** (4) %f\n",
-           freq,
-           bin,
-           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 0 ],
-           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 1 ],
-           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 2 ],
-           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 3 ],
-           k_coeff[ (bin*NB_K_COEFF_PER_BIN) + 4 ]);
-}
-
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
@@ -348,10 +336,8 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     //*********
     // PACKET 1
     // 11 F0 bins, 13 F1 bins and 6 F2 bins
-    kcoefficients_dump_1.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
-    kcoefficients_dump_1.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
     kcoefficients_dump_1.destinationID = TC->sourceID;
-    increment_seq_counter( &sequenceCounterParameterDump );
+    increment_seq_counter_destination_id_dump( kcoefficients_dump_1.packetSequenceControl, TC->sourceID );
     for( freq=0;
          freq<NB_BINS_COMPRESSED_SM_F0;
          freq++ )
@@ -411,10 +397,8 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
      //********
     // PACKET 2
     // 6 F2 bins
-    kcoefficients_dump_2.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
-    kcoefficients_dump_2.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
     kcoefficients_dump_2.destinationID = TC->sourceID;
-    increment_seq_counter( &sequenceCounterParameterDump );
+    increment_seq_counter_destination_id_dump( kcoefficients_dump_2.packetSequenceControl, TC->sourceID );
     for( freq=0; freq<6; freq++ )
     {
         kcoefficients_dump_2.kcoeff_blks[ freq*KCOEFF_BLK_SIZE + 1 ] = NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1 + 6 + freq;
@@ -462,12 +446,10 @@ int action_dump_par( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
     int status;
 
-    // UPDATE TIME
-    parameter_dump_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterParameterDump >> 8);
-    parameter_dump_packet.packetSequenceControl[1] = (unsigned char) (sequenceCounterParameterDump     );
-    increment_seq_counter( &sequenceCounterParameterDump );
+    increment_seq_counter_destination_id_dump( parameter_dump_packet.packetSequenceControl, TC->sourceID );
     parameter_dump_packet.destinationID = TC->sourceID;
 
+    // UPDATE TIME
     parameter_dump_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
     parameter_dump_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
     parameter_dump_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
@@ -897,7 +879,6 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
     {
         unsigned char *auxPtr;
         auxPtr = &parameter_dump_packet.sy_lfr_fbins_f0_word1[k*NB_BYTES_PER_FBINS_MASK];
-        printf("%x %x %x %x\n", auxPtr[0], auxPtr[1], auxPtr[2], auxPtr[3]);
     }
 
 
@@ -960,8 +941,6 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
             bin   = sy_lfr_kcoeff_frequency - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
         }
     }
-
-    printf("in set_sy_lfr_kcoeff *** freq = %d, bin = %d\n", sy_lfr_kcoeff_frequency, bin);
 
     if (kcoeffPtr_norm != NULL )    // update K coefficient for NORMAL data products
     {
@@ -1143,33 +1122,80 @@ void init_kcoefficients_dump_packet( Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *kcoeffi
     }
 }
 
-void print_k_coeff()
+void increment_seq_counter_destination_id_dump( unsigned char *packet_sequence_control, unsigned char destination_id )
 {
-    unsigned int kcoeff;
-    unsigned int bin;
+    /** This function increment the packet sequence control parameter of a TC, depending on its destination ID.
+     *
+     * @param packet_sequence_control points to the packet sequence control which will be incremented
+     * @param destination_id is the destination ID of the TM, there is one counter by destination ID
+     *
+     * If the destination ID is not known, a dedicated counter is incremented.
+     *
+     */
 
-    for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
+    unsigned short sequence_cnt;
+    unsigned short segmentation_grouping_flag;
+    unsigned short new_packet_sequence_control;
+    unsigned char i;
+
+    switch (destination_id)
     {
-        printf("kcoeff = %d *** ", kcoeff);
-        for (bin=0; bin<NB_BINS_COMPRESSED_SM_F0; bin++)
-        {
-            printf( "%f ", k_coeff_intercalib_f0_norm[bin*NB_K_COEFF_PER_BIN+kcoeff] );
-        }
-        printf("\n");
+    case SID_TC_GROUND:
+        i = GROUND;
+        break;
+    case SID_TC_MISSION_TIMELINE:
+        i = MISSION_TIMELINE;
+        break;
+    case SID_TC_TC_SEQUENCES:
+        i = TC_SEQUENCES;
+        break;
+    case SID_TC_RECOVERY_ACTION_CMD:
+        i = RECOVERY_ACTION_CMD;
+        break;
+    case SID_TC_BACKUP_MISSION_TIMELINE:
+        i = BACKUP_MISSION_TIMELINE;
+        break;
+    case SID_TC_DIRECT_CMD:
+        i = DIRECT_CMD;
+        break;
+    case SID_TC_SPARE_GRD_SRC1:
+        i = SPARE_GRD_SRC1;
+        break;
+    case SID_TC_SPARE_GRD_SRC2:
+        i = SPARE_GRD_SRC2;
+        break;
+    case SID_TC_OBCP:
+        i = OBCP;
+        break;
+    case SID_TC_SYSTEM_CONTROL:
+        i = SYSTEM_CONTROL;
+        break;
+    case SID_TC_AOCS:
+        i = AOCS;
+        break;
+    case SID_TC_RPW_INTERNAL:
+        i = RPW_INTERNAL;
+        break;
+    default:
+        i = GROUND;
+        break;
     }
 
-    printf("\n");
+    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequence_cnt                = sequenceCounters_TM_DUMP[ i ] & 0x3fff;
 
-    for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
+    new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
+
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
+
+    // increment the sequence counter
+    if ( sequenceCounters_TM_DUMP[ i ] < SEQ_CNT_MAX )
     {
-        printf("kcoeff = %d *** ", kcoeff);
-        for (bin=0; bin<NB_BINS_COMPRESSED_SM_F0; bin++)
-        {
-            printf( "[%f, %f] ",
-                    k_coeff_intercalib_f0_sbm[(bin*NB_K_COEFF_PER_BIN  )*2 + kcoeff],
-                    k_coeff_intercalib_f0_sbm[(bin*NB_K_COEFF_PER_BIN+1)*2 + kcoeff]);
-        }
-        printf("\n");
+        sequenceCounters_TM_DUMP[ i ] = sequenceCounters_TM_DUMP[ i ] + 1;
+    }
+    else
+    {
+        sequenceCounters_TM_DUMP[ i ] = 0;
     }
 }
-

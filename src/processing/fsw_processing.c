@@ -433,7 +433,7 @@ void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
     status =  rtems_message_queue_send( queue_id, data, nbBytesToSend);
     if (status != RTEMS_SUCCESSFUL)
     {
-        printf("ERR *** in BP_send *** ERR %d\n", (int) status);
+        PRINTF1("ERR *** in BP_send *** ERR %d\n", (int) status)
     }
 }
 

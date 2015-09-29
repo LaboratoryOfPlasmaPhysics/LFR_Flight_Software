@@ -700,7 +700,9 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
         status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
         if (status != 0)
-            printf("cwf sending failed\n");
+        {
+            PRINTF("cwf sending failed\n")
+        }
         // launch snapshot extraction if needed
         if (extractSWF == true)
         {
@@ -842,7 +844,6 @@ int send_waveform_CWF3_light( ring_node *ring_node_to_send, ring_node *ring_node
     // SEND PACKET
     status =  rtems_message_queue_send( queue_id, &ring_node_cwf3_light, sizeof( ring_node* ) );
     if (status != RTEMS_SUCCESSFUL) {
-        printf("%d-%d, ERR %d\n", SID_NORM_CWF_F3, i, (int) status);
         ret = LFR_DEFAULT;
     }
 
@@ -1066,13 +1067,13 @@ void snapshot_resynchronization( unsigned char *timePtr )
     {
         deltaTickInF2 = floor( (deltaNext * 256. / 1000.) ); // the division by 2 is important here
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
-        printf("correction of = + %u\n", deltaTickInF2);
+        PRINTF1("correction of = + %u\n", deltaTickInF2)
     }
     else
     {
         deltaTickInF2 = floor( (deltaPrevious * 256. / 1000.) ); // the division by 2 is important here
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - deltaTickInF2;
-        printf("correction of = - %u\n", deltaTickInF2);
+        PRINTF1("correction of = - %u\n", deltaTickInF2)
     }
 }
 

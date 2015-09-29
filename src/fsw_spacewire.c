@@ -286,7 +286,7 @@ rtems_task send_task( rtems_task_argument argument)
                 }
                 else
                 {
-                    printf("unexpected sid = %d\n", sid);
+                    PRINTF1("unexpected sid = %d\n", sid);
                 }
             }
             else if ( incomingData[0] == CCSDS_DESTINATION_ID ) // the incoming message is a ccsds packet
@@ -301,13 +301,6 @@ rtems_task send_task( rtems_task_argument argument)
                 spw_ioctl_send = (spw_ioctl_pkt_send*) incomingData;
                 status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, spw_ioctl_send );
                 if (status == -1){
-                    printf("size = %d, %x, %x, %x, %x, %x\n",
-                           size,
-                           incomingData[0],
-                            incomingData[1],
-                            incomingData[2],
-                            incomingData[3],
-                            incomingData[4]);
                     PRINTF2("in SEND *** (2.b) ERRNO = %d, RTEMS = %d\n", errno, status)
                 }
             }
@@ -873,7 +866,6 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
 
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;
         }
     }
@@ -963,7 +955,6 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
         // SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_SWF );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;
         }
     }
@@ -1044,7 +1035,6 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
         // SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("%d-%d, ERR %d\n", sid, i, (int) status);
             ret = LFR_DEFAULT;
         }
     }
@@ -1127,7 +1117,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in ASM_send *** ERR %d\n", (int) status);
+            PRINTF1("in ASM_send *** ERR %d\n", (int) status)
         }
     }
 }
@@ -1207,7 +1197,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in ASM_send *** ERR %d\n", (int) status);
+            PRINTF1("in ASM_send *** ERR %d\n", (int) status)
         }
     }
 }
@@ -1274,7 +1264,7 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in ASM_send *** ERR %d\n", (int) status);
+            PRINTF1("in ASM_send *** ERR %d\n", (int) status)
         }
     }
 }
@@ -1286,7 +1276,7 @@ void spw_send_k_dump( ring_node *ring_node_to_send )
     unsigned int packetLength;
     unsigned int size;
 
-    printf("spw_send_k_dump\n");
+    PRINTF("spw_send_k_dump\n")
 
     kcoefficients_dump = (Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *) ring_node_to_send->buffer_address;
 
@@ -1294,7 +1284,7 @@ void spw_send_k_dump( ring_node *ring_node_to_send )
 
     size = packetLength + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
-    printf("packetLength %d, size %d\n", packetLength, size );
+    PRINTF2("packetLength %d, size %d\n", packetLength, size )
 
     status = write( fdSPW, (char *) ring_node_to_send->buffer_address, size );
 

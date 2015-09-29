@@ -75,18 +75,6 @@ rtems_task avf2_task( rtems_task_argument argument )
 
         nodeForAveraging = getRingNodeForAveraging( 2 );
 
-//        printf(" **0** %x . %x", sm_ring_f2[0].coarseTime, sm_ring_f2[0].fineTime);
-//        printf(" **1** %x . %x", sm_ring_f2[1].coarseTime, sm_ring_f2[1].fineTime);
-//        printf(" **2** %x . %x", sm_ring_f2[2].coarseTime, sm_ring_f2[2].fineTime);
-//        printf(" **3** %x . %x", sm_ring_f2[3].coarseTime, sm_ring_f2[3].fineTime);
-//        printf(" **4** %x . %x", sm_ring_f2[4].coarseTime, sm_ring_f2[4].fineTime);
-//        printf(" **5** %x . %x", sm_ring_f2[5].coarseTime, sm_ring_f2[5].fineTime);
-//        printf(" **6** %x . %x", sm_ring_f2[6].coarseTime, sm_ring_f2[6].fineTime);
-//        printf(" **7** %x . %x", sm_ring_f2[7].coarseTime, sm_ring_f2[7].fineTime);
-//        printf(" **8** %x . %x", sm_ring_f2[8].coarseTime, sm_ring_f2[8].fineTime);
-//        printf(" **9** %x . %x", sm_ring_f2[9].coarseTime, sm_ring_f2[9].fineTime);
-//        printf(" **10** %x . %x\n", sm_ring_f2[10].coarseTime, sm_ring_f2[10].fineTime);
-
         // compute the average and store it in the averaged_sm_f2 buffer
         SM_average_f2( current_ring_node_asm_norm_f2->matrix,
                        nodeForAveraging,
@@ -138,7 +126,7 @@ rtems_task avf2_task( rtems_task_argument argument )
         }
 
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in AVF2 *** Error sending message to MATR, code %d\n", status);
+            PRINTF1("in AVF2 *** Error sending message to MATR, code %d\n", status)
         }
     }
 }

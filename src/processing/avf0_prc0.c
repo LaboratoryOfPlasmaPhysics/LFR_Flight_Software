@@ -175,7 +175,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
         }
 
         if (status != RTEMS_SUCCESSFUL) {
-            printf("in AVF0 *** Error sending message to MATR, code %d\n", status);
+            PRINTF1("in AVF0 *** Error sending message to MATR, code %d\n", status)
         }
     }
 }

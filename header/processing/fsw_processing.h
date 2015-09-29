@@ -5,7 +5,7 @@
 #include <grspw.h>
 #include <math.h>
 #include <stdlib.h> // abs() is in the stdlib
-#include <stdio.h>  // printf()
+#include <stdio.h>
 #include <math.h>
 #include <grlib_regs.h>
 
