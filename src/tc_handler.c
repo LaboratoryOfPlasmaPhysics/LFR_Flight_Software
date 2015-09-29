@@ -253,6 +253,17 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
         housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
     }
 
+    // pa_bia_status_info
+    // => pa_bia_mode_mux_set       3 bits
+    // => pa_bia_mode_hv_enabled    1 bit
+    // => pa_bia_mode_bias1_enabled 1 bit
+    // => pa_bia_mode_bias2_enabled 1 bit
+    // => pa_bia_mode_bias3_enabled 1 bit
+    // => pa_bia_on_off (cp_dpu_bias_on_off)
+    pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & 0xfe; // [1111 1110]
+    pa_bia_status_info = pa_bia_status_info
+            | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 0x1);
+
     result = status;
 
     return result;

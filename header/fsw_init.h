@@ -18,6 +18,7 @@
 
 extern rtems_name  Task_name[20];       /* array of task names */
 extern rtems_id    Task_id[20];         /* array of task ids */
+extern unsigned char pa_bia_status_info;
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);

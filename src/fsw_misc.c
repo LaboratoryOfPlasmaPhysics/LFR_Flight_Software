@@ -538,6 +538,18 @@ void set_hk_lfr_sc_potential_flag( bool state )
     }
 }
 
+void set_hk_lfr_mag_fields_flag( bool state )
+{
+    if (state == true)
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x20;   // [0010 0000]
+    }
+    else
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xd7;   // [1101 1111]
+    }
+}
+
 void set_hk_lfr_calib_enable( bool state )
 {
     if (state == true)
@@ -549,3 +561,4 @@ void set_hk_lfr_calib_enable( bool state )
         housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf7;   // [1111 0111]
     }
 }
+

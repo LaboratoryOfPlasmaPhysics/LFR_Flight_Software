@@ -138,6 +138,7 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc0();
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
+    pa_bia_status_info = 0x00;
 
     // waveform picker initialization
     WFP_init_rings();      // initialize the waveform rings
@@ -247,6 +248,8 @@ rtems_task Init( rtems_task_argument ignored )
     }
 
     BOOT_PRINTF("delete INIT\n")
+
+    set_hk_lfr_sc_potential_flag( true );
 
     status = rtems_task_delete(RTEMS_SELF);
 
