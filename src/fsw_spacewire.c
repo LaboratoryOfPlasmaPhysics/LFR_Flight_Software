@@ -656,11 +656,15 @@ void spacewire_update_statistics( void )
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
     // a valid timecode has been received, write it in the HK report
-    unsigned int * grspwPtr;
+    unsigned int *grspwPtr;
+    unsigned char timecodeCtr;
+    unsigned char updateTimeCtr;
 
     grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);
 
-    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0xff);   // [11 1111]
+    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0xff);   // [1111 1111]
+    timecodeCtr = (unsigned char) (grspwPtr[0] & 0x3f);             // [0011 1111]
+    updateTimeCtr = time_management_regs->coarse_time_load & 0x3f;  // [0011 1111]
 
     // update the number of valid timecodes that have been received
     if (housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt == 255)
@@ -670,6 +674,19 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     else
     {
         housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt + 1;
+    }
+
+    // check the value of the timecode with respect to the last TC_LFR_UPDATE_TIME => SSS-CP-FS-370
+    if (timecodeCtr != updateTimeCtr)
+    {
+        if (housekeeping_packet.hk_lfr_time_timecode_ctr == 255)
+        {
+            housekeeping_packet.hk_lfr_time_timecode_ctr = 0;
+        }
+        else
+        {
+            housekeeping_packet.hk_lfr_time_timecode_ctr = housekeeping_packet.hk_lfr_time_timecode_ctr + 1;
+        }
     }
 }
 
