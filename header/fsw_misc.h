@@ -10,6 +10,17 @@
 #include "fsw_spacewire.h"
 #include "lfr_cpu_usage_report.h"
 
+enum lfr_reset_cause_t{
+    UNKNOWN_CAUSE,
+    POWER_ON,
+    TC_RESET,
+    WATCHDOG,
+    ERROR_RESET,
+    UNEXP_RESET
+};
+
+#define LFR_RESET_CAUSE_UNKNOWN_CAUSE 0
+
 rtems_name name_hk_rate_monotonic;     // name of the HK rate monotonic
 rtems_id HK_id;         // id of the HK rate monotonic period
 
@@ -40,7 +51,7 @@ void get_cpu_load( unsigned char *resource_statistics );
 void set_hk_lfr_sc_potential_flag( bool state );
 void set_hk_lfr_mag_fields_flag( bool state );
 void set_hk_lfr_calib_enable( bool state );
-
+void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause );
 
 extern int sched_yield( void );
 extern void rtems_cpu_usage_reset();

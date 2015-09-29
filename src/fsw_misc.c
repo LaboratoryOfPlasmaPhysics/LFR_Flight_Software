@@ -189,6 +189,8 @@ rtems_task hous_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_cancel(HK_id);
     DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
 
+    set_hk_lfr_reset_cause( POWER_ON );
+
     while(1){ // launch the rate monotonic task
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
@@ -562,3 +564,8 @@ void set_hk_lfr_calib_enable( bool state )
     }
 }
 
+void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
+{
+    housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1]
+            | (lfr_reset_cause & 0x07 );   // [0000 0111]
+}
