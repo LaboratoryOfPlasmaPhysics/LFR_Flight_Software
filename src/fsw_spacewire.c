@@ -216,11 +216,13 @@ rtems_task send_task( rtems_task_argument argument)
     size_t size;                            // size of the incoming TC packet
     rtems_id queue_send_id;
     unsigned int sid;
+    unsigned char sidAsUnsignedChar;
 
     incomingRingNodePtr = NULL;
     ring_node_address = 0;
     charPtr = (char *) &ring_node_address;
     sid = 0;
+    sidAsUnsignedChar = 0;
 
     init_header_cwf( &headerCWF );
     init_header_swf( &headerSWF );
@@ -291,6 +293,20 @@ rtems_task send_task( rtems_task_argument argument)
             }
             else if ( incomingData[0] == CCSDS_DESTINATION_ID ) // the incoming message is a ccsds packet
             {
+                sidAsUnsignedChar = (unsigned char) incomingData[ PACKET_POS_PA_LFR_SID_PKT ];
+                sid = sidAsUnsignedChar;
+                // SET THE SEQUENCE_CNT PARAMETER IN CASE OF BP0 OR BP1 PACKETS
+                if ( (sid == SID_NORM_BP1_F0) || (sid == SID_NORM_BP1_F1) || (sid == SID_NORM_BP1_F2)
+                     || (sid == SID_NORM_BP2_F0) || (sid == SID_NORM_BP2_F1) || (sid == SID_NORM_BP2_F2)
+                     || (sid == SID_BURST_BP1_F0) || (sid == SID_BURST_BP1_F1)
+                     || (sid == SID_BURST_BP2_F0) || (sid == SID_BURST_BP2_F1)
+                     || (sid == SID_SBM1_BP1_F0) || (sid == SID_SBM1_BP2_F0)
+                     || (sid == SID_SBM2_BP1_F0) || (sid == SID_SBM2_BP1_F1)
+                     || (sid == SID_SBM2_BP2_F0) || (sid == SID_SBM2_BP2_F1))
+                {
+                    increment_seq_counter_source_id( (unsigned char*) &incomingData[ PACKET_POS_SEQUENCE_CNT ], sid );
+                }
+
                 status = write( fdSPW, incomingData, size );
                 if (status == -1){
                     PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)

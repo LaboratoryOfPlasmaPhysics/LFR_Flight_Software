@@ -1,8 +1,8 @@
 #ifndef TM_BYTE_POSITIONS_H
 #define TM_BYTE_POSITIONS_H
 
-// SEQUENCE_CNT
 #define PACKET_POS_SEQUENCE_CNT             6   // 4 + 2
+#define PACKET_POS_PA_LFR_SID_PKT           20   // 4 + 16
 
 // TC_LFR_LOAD_COMMON_PAR
 

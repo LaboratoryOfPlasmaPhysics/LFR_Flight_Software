@@ -427,8 +427,6 @@ void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
 {
     rtems_status_code status;
 
-    // SET THE SEQUENCE_CNT PARAMETER
-    increment_seq_counter_source_id( (unsigned char*) &data[ PACKET_POS_SEQUENCE_CNT ], sid );
     // SEND PACKET
     status =  rtems_message_queue_send( queue_id, data, nbBytesToSend);
     if (status != RTEMS_SUCCESSFUL)

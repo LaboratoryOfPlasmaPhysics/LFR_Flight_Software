@@ -1367,7 +1367,7 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
         }
     }
 
-    //***********************************
-    // RESET THE MODE OF THE CALLING TASK
+    //*************************************
+    // RESTORE THE MODE OF THE CALLING TASK
     status =  rtems_task_mode( initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set );
 }

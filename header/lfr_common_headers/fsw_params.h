@@ -179,26 +179,6 @@ typedef struct ring_node
 #define TASKID_AVF2 18
 #define TASKID_PRC2 19
 
-//#define TASK_PRIORITY_SPIQ 5
-//#define TASK_PRIORITY_WTDG 10
-//#define TASK_PRIORITY_HOUS 20
-//#define TASK_PRIORITY_AVF0 25
-//#define TASK_PRIORITY_AVF1 30
-//#define TASK_PRIORITY_AVF2 33
-//#define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
-//#define TASK_PRIORITY_CWF2 35   //
-//#define TASK_PRIORITY_SWBD 37   // SWBD has a lower priority than WFRM, this is to extract the snapshot before sending it
-//#define TASK_PRIORITY_WFRM 40
-//#define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
-//#define TASK_PRIORITY_RECV 45
-//#define TASK_PRIORITY_SEND 50
-//#define TASK_PRIORITY_ACTN 50
-//#define TASK_PRIORITY_PRC2 90
-//#define TASK_PRIORITY_PRC0 100
-//#define TASK_PRIORITY_PRC1 105
-//#define TASK_PRIORITY_STAT 200
-//#define TASK_PRIORITY_DUMB 200
-
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_WTDG 20
 #define TASK_PRIORITY_HOUS 30
