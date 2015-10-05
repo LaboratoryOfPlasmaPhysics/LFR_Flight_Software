@@ -200,6 +200,7 @@ rtems_task prc2_task( rtems_task_argument argument )
             // 2) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            packet_norm_bp1.biaStatusInfo = pa_bia_status_info;
             packet_norm_bp1.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send( (char *) &packet_norm_bp1, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA,
@@ -213,6 +214,7 @@ rtems_task prc2_task( rtems_task_argument argument )
             // 2) send the BP2 set
             set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            packet_norm_bp2.biaStatusInfo = pa_bia_status_info;
             packet_norm_bp2.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send( (char *) &packet_norm_bp2, queue_id_send,
                      PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA,

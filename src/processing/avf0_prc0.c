@@ -283,6 +283,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             // 3) send the BP1 set
             set_time( packet_sbm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeSBM );
             set_time( packet_sbm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
+            packet_sbm_bp1.biaStatusInfo = pa_bia_status_info;
             packet_sbm_bp1.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send( (char *) &packet_sbm_bp1, queue_id,
                      PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA,
@@ -295,6 +296,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                 // 2) send the BP2 set
                 set_time( packet_sbm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeSBM );
                 set_time( packet_sbm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
+                packet_sbm_bp2.biaStatusInfo = pa_bia_status_info;
                 packet_sbm_bp2.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
                 BP_send( (char *) &packet_sbm_bp2, queue_id,
                          PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA,
@@ -319,6 +321,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             // 3) send the BP1 set
             set_time( packet_norm_bp1.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
             set_time( packet_norm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+            packet_norm_bp1.biaStatusInfo = pa_bia_status_info;
             packet_norm_bp1.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send( (char *) &packet_norm_bp1, queue_id,
                       PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F0 + PACKET_LENGTH_DELTA,
@@ -330,6 +333,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                 // 2) send the BP2 set
                 set_time( packet_norm_bp2.time,            (unsigned char *) &incomingMsg->coarseTimeNORM );
                 set_time( packet_norm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeNORM );
+                packet_norm_bp2.biaStatusInfo = pa_bia_status_info;
                 packet_norm_bp2.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
                 BP_send( (char *) &packet_norm_bp2, queue_id,
                           PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F0 + PACKET_LENGTH_DELTA,

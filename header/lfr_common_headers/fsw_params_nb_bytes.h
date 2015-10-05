@@ -3,6 +3,7 @@
 
 #define PACKET_POS_SEQUENCE_CNT             6   // 4 + 2
 #define PACKET_POS_PA_LFR_SID_PKT           20   // 4 + 16
+#define PACKET_POS_SERVICE_TYPE             11   // 4 + 7
 
 // TC_LFR_LOAD_COMMON_PAR
 

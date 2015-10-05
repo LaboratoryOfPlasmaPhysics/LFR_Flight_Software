@@ -217,6 +217,7 @@ rtems_task send_task( rtems_task_argument argument)
     rtems_id queue_send_id;
     unsigned int sid;
     unsigned char sidAsUnsignedChar;
+    unsigned char type;
 
     incomingRingNodePtr = NULL;
     ring_node_address = 0;
@@ -295,14 +296,9 @@ rtems_task send_task( rtems_task_argument argument)
             {
                 sidAsUnsignedChar = (unsigned char) incomingData[ PACKET_POS_PA_LFR_SID_PKT ];
                 sid = sidAsUnsignedChar;
+                type = (unsigned char) incomingData[ PACKET_POS_SERVICE_TYPE ];
+                if (type == TM_TYPE_LFR_SCIENCE)    // this is a BP packet, all other types are handled differently
                 // SET THE SEQUENCE_CNT PARAMETER IN CASE OF BP0 OR BP1 PACKETS
-                if ( (sid == SID_NORM_BP1_F0) || (sid == SID_NORM_BP1_F1) || (sid == SID_NORM_BP1_F2)
-                     || (sid == SID_NORM_BP2_F0) || (sid == SID_NORM_BP2_F1) || (sid == SID_NORM_BP2_F2)
-                     || (sid == SID_BURST_BP1_F0) || (sid == SID_BURST_BP1_F1)
-                     || (sid == SID_BURST_BP2_F0) || (sid == SID_BURST_BP2_F1)
-                     || (sid == SID_SBM1_BP1_F0) || (sid == SID_SBM1_BP2_F0)
-                     || (sid == SID_SBM2_BP1_F0) || (sid == SID_SBM2_BP1_F1)
-                     || (sid == SID_SBM2_BP2_F0) || (sid == SID_SBM2_BP2_F1))
                 {
                     increment_seq_counter_source_id( (unsigned char*) &incomingData[ PACKET_POS_SEQUENCE_CNT ], sid );
                 }
