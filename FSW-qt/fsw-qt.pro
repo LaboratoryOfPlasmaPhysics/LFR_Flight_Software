@@ -2,7 +2,7 @@ TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
 # lpp_dpu_destid
-CONFIG += console verbose
+CONFIG += console verbose lpp_dpu_destid
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -12,12 +12,11 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=3 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=10 # internal
+DEFINES += SW_VERSION_N4=11 # internal
 
 # <GCOV>
-#QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
-#LIBS += -lgcov /opt/GCOV/01A/lib/overload.o -lc
-#LIBS += -lgcov /opt/GCOV/HOWTO_gcov_for_lfr_test/01A/lib/overload.o -lc
+QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage
+LIBS += -lgcov /opt/GCOV/01A/lib/overload.o -lc
 # </GCOV>
 
 # <CHANGE BEFORE FLIGHT>
