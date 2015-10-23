@@ -9,6 +9,10 @@
 
 #include "wf_handler.h"
 
+extern struct grgpio_regs_str *grgpio_regs;
+#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
+#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
+
 //***************
 // waveform rings
 // F0
@@ -409,6 +413,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
     // 7    6    5    4    3    2    1    0
     // f3_1 f3_0 f2_1 f2_0 f1_1 f1_0 f0_1 f0_0
 
+//    OUTPUT_1;
+
     rtems_status_code spare_status;
 
     waveforms_isr_f3();
@@ -454,6 +460,8 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
         default:
         break;
     }
+
+//    OUTPUT_0;
 }
 
 //************

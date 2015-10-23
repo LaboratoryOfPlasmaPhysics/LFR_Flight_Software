@@ -16,6 +16,10 @@ unsigned int nb_sm_f0_aux_f1;
 unsigned int nb_sm_f1;
 unsigned int nb_sm_f0_aux_f2;
 
+extern struct grgpio_regs_str *grgpio_regs;
+#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
+#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
+
 //************************
 // spectral matrices rings
 ring_node sm_ring_f0[ NB_RING_NODES_SM_F0 ];
@@ -56,6 +60,8 @@ ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
 
 void spectral_matrices_isr_f0( unsigned char statusReg )
 {
+//    OUTPUT_1;
+
     unsigned char status;
     rtems_status_code status_code;
     ring_node *full_ring_node;
@@ -110,10 +116,13 @@ void spectral_matrices_isr_f0( unsigned char statusReg )
         spectral_matrix_regs->status = 0x02;   // [0000 0010]
         break;
     }
+//    OUTPUT_0;
 }
 
 void spectral_matrices_isr_f1( unsigned char statusReg )
 {
+//    OUTPUT_1;
+
     rtems_status_code status_code;
     unsigned char status;
     ring_node *full_ring_node;
@@ -168,10 +177,14 @@ void spectral_matrices_isr_f1( unsigned char statusReg )
         spectral_matrix_regs->status = 0x08;   // [1000 0000]
         break;
     }
+
+//    OUTPUT_0;
 }
 
 void spectral_matrices_isr_f2( unsigned char statusReg )
 {
+//    OUTPUT_1;
+
     unsigned char status;
     rtems_status_code status_code;
 
@@ -211,6 +224,8 @@ void spectral_matrices_isr_f2( unsigned char statusReg )
         }
         break;
     }
+
+//    OUTPUT_0;
 }
 
 void spectral_matrix_isr_error_handler( unsigned char statusReg )
@@ -235,6 +250,8 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     unsigned char statusReg;
 
+//    OUTPUT_1;
+
     statusReg = spectral_matrix_regs->status;
 
     spectral_matrices_isr_f0( statusReg );
@@ -244,6 +261,9 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     spectral_matrices_isr_f2( statusReg );
 
     spectral_matrix_isr_error_handler( statusReg );
+
+//    OUTPUT_0;
+
 }
 
 rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )

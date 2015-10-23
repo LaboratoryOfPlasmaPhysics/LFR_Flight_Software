@@ -50,6 +50,7 @@ volatile int sm_f1[ NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM ] __attribute__((aligned
 volatile int sm_f2[ NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
 
 // APB CONFIGURATION REGISTERS
+struct grgpio_regs_str          *grgpio_regs            = (struct grgpio_regs_str *)        REGS_ADDR_GRGPIO;
 time_management_regs_t          *time_management_regs   = (time_management_regs_t*)         REGS_ADDR_TIME_MANAGEMENT;
 gptimer_regs_t                  *gptimer_regs           = (gptimer_regs_t *)                REGS_ADDR_GPTIMER;
 waveform_picker_regs_0_1_18_t   *waveform_picker_regs   = (waveform_picker_regs_0_1_18_t*)  REGS_ADDR_WAVEFORM_PICKER;

@@ -22,6 +22,10 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF;
 Header_TM_LFR_SCIENCE_SWF_t headerSWF;
 Header_TM_LFR_SCIENCE_ASM_t headerASM;
 
+extern struct grgpio_regs_str *grgpio_regs;
+#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
+#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
+
 //***********
 // RTEMS TASK
 rtems_task spiq_task(rtems_task_argument unused)
@@ -660,6 +664,8 @@ void spacewire_update_statistics( void )
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
+    OUTPUT_1;
+
     // a valid timecode has been received, write it in the HK report
     unsigned int *grspwPtr;
     unsigned char timecodeCtr;
@@ -693,6 +699,8 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
             housekeeping_packet.hk_lfr_time_timecode_ctr = housekeeping_packet.hk_lfr_time_timecode_ctr + 1;
         }
     }
+
+    OUTPUT_0;
 }
 
 rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
