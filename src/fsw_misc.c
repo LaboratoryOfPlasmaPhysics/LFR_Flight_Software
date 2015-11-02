@@ -192,20 +192,6 @@ rtems_task hous_task(rtems_task_argument argument)
     set_hk_lfr_reset_cause( POWER_ON );
 
     while(1){ // launch the rate monotonic task
-//        //*******
-//        // GPIO 3
-//        struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
-//        if ( (grgpio_regs->io_port_output_register & 0x07) == 0x02 )    // [010]
-//        {
-//            grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8; // [1111 1000]
-//        }
-//        else
-//        {
-//            grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02; // [0000 0010]
-//        }
-        //
-        //*******
-
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "in HOUS *** ERR period: %d\n", status);

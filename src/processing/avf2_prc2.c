@@ -188,10 +188,10 @@ rtems_task prc2_task( rtems_task_argument argument )
         //*****
         //*****
         // 1)  compress the matrix for Basic Parameters calculation
-        ASM_compress_reorganize_and_divide( asm_f2_patched_norm, compressed_sm_norm_f2,
+        ASM_compress_reorganize_and_divide_mask( asm_f2_patched_norm, compressed_sm_norm_f2,
                                      nb_sm_before_f2.norm_bp1,
                                      NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
-                                     ASM_F2_INDICE_START );
+                                     ASM_F2_INDICE_START, CHANNELF2 );
         // BP1_F2
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F2)
         {

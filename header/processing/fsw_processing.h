@@ -320,9 +320,9 @@ void ASM_convert( volatile float *input_matrix, char *output_matrix)
 
 void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *compressed_spec_mat,
                                   float divider,
-                                  unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart);
+                                  unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage , unsigned char ASMIndexStart, unsigned char channel);
 
-int getFBinMask(int k);
+int getFBinMask(int k, unsigned char channel);
 
 void init_kcoeff_sbm_from_kcoeff_norm( float *input_kcoeff, float *output_kcoeff, unsigned char nb_bins_norm);
 

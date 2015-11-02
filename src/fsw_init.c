@@ -251,14 +251,6 @@ rtems_task Init( rtems_task_argument ignored )
 
     set_hk_lfr_sc_potential_flag( true );
 
-    //*********************************
-    // init GPIO for trigger generation
-    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x08; // [0000 1000], 0 = output disabled, 1 = output enabled
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x04; // [0000 0100], 0 = output disabled, 1 = output enabled
-
     status = rtems_task_delete(RTEMS_SELF);
 
 }

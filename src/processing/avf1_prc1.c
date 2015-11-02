@@ -269,10 +269,10 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         {
             sid = getSID( incomingMsg->event );
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
+            ASM_compress_reorganize_and_divide_mask( asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
                                          nb_sm_before_f1.burst_sbm_bp1,
                                          NB_BINS_COMPRESSED_SM_SBM_F1, NB_BINS_TO_AVERAGE_ASM_SBM_F1,
-                                         ASM_F1_INDICE_START);
+                                         ASM_F1_INDICE_START, CHANNELF1);
             // 2) compute the BP1 set
             BP1_set( compressed_sm_sbm_f1, k_coeff_intercalib_f1_sbm, NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp1.data );
             // 3) send the BP1 set
@@ -307,10 +307,10 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide( asm_f1_patched_norm, compressed_sm_norm_f1,
+            ASM_compress_reorganize_and_divide_mask( asm_f1_patched_norm, compressed_sm_norm_f1,
                                          nb_sm_before_f1.norm_bp1,
                                          NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1,
-                                         ASM_F1_INDICE_START );
+                                         ASM_F1_INDICE_START, CHANNELF1 );
             // 2) compute the BP1 set
             BP1_set( compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data );
             // 3) send the BP1 set
