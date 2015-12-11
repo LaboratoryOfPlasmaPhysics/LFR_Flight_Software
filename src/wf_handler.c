@@ -1212,12 +1212,11 @@ void set_wfp_burst_enable_register( unsigned char mode )
     // the burst bits shall be set first, before the enable bits
     switch(mode) {
     case(LFR_MODE_NORMAL):
-        waveform_picker_regs->run_burst_enable = 0x00;  // [0000 0000] no burst enable
-        waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
+        waveform_picker_regs->run_burst_enable = 0x60;  // [0110 0000] enable f2 AND f1 burst
+        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0c; // [1111] enable f3 f2 f1 f0
         break;
     case(LFR_MODE_BURST):
         waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-//        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x04; // [0100] enable f2
         waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0c; // [1100] enable f3 AND f2
         break;
     case(LFR_MODE_SBM1):

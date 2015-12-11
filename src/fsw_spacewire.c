@@ -89,7 +89,7 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else                                // [3.b] the link is not in run state, go in STANDBY mode
         {
-            status = enter_mode( LFR_MODE_STANDBY, 0 );
+            status = enter_mode_standby();
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }

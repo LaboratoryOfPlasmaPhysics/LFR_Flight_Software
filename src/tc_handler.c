@@ -53,10 +53,10 @@ rtems_task actn_task( rtems_task_argument unused )
 
     BOOT_PRINTF("in ACTN *** \n")
 
-    while(1)
+            while(1)
     {
         status = rtems_message_queue_receive( queue_rcv_id, (char*) &TC, &size,
-                                             RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+                                              RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         getTime( time );    // set time to the current time
         if (status!=RTEMS_SUCCESSFUL)
         {
@@ -147,7 +147,7 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      */
 
     PRINTF("this is the end!!!\n")
-    exit(0);
+            exit(0);
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
     return LFR_DEFAULT;
 }
@@ -185,7 +185,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         if (status != LFR_SUCCESSFUL)
         {
             PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n")
-            send_tm_lfr_tc_exe_not_executable( TC, queue_id );
+                    send_tm_lfr_tc_exe_not_executable( TC, queue_id );
         }
     }
 
@@ -195,16 +195,36 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         if (status != LFR_SUCCESSFUL)
         {
             PRINTF("ERR *** in action_enter_mode *** check_transition_date\n")
-            send_tm_lfr_tc_exe_inconsistent( TC, queue_id,
-                                             BYTE_POS_CP_LFR_ENTER_MODE_TIME,
-                                             bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME + 3 ] );
+                    send_tm_lfr_tc_exe_inconsistent( TC, queue_id,
+                                                     BYTE_POS_CP_LFR_ENTER_MODE_TIME,
+                                                     bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME + 3 ] );
         }
     }
 
     if ( status == LFR_SUCCESSFUL )     // the date is valid, enter the mode
     {
         PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
-        status = enter_mode( requestedMode, transitionCoarseTime );
+
+        switch(requestedMode)
+        {
+        case LFR_MODE_STANDBY:
+            status = enter_mode_standby();
+            break;
+        case LFR_MODE_NORMAL:
+            status = enter_mode_normal( transitionCoarseTime );
+            break;
+        case LFR_MODE_BURST:
+            status = enter_mode_burst( transitionCoarseTime );
+            break;
+        case LFR_MODE_SBM1:
+            status = enter_mode_sbm1( transitionCoarseTime );
+            break;
+        case LFR_MODE_SBM2:
+            status = enter_mode_sbm2( transitionCoarseTime );
+            break;
+        default:
+            break;
+        }
     }
 
     return status;
@@ -323,9 +343,9 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
     unsigned int val;
 
     time_management_regs->coarse_time_load = (TC->dataAndCRC[0] << 24)
-                                                + (TC->dataAndCRC[1] << 16)
-                                                + (TC->dataAndCRC[2] << 8)
-                                                + TC->dataAndCRC[3];
+            + (TC->dataAndCRC[1] << 16)
+            + (TC->dataAndCRC[2] << 8)
+            + TC->dataAndCRC[3];
 
     val = housekeeping_packet.hk_lfr_update_time_tc_cnt[0] * 256
             + housekeeping_packet.hk_lfr_update_time_tc_cnt[1];
@@ -439,7 +459,7 @@ int check_transition_date( unsigned int transitionCoarseTime )
 
         PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime)
 
-        if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
+                if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
         {
             status = LFR_DEFAULT;
             PRINTF("ERR *** in check_transition_date *** transitionCoarseTime <= localCoarseTime\n")
@@ -514,66 +534,188 @@ int stop_current_mode( void )
     return status;
 }
 
-int enter_mode( unsigned char mode, unsigned int transitionCoarseTime )
+int enter_mode_standby()
 {
-    /** This function is launched after a mode transition validation.
-     *
-     * @param mode is the mode in which LFR will be put.
-     *
-     * @return RTEMS directive status codes:
-     * - RTEMS_SUCCESSFUL - the mode has been entered successfully
-     * - RTEMS_NOT_SATISFIED - the mode has not been entered successfully
-     *
-     */
+    int status;
 
-    rtems_status_code status;
+    status = stop_current_mode();       // STOP THE CURRENT MODE
 
-    //**********************
-    // STOP THE CURRENT MODE
-    status = stop_current_mode();
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF1("ERR *** in enter_mode *** stop_current_mode with mode = %d\n", mode)
-    }
-
-    //*************************
-    // ENTER THE REQUESTED MODE
-    if (status == RTEMS_SUCCESSFUL) // if the current mode has been successfully stopped
-    {
-        if ( (mode == LFR_MODE_NORMAL) || (mode == LFR_MODE_BURST)
-             || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2) )
-        {
 #ifdef PRINT_TASK_STATISTICS
-            rtems_cpu_usage_reset();
-#endif
-            status = restart_science_tasks( mode );
-            if (status == RTEMS_SUCCESSFUL)
-            {
-                launch_spectral_matrix( );
-                launch_waveform_picker( mode, transitionCoarseTime );
-            }
-        }
-        else if ( mode == LFR_MODE_STANDBY )
-        {
-#ifdef PRINT_TASK_STATISTICS
-            rtems_cpu_usage_report();
+    rtems_cpu_usage_report();
 #endif
 
 #ifdef PRINT_STACK_REPORT
-            PRINTF("stack report selected\n")
-                    rtems_stack_checker_report_usage();
+    PRINTF("stack report selected\n")
+    rtems_stack_checker_report_usage();
 #endif
-        }
-        else
+
+    return status;
+}
+
+int enter_mode_normal( unsigned int transitionCoarseTime )
+{
+    int status;
+
+#ifdef PRINT_TASK_STATISTICS
+    rtems_cpu_usage_reset();
+#endif
+
+    status = RTEMS_UNSATISFIED;
+
+    switch( lfrCurrentMode )
+    {
+    case LFR_MODE_STANDBY:
+        status = restart_science_tasks( LFR_MODE_NORMAL ); // restart science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
         {
-            status = RTEMS_UNSATISFIED;
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_NORMAL, transitionCoarseTime );
         }
+        break;
+    case LFR_MODE_BURST:
+        status = stop_current_mode();           // stop the current mode
+        status = restart_science_tasks( LFR_MODE_NORMAL ); // restart the science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+        {
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_NORMAL, transitionCoarseTime );
+        }
+        break;
+    case LFR_MODE_SBM1:
+        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        break;
+    case LFR_MODE_SBM2:
+        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        break;
+    default:
+        break;
     }
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode *** status = %d\n", status)
-        status = RTEMS_UNSATISFIED;
+        PRINTF1("ERR *** in enter_mode_normal *** status = %d\n", status)
+                status = RTEMS_UNSATISFIED;
+    }
+
+    return status;
+}
+
+int enter_mode_burst( unsigned int transitionCoarseTime )
+{
+    int status;
+
+#ifdef PRINT_TASK_STATISTICS
+    rtems_cpu_usage_reset();
+#endif
+
+    status = stop_current_mode();           // stop the current mode
+    status = restart_science_tasks( LFR_MODE_BURST ); // restart the science tasks
+    if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+    {
+        launch_spectral_matrix( );
+        launch_waveform_picker( LFR_MODE_BURST, transitionCoarseTime );
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("ERR *** in enter_mode_burst *** status = %d\n", status)
+                status = RTEMS_UNSATISFIED;
+    }
+
+    return status;
+}
+
+int enter_mode_sbm1( unsigned int transitionCoarseTime )
+{
+    int status;
+
+#ifdef PRINT_TASK_STATISTICS
+    rtems_cpu_usage_reset();
+#endif
+
+    status = RTEMS_UNSATISFIED;
+
+    switch( lfrCurrentMode )
+    {
+    case LFR_MODE_STANDBY:
+        status = restart_science_tasks( LFR_MODE_SBM1 ); // restart science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+        {
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_SBM1, transitionCoarseTime );
+        }
+        break;
+    case LFR_MODE_NORMAL:                       // lfrCurrentMode will be updated after the execution of close_action
+        status = LFR_SUCCESSFUL;
+        break;
+    case LFR_MODE_BURST:
+        status = stop_current_mode();           // stop the current mode
+        status = restart_science_tasks( LFR_MODE_SBM1 ); // restart the science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+        {
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_SBM1, transitionCoarseTime );
+        }
+        break;
+    case LFR_MODE_SBM2:
+        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        break;
+    default:
+        break;
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("ERR *** in enter_mode_sbm1 *** status = %d\n", status)
+                status = RTEMS_UNSATISFIED;
+    }
+
+    return status;
+}
+
+int enter_mode_sbm2( unsigned int transitionCoarseTime )
+{
+    int status;
+
+#ifdef PRINT_TASK_STATISTICS
+    rtems_cpu_usage_reset();
+#endif
+
+    status = RTEMS_UNSATISFIED;
+
+    switch( lfrCurrentMode )
+    {
+    case LFR_MODE_STANDBY:
+        status = restart_science_tasks( LFR_MODE_SBM2 ); // restart science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+        {
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_SBM2, transitionCoarseTime );
+        }
+        break;
+    case LFR_MODE_NORMAL:
+        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        break;
+    case LFR_MODE_BURST:
+        status = stop_current_mode();           // stop the current mode
+        status = restart_science_tasks( LFR_MODE_SBM2 ); // restart the science tasks
+        if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
+        {
+            launch_spectral_matrix( );
+            launch_waveform_picker( LFR_MODE_SBM2, transitionCoarseTime );
+        }
+        break;
+    case LFR_MODE_SBM1:
+        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        break;
+    default:
+        break;
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("ERR *** in enter_mode_sbm2 *** status = %d\n", status)
+                status = RTEMS_UNSATISFIED;
     }
 
     return status;
@@ -685,7 +827,7 @@ int suspend_science_tasks()
 
     PRINTF("in suspend_science_tasks\n")
 
-    status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
+            status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
         PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
