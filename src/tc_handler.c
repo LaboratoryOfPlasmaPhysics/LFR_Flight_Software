@@ -479,6 +479,57 @@ int check_transition_date( unsigned int transitionCoarseTime )
     return status;
 }
 
+int restart_asm_activities( unsigned char lfrRequestedMode )
+{
+    rtems_status_code status;
+
+    status = stop_spectral_matrices();
+
+    status = restart_asm_tasks( lfrRequestedMode );
+
+    launch_spectral_matrix();
+
+    return status;
+}
+
+int stop_spectral_matrices( void )
+{
+    /** This function stops and restarts the current mode average spectral matrices activities.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_ALREADY_SUSPENDED - task already suspended
+     *
+     */
+
+    rtems_status_code status;
+
+    status = RTEMS_SUCCESSFUL;
+
+    // (1) mask interruptions
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // clear spectral matrix interrupt
+
+    // (2) reset spectral matrices registers
+    set_sm_irq_onNewMatrix( 0 );                    // stop the spectral matrices
+    reset_sm_status();
+
+    // (3) clear interruptions
+    LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+
+    // suspend several tasks
+    if (lfrCurrentMode != LFR_MODE_STANDBY) {
+        status = suspend_asm_tasks();
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
+    }
+
+    return status;
+}
+
 int stop_current_mode( void )
 {
     /** This function stops the current mode by masking interrupt lines and suspending science tasks.
@@ -496,14 +547,14 @@ int stop_current_mode( void )
 
     // (1) mask interruptions
     LEON_Mask_interrupt( IRQ_WAVEFORM_PICKER );     // mask waveform picker interrupt
-    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // clear spectral matrix interrupt
 
     // (2) reset waveform picker registers
     reset_wfp_burst_enable();                       // reset burst and enable bits
     reset_wfp_status();                             // reset all the status bits
 
     // (3) reset spectral matrices registers
-    set_sm_irq_onNewMatrix( 0 );               // stop the spectral matrices
+    set_sm_irq_onNewMatrix( 0 );                    // stop the spectral matrices
     reset_sm_status();
 
     // reset lfr VHDL module
@@ -582,9 +633,11 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
+        restart_asm_activities( LFR_MODE_NORMAL );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_SBM2:
+        restart_asm_activities( LFR_MODE_NORMAL );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     default:
@@ -646,6 +699,7 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:                       // lfrCurrentMode will be updated after the execution of close_action
+        restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;
         break;
     case LFR_MODE_BURST:
@@ -658,6 +712,7 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM2:
+        restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     default:
@@ -694,6 +749,7 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:
+        restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_BURST:
@@ -706,6 +762,7 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
+        restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     default:
@@ -721,7 +778,7 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
     return status;
 }
 
-int restart_science_tasks(unsigned char lfrRequestedMode )
+int restart_science_tasks( unsigned char lfrRequestedMode )
 {
     /** This function is used to restart all science tasks.
      *
@@ -812,7 +869,72 @@ int restart_science_tasks(unsigned char lfrRequestedMode )
     return ret;
 }
 
-int suspend_science_tasks()
+int restart_asm_tasks( unsigned char lfrRequestedMode )
+{
+    /** This function is used to restart average spectral matrices tasks.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * ASM tasks are AVF0, PRC0, AVF1, PRC1, AVF2 and PRC2
+     *
+     */
+
+    rtems_status_code status[6];
+    rtems_status_code ret;
+
+    ret = RTEMS_SUCCESSFUL;
+
+    status[0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
+    if (status[0] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[0])
+    }
+
+    status[1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
+    if (status[1] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[1])
+    }
+
+    status[2] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
+    if (status[2] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[2])
+    }
+
+    status[3] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
+    if (status[3] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[3])
+    }
+
+    status[4] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
+    if (status[4] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[4])
+    }
+
+    status[5] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
+    if (status[5] != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[5])
+    }
+
+    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
+         (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
+         (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
+    {
+        ret = RTEMS_UNSATISFIED;
+    }
+
+    return ret;
+}
+
+int suspend_science_tasks( void )
 {
     /** This function suspends the science tasks.
      *
@@ -948,6 +1070,99 @@ int suspend_science_tasks()
     return status;
 }
 
+int suspend_asm_tasks( void )
+{
+    /** This function suspends the science tasks.
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_ALREADY_SUSPENDED - task already suspended
+     *
+     */
+
+    rtems_status_code status;
+
+    PRINTF("in suspend_science_tasks\n")
+
+            status = rtems_task_suspend( Task_id[TASKID_AVF0] );    // suspend AVF0
+    if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+    {
+        PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
+    }
+    else
+    {
+        status = RTEMS_SUCCESSFUL;
+    }
+
+    if (status == RTEMS_SUCCESSFUL)        // suspend PRC0
+    {
+        status = rtems_task_suspend( Task_id[TASKID_PRC0] );
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+        {
+            PRINTF1("in suspend_science_task *** PRC0 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)        // suspend AVF1
+    {
+        status = rtems_task_suspend( Task_id[TASKID_AVF1] );
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+        {
+            PRINTF1("in suspend_science_task *** AVF1 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)        // suspend PRC1
+    {
+        status = rtems_task_suspend( Task_id[TASKID_PRC1] );
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+        {
+            PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)        // suspend AVF2
+    {
+        status = rtems_task_suspend( Task_id[TASKID_AVF2] );
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+        {
+            PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
+        }
+    }
+
+    if (status == RTEMS_SUCCESSFUL)        // suspend PRC2
+    {
+        status = rtems_task_suspend( Task_id[TASKID_PRC2] );
+        if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
+        {
+            PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
+        }
+        else
+        {
+            status = RTEMS_SUCCESSFUL;
+        }
+    }
+
+    return status;
+}
+
 void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
 {
     WFP_reset_current_ring_nodes();
@@ -983,18 +1198,6 @@ void launch_spectral_matrix( void )
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );
     LEON_Unmask_interrupt( IRQ_SPECTRAL_MATRIX );
 
-}
-
-void launch_spectral_matrix_simu( void )
-{
-    SM_reset_current_ring_nodes();
-    reset_spectral_matrix_regs();
-    reset_nb_sm();
-
-    // Spectral Matrices simulator
-    timer_start( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );
-    LEON_Unmask_interrupt( IRQ_SM_SIMULATOR );
 }
 
 void set_sm_irq_onNewMatrix( unsigned char value )
