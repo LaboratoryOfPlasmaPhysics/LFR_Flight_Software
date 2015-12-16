@@ -566,12 +566,6 @@ int stop_current_mode( void )
     LEON_Clear_interrupt( IRQ_WAVEFORM_PICKER );    // clear waveform picker interrupt
     LEON_Clear_interrupt( IRQ_SPECTRAL_MATRIX );    // clear spectral matrix interrupt
 
-    // <Spectral Matrices simulator>
-    LEON_Mask_interrupt( IRQ_SM_SIMULATOR );                  // mask spectral matrix interrupt simulator
-    timer_stop( (gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR );
-    LEON_Clear_interrupt( IRQ_SM_SIMULATOR );                 // clear spectral matrix interrupt simulator
-    // </Spectral Matrices simulator>
-
     // suspend several tasks
     if (lfrCurrentMode != LFR_MODE_STANDBY) {
         status = suspend_science_tasks();

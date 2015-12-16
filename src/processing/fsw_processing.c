@@ -246,55 +246,6 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     spectral_matrix_isr_error_handler( statusReg );
 }
 
-rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
-{
-    rtems_status_code status_code;
-
-    //***
-    // F0
-    nb_sm_f0 = nb_sm_f0 + 1;
-    if (nb_sm_f0 == NB_SM_BEFORE_AVF0 )
-    {
-        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_sm_f0 = 0;
-    }
-
-    //***
-    // F1
-    nb_sm_f0_aux_f1 = nb_sm_f0_aux_f1 + 1;
-    if (nb_sm_f0_aux_f1 == 6)
-    {
-        nb_sm_f0_aux_f1 = 0;
-        nb_sm_f1 = nb_sm_f1 + 1;
-    }
-    if (nb_sm_f1 == NB_SM_BEFORE_AVF1 )
-    {
-        ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1;
-        if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_sm_f1 = 0;
-    }
-
-    //***
-    // F2
-    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
-    if (nb_sm_f0_aux_f2 == 96)
-    {
-        nb_sm_f0_aux_f2 = 0;
-        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-    }
-}
-
 //******************
 // Spectral Matrices
 

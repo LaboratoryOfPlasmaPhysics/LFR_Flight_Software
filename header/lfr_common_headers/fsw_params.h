@@ -136,8 +136,8 @@ typedef struct ring_node
 
 //**********
 // IRQ LINES
-#define IRQ_SM_SIMULATOR 9
-#define IRQ_SPARC_SM_SIMULATOR 0x19     // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_GPTIMER_WATCHDOG 9
+#define IRQ_SPARC_GPTIMER_WATCHDOG 0x19     // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WAVEFORM_PICKER 14
 #define IRQ_SPARC_WAVEFORM_PICKER 0x1e  // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_SPECTRAL_MATRIX 6
@@ -145,8 +145,9 @@ typedef struct ring_node
 
 //*****
 // TIME
-#define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
-#define TIMER_SM_SIMULATOR 1
+#define CLKDIV_WATCHDOG     (1100000 - 1)       // 1.1s => 1100000
+#define TIMER_WATCHDOG      1
+#define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
@@ -162,7 +163,7 @@ typedef struct ring_node
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
 #define TASKID_SPIQ 3
-#define TASKID_STAT 4
+#define TASKID_LOAD 4
 #define TASKID_AVF0 5
 #define TASKID_SWBD 6
 #define TASKID_WFRM 7
@@ -196,8 +197,8 @@ typedef struct ring_node
 #define TASK_PRIORITY_PRC1 100
 #define TASK_PRIORITY_AVF2 110
 #define TASK_PRIORITY_PRC2 110
-#define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
+#define TASK_PRIORITY_LOAD 220
 
 #define MSG_QUEUE_COUNT_RECV  10
 #define MSG_QUEUE_COUNT_SEND  50
