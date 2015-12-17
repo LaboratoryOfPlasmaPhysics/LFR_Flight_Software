@@ -19,24 +19,16 @@ enum lfr_reset_cause_t{
     UNEXP_RESET
 };
 
-extern gptimer_regs_t *gptimer_regs;
-
 #define LFR_RESET_CAUSE_UNKNOWN_CAUSE 0
 
-rtems_name name_hk_rate_monotonic;  // name of the HK rate monotonic
-rtems_id HK_id;                     // id of the HK rate monotonic period
+rtems_name name_hk_rate_monotonic;     // name of the HK rate monotonic
+rtems_id HK_id;         // id of the HK rate monotonic period
 
-void timer_configure( unsigned char timer, unsigned int clock_divider,
+void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
-void timer_start( unsigned char timer );
-void timer_stop( unsigned char timer );
-void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider);
-
-// WATCHDOG
-rtems_isr watchdog_isr( rtems_vector_number vector );
-void watchdog_configure(void);
-void watchdog_stop(void);
-void watchdog_start(void);
+void timer_start( gptimer_regs_t *gptimer_regs, unsigned char timer );
+void timer_stop( gptimer_regs_t *gptimer_regs, unsigned char timer );
+void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider);
 
 // SERIAL LINK
 int send_console_outputs_on_apbuart_port( void );
@@ -44,7 +36,7 @@ int enable_apbuart_transmitter( void );
 void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
 
 // RTEMS TASKS
-rtems_task load_task( rtems_task_argument argument );
+rtems_task stat_task( rtems_task_argument argument );
 rtems_task hous_task( rtems_task_argument argument );
 rtems_task dumb_task( rtems_task_argument unused );
 
@@ -60,7 +52,6 @@ void set_hk_lfr_sc_potential_flag( bool state );
 void set_hk_lfr_mag_fields_flag( bool state );
 void set_hk_lfr_calib_enable( bool state );
 void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause );
-void hk_lfr_le_me_he_update();
 
 extern int sched_yield( void );
 extern void rtems_cpu_usage_reset();

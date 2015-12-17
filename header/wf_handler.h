@@ -59,8 +59,7 @@ int send_waveform_CWF3_light(ring_node *ring_node_to_send, ring_node *ring_node_
 //
 void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime,
                               unsigned int sid, unsigned char pa_lfr_pkt_nr, unsigned char *acquisitionTime );
-void build_snapshot_from_ring(ring_node *ring_node_to_send, unsigned char frequencyChannel ,
-                              unsigned long long acquisitionTimeF0_asLong, ring_node *ring_node_swf_extracted, int *swf_extracted);
+void build_snapshot_from_ring(ring_node *ring_node_to_send, unsigned char frequencyChannel , unsigned long long acquisitionTimeF0_asLong);
 void snapshot_resynchronization( unsigned char *timePtr );
 //
 rtems_id get_pkts_queue_id( void );

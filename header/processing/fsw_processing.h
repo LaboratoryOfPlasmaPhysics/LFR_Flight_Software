@@ -97,9 +97,11 @@ extern volatile spectral_matrix_regs_t *spectral_matrix_regs;
 extern rtems_name  misc_name[5];
 extern rtems_id    Task_id[20];         /* array of task ids */
 
+//
 ring_node * getRingNodeForAveraging( unsigned char frequencyChannel);
 // ISR
 rtems_isr spectral_matrices_isr( rtems_vector_number vector );
+rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector );
 
 //******************
 // Spectral Matrices
