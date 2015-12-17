@@ -9,10 +9,6 @@
 
 #include "wf_handler.h"
 
-extern struct grgpio_regs_str *grgpio_regs;
-#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
-#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
-
 //***************
 // waveform rings
 // F0
@@ -35,13 +31,17 @@ ring_node *current_ring_node_f3;
 ring_node *ring_node_to_send_cwf_f3;
 char wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK ];
 
-bool extractSWF = false;
-bool swf_f0_ready = false;
-bool swf_f1_ready = false;
-bool swf_f2_ready = false;
+bool extractSWF1 = false;
+bool extractSWF2 = false;
+bool swf0_ready_flag_f1 = false;
+bool swf0_ready_flag_f2 = false;
+bool swf1_ready = false;
+bool swf2_ready = false;
 
-int wf_snap_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
-ring_node ring_node_wf_snap_extracted;
+int swf1_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
+int swf2_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
+ring_node ring_node_swf1_extracted;
+ring_node ring_node_swf2_extracted;
 
 //*********************
 // Interrupt SubRoutine
@@ -92,10 +92,12 @@ ring_node * getRingNodeToSendSWF( unsigned char frequencyChannel)
 
 void reset_extractSWF( void )
 {
-    extractSWF = false;
-    swf_f0_ready = false;
-    swf_f1_ready = false;
-    swf_f2_ready = false;
+    extractSWF1 = false;
+    extractSWF2 = false;
+    swf0_ready_flag_f1 = false;
+    swf0_ready_flag_f2 = false;
+    swf1_ready = false;
+    swf2_ready = false;
 }
 
 inline void waveforms_isr_f3( void )
@@ -125,80 +127,6 @@ inline void waveforms_isr_f3( void )
             if (rtems_event_send( Task_id[TASKID_CWF3], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
                 spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
             }
-        }
-    }
-}
-
-inline void waveforms_isr_normal( void )
-{
-    rtems_status_code status;
-
-    if ( ( (waveform_picker_regs->status & 0x30) != 0x00 )      // [0011 0000] check the f2 full bits
-         && ( (waveform_picker_regs->status & 0x0c) != 0x00 )   // [0000 1100] check the f1 full bits
-         && ( (waveform_picker_regs->status & 0x03) != 0x00 ))  // [0000 0011] check the f0 full bits
-    {
-        //***
-        // F0
-        ring_node_to_send_swf_f0    = current_ring_node_f0->previous;
-        current_ring_node_f0        = current_ring_node_f0->next;
-        if ( (waveform_picker_regs->status & 0x01) == 0x01)
-        {
-
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_0_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_0_fine_time;
-            waveform_picker_regs->addr_data_f0_0    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001101; // [0001 0001 0000 0001]
-        }
-        else if ( (waveform_picker_regs->status & 0x02) == 0x02)
-        {
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_1_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_1_fine_time;
-            waveform_picker_regs->addr_data_f0_1    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001102; // [0001 0001 0000 0010]
-        }
-
-        //***
-        // F1
-        ring_node_to_send_swf_f1    = current_ring_node_f1->previous;
-        current_ring_node_f1        = current_ring_node_f1->next;
-        if ( (waveform_picker_regs->status & 0x04) == 0x04)
-        {
-            ring_node_to_send_swf_f1->coarseTime    = waveform_picker_regs->f1_0_coarse_time;
-            ring_node_to_send_swf_f1->fineTime      = waveform_picker_regs->f1_0_fine_time;
-            waveform_picker_regs->addr_data_f1_0    = current_ring_node_f1->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00002204; // [0010 0010 0000 0100] f1 bits = 0
-        }
-        else if ( (waveform_picker_regs->status & 0x08) == 0x08)
-        {
-            ring_node_to_send_swf_f1->coarseTime    = waveform_picker_regs->f1_1_coarse_time;
-            ring_node_to_send_swf_f1->fineTime      = waveform_picker_regs->f1_1_fine_time;
-            waveform_picker_regs->addr_data_f1_1    = current_ring_node_f1->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00002208; // [0010 0010 0000 1000] f1 bits = 0
-        }
-
-        //***
-        // F2
-        ring_node_to_send_swf_f2    = current_ring_node_f2->previous;
-        current_ring_node_f2        = current_ring_node_f2->next;
-        if ( (waveform_picker_regs->status & 0x10) == 0x10)
-        {
-            ring_node_to_send_swf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
-            ring_node_to_send_swf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
-            waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
-        }
-        else if ( (waveform_picker_regs->status & 0x20) == 0x20)
-        {
-            ring_node_to_send_swf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
-            ring_node_to_send_swf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
-            waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
-        }
-        //
-        status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL );
-        if ( status != RTEMS_SUCCESSFUL)
-        {
-            status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 );
         }
     }
 }
@@ -242,9 +170,34 @@ inline void waveforms_isr_burst( void )
     }
 }
 
-inline void waveforms_isr_sbm1( void )
+inline void waveform_isr_normal_sbm1_sbm2( void )
 {
     rtems_status_code status;
+
+    //***
+    // F0
+    if ( (waveform_picker_regs->status & 0x03) != 0x00 )  // [0000 0011] check the f0 full bits
+    {
+        swf0_ready_flag_f1 = true;
+        swf0_ready_flag_f2 = true;
+        ring_node_to_send_swf_f0    = current_ring_node_f0->previous;
+        current_ring_node_f0        = current_ring_node_f0->next;
+        if ( (waveform_picker_regs->status & 0x01) == 0x01)
+        {
+
+            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_0_coarse_time;
+            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_0_fine_time;
+            waveform_picker_regs->addr_data_f0_0    = current_ring_node_f0->buffer_address;
+            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001101; // [0001 0001 0000 0001]
+        }
+        else if ( (waveform_picker_regs->status & 0x02) == 0x02)
+        {
+            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_1_coarse_time;
+            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_1_fine_time;
+            waveform_picker_regs->addr_data_f0_1    = current_ring_node_f0->buffer_address;
+            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001102; // [0001 0001 0000 0010]
+        }
+    }
 
     //***
     // F1
@@ -267,60 +220,8 @@ inline void waveforms_isr_sbm1( void )
             waveform_picker_regs->status            = waveform_picker_regs->status & 0x00002208; // [0010 0010 0000 1000] f1 bits = 0
         }
         // (2) send an event for the the CWF1 task for transmission (and snapshot extraction if needed)
-        status = rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_SBM1 );
+        status = rtems_event_send( Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_NORM_S1_S2 );
     }
-
-    //***
-    // F0
-    if ( (waveform_picker_regs->status & 0x03) != 0x00 ) {  // [0000 0011] check the f0 full bits
-        swf_f0_ready = true;
-        // change f0 buffer
-        ring_node_to_send_swf_f0    = current_ring_node_f0->previous;
-        current_ring_node_f0        = current_ring_node_f0->next;
-        if ( (waveform_picker_regs->status & 0x01) == 0x01)
-        {
-
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_0_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_0_fine_time;
-            waveform_picker_regs->addr_data_f0_0    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001101; // [0001 0001 0000 0001]
-        }
-        else if ( (waveform_picker_regs->status & 0x02) == 0x02)
-        {
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_1_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_1_fine_time;
-            waveform_picker_regs->addr_data_f0_1    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001102; // [0001 0001 0000 0010]
-        }
-    }
-
-    //***
-    // F2
-    if ( (waveform_picker_regs->status & 0x30) != 0x00 ) {  // [0011 0000] check the f2 full bits
-        swf_f2_ready = true;
-        // change f2 buffer
-        ring_node_to_send_swf_f2    = current_ring_node_f2->previous;
-        current_ring_node_f2        = current_ring_node_f2->next;
-        if ( (waveform_picker_regs->status & 0x10) == 0x10)
-        {
-            ring_node_to_send_swf_f2->coarseTime    = waveform_picker_regs->f2_0_coarse_time;
-            ring_node_to_send_swf_f2->fineTime      = waveform_picker_regs->f2_0_fine_time;
-            waveform_picker_regs->addr_data_f2_0    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004410; // [0100 0100 0001 0000]
-        }
-        else if ( (waveform_picker_regs->status & 0x20) == 0x20)
-        {
-            ring_node_to_send_swf_f2->coarseTime    = waveform_picker_regs->f2_1_coarse_time;
-            ring_node_to_send_swf_f2->fineTime      = waveform_picker_regs->f2_1_fine_time;
-            waveform_picker_regs->addr_data_f2_1    = current_ring_node_f2->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
-        }
-    }
-}
-
-inline void waveforms_isr_sbm2( void )
-{
-    rtems_status_code status;
 
     //***
     // F2
@@ -344,53 +245,7 @@ inline void waveforms_isr_sbm2( void )
             waveform_picker_regs->status            = waveform_picker_regs->status & 0x00004420; // [0100 0100 0010 0000]
         }
         // (2) send an event for the waveforms transmission
-        status = rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_SBM2 );
-    }
-
-    //***
-    // F0
-    if ( (waveform_picker_regs->status & 0x03) != 0x00 ) {  // [0000 0011] check the f0 full bit
-        swf_f0_ready = true;
-        // change f0 buffer
-        ring_node_to_send_swf_f0    = current_ring_node_f0->previous;
-        current_ring_node_f0        = current_ring_node_f0->next;
-        if ( (waveform_picker_regs->status & 0x01) == 0x01)
-        {
-
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_0_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_0_fine_time;
-            waveform_picker_regs->addr_data_f0_0    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001101; // [0001 0001 0000 0001]
-        }
-        else if ( (waveform_picker_regs->status & 0x02) == 0x02)
-        {
-            ring_node_to_send_swf_f0->coarseTime    = waveform_picker_regs->f0_1_coarse_time;
-            ring_node_to_send_swf_f0->fineTime      = waveform_picker_regs->f0_1_fine_time;
-            waveform_picker_regs->addr_data_f0_1    = current_ring_node_f0->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001102; // [0001 0001 0000 0010]
-        }
-    }
-
-    //***
-    // F1
-    if ( (waveform_picker_regs->status & 0x0c) != 0x00 ) {  // [0000 1100] check the f1 full bit
-        swf_f1_ready = true;
-        ring_node_to_send_swf_f1    = current_ring_node_f1->previous;
-        current_ring_node_f1        = current_ring_node_f1->next;
-        if ( (waveform_picker_regs->status & 0x04) == 0x04)
-        {
-            ring_node_to_send_swf_f1->coarseTime    = waveform_picker_regs->f1_0_coarse_time;
-            ring_node_to_send_swf_f1->fineTime      = waveform_picker_regs->f1_0_fine_time;
-            waveform_picker_regs->addr_data_f1_0    = current_ring_node_f1->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00002204; // [0010 0010 0000 0100] f1 bits = 0
-        }
-        else if ( (waveform_picker_regs->status & 0x08) == 0x08)
-        {
-            ring_node_to_send_swf_f1->coarseTime    = waveform_picker_regs->f1_1_coarse_time;
-            ring_node_to_send_swf_f1->fineTime      = waveform_picker_regs->f1_1_fine_time;
-            waveform_picker_regs->addr_data_f1_1    = current_ring_node_f1->buffer_address;
-            waveform_picker_regs->status            = waveform_picker_regs->status & 0x00002208; // [0010 0010 0000 1000] f1 bits = 0
-        }
+        status = rtems_event_send( Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_NORM_S1_S2 );
     }
 }
 
@@ -413,8 +268,6 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
     // 7    6    5    4    3    2    1    0
     // f3_1 f3_0 f2_1 f2_0 f1_1 f1_0 f0_1 f0_0
 
-//    OUTPUT_1;
-
     rtems_status_code spare_status;
 
     waveforms_isr_f3();
@@ -426,42 +279,27 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 
     switch(lfrCurrentMode)
     {
-        //********
-        // STANDBY
-        case(LFR_MODE_STANDBY):
+    //********
+    // STANDBY
+    case LFR_MODE_STANDBY:
         break;
-
-        //******
-        // NORMAL
-        case(LFR_MODE_NORMAL):
-        waveforms_isr_normal();
+    //**************************
+    // LFR NORMAL, SBM1 and SBM2
+    case LFR_MODE_NORMAL:
+    case LFR_MODE_SBM1:
+    case LFR_MODE_SBM2:
+        waveform_isr_normal_sbm1_sbm2();
         break;
-
-        //******
-        // BURST
-        case(LFR_MODE_BURST):
+    //******
+    // BURST
+    case LFR_MODE_BURST:
         waveforms_isr_burst();
         break;
-
-        //*****
-        // SBM1
-        case(LFR_MODE_SBM1):
-        waveforms_isr_sbm1();
-        break;
-
-        //*****
-        // SBM2
-        case(LFR_MODE_SBM2):
-        waveforms_isr_sbm2();
-        break;
-
-        //********
-        // DEFAULT
-        default:
+    //********
+    // DEFAULT
+    default:
         break;
     }
-
-//    OUTPUT_0;
 }
 
 //************
@@ -484,9 +322,11 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     rtems_id queue_id;
     rtems_status_code status;
     bool resynchronisationEngaged;
-    ring_node *ring_node_wf_snap_extracted_ptr;
+    ring_node *ring_node_swf1_extracted_ptr;
+    ring_node *ring_node_swf2_extracted_ptr;
 
-    ring_node_wf_snap_extracted_ptr = (ring_node *) &ring_node_wf_snap_extracted;
+    ring_node_swf1_extracted_ptr = (ring_node *) &ring_node_swf1_extracted;
+    ring_node_swf2_extracted_ptr = (ring_node *) &ring_node_swf2_extracted;
 
     resynchronisationEngaged = false;
 
@@ -498,10 +338,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     BOOT_PRINTF("in WFRM ***\n")
 
-    while(1){
+            while(1){
         // wait for an RTEMS_EVENT
-        rtems_event_receive(RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_MODE_SBM1
-                            | RTEMS_EVENT_MODE_SBM2 | RTEMS_EVENT_MODE_SBM2_WFRM,
+        rtems_event_receive(RTEMS_EVENT_MODE_NORMAL,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if(resynchronisationEngaged == false)
         {   // engage resynchronisation
@@ -511,40 +350,19 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         else
         {   // reset delta_snapshot to the nominal value
             PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n")
-            set_wfp_delta_snapshot();
+                    set_wfp_delta_snapshot();
             resynchronisationEngaged = false;
         }
         //
-
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
-            DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_NORMAL\n")
-            ring_node_to_send_swf_f0->sid = SID_NORM_SWF_F0;
-            ring_node_to_send_swf_f1->sid = SID_NORM_SWF_F1;
-            ring_node_to_send_swf_f2->sid = SID_NORM_SWF_F2;
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0, sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f1, sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f2, sizeof( ring_node* ) );
-        }
-        if (event_out == RTEMS_EVENT_MODE_SBM1)
-        {
-            DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM1\n")
-            ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
-            ring_node_wf_snap_extracted_ptr->sid    = SID_NORM_SWF_F1;
-            ring_node_to_send_swf_f2->sid           = SID_NORM_SWF_F2;
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,        sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_wf_snap_extracted_ptr, sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f2,        sizeof( ring_node* ) );
-        }
-        if (event_out == RTEMS_EVENT_MODE_SBM2)
-        {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n")
-            ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
-            ring_node_to_send_swf_f1->sid           = SID_NORM_SWF_F1;
-            ring_node_wf_snap_extracted_ptr->sid    = SID_NORM_SWF_F2;
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,        sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f1,        sizeof( ring_node* ) );
-            status =  rtems_message_queue_send( queue_id, &ring_node_wf_snap_extracted_ptr, sizeof( ring_node* ) );
+                    ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
+            ring_node_swf1_extracted_ptr->sid       = SID_NORM_SWF_F1;
+            ring_node_swf2_extracted_ptr->sid       = SID_NORM_SWF_F2;
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,     sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_swf1_extracted_ptr, sizeof( ring_node* ) );
+            status =  rtems_message_queue_send( queue_id, &ring_node_swf2_extracted_ptr, sizeof( ring_node* ) );
         }
     }
 }
@@ -585,10 +403,10 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
 
     BOOT_PRINTF("in CWF3 ***\n")
 
-    while(1){
+            while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_0,
-                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         if ( (lfrCurrentMode == LFR_MODE_NORMAL)
              || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode==LFR_MODE_SBM2) )
         {
@@ -596,13 +414,13 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
                 PRINTF("send CWF_LONG_F3\n")
-                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+                        ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
                 status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
             }
             else
             {
                 PRINTF("send CWF_F3 (light)\n")
-                send_waveform_CWF3_light( ring_node_to_send_cwf, &ring_node_cwf3_light, queue_id );
+                        send_waveform_CWF3_light( ring_node_to_send_cwf, &ring_node_cwf3_light, queue_id );
             }
 
         }
@@ -643,33 +461,37 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 
     while(1){
         // wait for an RTEMS_EVENT
-        rtems_event_receive( RTEMS_EVENT_MODE_BURST | RTEMS_EVENT_MODE_SBM2,
-                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
+                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send = getRingNodeToSendCWF( 2 );
         if (event_out == RTEMS_EVENT_MODE_BURST)
         {
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
         }
-        if (event_out == RTEMS_EVENT_MODE_SBM2)
+        else if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
+            if ( lfrCurrentMode == LFR_MODE_SBM2 )
+            {
+                status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
+            }
             // launch snapshot extraction if needed
-            if (extractSWF == true)
+            if (extractSWF2 == true)
             {
                 ring_node_to_send_swf_f2 = ring_node_to_send_cwf_f2;
                 // extract the snapshot
-                build_snapshot_from_ring( ring_node_to_send_swf_f2, 2, acquisitionTimeF0_asLong );
+                build_snapshot_from_ring( ring_node_to_send_swf_f2, 2, acquisitionTimeF0_asLong,
+                                          &ring_node_swf2_extracted, swf2_extracted );
                 // send the snapshot when built
                 status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
-                extractSWF = false;
+                extractSWF2 = false;
+                swf2_ready = true;
             }
-            if (swf_f0_ready && swf_f1_ready)
+            if (swf0_ready_flag_f2 == true)
             {
-                extractSWF = true;
-                // record the acquition time of the fà snapshot to use to build the snapshot at f2
+                extractSWF2 = true;
+                // record the acquition time of the f0 snapshot to use to build the snapshot at f2
                 acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send_swf_f0->coarseTime );
-                swf_f0_ready = false;
-                swf_f1_ready = false;
+                swf0_ready_flag_f2 = false;
             }
         }
     }
@@ -700,35 +522,38 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 
     BOOT_PRINTF("in CWF1 ***\n")
 
-    while(1){
+            while(1){
         // wait for an RTEMS_EVENT
-        rtems_event_receive( RTEMS_EVENT_MODE_SBM1,
-                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2,
+                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send_cwf = getRingNodeToSendCWF( 1 );
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
-        status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
-        if (status != 0)
+        if (lfrCurrentMode == LFR_MODE_SBM1)
         {
-            PRINTF("cwf sending failed\n")
+            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
+            if (status != 0)
+            {
+                PRINTF("cwf sending failed\n")
+            }
         }
         // launch snapshot extraction if needed
-        if (extractSWF == true)
+        if (extractSWF1 == true)
         {
             ring_node_to_send_swf_f1 = ring_node_to_send_cwf;
             // launch the snapshot extraction
-            status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_SBM1 );
-            extractSWF = false;
+            status = rtems_event_send( Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_NORM_S1_S2 );
+            extractSWF1 = false;
         }
-        if (swf_f0_ready == true)
+        if (swf0_ready_flag_f1 == true)
         {
-            extractSWF = true;
-            swf_f0_ready = false;   // this step shall be executed only one time
+            extractSWF1 = true;
+            swf0_ready_flag_f1 = false;   // this step shall be executed only one time
         }
-        if ((swf_f1_ready == true) && (swf_f2_ready == true))   // swf_f1 is ready after the extraction
+        if ((swf1_ready == true) && (swf2_ready == true))   // swf_f1 is ready after the extraction
         {
-            status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM1 );
-            swf_f1_ready = false;
-            swf_f2_ready = false;
+            status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL );
+            swf1_ready = false;
+            swf2_ready = false;
         }
     }
 }
@@ -748,15 +573,16 @@ rtems_task swbd_task(rtems_task_argument argument)
 
     BOOT_PRINTF("in SWBD ***\n")
 
-    while(1){
+            while(1){
         // wait for an RTEMS_EVENT
-        rtems_event_receive( RTEMS_EVENT_MODE_SBM1 | RTEMS_EVENT_MODE_SBM2,
-                            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        if (event_out == RTEMS_EVENT_MODE_SBM1)
+        rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2,
+                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
             acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send_swf_f0->coarseTime );
-            build_snapshot_from_ring( ring_node_to_send_swf_f1, 1, acquisitionTimeF0_asLong );
-            swf_f1_ready = true;    // the snapshot has been extracted and is ready to be sent
+            build_snapshot_from_ring( ring_node_to_send_swf_f1, 1, acquisitionTimeF0_asLong,
+                                      &ring_node_swf1_extracted, swf1_extracted );
+            swf1_ready = true;    // the snapshot has been extracted and is ready to be sent
         }
         else
         {
@@ -779,16 +605,17 @@ void WFP_init_rings( void )
     // F3 RING
     init_ring( waveform_ring_f3, NB_RING_NODES_F3, wf_buffer_f3, WFRM_BUFFER );
 
-    ring_node_wf_snap_extracted.buffer_address = (int) wf_snap_extracted;
+    ring_node_swf1_extracted.buffer_address = (int) swf1_extracted;
+    ring_node_swf2_extracted.buffer_address = (int) swf2_extracted;
 
     DEBUG_PRINTF1("waveform_ring_f0 @%x\n", (unsigned int) waveform_ring_f0)
-    DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int) waveform_ring_f1)
-    DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int) waveform_ring_f2)
-    DEBUG_PRINTF1("waveform_ring_f3 @%x\n", (unsigned int) waveform_ring_f3)
-    DEBUG_PRINTF1("wf_buffer_f0 @%x\n", (unsigned int) wf_buffer_f0)
-    DEBUG_PRINTF1("wf_buffer_f1 @%x\n", (unsigned int) wf_buffer_f1)
-    DEBUG_PRINTF1("wf_buffer_f2 @%x\n", (unsigned int) wf_buffer_f2)
-    DEBUG_PRINTF1("wf_buffer_f3 @%x\n", (unsigned int) wf_buffer_f3)
+            DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int) waveform_ring_f1)
+            DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int) waveform_ring_f2)
+            DEBUG_PRINTF1("waveform_ring_f3 @%x\n", (unsigned int) waveform_ring_f3)
+            DEBUG_PRINTF1("wf_buffer_f0 @%x\n", (unsigned int) wf_buffer_f0)
+            DEBUG_PRINTF1("wf_buffer_f1 @%x\n", (unsigned int) wf_buffer_f1)
+            DEBUG_PRINTF1("wf_buffer_f2 @%x\n", (unsigned int) wf_buffer_f2)
+            DEBUG_PRINTF1("wf_buffer_f3 @%x\n", (unsigned int) wf_buffer_f3)
 
 }
 
@@ -917,7 +744,7 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
 
     default:
         PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d\n", sid)
-        deltaT = 0.;
+                deltaT = 0.;
         break;
     }
 
@@ -932,7 +759,11 @@ void compute_acquisition_time( unsigned int coarseTime, unsigned int fineTime,
 
 }
 
-void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequencyChannel, unsigned long long int acquisitionTimeF0_asLong )
+void build_snapshot_from_ring( ring_node *ring_node_to_send,
+                               unsigned char frequencyChannel,
+                               unsigned long long int acquisitionTimeF0_asLong,
+                               ring_node *ring_node_swf_extracted,
+                               int *swf_extracted)
 {
     unsigned int i;
     unsigned long long int centerTime_asLong;
@@ -988,11 +819,11 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     for (i=0; i<nb_ring_nodes; i++)
     {
         PRINTF1("%d ... ", i)
-        bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
+                bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
             PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong)
-            break;
+                    break;
         }
         ring_node_to_send = ring_node_to_send->previous;
     }
@@ -1002,18 +833,18 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
     PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
 
-    // (6) compute the final acquisition time
-    acquisitionTime_asLong = bufferAcquisitionTime_asLong +
+            // (6) compute the final acquisition time
+            acquisitionTime_asLong = bufferAcquisitionTime_asLong +
             sampleOffset_asLong * nbTicksPerSample_asLong;
 
     // (7) copy the acquisition time at the beginning of the extrated snapshot
     ptr1 = (unsigned char*) &acquisitionTime_asLong;
     // fine time
-    ptr2 = (unsigned char*) &ring_node_wf_snap_extracted.fineTime;
+    ptr2 = (unsigned char*) &ring_node_swf_extracted->fineTime;
     ptr2[2] = ptr1[ 4 + 2 ];
     ptr2[3] = ptr1[ 5 + 2 ];
     // coarse time
-    ptr2 = (unsigned char*) &ring_node_wf_snap_extracted.coarseTime;
+    ptr2 = (unsigned char*) &ring_node_swf_extracted->coarseTime;
     ptr2[0] = ptr1[ 0 + 2 ];
     ptr2[1] = ptr1[ 1 + 2 ];
     ptr2[2] = ptr1[ 2 + 2 ];
@@ -1030,14 +861,14 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send, unsigned char frequ
     // copy the part 1 of the snapshot in the extracted buffer
     for ( i = 0; i < (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK); i++ )
     {
-        wf_snap_extracted[i] =
+        swf_extracted[i] =
                 ((int*) ring_node_to_send->buffer_address)[ i + (sampleOffset_asLong * NB_WORDS_SWF_BLK) ];
     }
     // copy the part 2 of the snapshot in the extracted buffer
     ring_node_to_send = ring_node_to_send->next;
     for ( i = (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK); i < (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK); i++ )
     {
-        wf_snap_extracted[i] =
+        swf_extracted[i] =
                 ((int*) ring_node_to_send->buffer_address)[ (i-(nbSamplesPart1_asLong * NB_WORDS_SWF_BLK)) ];
     }
 }
@@ -1068,10 +899,10 @@ void snapshot_resynchronization( unsigned char *timePtr )
     deltaNext           = ((double) deltaNextTick) / 65536. * 1000.;
 
     PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious, deltaNext)
-    PRINTF2("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick)
+            PRINTF2("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick)
 
-    // which tick is the closest
-    if (deltaPreviousTick > deltaNextTick)
+            // which tick is the closest
+            if (deltaPreviousTick > deltaNextTick)
     {
         deltaTickInF2 = floor( (deltaNext * 256. / 1000.) ); // the division by 2 is important here
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
@@ -1167,12 +998,12 @@ void reset_waveform_picker_regs( void )
     set_wfp_delta_f2();         // 0x2c
 
     DEBUG_PRINTF1("delta_snapshot %x\n",    waveform_picker_regs->delta_snapshot)
-    DEBUG_PRINTF1("delta_f0 %x\n",          waveform_picker_regs->delta_f0)
-    DEBUG_PRINTF1("delta_f0_2 %x\n",        waveform_picker_regs->delta_f0_2)
-    DEBUG_PRINTF1("delta_f1 %x\n",          waveform_picker_regs->delta_f1)
-    DEBUG_PRINTF1("delta_f2 %x\n",          waveform_picker_regs->delta_f2)
-    // 2688 = 8 * 336
-    waveform_picker_regs->nb_data_by_buffer = 0xa7f; // 0x30 *** 2688 - 1 => nb samples -1
+            DEBUG_PRINTF1("delta_f0 %x\n",          waveform_picker_regs->delta_f0)
+            DEBUG_PRINTF1("delta_f0_2 %x\n",        waveform_picker_regs->delta_f0_2)
+            DEBUG_PRINTF1("delta_f1 %x\n",          waveform_picker_regs->delta_f1)
+            DEBUG_PRINTF1("delta_f2 %x\n",          waveform_picker_regs->delta_f2)
+            // 2688 = 8 * 336
+            waveform_picker_regs->nb_data_by_buffer = 0xa7f; // 0x30 *** 2688 - 1 => nb samples -1
     waveform_picker_regs->snapshot_param    = 0xa80; // 0x34 *** 2688 => nb samples
     waveform_picker_regs->start_date        = 0x7fffffff;  // 0x38
     //
@@ -1198,7 +1029,7 @@ void set_wfp_data_shaping( void )
     data_shaping = parameter_dump_packet.sy_lfr_common_parameters;
 
     waveform_picker_regs->data_shaping =
-              ( (data_shaping & 0x20) >> 5 )     // BW
+            ( (data_shaping & 0x20) >> 5 )     // BW
             + ( (data_shaping & 0x10) >> 3 )     // SP0
             + ( (data_shaping & 0x08) >> 1 )     // SP1
             + ( (data_shaping & 0x04) << 1 )     // R0
@@ -1219,22 +1050,15 @@ void set_wfp_burst_enable_register( unsigned char mode )
     // [0000 0000] burst f2, f1, f0 enable f3 f2 f1 f0
     // the burst bits shall be set first, before the enable bits
     switch(mode) {
-    case(LFR_MODE_NORMAL):
-        waveform_picker_regs->run_burst_enable = 0x00;  // [0000 0000] no burst enable
-        waveform_picker_regs->run_burst_enable = 0x0f; // [0000 1111] enable f3 f2 f1 f0
+    case LFR_MODE_NORMAL:
+    case LFR_MODE_SBM1:
+    case LFR_MODE_SBM2:
+        waveform_picker_regs->run_burst_enable = 0x60;  // [0110 0000] enable f2 and f1 burst
+        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
         break;
-    case(LFR_MODE_BURST):
+    case LFR_MODE_BURST:
         waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-//        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x04; // [0100] enable f2
-        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0c; // [1100] enable f3 AND f2
-        break;
-    case(LFR_MODE_SBM1):
-        waveform_picker_regs->run_burst_enable = 0x20;  // [0010 0000] f1 burst enabled
-        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
-        break;
-    case(LFR_MODE_SBM2):
-        waveform_picker_regs->run_burst_enable = 0x40;  // [0100 0000] f2 burst enabled
-        waveform_picker_regs->run_burst_enable =  waveform_picker_regs->run_burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
+        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x0c; // [1100] enable f3 and f2
         break;
     default:
         waveform_picker_regs->run_burst_enable = 0x00;  // [0000 0000] no burst enabled, no waveform enabled

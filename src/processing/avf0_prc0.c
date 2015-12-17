@@ -285,7 +285,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             set_time( packet_sbm_bp1.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
             packet_sbm_bp1.biaStatusInfo = pa_bia_status_info;
             packet_sbm_bp1.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
-            BP_send( (char *) &packet_sbm_bp1, queue_id,
+            BP_send_s1_s2( (char *) &packet_sbm_bp1, queue_id,
                      PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F0 + PACKET_LENGTH_DELTA,
                      sid);
             // 4) compute the BP2 set if needed
@@ -298,7 +298,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
                 set_time( packet_sbm_bp2.acquisitionTime, (unsigned char *) &incomingMsg->coarseTimeSBM );
                 packet_sbm_bp2.biaStatusInfo = pa_bia_status_info;
                 packet_sbm_bp2.sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
-                BP_send( (char *) &packet_sbm_bp2, queue_id,
+                BP_send_s1_s2( (char *) &packet_sbm_bp2, queue_id,
                          PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F0 + PACKET_LENGTH_DELTA,
                          sid);
             }

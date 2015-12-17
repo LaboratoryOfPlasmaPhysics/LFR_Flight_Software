@@ -7,7 +7,7 @@
 
 #include "fsw_misc.h"
 
-void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider,
+void timer_configure(unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
 {
     /** This function configures a GPTIMER timer instantiated in the VHDL design.
@@ -33,10 +33,10 @@ void configure_timer(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned
         PRINTF("in configure_timer *** ERR rtems_interrupt_catch\n")
     }
 
-    timer_set_clock_divider( gptimer_regs, timer, clock_divider);
+    timer_set_clock_divider( timer, clock_divider);
 }
 
-void timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
+void timer_start(unsigned char timer)
 {
     /** This function starts a GPTIMER timer.
      *
@@ -52,7 +52,7 @@ void timer_start(gptimer_regs_t *gptimer_regs, unsigned char timer)
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000008;  // IE interrupt enable
 }
 
-void timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
+void timer_stop(unsigned char timer)
 {
     /** This function stops a GPTIMER timer.
      *
@@ -66,7 +66,7 @@ void timer_stop(gptimer_regs_t *gptimer_regs, unsigned char timer)
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
 }
 
-void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, unsigned int clock_divider)
+void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider)
 {
     /** This function sets the clock divider of a GPTIMER timer.
      *
@@ -77,6 +77,70 @@ void timer_set_clock_divider(gptimer_regs_t *gptimer_regs, unsigned char timer, 
      */
 
     gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
+}
+
+// WATCHDOG
+
+rtems_isr watchdog_isr( rtems_vector_number vector )
+{
+    rtems_status_code status_code;
+
+    status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_12 );
+}
+
+void watchdog_configure(void)
+{
+    /** This function configure the watchdog.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     *
+     * The watchdog is a timer provided by the GPTIMER IP core of the GRLIB.
+     *
+     */
+
+    LEON_Mask_interrupt( IRQ_GPTIMER_WATCHDOG );    // mask gptimer/watchdog interrupt during configuration
+
+    timer_configure( TIMER_WATCHDOG, CLKDIV_WATCHDOG, IRQ_SPARC_GPTIMER_WATCHDOG, watchdog_isr );
+
+    LEON_Clear_interrupt( IRQ_GPTIMER_WATCHDOG );   // clear gptimer/watchdog interrupt
+}
+
+void watchdog_stop(void)
+{
+    LEON_Mask_interrupt( IRQ_GPTIMER_WATCHDOG );                  // mask gptimer/watchdog interrupt line
+    timer_stop( TIMER_WATCHDOG );
+    LEON_Clear_interrupt( IRQ_GPTIMER_WATCHDOG );                 // clear gptimer/watchdog interrupt
+}
+
+void watchdog_reload(void)
+{
+    /** This function reloads the watchdog timer counter with the timer reload value.
+     *
+     *
+     */
+
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000004;  // LD load value from the reload register
+}
+
+void watchdog_start(void)
+{
+    /** This function starts the watchdog timer.
+     *
+     * @param gptimer_regs points to the APB registers of the GPTIMER IP core.
+     * @param timer is the number of the timer in the IP core (several timers can be instantiated).
+     *
+     */    
+
+    LEON_Clear_interrupt( IRQ_GPTIMER_WATCHDOG );
+
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000010;  // clear pending IRQ if any
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000004;  // LD load value from the reload register
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000001;  // EN enable the timer
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000008;  // IE interrupt enable
+
+    LEON_Unmask_interrupt( IRQ_GPTIMER_WATCHDOG );
+
 }
 
 int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on the apbuart port
@@ -117,25 +181,44 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
 //************
 // RTEMS TASKS
 
-rtems_task stat_task(rtems_task_argument argument)
+rtems_task load_task(rtems_task_argument argument)
 {
-    int i;
-    int j;
+    BOOT_PRINTF("in LOAD *** \n")
+
+    rtems_status_code status;
+    unsigned int i;
+    unsigned int j;
+    rtems_name name_watchdog_rate_monotonic;  // name of the watchdog rate monotonic
+    rtems_id watchdog_period_id;              // id of the watchdog rate monotonic period
+
+    name_watchdog_rate_monotonic = rtems_build_name( 'L', 'O', 'A', 'D' );
+
+    status = rtems_rate_monotonic_create( name_watchdog_rate_monotonic, &watchdog_period_id );
+    if( status != RTEMS_SUCCESSFUL ) {
+        PRINTF1( "in LOAD *** rtems_rate_monotonic_create failed with status of %d\n", status )
+    }
+
     i = 0;
     j = 0;
-    BOOT_PRINTF("in STAT *** \n")
+
+    watchdog_configure();
+
+    watchdog_start();
+
     while(1){
-        rtems_task_wake_after(1000);
-        PRINTF1("%d\n", j)
-        if (i == CPU_USAGE_REPORT_PERIOD) {
-//            #ifdef PRINT_TASK_STATISTICS
-//            rtems_cpu_usage_report();
-//            rtems_cpu_usage_reset();
-//            #endif
+        status = rtems_rate_monotonic_period( watchdog_period_id, WATCHDOG_PERIOD );
+        watchdog_reload();
+        i = i + 1;
+        if ( i == 10 )
+        {
             i = 0;
+            j = j + 1;
+            PRINTF1("%d\n", j)
         }
-        else i++;
-        j++;
+        if (j == 3 )
+        {
+            status = rtems_task_delete(RTEMS_SELF);
+        }
     }
 }
 
@@ -192,20 +275,6 @@ rtems_task hous_task(rtems_task_argument argument)
     set_hk_lfr_reset_cause( POWER_ON );
 
     while(1){ // launch the rate monotonic task
-//        //*******
-//        // GPIO 3
-//        struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
-//        if ( (grgpio_regs->io_port_output_register & 0x07) == 0x02 )    // [010]
-//        {
-//            grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8; // [1111 1000]
-//        }
-//        else
-//        {
-//            grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02; // [0000 0010]
-//        }
-        //
-        //*******
-
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
         if ( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "in HOUS *** ERR period: %d\n", status);
@@ -224,6 +293,8 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
 
             spacewire_update_statistics();
+
+            hk_lfr_le_me_he_update();
 
             housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
             housekeeping_packet.hk_lfr_q_rv_fifo_size_max = hk_lfr_q_rv_fifo_size_max;
@@ -269,7 +340,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[12] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
+    char *DumbMessages[13] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                         "in DUMB *** f3 buffer changed",                                        // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
@@ -280,7 +351,8 @@ rtems_task dumb_task( rtems_task_argument unused )
                         "VHDL ERR *** spectral matrix",                                         // RTEMS_EVENT_8
                         "tick",                                                                 // RTEMS_EVENT_9
                         "VHDL ERR *** waveform picker",                                         // RTEMS_EVENT_10
-                        "VHDL ERR *** unexpected ready matrix values"                           // RTEMS_EVENT_11
+                        "VHDL ERR *** unexpected ready matrix values",                          // RTEMS_EVENT_11
+                        "WATCHDOG timer"                                                        // RTEMS_EVENT_12
     };
 
     BOOT_PRINTF("in DUMB *** \n")
@@ -288,7 +360,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
                             | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7
-                            | RTEMS_EVENT_8 | RTEMS_EVENT_9,
+                            | RTEMS_EVENT_8 | RTEMS_EVENT_9 | RTEMS_EVENT_12,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -297,11 +369,9 @@ rtems_task dumb_task( rtems_task_argument unused )
             {
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
-                if (i==8)
+                if (i==12)
                 {
-                }
-                if (i==10)
-                {
+                    PRINTF1("%s\n", DumbMessages[12])
                 }
             }
         }
@@ -581,4 +651,48 @@ void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
 {
     housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1]
             | (lfr_reset_cause & 0x07 );   // [0000 0111]
+}
+
+void hk_lfr_le_me_he_update()
+{
+    unsigned int hk_lfr_le_cnt;
+    unsigned int hk_lfr_me_cnt;
+    unsigned int hk_lfr_he_cnt;
+
+    hk_lfr_le_cnt = 0;
+    hk_lfr_me_cnt = 0;
+    hk_lfr_he_cnt = 0;
+
+    //update the low severity error counter
+    hk_lfr_le_cnt =
+            housekeeping_packet.hk_lfr_dpu_spw_parity
+            + housekeeping_packet.hk_lfr_dpu_spw_disconnect
+            + housekeeping_packet.hk_lfr_dpu_spw_escape
+            + housekeeping_packet.hk_lfr_dpu_spw_credit
+            + housekeeping_packet.hk_lfr_dpu_spw_write_sync
+            + housekeeping_packet.hk_lfr_dpu_spw_rx_ahb
+            + housekeeping_packet.hk_lfr_dpu_spw_tx_ahb
+            + housekeeping_packet.hk_lfr_time_timecode_ctr;
+
+    //update the medium severity error counter
+    hk_lfr_me_cnt =
+            housekeeping_packet.hk_lfr_dpu_spw_early_eop
+            + housekeeping_packet.hk_lfr_dpu_spw_invalid_addr
+            + housekeeping_packet.hk_lfr_dpu_spw_eep
+            + housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
+
+    //update the high severity error counter
+    hk_lfr_he_cnt = 0;
+
+    // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
+    // LE
+    housekeeping_packet.hk_lfr_le_cnt[0] = (unsigned char) ((hk_lfr_le_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (hk_lfr_le_cnt & 0x00ff);
+    // ME
+    housekeeping_packet.hk_lfr_me_cnt[0] = (unsigned char) ((hk_lfr_me_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (hk_lfr_me_cnt & 0x00ff);
+    // HE
+    housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & 0x00ff);
+
 }

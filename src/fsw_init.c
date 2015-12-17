@@ -121,7 +121,7 @@ rtems_task Init( rtems_task_argument ignored )
     PRINTF1("** %d.", SW_VERSION_N1)
     PRINTF1("%d."   , SW_VERSION_N2)
     PRINTF1("%d."   , SW_VERSION_N3)
-    PRINTF1("%d             **\n", SW_VERSION_N4)
+    PRINTF1("%d            **\n", SW_VERSION_N4)
 
     vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
     PRINTF("** VHDL                **\n")
@@ -139,9 +139,10 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
     pa_bia_status_info = 0x00;
+    update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization
-    WFP_init_rings();      // initialize the waveform rings
+    WFP_init_rings();  LEON_Clear_interrupt( IRQ_SPARC_GPTIMER_WATCHDOG );    // initialize the waveform rings
     WFP_reset_current_ring_nodes();
     reset_waveform_picker_regs();
 
@@ -221,14 +222,6 @@ rtems_task Init( rtems_task_argument ignored )
         PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
-    //******************************
-    // <SPECTRAL MATRICES SIMULATOR>
-    LEON_Mask_interrupt( IRQ_SM_SIMULATOR );
-    configure_timer((gptimer_regs_t*) REGS_ADDR_GPTIMER, TIMER_SM_SIMULATOR, CLKDIV_SM_SIMULATOR,
-                    IRQ_SPARC_SM_SIMULATOR, spectral_matrices_isr_simu );
-    // </SPECTRAL MATRICES SIMULATOR>
-    //*******************************
-
     // configure IRQ handling for the waveform picker unit
     status = rtems_interrupt_catch( waveforms_isr,
                                    IRQ_SPARC_WAVEFORM_PICKER,
@@ -250,14 +243,6 @@ rtems_task Init( rtems_task_argument ignored )
     BOOT_PRINTF("delete INIT\n")
 
     set_hk_lfr_sc_potential_flag( true );
-
-    //*********************************
-    // init GPIO for trigger generation
-    struct grgpio_regs_str *grgpio_regs = (struct grgpio_regs_str *) REGS_ADDR_GRGPIO;
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x08; // [0000 1000], 0 = output disabled, 1 = output enabled
-    grgpio_regs->io_port_direction_register =
-            grgpio_regs->io_port_direction_register | 0x04; // [0000 0100], 0 = output disabled, 1 = output enabled
 
     status = rtems_task_delete(RTEMS_SELF);
 
@@ -307,7 +292,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
     Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
-    Task_name[TASKID_STAT] = rtems_build_name( 'S', 'T', 'A', 'T' );
+    Task_name[TASKID_LOAD] = rtems_build_name( 'L', 'O', 'A', 'D' );
     Task_name[TASKID_AVF0] = rtems_build_name( 'A', 'V', 'F', '0' );
     Task_name[TASKID_SWBD] = rtems_build_name( 'S', 'W', 'B', 'D' );
     Task_name[TASKID_WFRM] = rtems_build_name( 'W', 'F', 'R', 'M' );
@@ -489,12 +474,12 @@ int create_all_tasks( void ) // create all tasks which run in the software
 
     //*****
     // MISC
-    if (status == RTEMS_SUCCESSFUL) // STAT
+    if (status == RTEMS_SUCCESSFUL) // LOAD
     {
         status = rtems_task_create(
-            Task_name[TASKID_STAT], TASK_PRIORITY_STAT, RTEMS_MINIMUM_STACK_SIZE,
+            Task_name[TASKID_LOAD], TASK_PRIORITY_LOAD, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_STAT]
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_LOAD]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // DUMB
@@ -675,11 +660,11 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
             BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
         }
     }
-    if (status == RTEMS_SUCCESSFUL)     // STAT
+    if (status == RTEMS_SUCCESSFUL)     // LOAD
     {
-        status = rtems_task_start( Task_id[TASKID_STAT], stat_task, 1 );
+        status = rtems_task_start( Task_id[TASKID_LOAD], load_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_STAT\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n")
         }
     }
 

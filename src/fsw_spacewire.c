@@ -22,10 +22,6 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF;
 Header_TM_LFR_SCIENCE_SWF_t headerSWF;
 Header_TM_LFR_SCIENCE_ASM_t headerASM;
 
-extern struct grgpio_regs_str *grgpio_regs;
-#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
-#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
-
 //***********
 // RTEMS TASK
 rtems_task spiq_task(rtems_task_argument unused)
@@ -93,7 +89,7 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else                                // [3.b] the link is not in run state, go in STANDBY mode
         {
-            status = enter_mode( LFR_MODE_STANDBY, 0 );
+            status = enter_mode_standby();
             if ( status != RTEMS_SUCCESSFUL ) {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }
@@ -664,8 +660,6 @@ void spacewire_update_statistics( void )
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
 {
-    OUTPUT_1;
-
     // a valid timecode has been received, write it in the HK report
     unsigned int *grspwPtr;
     unsigned char timecodeCtr;
@@ -698,21 +692,6 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
         {
             housekeeping_packet.hk_lfr_time_timecode_ctr = housekeeping_packet.hk_lfr_time_timecode_ctr + 1;
         }
-    }
-
-    OUTPUT_0;
-}
-
-rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
-{
-    int linkStatus;
-    rtems_status_code status;
-
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
-
-    if ( linkStatus == 5) {
-        PRINTF("in spacewire_reset_link *** link is running\n")
-        status = RTEMS_SUCCESSFUL;
     }
 }
 

@@ -12,6 +12,9 @@
 
 #include "lfr_cpu_usage_report.h"
 
+extern unsigned int lastValidEnterModeTime;
+extern enum lfr_transition_type_t lfrTransitionType;
+
 //****
 // ISR
 rtems_isr commutation_isr1( rtems_vector_number vector );
@@ -33,14 +36,21 @@ int action_update_time( ccsdsTelecommandPacket_t *TC);
 // mode transition
 int check_mode_value( unsigned char requestedMode );
 int check_mode_transition( unsigned char requestedMode );
+void update_last_valid_transition_date( unsigned int transitionCoarseTime );
 int check_transition_date( unsigned int transitionCoarseTime );
+int stop_spectral_matrices( void );
 int stop_current_mode( void );
-int enter_mode( unsigned char mode , unsigned int transitionCoarseTime );
+int enter_mode_standby( void );
+int enter_mode_normal( unsigned int transitionCoarseTime );
+int enter_mode_burst( unsigned int transitionCoarseTime );
+int enter_mode_sbm1( unsigned int transitionCoarseTime );
+int enter_mode_sbm2( unsigned int transitionCoarseTime );
 int restart_science_tasks( unsigned char lfrRequestedMode );
-int suspend_science_tasks();
+int restart_asm_tasks(unsigned char lfrRequestedMode );
+int suspend_science_tasks(void);
+int suspend_asm_tasks( void );
 void launch_waveform_picker( unsigned char mode , unsigned int transitionCoarseTime );
 void launch_spectral_matrix( void );
-void launch_spectral_matrix_simu( void );
 void set_sm_irq_onNewMatrix( unsigned char value );
 void set_sm_irq_onError( unsigned char value );
 

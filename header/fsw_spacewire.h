@@ -44,7 +44,6 @@ void spw_send_asm_f2( ring_node *ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t 
 void spw_send_k_dump( ring_node *ring_node_to_send );
 
 void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc );
-rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data );
 
 void (*grspw_timecode_callback) ( void *pDev, void *regs, int minor, unsigned int tc );
 

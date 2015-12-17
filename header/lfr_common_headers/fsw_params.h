@@ -9,6 +9,16 @@
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
+enum lfr_transition_type_t{
+    TRANSITION_NOT_SPECIFIC,
+    TRANSITION_NORM_TO_S1,
+    TRANSITION_NORM_TO_S2,
+    TRANSITION_S1_TO_NORM,
+    TRANSITION_S2_TO_NORM,
+    TRANSITION_S1_TO_S2,
+    TRANSITION_S2_TO_S1
+};
+
 typedef struct ring_node
 {
     struct ring_node *previous;
@@ -63,7 +73,7 @@ typedef struct ring_node
 #define RTEMS_EVENT_MODE_BURST          RTEMS_EVENT_2
 #define RTEMS_EVENT_MODE_SBM1           RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2           RTEMS_EVENT_4
-#define RTEMS_EVENT_MODE_SBM2_WFRM      RTEMS_EVENT_5
+#define RTEMS_EVENT_MODE_NORM_S1_S2     RTEMS_EVENT_5
 #define RTEMS_EVENT_NORM_BP1_F0         RTEMS_EVENT_6
 #define RTEMS_EVENT_NORM_BP2_F0         RTEMS_EVENT_7
 #define RTEMS_EVENT_NORM_ASM_F0         RTEMS_EVENT_8   // ASM only in NORM mode
@@ -84,6 +94,7 @@ typedef struct ring_node
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
+#define DEFAULT_LAST_VALID_TRANSITION_DATE 0x00
 // COMMON
 #define DEFAULT_SY_LFR_COMMON0 0x00
 #define DEFAULT_SY_LFR_COMMON1 0x20 // default value bw sp0 sp1 r0 r1 r2 = 1 0 0 0 0 0
@@ -136,8 +147,8 @@ typedef struct ring_node
 
 //**********
 // IRQ LINES
-#define IRQ_SM_SIMULATOR 9
-#define IRQ_SPARC_SM_SIMULATOR 0x19     // see sparcv8.pdf p.76 for interrupt levels
+#define IRQ_GPTIMER_WATCHDOG 9
+#define IRQ_SPARC_GPTIMER_WATCHDOG 0x19     // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_WAVEFORM_PICKER 14
 #define IRQ_SPARC_WAVEFORM_PICKER 0x1e  // see sparcv8.pdf p.76 for interrupt levels
 #define IRQ_SPECTRAL_MATRIX 6
@@ -145,8 +156,9 @@ typedef struct ring_node
 
 //*****
 // TIME
-#define CLKDIV_SM_SIMULATOR (10416 - 1)     // 10 ms => nominal is 1/96 = 0.010416667, 10417 - 1 = 10416
-#define TIMER_SM_SIMULATOR 1
+#define CLKDIV_WATCHDOG     (1100000 - 1)       // 1.1s => 1100000
+#define TIMER_WATCHDOG      1
+#define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
@@ -162,7 +174,7 @@ typedef struct ring_node
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
 #define TASKID_SPIQ 3
-#define TASKID_STAT 4
+#define TASKID_LOAD 4
 #define TASKID_AVF0 5
 #define TASKID_SWBD 6
 #define TASKID_WFRM 7
@@ -196,8 +208,8 @@ typedef struct ring_node
 #define TASK_PRIORITY_PRC1 100
 #define TASK_PRIORITY_AVF2 110
 #define TASK_PRIORITY_PRC2 110
-#define TASK_PRIORITY_STAT 200
 #define TASK_PRIORITY_DUMB 200
+#define TASK_PRIORITY_LOAD 220
 
 #define MSG_QUEUE_COUNT_RECV  10
 #define MSG_QUEUE_COUNT_SEND  50

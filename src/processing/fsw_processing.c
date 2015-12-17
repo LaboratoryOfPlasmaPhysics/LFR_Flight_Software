@@ -16,10 +16,6 @@ unsigned int nb_sm_f0_aux_f1;
 unsigned int nb_sm_f1;
 unsigned int nb_sm_f0_aux_f2;
 
-extern struct grgpio_regs_str *grgpio_regs;
-#define OUTPUT_1 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register & 0xf8;
-#define OUTPUT_0 grgpio_regs->io_port_output_register = grgpio_regs->io_port_output_register | 0x02;
-
 //************************
 // spectral matrices rings
 ring_node sm_ring_f0[ NB_RING_NODES_SM_F0 ];
@@ -60,8 +56,6 @@ ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
 
 void spectral_matrices_isr_f0( unsigned char statusReg )
 {
-//    OUTPUT_1;
-
     unsigned char status;
     rtems_status_code status_code;
     ring_node *full_ring_node;
@@ -116,13 +110,10 @@ void spectral_matrices_isr_f0( unsigned char statusReg )
         spectral_matrix_regs->status = 0x02;   // [0000 0010]
         break;
     }
-//    OUTPUT_0;
 }
 
 void spectral_matrices_isr_f1( unsigned char statusReg )
 {
-//    OUTPUT_1;
-
     rtems_status_code status_code;
     unsigned char status;
     ring_node *full_ring_node;
@@ -177,14 +168,10 @@ void spectral_matrices_isr_f1( unsigned char statusReg )
         spectral_matrix_regs->status = 0x08;   // [1000 0000]
         break;
     }
-
-//    OUTPUT_0;
 }
 
 void spectral_matrices_isr_f2( unsigned char statusReg )
 {
-//    OUTPUT_1;
-
     unsigned char status;
     rtems_status_code status_code;
 
@@ -224,8 +211,6 @@ void spectral_matrices_isr_f2( unsigned char statusReg )
         }
         break;
     }
-
-//    OUTPUT_0;
 }
 
 void spectral_matrix_isr_error_handler( unsigned char statusReg )
@@ -250,8 +235,6 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     unsigned char statusReg;
 
-//    OUTPUT_1;
-
     statusReg = spectral_matrix_regs->status;
 
     spectral_matrices_isr_f0( statusReg );
@@ -261,58 +244,6 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     spectral_matrices_isr_f2( statusReg );
 
     spectral_matrix_isr_error_handler( statusReg );
-
-//    OUTPUT_0;
-
-}
-
-rtems_isr spectral_matrices_isr_simu( rtems_vector_number vector )
-{
-    rtems_status_code status_code;
-
-    //***
-    // F0
-    nb_sm_f0 = nb_sm_f0 + 1;
-    if (nb_sm_f0 == NB_SM_BEFORE_AVF0 )
-    {
-        ring_node_for_averaging_sm_f0 = current_ring_node_sm_f0;
-        if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_sm_f0 = 0;
-    }
-
-    //***
-    // F1
-    nb_sm_f0_aux_f1 = nb_sm_f0_aux_f1 + 1;
-    if (nb_sm_f0_aux_f1 == 6)
-    {
-        nb_sm_f0_aux_f1 = 0;
-        nb_sm_f1 = nb_sm_f1 + 1;
-    }
-    if (nb_sm_f1 == NB_SM_BEFORE_AVF1 )
-    {
-        ring_node_for_averaging_sm_f1 = current_ring_node_sm_f1;
-        if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-        nb_sm_f1 = 0;
-    }
-
-    //***
-    // F2
-    nb_sm_f0_aux_f2 = nb_sm_f0_aux_f2 + 1;
-    if (nb_sm_f0_aux_f2 == 96)
-    {
-        nb_sm_f0_aux_f2 = 0;
-        ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2;
-        if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
-        {
-            status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
-        }
-    }
 }
 
 //******************
@@ -452,6 +383,34 @@ void BP_send(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
     if (status != RTEMS_SUCCESSFUL)
     {
         PRINTF1("ERR *** in BP_send *** ERR %d\n", (int) status)
+    }
+}
+
+void BP_send_s1_s2(char *data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid )
+{
+    /** This function is used to send the BP paquets when needed.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return void
+     *
+     * SBM1 and SBM2 paquets are sent depending on the type of the LFR mode transition.
+     * BURST paquets are sent everytime.
+     *
+     */
+
+    rtems_status_code status;
+
+    // SEND PACKET
+    // before lastValidTransitionDate, the data are drops even if they are ready
+    // this guarantees that no SBM packets will be received before the requestion enter mode time
+    if ( time_management_regs->coarse_time >= lastValidEnterModeTime)
+    {
+        status =  rtems_message_queue_send( queue_id, data, nbBytesToSend);
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            PRINTF1("ERR *** in BP_send *** ERR %d\n", (int) status)
+        }
     }
 }
 
