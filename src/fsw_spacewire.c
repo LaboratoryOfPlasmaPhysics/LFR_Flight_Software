@@ -695,19 +695,6 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     }
 }
 
-rtems_timer_service_routine user_routine( rtems_id timer_id, void *user_data )
-{
-    int linkStatus;
-    rtems_status_code status;
-
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
-
-    if ( linkStatus == 5) {
-        PRINTF("in spacewire_reset_link *** link is running\n")
-        status = RTEMS_SUCCESSFUL;
-    }
-}
-
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
 {
     header->targetLogicalAddress    = CCSDS_DESTINATION_ID;

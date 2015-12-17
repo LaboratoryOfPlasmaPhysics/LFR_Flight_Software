@@ -58,6 +58,7 @@ spectral_matrix_regs_t          *spectral_matrix_regs   = (spectral_matrix_regs_
 // MODE PARAMETERS
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 struct param_local_str param_local;
+unsigned int lastValidTransitionDate;
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;

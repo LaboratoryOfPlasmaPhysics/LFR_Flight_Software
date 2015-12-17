@@ -12,6 +12,8 @@
 
 #include "lfr_cpu_usage_report.h"
 
+extern unsigned int lastValidTransitionDate;
+
 //****
 // ISR
 rtems_isr commutation_isr1( rtems_vector_number vector );
@@ -33,6 +35,7 @@ int action_update_time( ccsdsTelecommandPacket_t *TC);
 // mode transition
 int check_mode_value( unsigned char requestedMode );
 int check_mode_transition( unsigned char requestedMode );
+void update_last_valid_transition_date( unsigned int transitionCoarseTime );
 int check_transition_date( unsigned int transitionCoarseTime );
 int stop_spectral_matrices( void );
 int stop_current_mode( void );

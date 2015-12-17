@@ -139,6 +139,7 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
     pa_bia_status_info = 0x00;
+    update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization
     WFP_init_rings();  LEON_Clear_interrupt( IRQ_SPARC_GPTIMER_WATCHDOG );    // initialize the waveform rings

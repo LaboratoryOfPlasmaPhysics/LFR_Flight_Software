@@ -179,6 +179,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     {
         send_tm_lfr_tc_exe_inconsistent( TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode );
     }
+
     else                                // the mode value is valid, check the transition
     {
         status = check_mode_transition(requestedMode);
@@ -204,6 +205,8 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     if ( status == LFR_SUCCESSFUL )     // the date is valid, enter the mode
     {
         PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
+
+
 
         switch(requestedMode)
         {
@@ -441,6 +444,11 @@ int check_mode_transition( unsigned char requestedMode )
     return status;
 }
 
+void update_last_valid_transition_date(unsigned int transitionCoarseTime)
+{
+    lastValidTransitionDate = transitionCoarseTime;
+}
+
 int check_transition_date( unsigned int transitionCoarseTime )
 {
     int status;
@@ -581,6 +589,21 @@ int stop_current_mode( void )
 
 int enter_mode_standby()
 {
+    /** This function is used to put LFR in the STANDBY mode.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * The STANDBY mode does not depends on a specific transition date, the effect of the TC_LFR_ENTER_MODE
+     * is immediate.
+     *
+     */
+
     int status;
 
     status = stop_current_mode();       // STOP THE CURRENT MODE
@@ -599,6 +622,21 @@ int enter_mode_standby()
 
 int enter_mode_normal( unsigned int transitionCoarseTime )
 {
+    /** This function is used to start the NORMAL mode.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * The way the NORMAL mode is started depends on the LFR current mode. If LFR is in SBM1 or SBM2,
+     * the snapshots are not restarted, only ASM, BP and CWF data generation are affected.
+     *
+     */
+
     int status;
 
 #ifdef PRINT_TASK_STATISTICS
@@ -627,12 +665,12 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        restart_asm_activities( LFR_MODE_NORMAL );
-        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
+        status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_SBM2:
-        restart_asm_activities( LFR_MODE_NORMAL );
-        status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
+        status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
     default:
         break;
@@ -649,6 +687,21 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
 
 int enter_mode_burst( unsigned int transitionCoarseTime )
 {
+    /** This function is used to start the BURST mode.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * The way the BURST mode is started does not depend on the LFR current mode.
+     *
+     */
+
+
     int status;
 
 #ifdef PRINT_TASK_STATISTICS
@@ -674,6 +727,22 @@ int enter_mode_burst( unsigned int transitionCoarseTime )
 
 int enter_mode_sbm1( unsigned int transitionCoarseTime )
 {
+    /** This function is used to start the SBM1 mode.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * The way the SBM1 mode is started depends on the LFR current mode. If LFR is in NORMAL or SBM2,
+     * the snapshots are not restarted, only ASM, BP and CWF data generation are affected. In other
+     * cases, the acquisition is completely restarted.
+     *
+     */
+
     int status;
 
 #ifdef PRINT_TASK_STATISTICS
@@ -724,6 +793,22 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
 
 int enter_mode_sbm2( unsigned int transitionCoarseTime )
 {
+    /** This function is used to start the SBM2 mode.
+     *
+     * @param transitionCoarseTime is the requested transition time contained in the TC_LFR_ENTER_MODE
+     *
+     * @return RTEMS directive status codes:
+     * - RTEMS_SUCCESSFUL - task restarted successfully
+     * - RTEMS_INVALID_ID - task id invalid
+     * - RTEMS_INCORRECT_STATE - task never started
+     * - RTEMS_ILLEGAL_ON_REMOTE_OBJECT - cannot restart remote task
+     *
+     * The way the SBM2 mode is started depends on the LFR current mode. If LFR is in NORMAL or SBM1,
+     * the snapshots are not restarted, only ASM, BP and CWF data generation are affected. In other
+     * cases, the acquisition is completely restarted.
+     *
+     */
+
     int status;
 
 #ifdef PRINT_TASK_STATISTICS

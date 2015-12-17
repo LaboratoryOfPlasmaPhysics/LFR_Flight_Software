@@ -84,6 +84,7 @@ typedef struct ring_node
 
 //****************************
 // LFR DEFAULT MODE PARAMETERS
+#define DEFAULT_LAST_VALID_TRANSITION_DATE 0x00
 // COMMON
 #define DEFAULT_SY_LFR_COMMON0 0x00
 #define DEFAULT_SY_LFR_COMMON1 0x20 // default value bw sp0 sp1 r0 r1 r2 = 1 0 0 0 0 0

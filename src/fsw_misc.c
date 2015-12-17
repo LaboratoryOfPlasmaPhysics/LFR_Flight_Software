@@ -294,6 +294,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
+            hk_lfr_le_me_he_update();
+
             housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
             housekeeping_packet.hk_lfr_q_rv_fifo_size_max = hk_lfr_q_rv_fifo_size_max;
             housekeeping_packet.hk_lfr_q_p0_fifo_size_max = hk_lfr_q_p0_fifo_size_max;
@@ -649,4 +651,48 @@ void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
 {
     housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1]
             | (lfr_reset_cause & 0x07 );   // [0000 0111]
+}
+
+void hk_lfr_le_me_he_update()
+{
+    unsigned int hk_lfr_le_cnt;
+    unsigned int hk_lfr_me_cnt;
+    unsigned int hk_lfr_he_cnt;
+
+    hk_lfr_le_cnt = 0;
+    hk_lfr_me_cnt = 0;
+    hk_lfr_he_cnt = 0;
+
+    //update the low severity error counter
+    hk_lfr_le_cnt =
+            housekeeping_packet.hk_lfr_dpu_spw_parity
+            + housekeeping_packet.hk_lfr_dpu_spw_disconnect
+            + housekeeping_packet.hk_lfr_dpu_spw_escape
+            + housekeeping_packet.hk_lfr_dpu_spw_credit
+            + housekeeping_packet.hk_lfr_dpu_spw_write_sync
+            + housekeeping_packet.hk_lfr_dpu_spw_rx_ahb
+            + housekeeping_packet.hk_lfr_dpu_spw_tx_ahb
+            + housekeeping_packet.hk_lfr_time_timecode_ctr;
+
+    //update the medium severity error counter
+    hk_lfr_me_cnt =
+            housekeeping_packet.hk_lfr_dpu_spw_early_eop
+            + housekeeping_packet.hk_lfr_dpu_spw_invalid_addr
+            + housekeeping_packet.hk_lfr_dpu_spw_eep
+            + housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
+
+    //update the high severity error counter
+    hk_lfr_he_cnt = 0;
+
+    // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
+    // LE
+    housekeeping_packet.hk_lfr_le_cnt[0] = (unsigned char) ((hk_lfr_le_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (hk_lfr_le_cnt & 0x00ff);
+    // ME
+    housekeeping_packet.hk_lfr_me_cnt[0] = (unsigned char) ((hk_lfr_me_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (hk_lfr_me_cnt & 0x00ff);
+    // HE
+    housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & 0xff00) >> 8);
+    housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & 0x00ff);
+
 }
