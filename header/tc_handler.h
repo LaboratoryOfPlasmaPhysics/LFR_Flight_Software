@@ -13,7 +13,6 @@
 #include "lfr_cpu_usage_report.h"
 
 extern unsigned int lastValidEnterModeTime;
-extern enum lfr_transition_type_t lfrTransitionType;
 
 //****
 // ISR

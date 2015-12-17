@@ -444,7 +444,7 @@ int check_mode_transition( unsigned char requestedMode )
     return status;
 }
 
-void update_last_valid_transition_date(unsigned int transitionCoarseTime)
+void update_last_valid_transition_date( unsigned int transitionCoarseTime )
 {
     lastValidEnterModeTime = transitionCoarseTime;
 }
@@ -607,7 +607,6 @@ int enter_mode_standby()
     int status;
 
     status = stop_current_mode();       // STOP THE CURRENT MODE
-    lfrTransitionType = TRANSITION_NOT_SPECIFIC;
 
 #ifdef PRINT_TASK_STATISTICS
     rtems_cpu_usage_report();
@@ -649,7 +648,6 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
     switch( lfrCurrentMode )
     {
     case LFR_MODE_STANDBY:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = restart_science_tasks( LFR_MODE_NORMAL ); // restart science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
         {
@@ -658,7 +656,6 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_BURST:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = stop_current_mode();           // stop the current mode
         status = restart_science_tasks( LFR_MODE_NORMAL ); // restart the science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
@@ -668,12 +665,10 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        lfrTransitionType = TRANSITION_S1_TO_NORM;
         restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_SBM2:
-        lfrTransitionType = TRANSITION_S2_TO_NORM;
         restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
@@ -713,7 +708,6 @@ int enter_mode_burst( unsigned int transitionCoarseTime )
     rtems_cpu_usage_reset();
 #endif
 
-    lfrTransitionType = TRANSITION_NOT_SPECIFIC;
     status = stop_current_mode();           // stop the current mode
     status = restart_science_tasks( LFR_MODE_BURST ); // restart the science tasks
     if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
@@ -760,7 +754,6 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
     switch( lfrCurrentMode )
     {
     case LFR_MODE_STANDBY:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = restart_science_tasks( LFR_MODE_SBM1 ); // restart science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
         {
@@ -769,12 +762,10 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:                       // lfrCurrentMode will be updated after the execution of close_action
-        lfrTransitionType = TRANSITION_NORM_TO_S1;
         restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;
         break;
     case LFR_MODE_BURST:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = stop_current_mode();           // stop the current mode
         status = restart_science_tasks( LFR_MODE_SBM1 ); // restart the science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
@@ -784,7 +775,6 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM2:
-        lfrTransitionType = TRANSITION_S2_TO_S1;
         restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
@@ -830,7 +820,6 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
     switch( lfrCurrentMode )
     {
     case LFR_MODE_STANDBY:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = restart_science_tasks( LFR_MODE_SBM2 ); // restart science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
         {
@@ -839,12 +828,10 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:
-        lfrTransitionType = TRANSITION_NORM_TO_S2;
         restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_BURST:
-        lfrTransitionType = TRANSITION_NOT_SPECIFIC;
         status = stop_current_mode();           // stop the current mode
         status = restart_science_tasks( LFR_MODE_SBM2 ); // restart the science tasks
         if (status == RTEMS_SUCCESSFUL)         // relaunch spectral_matrix and waveform_picker modules
@@ -854,7 +841,6 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        lfrTransitionType = TRANSITION_S1_TO_S2;
         restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
         break;
