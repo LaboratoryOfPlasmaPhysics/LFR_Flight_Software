@@ -1255,7 +1255,9 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
 
     if (transitionCoarseTime == 0)
     {
-        waveform_picker_regs->start_date = time_management_regs->coarse_time;
+        // instant transition means transition on the next valid date
+        // this is mandatory to have a good snapshot period a a good correction of the snapshot period
+        waveform_picker_regs->start_date = time_management_regs->coarse_time + 1;
     }
     else
     {

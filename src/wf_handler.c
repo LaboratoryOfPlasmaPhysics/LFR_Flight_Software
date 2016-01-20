@@ -321,14 +321,11 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     rtems_event_set event_out;
     rtems_id queue_id;
     rtems_status_code status;
-    bool resynchronisationEngaged;
     ring_node *ring_node_swf1_extracted_ptr;
     ring_node *ring_node_swf2_extracted_ptr;
 
     ring_node_swf1_extracted_ptr = (ring_node *) &ring_node_swf1_extracted;
     ring_node_swf2_extracted_ptr = (ring_node *) &ring_node_swf2_extracted;
-
-    resynchronisationEngaged = false;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -342,18 +339,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         // wait for an RTEMS_EVENT
         rtems_event_receive(RTEMS_EVENT_MODE_NORMAL,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        if(resynchronisationEngaged == false)
-        {   // engage resynchronisation
-            snapshot_resynchronization( (unsigned char *)  &ring_node_to_send_swf_f0->coarseTime );
-            resynchronisationEngaged = true;
-        }
-        else
-        {   // reset delta_snapshot to the nominal value
-            PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n");
-            set_wfp_delta_snapshot();
-            resynchronisationEngaged = false;
-        }
-        //
+
+        snapshot_resynchronization( (unsigned char *)  &ring_node_to_send_swf_f0->coarseTime );
+
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n");
@@ -520,9 +508,9 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         PRINTF1("in CWF1 *** ERR get_message_queue_id_send %d\n", status)
     }
 
-    BOOT_PRINTF("in CWF1 ***\n")
+    BOOT_PRINTF("in CWF1 ***\n");
 
-            while(1){
+    while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2,
                              RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
@@ -905,15 +893,15 @@ void snapshot_resynchronization( unsigned char *timePtr )
     // which tick is the closest
     if (deltaPreviousTick > deltaNextTick)
     {
-        // deltaNext is in [ms]
-        deltaTickInF2 = floor( (deltaNext_ms * 256. / 1000.) );
+        // the snapshot center is just before the second => increase delta_snapshot
+        deltaTickInF2 = ceil( (deltaNext_ms * 256. / 1000.) );
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + 1 * deltaTickInF2;
         PRINTF2("correction of = + %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
     else
     {
-        // deltaPrevious is in [ms]
-        deltaTickInF2 = floor( (deltaPrevious_ms * 256. / 1000.) );
+        // the snapshot center is just after the second => decrease delat_snapshot
+        deltaTickInF2 = ceil( (deltaPrevious_ms * 256. / 1000.) );
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - 1 * deltaTickInF2;
         PRINTF2("correction of = - %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
