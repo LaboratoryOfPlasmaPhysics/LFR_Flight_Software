@@ -215,10 +215,12 @@ rtems_task load_task(rtems_task_argument argument)
             j = j + 1;
             PRINTF1("%d\n", j)
         }
+#ifdef DEBUG_WATCHDOG
         if (j == 3 )
         {
             status = rtems_task_delete(RTEMS_SELF);
         }
+#endif
     }
 }
 

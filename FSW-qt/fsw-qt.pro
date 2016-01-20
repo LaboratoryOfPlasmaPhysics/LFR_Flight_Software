@@ -2,7 +2,7 @@ TEMPLATE = app
 # CONFIG += console v8 sim
 # CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
 # lpp_dpu_destid
-CONFIG += console verbose lpp_dpu_destid cpu_usage_report stack_report
+CONFIG += console verbose lpp_dpu_destid
 CONFIG -= qt
 
 include(./sparc.pri)
@@ -52,6 +52,10 @@ contains( CONFIG, stack_report ) {
 
 contains( CONFIG, boot_messages ) {
     DEFINES += BOOT_MESSAGES
+}
+
+contains( CONFIG, debug_watchdog ) {
+    DEFINES += DEBUG_WATCHDOG
 }
 
 #doxygen.target = doxygen

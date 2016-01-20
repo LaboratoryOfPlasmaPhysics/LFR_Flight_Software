@@ -283,20 +283,20 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
     // STANDBY
     case LFR_MODE_STANDBY:
         break;
-    //**************************
-    // LFR NORMAL, SBM1 and SBM2
+        //**************************
+        // LFR NORMAL, SBM1 and SBM2
     case LFR_MODE_NORMAL:
     case LFR_MODE_SBM1:
     case LFR_MODE_SBM2:
         waveform_isr_normal_sbm1_sbm2();
         break;
-    //******
-    // BURST
+        //******
+        // BURST
     case LFR_MODE_BURST:
         waveforms_isr_burst();
         break;
-    //********
-    // DEFAULT
+        //********
+        // DEFAULT
     default:
         break;
     }
@@ -333,12 +333,12 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in WFRM *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF1("in WFRM *** ERR get_message_queue_id_send %d\n", status);
     }
 
-    BOOT_PRINTF("in WFRM ***\n")
+    BOOT_PRINTF("in WFRM ***\n");
 
-            while(1){
+    while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive(RTEMS_EVENT_MODE_NORMAL,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
@@ -349,15 +349,15 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
         }
         else
         {   // reset delta_snapshot to the nominal value
-            PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n")
-                    set_wfp_delta_snapshot();
+            PRINTF("no resynchronisation, reset delta_snapshot to the nominal value\n");
+            set_wfp_delta_snapshot();
             resynchronisationEngaged = false;
         }
         //
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
-            DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n")
-                    ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
+            DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n");
+            ring_node_to_send_swf_f0->sid           = SID_NORM_SWF_F0;
             ring_node_swf1_extracted_ptr->sid       = SID_NORM_SWF_F1;
             ring_node_swf2_extracted_ptr->sid       = SID_NORM_SWF_F2;
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,     sizeof( ring_node* ) );
@@ -459,7 +459,7 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
 
     BOOT_PRINTF("in CWF2 ***\n")
 
-    while(1){
+            while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
                              RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
@@ -818,11 +818,11 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     // (4) search the ring_node with the acquisition time <= acquisitionTime_asLong
     for (i=0; i<nb_ring_nodes; i++)
     {
-        PRINTF1("%d ... ", i)
+        //PRINTF1("%d ... ", i);
                 bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
-            PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong)
+            //PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong);
                     break;
         }
         ring_node_to_send = ring_node_to_send->previous;
@@ -831,7 +831,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     // (5) compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> 16;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
-    PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong)
+    //PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong);
 
             // (6) compute the final acquisition time
             acquisitionTime_asLong = bufferAcquisitionTime_asLong +
@@ -882,9 +882,10 @@ void snapshot_resynchronization( unsigned char *timePtr )
     unsigned long long int deltaPreviousTick;
     unsigned long long int deltaNextTick;
     unsigned int deltaTickInF2;
-    double deltaPrevious;
-    double deltaNext;
+    double deltaPrevious_ms;
+    double deltaNext_ms;
 
+    // get acquisition time in fine time ticks
     acquisitionTime = get_acquisition_time( timePtr );
 
     // compute center time
@@ -895,24 +896,26 @@ void snapshot_resynchronization( unsigned char *timePtr )
     deltaPreviousTick   = centerTime - previousTick;
     deltaNextTick       = nextTick - centerTime;
 
-    deltaPrevious       = ((double) deltaPreviousTick) / 65536. * 1000.;
-    deltaNext           = ((double) deltaNextTick) / 65536. * 1000.;
+    deltaPrevious_ms    = ((double) deltaPreviousTick) / 65536. * 1000.;
+    deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
 
-    PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious, deltaNext)
-            PRINTF2("delta previous = %llu, delta next = %llu\n", deltaPreviousTick, deltaNextTick)
+    PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious_ms, deltaNext_ms);
+    PRINTF2("delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n", deltaPreviousTick, deltaNextTick);
 
-            // which tick is the closest
-            if (deltaPreviousTick > deltaNextTick)
+    // which tick is the closest
+    if (deltaPreviousTick > deltaNextTick)
     {
-        deltaTickInF2 = floor( (deltaNext * 256. / 1000.) ); // the division by 2 is important here
-        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
-        PRINTF1("correction of = + %u\n", deltaTickInF2)
+        // deltaNext is in [ms]
+        deltaTickInF2 = floor( (deltaNext_ms * 256. / 1000.) );
+        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + 1 * deltaTickInF2;
+        PRINTF2("correction of = + %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
     else
     {
-        deltaTickInF2 = floor( (deltaPrevious * 256. / 1000.) ); // the division by 2 is important here
-        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - deltaTickInF2;
-        PRINTF1("correction of = - %u\n", deltaTickInF2)
+        // deltaPrevious is in [ms]
+        deltaTickInF2 = floor( (deltaPrevious_ms * 256. / 1000.) );
+        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - 1 * deltaTickInF2;
+        PRINTF2("correction of = - %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
 }
 
