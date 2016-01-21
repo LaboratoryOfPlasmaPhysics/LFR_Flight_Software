@@ -136,7 +136,6 @@ typedef struct ring_node
 #define REGS_ADDR_GRGPIO            0x80000b00
 
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
-//#define REGS_ADDR_WAVEFORM_PICKER   0x80000f50
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f54  // PDB >= 0.1.28
 #define REGS_ADDR_VHDL_VERSION      0x80000ff0
 
@@ -160,8 +159,9 @@ typedef struct ring_node
 #define TIMER_WATCHDOG      1
 #define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
-#define SY_LFR_TIME_SYN_TIMEOUT_in_ms       2000
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
+#define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2s
+#define TIMECODE_MASK                       0x3f    // 0011 1111
 
 //**********
 // LPP CODES

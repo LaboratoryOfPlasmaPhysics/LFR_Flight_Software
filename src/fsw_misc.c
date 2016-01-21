@@ -342,7 +342,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[13] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
+    char *DumbMessages[14] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                         "in DUMB *** f3 buffer changed",                                        // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
@@ -354,7 +354,8 @@ rtems_task dumb_task( rtems_task_argument unused )
                         "tick",                                                                 // RTEMS_EVENT_9
                         "VHDL ERR *** waveform picker",                                         // RTEMS_EVENT_10
                         "VHDL ERR *** unexpected ready matrix values",                          // RTEMS_EVENT_11
-                        "WATCHDOG timer"                                                        // RTEMS_EVENT_12
+                        "WATCHDOG timer",                                                       // RTEMS_EVENT_12
+                        "TIMECODE timer"                                                        // RTEMS_EVENT_13
     };
 
     BOOT_PRINTF("in DUMB *** \n")
@@ -362,7 +363,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
                             | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7
-                            | RTEMS_EVENT_8 | RTEMS_EVENT_9 | RTEMS_EVENT_12,
+                            | RTEMS_EVENT_8 | RTEMS_EVENT_9 | RTEMS_EVENT_12 | RTEMS_EVENT_13,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -374,6 +375,10 @@ rtems_task dumb_task( rtems_task_argument unused )
                 if (i==12)
                 {
                     PRINTF1("%s\n", DumbMessages[12])
+                }
+                if (i==13)
+                {
+                    PRINTF1("%s\n", DumbMessages[13])
                 }
             }
         }

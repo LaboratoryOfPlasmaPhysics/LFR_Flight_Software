@@ -35,7 +35,7 @@
 #define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
-#define CONFIGURE_MAXIMUM_TIMERS 5  // STAT (1s), send SWF (0.3s), send CWF3 (1s)
+#define CONFIGURE_MAXIMUM_TIMERS 5 // [spiq] [wtdg] [spacewire_reset_link]
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
@@ -159,6 +159,12 @@ rtems_task Init( rtems_task_argument ignored )
     BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
 
     create_names();                             // create all names
+
+    status = create_timecode_timer();           // create the timer used by timecode_irq_handler
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        PRINTF1("in INIT *** ERR in create_timer_timecode, code %d", status)
+    }
 
     status = create_message_queues();           // create message queues
     if (status != RTEMS_SUCCESSFUL)
@@ -317,6 +323,8 @@ void create_names( void ) // create all names for tasks and queues
     misc_name[QUEUE_PRC0] = rtems_build_name( 'Q', '_', 'P', '0' );
     misc_name[QUEUE_PRC1] = rtems_build_name( 'Q', '_', 'P', '1' );
     misc_name[QUEUE_PRC2] = rtems_build_name( 'Q', '_', 'P', '2' );
+
+    timecode_timer_name = rtems_build_name( 'S', 'P', 'T', 'C' );
 }
 
 int create_all_tasks( void ) // create all tasks which run in the software
@@ -748,6 +756,24 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     }
 
     return ret;
+}
+
+rtems_status_code create_timecode_timer( void )
+{
+    rtems_status_code status;
+
+    status =  rtems_timer_create( timecode_timer_name, &timecode_timer_id );
+
+    if ( status != RTEMS_SUCCESSFUL )
+    {
+        PRINTF1("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status)
+    }
+    else
+    {
+        PRINTF("in create_timer_timecode *** OK creating SPTC timer\n")
+    }
+
+    return status;
 }
 
 rtems_status_code get_message_queue_id_send( rtems_id *queue_id )

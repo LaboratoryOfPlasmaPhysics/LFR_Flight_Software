@@ -18,6 +18,8 @@
 
 extern rtems_name  Task_name[20];       /* array of task names */
 extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name timecode_timer_name;
+extern rtems_id timecode_timer_id;
 extern unsigned char pa_bia_status_info;
 
 // RTEMS TASKS
@@ -29,6 +31,7 @@ int create_all_tasks( void );
 int start_all_tasks( void );
 //
 rtems_status_code create_message_queues( void );
+rtems_status_code create_timecode_timer( void );
 rtems_status_code get_message_queue_id_send( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_recv( rtems_id *queue_id );
 rtems_status_code get_message_queue_id_prc0( rtems_id *queue_id );

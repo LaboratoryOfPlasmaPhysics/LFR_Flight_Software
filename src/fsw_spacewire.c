@@ -22,6 +22,9 @@ Header_TM_LFR_SCIENCE_CWF_t headerCWF;
 Header_TM_LFR_SCIENCE_SWF_t headerSWF;
 Header_TM_LFR_SCIENCE_ASM_t headerASM;
 
+unsigned char previousTimecodeCtr = 0;
+unsigned int *grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);
+
 //***********
 // RTEMS TASK
 rtems_task spiq_task(rtems_task_argument unused)
@@ -658,41 +661,146 @@ void spacewire_update_statistics( void )
     housekeeping_packet.hk_lfr_dpu_spw_rx_too_big = (unsigned char) spacewire_stats.rx_truncated;
 }
 
-void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
+void increase_unsigned_char_counter( unsigned char *counter )
 {
-    // a valid timecode has been received, write it in the HK report
-    unsigned int *grspwPtr;
-    unsigned char timecodeCtr;
-    unsigned char updateTimeCtr;
-
-    grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);
-
-    housekeeping_packet.hk_lfr_dpu_spw_last_timc = (unsigned char) (grspwPtr[0] & 0xff);   // [1111 1111]
-    timecodeCtr = (unsigned char) (grspwPtr[0] & 0x3f);             // [0011 1111]
-    updateTimeCtr = time_management_regs->coarse_time_load & 0x3f;  // [0011 1111]
-
     // update the number of valid timecodes that have been received
-    if (housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt == 255)
+    if (*counter == 255)
     {
-        housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = 0;
+        *counter = 0;
     }
     else
     {
-        housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt + 1;
+        *counter = *counter + 1;
+    }
+}
+
+rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *user_data )
+{
+
+    unsigned char currentTimecodeCtr;
+
+    currentTimecodeCtr = (unsigned char) (grspwPtr[0] & TIMECODE_MASK);
+
+    if (currentTimecodeCtr == previousTimecodeCtr)
+    {
+        //************************
+        // HK_LFR_TIMECODE_MISSING
+        // the timecode value has not changed, no valid timecode has been received, the timecode is MISSING
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
+    }
+    else if (currentTimecodeCtr == (previousTimecodeCtr+1))
+    {
+        // the timecode value has changed and the value is valid, this is unexpected because
+        // the timer should not have fired, the timecode_irq_handler should have been raised
+    }
+    else
+    {
+        //************************
+        // HK_LFR_TIMECODE_INVALID
+        // the timecode value has changed and the value is not valid, no tickout has been generated
+        // this is why the timer has fired
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_invalid );
     }
 
-    // check the value of the timecode with respect to the last TC_LFR_UPDATE_TIME => SSS-CP-FS-370
-    if (timecodeCtr != updateTimeCtr)
+    rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_13 );
+}
+
+unsigned int check_timecode_and_previous_timecode_coherency(unsigned char currentTimecodeCtr)
+{
+    unsigned char ret;
+
+    ret = LFR_DEFAULT;
+
+    if (currentTimecodeCtr == 0)
     {
-        if (housekeeping_packet.hk_lfr_time_timecode_ctr == 255)
+        if (previousTimecodeCtr == 63)
         {
-            housekeeping_packet.hk_lfr_time_timecode_ctr = 0;
+            ret = LFR_SUCCESSFUL;
         }
         else
         {
-            housekeeping_packet.hk_lfr_time_timecode_ctr = housekeeping_packet.hk_lfr_time_timecode_ctr + 1;
+            ret = LFR_DEFAULT;
         }
     }
+    else
+    {
+        if (currentTimecodeCtr == (previousTimecodeCtr +1))
+        {
+            ret = LFR_SUCCESSFUL;
+        }
+        else
+        {
+            ret = LFR_DEFAULT;
+        }
+    }
+
+    return ret;
+}
+
+unsigned int check_timecode_and_internal_time_coherency(unsigned char timecode, unsigned char internalTime)
+{
+    unsigned int ret;
+
+    ret = LFR_DEFAULT;
+
+    if (timecode == internalTime)
+    {
+        ret = LFR_SUCCESSFUL;
+    }
+    else
+    {
+        ret = LFR_DEFAULT;
+    }
+
+    return ret;
+}
+
+void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
+{
+    // a tickout has been emitted, perform actions on the incoming timecode
+
+    unsigned char incomingTimecode;
+    unsigned char updateTime;
+    unsigned char internalTime;
+    rtems_status_code status;
+
+    incomingTimecode =        (unsigned char) (grspwPtr[0] & TIMECODE_MASK);
+    updateTime    = time_management_regs->coarse_time_load & TIMECODE_MASK;
+    internalTime  = time_management_regs->coarse_time      & TIMECODE_MASK;
+
+    housekeeping_packet.hk_lfr_dpu_spw_last_timc = incomingTimecode;
+
+    // update the number of tickout that have been generated
+    increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt );
+
+    //**************************
+    // HK_LFR_TIMECODE_ERRONEOUS
+    // MISSING and INVALID are handled by the timecode_timer_routine service routine
+    if (check_timecode_and_previous_timecode_coherency( incomingTimecode ) == LFR_DEFAULT)
+    {
+        // this is unexpected but a tickout has been raised and the timecode is erroneous
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_erroneous );
+    }
+
+    //************************
+    // HK_LFR_TIME_TIMECODE_IT
+    // check the coherency between the SpaceWire timecode and the Internal Time
+    if (check_timecode_and_internal_time_coherency( incomingTimecode, internalTime ) == LFR_DEFAULT)
+    {
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_time_timecode_it );
+    }
+
+    //********************
+    // HK_LFR_TIMECODE_CTR
+    // check the value of the timecode with respect to the last TC_LFR_UPDATE_TIME => SSS-CP-FS-370
+    if (incomingTimecode != updateTime)
+    {
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_time_timecode_ctr );
+    }
+
+    // launch the timecode timer to detect missing or invalid timecodes
+    previousTimecodeCtr = incomingTimecode;  // update the previousTimecodeCtr value
+    status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT, timecode_timer_routine, NULL );
 }
 
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )

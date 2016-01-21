@@ -26,6 +26,8 @@
 rtems_name  misc_name[5];
 rtems_name  Task_name[20];       /* array of task names */
 rtems_id    Task_id[20];         /* array of task ids */
+rtems_name timecode_timer_name;
+rtems_id timecode_timer_id;
 int fdSPW = 0;
 int fdUART = 0;
 unsigned char lfrCurrentMode;
