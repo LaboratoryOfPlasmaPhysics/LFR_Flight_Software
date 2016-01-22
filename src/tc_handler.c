@@ -665,11 +665,11 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
+        restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
     case LFR_MODE_SBM2:
-        restart_asm_activities( LFR_MODE_NORMAL ); //  this is necessary to restart ASM tasks to update the parameters
+        restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
         break;
     default:

@@ -707,6 +707,16 @@ rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *use
 
 unsigned int check_timecode_and_previous_timecode_coherency(unsigned char currentTimecodeCtr)
 {
+    /** This function checks the coherency between the incoming timecode and the last valid timecode.
+     *
+     * @param currentTimecodeCtr is the incoming timecode
+     *
+     * @return returned codes::
+     * - LFR_DEFAULT
+     * - LFR_SUCCESSFUL
+     *
+     */
+
     static unsigned char firstTickout = 1;
     unsigned char ret;
 
