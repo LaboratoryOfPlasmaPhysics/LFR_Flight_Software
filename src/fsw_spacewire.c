@@ -707,31 +707,40 @@ rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *use
 
 unsigned int check_timecode_and_previous_timecode_coherency(unsigned char currentTimecodeCtr)
 {
+    static unsigned char firstTickout = 1;
     unsigned char ret;
 
     ret = LFR_DEFAULT;
 
-    if (currentTimecodeCtr == 0)
+    if (firstTickout == 0)
     {
-        if (previousTimecodeCtr == 63)
+        if (currentTimecodeCtr == 0)
         {
-            ret = LFR_SUCCESSFUL;
+            if (previousTimecodeCtr == 63)
+            {
+                ret = LFR_SUCCESSFUL;
+            }
+            else
+            {
+                ret = LFR_DEFAULT;
+            }
         }
         else
         {
-            ret = LFR_DEFAULT;
+            if (currentTimecodeCtr == (previousTimecodeCtr +1))
+            {
+                ret = LFR_SUCCESSFUL;
+            }
+            else
+            {
+                ret = LFR_DEFAULT;
+            }
         }
     }
     else
     {
-        if (currentTimecodeCtr == (previousTimecodeCtr +1))
-        {
-            ret = LFR_SUCCESSFUL;
-        }
-        else
-        {
-            ret = LFR_DEFAULT;
-        }
+        firstTickout = 0;
+        ret = LFR_SUCCESSFUL;
     }
 
     return ret;
@@ -778,7 +787,7 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     // MISSING and INVALID are handled by the timecode_timer_routine service routine
     if (check_timecode_and_previous_timecode_coherency( incomingTimecode ) == LFR_DEFAULT)
     {
-        // this is unexpected but a tickout has been raised and the timecode is erroneous
+        // this is unexpected but a tickout could have been raised despite of the timecode being erroneous
         increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_erroneous );
     }
 

@@ -33,7 +33,7 @@ void spacewire_set_NP( unsigned char val, unsigned int regAddr ); // No Port for
 void spacewire_set_RE( unsigned char val, unsigned int regAddr ); // RMAP Enable
 void spacewire_compute_stats_offsets( void );
 void spacewire_update_statistics( void );
-void increase_an_unsigned_char_counter( unsigned char *counter );
+void increase_unsigned_char_counter( unsigned char *counter );
 
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header );
 void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header );

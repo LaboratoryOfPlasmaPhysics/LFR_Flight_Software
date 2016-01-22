@@ -298,6 +298,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             hk_lfr_le_me_he_update();
 
+            set_hk_lfr_time_not_synchro();
+
             housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
             housekeeping_packet.hk_lfr_q_rv_fifo_size_max = hk_lfr_q_rv_fifo_size_max;
             housekeeping_packet.hk_lfr_q_p0_fifo_size_max = hk_lfr_q_p0_fifo_size_max;
@@ -679,6 +681,11 @@ void hk_lfr_le_me_he_update()
             + housekeeping_packet.hk_lfr_dpu_spw_write_sync
             + housekeeping_packet.hk_lfr_dpu_spw_rx_ahb
             + housekeeping_packet.hk_lfr_dpu_spw_tx_ahb
+            + housekeeping_packet.hk_lfr_timecode_erroneous
+            + housekeeping_packet.hk_lfr_timecode_missing
+            + housekeeping_packet.hk_lfr_timecode_invalid
+            + housekeeping_packet.hk_lfr_time_timecode_it
+            + housekeeping_packet.hk_lfr_time_not_synchro
             + housekeeping_packet.hk_lfr_time_timecode_ctr;
 
     //update the medium severity error counter
@@ -701,5 +708,35 @@ void hk_lfr_le_me_he_update()
     // HE
     housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & 0xff00) >> 8);
     housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & 0x00ff);
+
+}
+
+void set_hk_lfr_time_not_synchro()
+{
+    static unsigned char synchroLost = 0;
+    int synchronizationBit;
+
+    // get the synchronization bit
+    synchronizationBit = (time_management_regs->coarse_time & 0x80000000) >> 31;    // 1000 0000 0000 0000
+
+    switch (synchronizationBit)
+    {
+    case 0:
+        if (synchroLost == 1)
+        {
+            synchroLost = 0;
+        }
+        break;
+    case 1:
+        if (synchroLost == 0 )
+        {
+            synchroLost = 1;
+            increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_time_not_synchro);
+        }
+        break;
+    default:
+        PRINTF1("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n", synchronizationBit);
+        break;
+    }
 
 }
