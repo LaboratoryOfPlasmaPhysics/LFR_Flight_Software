@@ -1,7 +1,15 @@
 TEMPLATE = app
 # CONFIG += console v8 sim
-# CONFIG options = verbose *** boot_messages *** debug_messages *** cpu_usage_report *** stack_report *** vhdl_dev *** debug_tch
-# lpp_dpu_destid
+# CONFIG options =
+#           verbose
+#           boot_messages
+#           debug_messages
+#           cpu_usage_report
+#           stack_report
+#           vhdl_dev
+#           debug_tch
+#           lpp_dpu_destid REMOVE BEFORE DELIVERY TO LESIA
+#           debug_watchdog
 CONFIG += console verbose lpp_dpu_destid
 CONFIG -= qt
 
@@ -12,7 +20,7 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=3 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=13 # internal
+DEFINES += SW_VERSION_N4=14 # internal
 
 # <GCOV>
 #QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage

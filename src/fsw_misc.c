@@ -117,6 +117,9 @@ void watchdog_reload(void)
 {
     /** This function reloads the watchdog timer counter with the timer reload value.
      *
+     * @param void
+     *
+     * @return void
      *
      */
 

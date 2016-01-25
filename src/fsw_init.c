@@ -64,19 +64,38 @@
 
 void initCache()
 {
+    // ASI 2 contains a few control registers that have not been assigned as ancillary state registers.
+    // These should only be read and written using 32-bit LDA/STA instructions.
+    // All cache registers are accessed through load/store operations to the alternate address space (LDA/STA), using ASI = 2.
+    // The table below shows the register addresses:
+    //      0x00 Cache control register
+    //      0x04 Reserved
+    //      0x08 Instruction cache configuration register
+    //      0x0C Data cache configuration register
+
+    // Cache Control Register Leon3 / Leon3FT
+    // 31..30  29   28  27..24  23  22  21  20..19  18  17  16
+    //         RFT  PS  TB      DS  FD  FI  FT          ST  IB
+    // 15  14  13..12  11..10  9..8  7..6  5   4   3..2  1..0
+    // IP  DP  ITE     IDE     DTE   DDE   DF  IF  DCS   ICS
+
     unsigned int cacheControlRegister;
 
-    cacheControlRegister = getCacheControlRegister();
-    PRINTF1("(0) cacheControlRegister = %x\n", cacheControlRegister)
+    cacheControlRegister = CCR_getValue();
+    PRINTF1("(0) cacheControlRegister = %x\n", cacheControlRegister);
 
-    resetCacheControlRegister();
+    CCR_resetCacheControlRegister();
 
-    enableInstructionCache();
-    enableDataCache();
-    enableInstructionBurstFetch();
+    CCR_enableInstructionCache();       // ICS bits
+    CCR_enableDataCache();              // DCS bits
+    CCR_enableInstructionBurstFetch();  // IB  bit
 
-    cacheControlRegister = getCacheControlRegister();
-    PRINTF1("(1) cacheControlRegister = %x\n", cacheControlRegister)
+    cacheControlRegister = CCR_getValue();
+    PRINTF1("(1) cacheControlRegister = %x\n", cacheControlRegister);
+
+    CCR_faultTolerantScheme();
+
+    // FT activation
 }
 
 rtems_task Init( rtems_task_argument ignored )
