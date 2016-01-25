@@ -716,7 +716,7 @@ void hk_lfr_le_me_he_update()
 
 void set_hk_lfr_time_not_synchro()
 {
-    static unsigned char synchroLost = 0;
+    static unsigned char synchroLost = 1;
     int synchronizationBit;
 
     // get the synchronization bit
