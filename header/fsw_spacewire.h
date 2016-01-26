@@ -28,7 +28,7 @@ int spacewire_open_link( void );
 int spacewire_start_link( int fd );
 int spacewire_stop_and_start_link( int fd );
 int spacewire_configure_link(int fd );
-int spacewire_reset_link( void );
+int spacewire_several_connect_attemps( void );
 void spacewire_set_NP( unsigned char val, unsigned int regAddr ); // No Port force
 void spacewire_set_RE( unsigned char val, unsigned int regAddr ); // RMAP Enable
 void spacewire_compute_stats_offsets( void );

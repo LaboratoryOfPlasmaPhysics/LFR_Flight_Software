@@ -106,7 +106,7 @@ static void CCR_faultTolerantScheme()
 
     if( (vendorId == VENDORID_GAISLER) & (deviceId ==DEVICEID_LEON3FT) )
     {
-        PRINTF("in faultTolerantScheme *** Leon3FT detected, configure the CCR FT bits");
+        PRINTF("in faultTolerantScheme *** Leon3FT detected, configure the CCR FT bits\n");
         cacheControlRegister = CCR_getValue();
         cacheControlRegister = (cacheControlRegister | 0xc);
         CCR_setValue(cacheControlRegister);
@@ -163,7 +163,7 @@ static void CCR_getInstructionAndDataErrorCounters( unsigned int* instructionErr
 //*******************************************
 // ASR16 Register protection control register
 
-static unsigned int ASR16_get_FPRF_IURF_ErrorCounters( unsigned int* fprfErrorCounter, unsigned int* iurfErrorCounter)
+static void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int* fprfErrorCounter, unsigned int* iurfErrorCounter)
 {
     /** This function is used to retrieve the integer unit register file error counter and the floating point unit
      *  register file error counter
@@ -182,7 +182,7 @@ static unsigned int ASR16_get_FPRF_IURF_ErrorCounters( unsigned int* fprfErrorCo
     *iurfErrorCounter = ( asr16 & COUNTER_FIELD_IURF ) >> POS_IURF;
 
     // reset the counter to 0
-    asr16 = asr16Ptr
+    asr16 = asr16
             & COUNTER_MASK_FPRF
             & COUNTER_FIELD_IURF;
 

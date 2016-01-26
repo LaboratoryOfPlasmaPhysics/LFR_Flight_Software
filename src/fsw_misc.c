@@ -146,20 +146,11 @@ void watchdog_start(void)
 
 }
 
-int send_console_outputs_on_apbuart_port( void ) // Send the console outputs on the apbuart port
-{
-    struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
-
-    apbuart_regs->ctrl = APBUART_CTRL_REG_MASK_TE;
-
-    return 0;
-}
-
 int enable_apbuart_transmitter( void )  // set the bit 1, TE Transmitter Enable to 1 in the APBUART control register
 {
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) REGS_ADDR_APBUART;
 
-    apbuart_regs->ctrl = apbuart_regs->ctrl | APBUART_CTRL_REG_MASK_TE;
+    apbuart_regs->ctrl = APBUART_CTRL_REG_MASK_TE;
 
     return 0;
 }
@@ -178,6 +169,7 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
     struct apbuart_regs_str *apbuart_regs = (struct apbuart_regs_str *) regs;
 
     apbuart_regs->scaler = value;
+
     BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
 }
 

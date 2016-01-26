@@ -869,41 +869,59 @@ void snapshot_resynchronization( unsigned char *timePtr )
     unsigned long long int nextTick;
     unsigned long long int deltaPreviousTick;
     unsigned long long int deltaNextTick;
-    unsigned int deltaTickInF2;
+    int deltaTickInF2;
     double deltaPrevious_ms;
     double deltaNext_ms;
+    double correctionInF2;
+    static unsigned char resynchroEngaged = 0;
 
-    // get acquisition time in fine time ticks
-    acquisitionTime = get_acquisition_time( timePtr );
-
-    // compute center time
-    centerTime = acquisitionTime + 2731;    // (2048. / 24576. / 2.) * 65536. = 2730.667;
-    previousTick = centerTime - (centerTime & 0xffff);
-    nextTick = previousTick + 65536;
-
-    deltaPreviousTick   = centerTime - previousTick;
-    deltaNextTick       = nextTick - centerTime;
-
-    deltaPrevious_ms    = ((double) deltaPreviousTick) / 65536. * 1000.;
-    deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
-
-    PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious_ms, deltaNext_ms);
-    PRINTF2("delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n", deltaPreviousTick, deltaNextTick);
-
-    // which tick is the closest
-    if (deltaPreviousTick > deltaNextTick)
+    if (resynchroEngaged == 0)
     {
-        // the snapshot center is just before the second => increase delta_snapshot
-        deltaTickInF2 = ceil( (deltaNext_ms * 256. / 1000.) );
-        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + 1 * deltaTickInF2;
-        PRINTF2("correction of = + %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
+        resynchroEngaged = 1;
+        // get acquisition time in fine time ticks
+        acquisitionTime = get_acquisition_time( timePtr );
+
+        // compute center time
+        centerTime = acquisitionTime + 2731;    // (2048. / 24576. / 2.) * 65536. = 2730.667;
+        previousTick = centerTime - (centerTime & 0xffff);
+        nextTick = previousTick + 65536;
+
+        deltaPreviousTick   = centerTime - previousTick;
+        deltaNextTick       = nextTick - centerTime;
+
+        deltaPrevious_ms    = ((double) deltaPreviousTick) / 65536. * 1000.;
+        deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
+
+        PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious_ms, deltaNext_ms);
+        PRINTF2("delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n", deltaPreviousTick, deltaNextTick);
+
+        // which tick is the closest?
+        if (deltaPreviousTick > deltaNextTick)
+        {
+            // the snapshot center is just before the second => increase delta_snapshot
+            correctionInF2 = + (deltaNext_ms * 256. / 1000. );
+        }
+        else
+        {
+            // the snapshot center is just after the second => decrease delta_snapshot
+            correctionInF2 = - (deltaPrevious_ms * 256. / 1000. );
+        }
+
+        if (correctionInF2 >=0 )
+        {
+            deltaTickInF2 = floor( correctionInF2 );
+        }
+        else
+        {
+            deltaTickInF2 = ceil( correctionInF2 );
+        }
+        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
+        PRINTF2("Correction of = %d, delta_snapshot = %d\n\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
     else
     {
-        // the snapshot center is just after the second => decrease delat_snapshot
-        deltaTickInF2 = ceil( (deltaPrevious_ms * 256. / 1000.) );
-        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot - 1 * deltaTickInF2;
-        PRINTF2("correction of = - %u, delta_snapshot = %d\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
+        PRINTF1("No resynchro, delta_snapshot = %d\n\n", waveform_picker_regs->delta_snapshot);
+        resynchroEngaged = 0;
     }
 }
 

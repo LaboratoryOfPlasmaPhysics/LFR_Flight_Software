@@ -63,11 +63,11 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);    // get the link status (2)
+        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (2)
         if ( linkStatus != 5 )  // [2.a] not in run state, reset the link
         {
             spacewire_compute_stats_offsets();
-            status = spacewire_reset_link( );
+            status = spacewire_several_connect_attemps( );
         }
         else                    // [2.b] in run state, start the link
         {
@@ -93,7 +93,8 @@ rtems_task spiq_task(rtems_task_argument unused)
         else                                // [3.b] the link is not in run state, go in STANDBY mode
         {
             status = enter_mode_standby();
-            if ( status != RTEMS_SUCCESSFUL ) {
+            if ( status != RTEMS_SUCCESSFUL )
+            {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }
             // wake the WTDG task up to wait for the link recovery
@@ -477,7 +478,7 @@ int spacewire_configure_link( int fd )
     return status;
 }
 
-int spacewire_reset_link( void )
+int spacewire_several_connect_attemps( void )
 {
     /** This function is executed by the SPIQ rtems_task wehn it has been awaken by an interruption raised by the SpaceWire driver.
      *

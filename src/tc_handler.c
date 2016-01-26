@@ -447,6 +447,7 @@ int check_mode_transition( unsigned char requestedMode )
 void update_last_valid_transition_date( unsigned int transitionCoarseTime )
 {
     lastValidEnterModeTime = transitionCoarseTime;
+    PRINTF1("lastValidEnterModeTime = %x\n", transitionCoarseTime);
 }
 
 int check_transition_date( unsigned int transitionCoarseTime )
@@ -465,12 +466,12 @@ int check_transition_date( unsigned int transitionCoarseTime )
     {
         localCoarseTime = time_management_regs->coarse_time & 0x7fffffff;
 
-        PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime)
+        PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
 
-                if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
+        if ( transitionCoarseTime <= localCoarseTime )   // SSS-CP-EQS-322
         {
             status = LFR_DEFAULT;
-            PRINTF("ERR *** in check_transition_date *** transitionCoarseTime <= localCoarseTime\n")
+            PRINTF("ERR *** in check_transition_date *** transitionCoarseTime <= localCoarseTime\n");
         }
 
         if (status == LFR_SUCCESSFUL)
