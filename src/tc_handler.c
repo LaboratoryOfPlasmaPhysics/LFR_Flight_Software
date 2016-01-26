@@ -445,7 +445,7 @@ int check_mode_transition( unsigned char requestedMode )
 void update_last_valid_transition_date( unsigned int transitionCoarseTime )
 {
     lastValidEnterModeTime = transitionCoarseTime;
-    PRINTF1("lastValidEnterModeTime = %x\n", transitionCoarseTime);
+    PRINTF1("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
 }
 
 int check_transition_date( unsigned int transitionCoarseTime )

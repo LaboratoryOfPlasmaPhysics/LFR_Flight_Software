@@ -8,7 +8,7 @@ TEMPLATE = app
 #           stack_report
 #           vhdl_dev
 #           debug_tch
-#           lpp_dpu_destid REMOVE BEFORE DELIVERY TO LESIA
+#           lpp_dpu_destid      /!\ REMOVE BEFORE DELIVERY TO LESIA /!\
 #           debug_watchdog
 CONFIG += console verbose lpp_dpu_destid
 CONFIG -= qt
