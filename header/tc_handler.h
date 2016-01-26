@@ -39,7 +39,7 @@ void update_last_valid_transition_date( unsigned int transitionCoarseTime );
 int check_transition_date( unsigned int transitionCoarseTime );
 int stop_spectral_matrices( void );
 int stop_current_mode( void );
-int enter_mode_standby( void );
+int enter_mode_standby(void );
 int enter_mode_normal( unsigned int transitionCoarseTime );
 int enter_mode_burst( unsigned int transitionCoarseTime );
 int enter_mode_sbm1( unsigned int transitionCoarseTime );
@@ -54,7 +54,7 @@ void set_sm_irq_onNewMatrix( unsigned char value );
 void set_sm_irq_onError( unsigned char value );
 
 // other functions
-void updateLFRCurrentMode();
+void updateLFRCurrentMode(unsigned char requestedMode);
 void set_lfr_soft_reset( unsigned char value );
 void reset_lfr( void );
 // CALIBRATION

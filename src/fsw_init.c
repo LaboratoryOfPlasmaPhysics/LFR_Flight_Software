@@ -35,7 +35,7 @@
 #define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
 #define CONFIGURE_MAXIMUM_PERIODS 5
-#define CONFIGURE_MAXIMUM_TIMERS 5 // [spiq] [wtdg] [spacewire_reset_link]
+#define CONFIGURE_MAXIMUM_TIMERS 5 // [spiq] [link] [spacewire_reset_link]
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
 #ifdef PRINT_STACK_REPORT
     #define CONFIGURE_STACK_CHECKER_ENABLED
@@ -172,7 +172,7 @@ rtems_task Init( rtems_task_argument ignored )
     // configure calibration
     configureCalibration( false );   // true means interleaved mode, false is for normal mode
 
-    updateLFRCurrentMode();
+    updateLFRCurrentMode( LFR_MODE_STANDBY );
 
     BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
 
@@ -327,7 +327,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_CWF2] = rtems_build_name( 'C', 'W', 'F', '2' );
     Task_name[TASKID_CWF1] = rtems_build_name( 'C', 'W', 'F', '1' );
     Task_name[TASKID_SEND] = rtems_build_name( 'S', 'E', 'N', 'D' );
-    Task_name[TASKID_WTDG] = rtems_build_name( 'W', 'T', 'D', 'G' );
+    Task_name[TASKID_LINK] = rtems_build_name( 'L', 'I', 'N', 'K' );
     Task_name[TASKID_AVF1] = rtems_build_name( 'A', 'V', 'F', '1' );
     Task_name[TASKID_PRC1] = rtems_build_name( 'P', 'R', 'C', '1' );
     Task_name[TASKID_AVF2] = rtems_build_name( 'A', 'V', 'F', '2' );
@@ -379,12 +379,12 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SEND]
         );
     }
-    if (status == RTEMS_SUCCESSFUL) // WTDG
+    if (status == RTEMS_SUCCESSFUL) // LINK
     {
         status = rtems_task_create(
-            Task_name[TASKID_WTDG], TASK_PRIORITY_WTDG, RTEMS_MINIMUM_STACK_SIZE,
+            Task_name[TASKID_LINK], TASK_PRIORITY_LINK, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_WTDG]
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_LINK]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // ACTN
@@ -571,11 +571,11 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n")
     }
 
-    if (status == RTEMS_SUCCESSFUL)     // WTDG
+    if (status == RTEMS_SUCCESSFUL)     // LINK
     {
-        status = rtems_task_start( Task_id[TASKID_WTDG], wtdg_task, 1 );
+        status = rtems_task_start( Task_id[TASKID_LINK], link_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
-            BOOT_PRINTF("in INIT *** Error starting TASK_WTDG\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_LINK\n")
         }
     }
 

@@ -195,10 +195,8 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         status = check_transition_date( transitionCoarseTime );
         if (status != LFR_SUCCESSFUL)
         {
-            PRINTF("ERR *** in action_enter_mode *** check_transition_date\n")
-                    send_tm_lfr_tc_exe_inconsistent( TC, queue_id,
-                                                     BYTE_POS_CP_LFR_ENTER_MODE_TIME,
-                                                     bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME + 3 ] );
+            PRINTF("ERR *** in action_enter_mode *** check_transition_date\n");
+            send_tm_lfr_tc_exe_not_executable(TC, queue_id );
         }
     }
 
@@ -588,7 +586,7 @@ int stop_current_mode( void )
     return status;
 }
 
-int enter_mode_standby()
+int enter_mode_standby( void )
 {
     /** This function is used to put LFR in the STANDBY mode.
      *
@@ -1546,8 +1544,7 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
             //**********************************
             // UPDATE THE LFRMODE LOCAL VARIABLE
             requestedMode = TC->dataAndCRC[1];
-            housekeeping_packet.lfr_status_word[0] = (unsigned char) ((requestedMode << 4) + 0x0d);
-            updateLFRCurrentMode();
+            updateLFRCurrentMode( requestedMode );
         }
     }
     else if (result == LFR_EXE_ERROR)
@@ -1574,15 +1571,17 @@ rtems_isr commutation_isr2( rtems_vector_number vector )
 
 //****************
 // OTHER FUNCTIONS
-void updateLFRCurrentMode()
+void updateLFRCurrentMode( unsigned char requestedMode )
 {
     /** This function updates the value of the global variable lfrCurrentMode.
      *
      * lfrCurrentMode is a parameter used by several functions to know in which mode LFR is running.
      *
      */
+
     // update the local value of lfrCurrentMode with the value contained in the housekeeping_packet structure
-    lfrCurrentMode = (housekeeping_packet.lfr_status_word[0] & 0xf0) >> 4;
+    housekeeping_packet.lfr_status_word[0] = (unsigned char) ((requestedMode << 4) + 0x0d);
+    lfrCurrentMode = requestedMode;
 }
 
 void set_lfr_soft_reset( unsigned char value )

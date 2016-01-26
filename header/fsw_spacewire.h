@@ -22,7 +22,7 @@ extern rtems_id timecode_timer_id;
 rtems_task spiq_task( rtems_task_argument argument );
 rtems_task recv_task( rtems_task_argument unused );
 rtems_task send_task( rtems_task_argument argument );
-rtems_task wtdg_task( rtems_task_argument argument );
+rtems_task link_task( rtems_task_argument argument );
 
 int spacewire_open_link( void );
 int spacewire_start_link( int fd );

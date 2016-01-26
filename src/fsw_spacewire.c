@@ -97,8 +97,11 @@ rtems_task spiq_task(rtems_task_argument unused)
             {
                 PRINTF1("in SPIQ *** ERR enter_standby_mode *** code %d\n", status)
             }
-            // wake the WTDG task up to wait for the link recovery
-            status =  rtems_event_send ( Task_id[TASKID_WTDG], RTEMS_EVENT_0 );
+            {
+                updateLFRCurrentMode( LFR_MODE_STANDBY );
+            }
+            // wake the LINK task up to wait for the link recovery
+            status =  rtems_event_send ( Task_id[TASKID_LINK], RTEMS_EVENT_0 );
             status = rtems_task_suspend( RTEMS_SELF );
         }
     }
@@ -327,20 +330,20 @@ rtems_task send_task( rtems_task_argument argument)
     }
 }
 
-rtems_task wtdg_task( rtems_task_argument argument )
+rtems_task link_task( rtems_task_argument argument )
 {
     rtems_event_set event_out;
     rtems_status_code status;
     int linkStatus;
 
-    BOOT_PRINTF("in WTDG ***\n")
+    BOOT_PRINTF("in LINK ***\n")
 
     while(1)
     {
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_0,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        PRINTF("in WTDG *** wait for the link\n")
+        PRINTF("in LINK *** wait for the link\n")
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);       // get the link status
         while( linkStatus != 5)                                                     // wait for the link
         {
@@ -352,11 +355,11 @@ rtems_task wtdg_task( rtems_task_argument argument )
 
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in WTDG *** ERR link not started %d\n", status)
+            PRINTF1("in LINK *** ERR link not started %d\n", status)
         }
         else
         {
-            PRINTF("in WTDG *** OK  link started\n")
+            PRINTF("in LINK *** OK  link started\n")
         }
 
         // restart the SPIQ task

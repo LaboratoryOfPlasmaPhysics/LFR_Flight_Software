@@ -185,14 +185,14 @@ typedef struct ring_node
 #define TASKID_CWF2 12
 #define TASKID_CWF1 13
 #define TASKID_SEND 14
-#define TASKID_WTDG 15
+#define TASKID_LINK 15
 #define TASKID_AVF1 16
 #define TASKID_PRC1 17
 #define TASKID_AVF2 18
 #define TASKID_PRC2 19
 
 #define TASK_PRIORITY_SPIQ 5
-#define TASK_PRIORITY_WTDG 20
+#define TASK_PRIORITY_LINK 20
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //
