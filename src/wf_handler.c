@@ -43,6 +43,13 @@ int swf2_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
 ring_node ring_node_swf1_extracted;
 ring_node ring_node_swf2_extracted;
 
+typedef enum resynchro_state_t
+{
+    IDLE,
+    MEASURE_K,
+    MEASURE_K_PLUS_1,
+} resynchro_state;
+
 //*********************
 // Interrupt SubRoutine
 
@@ -873,6 +880,9 @@ void snapshot_resynchronization( unsigned char *timePtr )
     double deltaPrevious_ms;
     double deltaNext_ms;
     double correctionInF2;
+    double center_k = 0.;
+    double cnter_k_plus_1 = 0.;
+    static resynchro_state state = IDLE;
     static unsigned char resynchroEngaged = 0;
 
     if (resynchroEngaged == 0)
@@ -909,13 +919,14 @@ void snapshot_resynchronization( unsigned char *timePtr )
 
         if (correctionInF2 >=0 )
         {
-            deltaTickInF2 = floor( correctionInF2 );
+            deltaTickInF2 = ceil( correctionInF2 );
         }
         else
         {
-            deltaTickInF2 = ceil( correctionInF2 );
+            deltaTickInF2 = floor( correctionInF2 );
         }
         waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
+        set_wfp_delta_f0_f0_2(); // this is necessary to reset the value of delta_f0 as delta_snapshot has been changed
         PRINTF2("Correction of = %d, delta_snapshot = %d\n\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
     }
     else
@@ -981,7 +992,7 @@ void reset_waveform_picker_regs( void )
     * - 0x1C delta_snapshot
     * - 0x20 delta_f0
     * - 0x24 delta_f0_2
-    * - 0x28 delta_f1
+    * - 0x28 delta_f1 (obsolet parameter)
     * - 0x2c delta_f2
     * - 0x30 nb_data_by_buffer
     * - 0x34 nb_snapshot_param
@@ -1002,17 +1013,17 @@ void reset_waveform_picker_regs( void )
 
     set_wfp_delta_f0_f0_2();    // 0x20, 0x24
 
-    set_wfp_delta_f1();         // 0x28
+    //the parameter delta_f1 [0x28] is not used anymore
 
     set_wfp_delta_f2();         // 0x2c
 
-    DEBUG_PRINTF1("delta_snapshot %x\n",    waveform_picker_regs->delta_snapshot)
-            DEBUG_PRINTF1("delta_f0 %x\n",          waveform_picker_regs->delta_f0)
-            DEBUG_PRINTF1("delta_f0_2 %x\n",        waveform_picker_regs->delta_f0_2)
-            DEBUG_PRINTF1("delta_f1 %x\n",          waveform_picker_regs->delta_f1)
-            DEBUG_PRINTF1("delta_f2 %x\n",          waveform_picker_regs->delta_f2)
-            // 2688 = 8 * 336
-            waveform_picker_regs->nb_data_by_buffer = 0xa7f; // 0x30 *** 2688 - 1 => nb samples -1
+    DEBUG_PRINTF1("delta_snapshot %x\n",    waveform_picker_regs->delta_snapshot);
+    DEBUG_PRINTF1("delta_f0 %x\n",          waveform_picker_regs->delta_f0);
+    DEBUG_PRINTF1("delta_f0_2 %x\n",        waveform_picker_regs->delta_f0_2);
+    DEBUG_PRINTF1("delta_f1 %x\n",          waveform_picker_regs->delta_f1);
+    DEBUG_PRINTF1("delta_f2 %x\n",          waveform_picker_regs->delta_f2);
+    // 2688 = 8 * 336
+    waveform_picker_regs->nb_data_by_buffer = 0xa7f; // 0x30 *** 2688 - 1 => nb samples -1
     waveform_picker_regs->snapshot_param    = 0xa80; // 0x34 *** 2688 => nb samples
     waveform_picker_regs->start_date        = 0x7fffffff;  // 0x38
     //
@@ -1103,14 +1114,24 @@ void set_wfp_delta_f0_f0_2( void )
 
     delta_snapshot = waveform_picker_regs->delta_snapshot;
     nb_samples_per_snapshot = parameter_dump_packet.sy_lfr_n_swf_l[0] * 256 + parameter_dump_packet.sy_lfr_n_swf_l[1];
-    delta_f0_in_float =nb_samples_per_snapshot / 2. * ( 1. / 256. - 1. / 24576.) * 256.;
+    delta_f0_in_float = nb_samples_per_snapshot / 2. * ( 1. / 256. - 1. / 24576.) * 256.;
 
-    waveform_picker_regs->delta_f0      =  delta_snapshot - floor( delta_f0_in_float );
+    waveform_picker_regs->delta_f0      = delta_snapshot - floor( delta_f0_in_float );
     waveform_picker_regs->delta_f0_2    = 0x30;         // 48 = 11 0000, max 7 bits
 }
 
 void set_wfp_delta_f1( void )
 {
+    /** Sets the value of the delta_f1 parameter
+     *
+     * @param void
+     *
+     * @return void
+     *
+     * delta_f1 is not used, the snapshots are extracted from CWF_F1 waveforms.
+     *
+     */
+
     unsigned int delta_snapshot;
     unsigned int nb_samples_per_snapshot;
     float delta_f1_in_float;
@@ -1122,8 +1143,19 @@ void set_wfp_delta_f1( void )
     waveform_picker_regs->delta_f1 = delta_snapshot - floor( delta_f1_in_float );
 }
 
-void set_wfp_delta_f2()
+void set_wfp_delta_f2( void )   // parameter not used, only delta_f0 and delta_f0_2 are used
 {
+    /** Sets the value of the delta_f2 parameter
+     *
+     * @param void
+     *
+     * @return void
+     *
+     * delta_f2 is used only for the first snapshot generation, even when the snapshots are extracted from CWF_F2
+     * waveforms (see lpp_waveform_snapshot_controler.vhd for details).
+     *
+     */
+
     unsigned int delta_snapshot;
     unsigned int nb_samples_per_snapshot;
 
