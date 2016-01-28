@@ -444,8 +444,16 @@ int check_mode_transition( unsigned char requestedMode )
 
 void update_last_valid_transition_date( unsigned int transitionCoarseTime )
 {
-    lastValidEnterModeTime = transitionCoarseTime;
-    PRINTF1("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
+    if (transitionCoarseTime == 0)
+    {
+        lastValidEnterModeTime = time_management_regs->coarse_time + 1;
+        PRINTF1("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n", transitionCoarseTime);
+    }
+    else
+    {
+        lastValidEnterModeTime = transitionCoarseTime;
+        PRINTF1("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
+    }
 }
 
 int check_transition_date( unsigned int transitionCoarseTime )
@@ -1243,6 +1251,7 @@ int suspend_asm_tasks( void )
 
 void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTime )
 {
+
     WFP_reset_current_ring_nodes();
 
     reset_waveform_picker_regs();
@@ -1262,6 +1271,8 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
     {
         waveform_picker_regs->start_date = transitionCoarseTime;
     }
+
+    update_last_valid_transition_date(waveform_picker_regs->start_date);
 
 }
 

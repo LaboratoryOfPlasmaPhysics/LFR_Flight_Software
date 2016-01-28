@@ -268,6 +268,9 @@ rtems_task Init( rtems_task_argument ignored )
 
     set_hk_lfr_sc_potential_flag( true );
 
+    // start the timer used for the detection of missing parameters (started also by the timecode_irq_handler ISR)
+    status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT, timecode_timer_routine, NULL );
+
     status = rtems_task_delete(RTEMS_SELF);
 
 }

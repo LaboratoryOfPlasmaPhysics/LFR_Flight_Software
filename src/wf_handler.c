@@ -45,9 +45,10 @@ ring_node ring_node_swf2_extracted;
 
 typedef enum resynchro_state_t
 {
-    IDLE,
-    MEASURE_K,
-    MEASURE_K_PLUS_1,
+    MEASURE_0,
+    MEASURE_1,
+    CORRECTION_0,
+    CORRECTION_1
 } resynchro_state;
 
 //*********************
@@ -868,7 +869,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     }
 }
 
-void snapshot_resynchronization( unsigned char *timePtr )
+double computeCorrection( unsigned char *timePtr )
 {
     unsigned long long int acquisitionTime;
     unsigned long long int centerTime;
@@ -876,63 +877,110 @@ void snapshot_resynchronization( unsigned char *timePtr )
     unsigned long long int nextTick;
     unsigned long long int deltaPreviousTick;
     unsigned long long int deltaNextTick;
-    int deltaTickInF2;
     double deltaPrevious_ms;
     double deltaNext_ms;
     double correctionInF2;
-    double center_k = 0.;
-    double cnter_k_plus_1 = 0.;
-    static resynchro_state state = IDLE;
-    static unsigned char resynchroEngaged = 0;
 
-    if (resynchroEngaged == 0)
+    // get acquisition time in fine time ticks
+    acquisitionTime = get_acquisition_time( timePtr );
+
+    // compute center time
+    centerTime = acquisitionTime + 2731;    // (2048. / 24576. / 2.) * 65536. = 2730.667;
+    previousTick = centerTime - (centerTime & 0xffff);
+    nextTick = previousTick + 65536;
+
+    deltaPreviousTick   = centerTime - previousTick;
+    deltaNextTick       = nextTick - centerTime;
+
+    deltaPrevious_ms    = ((double) deltaPreviousTick) / 65536. * 1000.;
+    deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
+
+    PRINTF2("    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
+//    PRINTF2("    delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n",
+//            deltaPreviousTick, deltaNextTick);
+
+    // which tick is the closest?
+    if (deltaPreviousTick > deltaNextTick)
     {
-        resynchroEngaged = 1;
-        // get acquisition time in fine time ticks
-        acquisitionTime = get_acquisition_time( timePtr );
-
-        // compute center time
-        centerTime = acquisitionTime + 2731;    // (2048. / 24576. / 2.) * 65536. = 2730.667;
-        previousTick = centerTime - (centerTime & 0xffff);
-        nextTick = previousTick + 65536;
-
-        deltaPreviousTick   = centerTime - previousTick;
-        deltaNextTick       = nextTick - centerTime;
-
-        deltaPrevious_ms    = ((double) deltaPreviousTick) / 65536. * 1000.;
-        deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
-
-        PRINTF2("delta previous = %f ms, delta next = %f ms\n", deltaPrevious_ms, deltaNext_ms);
-        PRINTF2("delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n", deltaPreviousTick, deltaNextTick);
-
-        // which tick is the closest?
-        if (deltaPreviousTick > deltaNextTick)
-        {
-            // the snapshot center is just before the second => increase delta_snapshot
-            correctionInF2 = + (deltaNext_ms * 256. / 1000. );
-        }
-        else
-        {
-            // the snapshot center is just after the second => decrease delta_snapshot
-            correctionInF2 = - (deltaPrevious_ms * 256. / 1000. );
-        }
-
-        if (correctionInF2 >=0 )
-        {
-            deltaTickInF2 = ceil( correctionInF2 );
-        }
-        else
-        {
-            deltaTickInF2 = floor( correctionInF2 );
-        }
-        waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + deltaTickInF2;
-        set_wfp_delta_f0_f0_2(); // this is necessary to reset the value of delta_f0 as delta_snapshot has been changed
-        PRINTF2("Correction of = %d, delta_snapshot = %d\n\n", deltaTickInF2, waveform_picker_regs->delta_snapshot);
+        // the snapshot center is just before the second => increase delta_snapshot
+        correctionInF2 = + (deltaNext_ms * 256. / 1000. );
     }
     else
     {
-        PRINTF1("No resynchro, delta_snapshot = %d\n\n", waveform_picker_regs->delta_snapshot);
-        resynchroEngaged = 0;
+        // the snapshot center is just after the second => decrease delta_snapshot
+        correctionInF2 = - (deltaPrevious_ms * 256. / 1000. );
+    }
+
+    PRINTF1("    correctionInF2 = %.2f\n", correctionInF2);
+
+    return correctionInF2;
+}
+
+void applyCorrection( double correction )
+{
+    int correctionInt;
+
+    if (correction>=0)
+    {
+        correctionInt = floor(correction);
+    }
+    else
+    {
+        correctionInt =  ceil(correction);
+    }
+    waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
+    //set_wfp_delta_f0_f0_2();
+}
+
+void snapshot_resynchronization( unsigned char *timePtr )
+{
+    static double correction    = 0.;
+    static double delay_0       = 0.;
+    static resynchro_state state = MEASURE_0;
+
+    int correctionInt;
+
+    correctionInt = 0;
+
+    switch (state)
+    {
+
+    case MEASURE_0:
+        // ********
+        PRINTF("MEASURE_0 ===\n");
+        state = CORRECTION_0;
+        delay_0 = computeCorrection( timePtr );
+        correction = delay_0;
+        PRINTF1("MEASURE_0 === correction = %.2f\n", correction );
+        applyCorrection( correction );
+        PRINTF1("MEASURE_0 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+        //****
+        break;
+
+    case CORRECTION_0:
+        //************
+        PRINTF("CORRECTION_0 ===\n");
+        state = CORRECTION_1;
+        computeCorrection( timePtr );
+        correction = -correction;
+        PRINTF1("CORRECTION_0 === correction = %.2f\n", correction );
+        applyCorrection( correction );
+        PRINTF1("CORRECTION_0 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+        //****
+        break;
+
+    case CORRECTION_1:
+        //************
+        PRINTF("CORRECTION_1 ===\n");
+        state = MEASURE_0;
+        computeCorrection( timePtr );
+        PRINTF1("CORRECTION_1 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+        //****
+        break;
+
+    default:
+        break;
+
     }
 }
 
