@@ -20,7 +20,7 @@ SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=3 # major
 DEFINES += SW_VERSION_N2=0 # minor
 DEFINES += SW_VERSION_N3=0 # patch
-DEFINES += SW_VERSION_N4=14 # internal
+DEFINES += SW_VERSION_N4=15 # internal
 
 # <GCOV>
 #QMAKE_CFLAGS_RELEASE += -fprofile-arcs -ftest-coverage

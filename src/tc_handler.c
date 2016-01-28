@@ -146,9 +146,11 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      *
      */
 
-    PRINTF("this is the end!!!\n")
-            exit(0);
+    PRINTF("this is the end!!!\n");
+    exit(0);
+
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+
     return LFR_DEFAULT;
 }
 
@@ -226,6 +228,11 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         default:
             break;
         }
+    }
+
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        status = LFR_EXE_ERROR;
     }
 
     return status;
@@ -791,8 +798,8 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode_sbm1 *** status = %d\n", status)
-                status = RTEMS_UNSATISFIED;
+        PRINTF1("ERR *** in enter_mode_sbm1 *** status = %d\n", status);
+        status = RTEMS_UNSATISFIED;
     }
 
     return status;
