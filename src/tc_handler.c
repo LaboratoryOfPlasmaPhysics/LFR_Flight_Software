@@ -228,11 +228,11 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
         default:
             break;
         }
-    }
 
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        status = LFR_EXE_ERROR;
+        if (status != RTEMS_SUCCESSFUL)
+        {
+            status = LFR_EXE_ERROR;
+        }
     }
 
     return status;
@@ -507,6 +507,8 @@ int restart_asm_activities( unsigned char lfrRequestedMode )
 
     status = stop_spectral_matrices();
 
+    thisIsAnASMRestart = 1;
+
     status = restart_asm_tasks( lfrRequestedMode );
 
     launch_spectral_matrix();
@@ -530,7 +532,7 @@ int stop_spectral_matrices( void )
     status = RTEMS_SUCCESSFUL;
 
     // (1) mask interruptions
-    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // clear spectral matrix interrupt
+    LEON_Mask_interrupt( IRQ_SPECTRAL_MATRIX );     // mask spectral matrix interrupt
 
     // (2) reset spectral matrices registers
     set_sm_irq_onNewMatrix( 0 );                    // stop the spectral matrices

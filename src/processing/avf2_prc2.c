@@ -38,7 +38,7 @@ rtems_task avf2_task( rtems_task_argument argument )
     rtems_event_set event_out;
     rtems_status_code status;
     rtems_id queue_id_prc2;
-    asm_msg msgForMATR;
+    asm_msg msgForPRC;
     ring_node *nodeForAveraging;
     ring_node_asm *current_ring_node_asm_norm_f2;
 
@@ -67,9 +67,9 @@ rtems_task avf2_task( rtems_task_argument argument )
 
         //****************************************
         // initialize the mesage for the MATR task
-        msgForMATR.norm       = current_ring_node_asm_norm_f2;
-        msgForMATR.burst_sbm  = NULL;
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC2 task
+        msgForPRC.norm       = current_ring_node_asm_norm_f2;
+        msgForPRC.burst_sbm  = NULL;
+        msgForPRC.event      = 0x00;  // this composite event will be sent to the PRC2 task
         //
         //****************************************
 
@@ -79,7 +79,7 @@ rtems_task avf2_task( rtems_task_argument argument )
         SM_average_f2( current_ring_node_asm_norm_f2->matrix,
                        nodeForAveraging,
                        nb_norm_bp1,
-                       &msgForMATR );
+                       &msgForPRC );
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF2;
@@ -94,7 +94,7 @@ rtems_task avf2_task( rtems_task_argument argument )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                  || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F2;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_BP1_F2;
             }
         }
 
@@ -104,7 +104,7 @@ rtems_task avf2_task( rtems_task_argument argument )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                  || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F2;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_BP2_F2;
             }
         }
 
@@ -114,19 +114,19 @@ rtems_task avf2_task( rtems_task_argument argument )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                  || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F2;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_ASM_F2;
             }
         }
 
         //*************************
-        // send the message to MATR
-        if (msgForMATR.event != 0x00)
+        // send the message to PRC2
+        if (msgForPRC.event != 0x00)
         {
-            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC2);
+            status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForPRC, MSG_QUEUE_SIZE_PRC2);
         }
 
         if (status != RTEMS_SUCCESSFUL) {
-            PRINTF1("in AVF2 *** Error sending message to MATR, code %d\n", status)
+            PRINTF1("in AVF2 *** Error sending message to PRC2, code %d\n", status)
         }
     }
 }

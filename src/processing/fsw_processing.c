@@ -16,6 +16,13 @@ unsigned int nb_sm_f0_aux_f1;
 unsigned int nb_sm_f1;
 unsigned int nb_sm_f0_aux_f2;
 
+typedef enum restartState_t
+{
+    WAIT_FOR_F2,
+    WAIT_FOR_F1,
+    WAIT_FOR_F0
+} restartState;
+
 //************************
 // spectral matrices rings
 ring_node sm_ring_f0[ NB_RING_NODES_SM_F0 ];
@@ -118,7 +125,7 @@ void spectral_matrices_isr_f1( unsigned char statusReg )
     unsigned char status;
     ring_node *full_ring_node;
 
-    status = (statusReg & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f0_x bits
+    status = (statusReg & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f1_x bits
 
     switch(status)
     {
@@ -175,7 +182,7 @@ void spectral_matrices_isr_f2( unsigned char statusReg )
     unsigned char status;
     rtems_status_code status_code;
 
-    status = (statusReg & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f0_x bits
+    status = (statusReg & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f2_x bits
 
     switch(status)
     {
@@ -235,15 +242,48 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
 
     unsigned char statusReg;
 
+    static restartState state = WAIT_FOR_F2;
+
     statusReg = spectral_matrix_regs->status;
 
-    spectral_matrices_isr_f0( statusReg );
+    if (thisIsAnASMRestart == 0)
+    {   // this is not a restart sequence, process incoming matrices normally
+        spectral_matrices_isr_f0( statusReg );
 
-    spectral_matrices_isr_f1( statusReg );
+        spectral_matrices_isr_f1( statusReg );
 
-    spectral_matrices_isr_f2( statusReg );
+        spectral_matrices_isr_f2( statusReg );
+    }
+    else
+    {   // a restart sequence has to be launched
+        switch (state) {
+        case WAIT_FOR_F2:
+            if ((statusReg & 0x30) != 0x00)   // [0011 0000] check the status_ready_matrix_f2_x bits
+            {
+                state = WAIT_FOR_F1;
+            }
+            break;
+        case WAIT_FOR_F1:
+            if ((statusReg & 0x0c) != 0x00)   // [0000 1100] check the status_ready_matrix_f1_x bits
+            {
+                state = WAIT_FOR_F0;
+            }
+            break;
+        case WAIT_FOR_F0:
+            if ((statusReg & 0x03) != 0x00)   // [0000 0011] check the status_ready_matrix_f0_x bits
+            {
+                state = WAIT_FOR_F2;
+                thisIsAnASMRestart = 0;
+            }
+            break;
+        default:
+            break;
+        }
+        reset_sm_status();
+    }
 
     spectral_matrix_isr_error_handler( statusReg );
+
 }
 
 //******************
@@ -403,7 +443,7 @@ void BP_send_s1_s2(char *data, rtems_id queue_id, unsigned int nbBytesToSend, un
 
     // SEND PACKET
     // before lastValidTransitionDate, the data are drops even if they are ready
-    // this guarantees that no SBM packets will be received before the requestion enter mode time
+    // this guarantees that no SBM packets will be received before the requested enter mode time
     if ( time_management_regs->coarse_time >= lastValidEnterModeTime)
     {
         status =  rtems_message_queue_send( queue_id, data, nbBytesToSend);

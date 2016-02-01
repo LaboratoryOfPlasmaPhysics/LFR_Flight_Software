@@ -10,6 +10,7 @@
 #include "fsw_spacewire.h"
 #include "lfr_cpu_usage_report.h"
 
+
 enum lfr_reset_cause_t{
     UNKNOWN_CAUSE,
     POWER_ON,
@@ -20,6 +21,8 @@ enum lfr_reset_cause_t{
 };
 
 extern gptimer_regs_t *gptimer_regs;
+extern void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int*, unsigned int* );
+extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int* );
 
 #define LFR_RESET_CAUSE_UNKNOWN_CAUSE 0
 

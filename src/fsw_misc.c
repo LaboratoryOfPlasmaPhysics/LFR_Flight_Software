@@ -232,21 +232,21 @@ rtems_task hous_task(rtems_task_argument argument)
         PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
     }
 
-    BOOT_PRINTF("in HOUS ***\n")
+    BOOT_PRINTF("in HOUS ***\n");
 
     if (rtems_rate_monotonic_ident( name_hk_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( name_hk_rate_monotonic, &HK_id );
         if( status != RTEMS_SUCCESSFUL ) {
-            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status )
+            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status );
         }
     }
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if( status != RTEMS_SUCCESSFUL ) {
-        PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status )
+        PRINTF1( "ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status );
     }
     else {
-        DEBUG_PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n")
+        DEBUG_PRINTF("OK  *** in HOUS *** rtems_rate_monotonic_cancel(HK_id)\n");
     }
 
     // startup phase
@@ -339,7 +339,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[14] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
+    char *DumbMessages[15] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
                         "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
                         "in DUMB *** f3 buffer changed",                                        // RTEMS_EVENT_2
                         "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
@@ -352,7 +352,8 @@ rtems_task dumb_task( rtems_task_argument unused )
                         "VHDL ERR *** waveform picker",                                         // RTEMS_EVENT_10
                         "VHDL ERR *** unexpected ready matrix values",                          // RTEMS_EVENT_11
                         "WATCHDOG timer",                                                       // RTEMS_EVENT_12
-                        "TIMECODE timer"                                                        // RTEMS_EVENT_13
+                        "TIMECODE timer",                                                       // RTEMS_EVENT_13
+                        "TIMECODE ISR"                                                          // RTEMS_EVENT_14
     };
 
     BOOT_PRINTF("in DUMB *** \n")
@@ -360,7 +361,8 @@ rtems_task dumb_task( rtems_task_argument unused )
     while(1){
         rtems_event_receive(RTEMS_EVENT_0 | RTEMS_EVENT_1 | RTEMS_EVENT_2 | RTEMS_EVENT_3
                             | RTEMS_EVENT_4 | RTEMS_EVENT_5 | RTEMS_EVENT_6 | RTEMS_EVENT_7
-                            | RTEMS_EVENT_8 | RTEMS_EVENT_9 | RTEMS_EVENT_12 | RTEMS_EVENT_13,
+                            | RTEMS_EVENT_8 | RTEMS_EVENT_9 | RTEMS_EVENT_12 | RTEMS_EVENT_13
+                            | RTEMS_EVENT_14,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
         for ( i=0; i<32; i++)
@@ -376,6 +378,10 @@ rtems_task dumb_task( rtems_task_argument unused )
                 if (i==13)
                 {
                     PRINTF1("%s\n", DumbMessages[13])
+                }
+                if (i==14)
+                {
+                    PRINTF1("%s\n", DumbMessages[1])
                 }
             }
         }
@@ -732,6 +738,46 @@ void set_hk_lfr_time_not_synchro()
     default:
         PRINTF1("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n", synchronizationBit);
         break;
+    }
+
+}
+
+void set_hk_lfr_ahb_correctable()
+{
+    /** This function builds the error counter hk_lfr_ahb_correctable using the statistics provided
+     * by the Cache Control Register (ASI 2, offset 0) and in the Register Protection Control Register (ASR16) on the
+     * detected errors in the cache, in the integer unit and in the floating point unit.
+     *
+     * @param void
+     *
+     * @return void
+     *
+     * All errors are summed to set the value of the hk_lfr_ahb_correctable counter.
+     *
+    */
+
+    unsigned int ahb_correctable;
+    unsigned int instructionErrorCounter;
+    unsigned int dataErrorCounter;
+    unsigned int fprfErrorCounter;
+    unsigned int iurfErrorCounter;
+
+    CCR_getInstructionAndDataErrorCounters( &instructionErrorCounter, &dataErrorCounter);
+    ASR16_get_FPRF_IURF_ErrorCounters( &fprfErrorCounter, &iurfErrorCounter);
+
+    ahb_correctable = instructionErrorCounter
+            + dataErrorCounter
+            + fprfErrorCounter
+            + iurfErrorCounter
+            + housekeeping_packet.hk_lfr_ahb_correctable;
+
+    if (ahb_correctable > 255)
+    {
+        housekeeping_packet.hk_lfr_ahb_correctable =  255;
+    }
+    else
+    {
+        housekeeping_packet.hk_lfr_ahb_correctable = ahb_correctable;
     }
 
 }

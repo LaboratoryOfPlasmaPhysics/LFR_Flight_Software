@@ -81,19 +81,22 @@ void initCache()
 
     unsigned int cacheControlRegister;
 
-    cacheControlRegister = CCR_getValue();
-    PRINTF1("(0) cacheControlRegister = %x\n", cacheControlRegister);
-
     CCR_resetCacheControlRegister();
+    ASR16_resetRegisterProtectionControlRegister();
+
+    cacheControlRegister = CCR_getValue();
+    PRINTF1("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    PRINTF1("(0) ASR16                        = %x\n", *asr16Ptr);
 
     CCR_enableInstructionCache();       // ICS bits
     CCR_enableDataCache();              // DCS bits
     CCR_enableInstructionBurstFetch();  // IB  bit
 
-    cacheControlRegister = CCR_getValue();
-    PRINTF1("(1) cacheControlRegister = %x\n", cacheControlRegister);
+    faultTolerantScheme();
 
-    CCR_faultTolerantScheme();
+    cacheControlRegister = CCR_getValue();
+    PRINTF1("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    PRINTF1("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
 
     PRINTF("\n");
 }
@@ -198,8 +201,6 @@ rtems_task Init( rtems_task_argument ignored )
 
     // **************************
     // <SPACEWIRE INITIALIZATION>
-    grspw_timecode_callback = &timecode_irq_handler;
-
     status_spw = spacewire_open_link();     // (1) open the link
     if ( status_spw != RTEMS_SUCCESSFUL )
     {
@@ -268,8 +269,11 @@ rtems_task Init( rtems_task_argument ignored )
 
     set_hk_lfr_sc_potential_flag( true );
 
-    // start the timer used for the detection of missing parameters (started also by the timecode_irq_handler ISR)
-    status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT, timecode_timer_routine, NULL );
+    // start the timer to detect a missing spacewire timecode
+    // the timeout is larger because the spw IP needs to receive several valid timecodes before generating a tickout
+    // if a tickout is generated, the timer is restarted
+    status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT_INIT, timecode_timer_routine, NULL );
+    grspw_timecode_callback = &timecode_irq_handler;
 
     status = rtems_task_delete(RTEMS_SELF);
 

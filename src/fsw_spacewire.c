@@ -680,30 +680,41 @@ void increase_unsigned_char_counter( unsigned char *counter )
 
 rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *user_data )
 {
+    static unsigned char initStep = 1;
 
     unsigned char currentTimecodeCtr;
 
     currentTimecodeCtr = (unsigned char) (grspwPtr[0] & TIMECODE_MASK);
 
-    if (currentTimecodeCtr == previousTimecodeCtr)
+    if (initStep == 1)
     {
-        //************************
-        // HK_LFR_TIMECODE_MISSING
-        // the timecode value has not changed, no valid timecode has been received, the timecode is MISSING
-        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
-    }
-    else if (currentTimecodeCtr == (previousTimecodeCtr+1))
-    {
-        // the timecode value has changed and the value is valid, this is unexpected because
-        // the timer should not have fired, the timecode_irq_handler should have been raised
+        if (currentTimecodeCtr == previousTimecodeCtr)
+        {
+            //************************
+            // HK_LFR_TIMECODE_MISSING
+            // the timecode value has not changed, no valid timecode has been received, the timecode is MISSING
+            increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
+        }
+        else if (currentTimecodeCtr == (previousTimecodeCtr+1))
+        {
+            // the timecode value has changed and the value is valid, this is unexpected because
+            // the timer should not have fired, the timecode_irq_handler should have been raised
+        }
+        else
+        {
+            //************************
+            // HK_LFR_TIMECODE_INVALID
+            // the timecode value has changed and the value is not valid, no tickout has been generated
+            // this is why the timer has fired
+            increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_invalid );
+        }
     }
     else
     {
+        initStep = 1;
         //************************
-        // HK_LFR_TIMECODE_INVALID
-        // the timecode value has changed and the value is not valid, no tickout has been generated
-        // this is why the timer has fired
-        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_invalid );
+        // HK_LFR_TIMECODE_MISSING
+        increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
     }
 
     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_13 );
@@ -824,6 +835,10 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     // launch the timecode timer to detect missing or invalid timecodes
     previousTimecodeCtr = incomingTimecode;  // update the previousTimecodeCtr value
     status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT, timecode_timer_routine, NULL );
+    if (status != RTEMS_SUCCESSFUL)
+    {
+        rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_14 );
+    }
 }
 
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )

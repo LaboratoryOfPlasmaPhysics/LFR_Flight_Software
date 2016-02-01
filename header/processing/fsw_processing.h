@@ -82,6 +82,8 @@ typedef struct asm_msg
     unsigned int fineTimeSBM;
 } asm_msg;
 
+extern unsigned char thisIsAnASMRestart;
+
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];
 extern volatile int sm_f2[ ];

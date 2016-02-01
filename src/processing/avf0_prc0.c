@@ -41,7 +41,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     rtems_event_set event_out;
     rtems_status_code status;
     rtems_id queue_id_prc0;
-    asm_msg msgForMATR;
+    asm_msg msgForPRC;
     ring_node *nodeForAveraging;
     ring_node *ring_node_tab[8];
     ring_node_asm *current_ring_node_asm_burst_sbm_f0;
@@ -78,9 +78,9 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
 
         //****************************************
         // initialize the mesage for the MATR task
-        msgForMATR.norm       = current_ring_node_asm_norm_f0;
-        msgForMATR.burst_sbm  = current_ring_node_asm_burst_sbm_f0;
-        msgForMATR.event      = 0x00;  // this composite event will be sent to the PRC0 task
+        msgForPRC.norm       = current_ring_node_asm_norm_f0;
+        msgForPRC.burst_sbm  = current_ring_node_asm_burst_sbm_f0;
+        msgForPRC.event      = 0x00;  // this composite event will be sent to the PRC0 task
         //
         //****************************************
 
@@ -98,7 +98,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
                     current_ring_node_asm_burst_sbm_f0->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1,
-                    &msgForMATR );
+                    &msgForPRC );
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0;
@@ -114,11 +114,11 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             current_ring_node_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0->next;
             if ( lfrCurrentMode == LFR_MODE_BURST )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_BP1_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_BURST_BP1_F0;
             }
             else if ( (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_SBM_BP1_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_SBM_BP1_F0;
             }
         }
 
@@ -127,11 +127,11 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             nb_sbm_bp2 = 0;
             if ( lfrCurrentMode == LFR_MODE_BURST )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_BURST_BP2_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_BURST_BP2_F0;
             }
             else if ( (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_SBM_BP2_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_SBM_BP2_F0;
             }
         }
 
@@ -143,7 +143,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP1_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_BP1_F0;
             }
         }
 
@@ -153,7 +153,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_BP2_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_BP2_F0;
             }
         }
 
@@ -163,19 +163,19 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
             if ( (lfrCurrentMode == LFR_MODE_NORMAL)
                  || (lfrCurrentMode == LFR_MODE_SBM1) || (lfrCurrentMode == LFR_MODE_SBM2) )
             {
-                msgForMATR.event = msgForMATR.event | RTEMS_EVENT_NORM_ASM_F0;
+                msgForPRC.event = msgForPRC.event | RTEMS_EVENT_NORM_ASM_F0;
             }
         }
 
         //*************************
-        // send the message to MATR
-        if (msgForMATR.event != 0x00)
+        // send the message to PRC
+        if (msgForPRC.event != 0x00)
         {
-            status =  rtems_message_queue_send( queue_id_prc0, (char *) &msgForMATR, MSG_QUEUE_SIZE_PRC0);
+            status =  rtems_message_queue_send( queue_id_prc0, (char *) &msgForPRC, MSG_QUEUE_SIZE_PRC0);
         }
 
         if (status != RTEMS_SUCCESSFUL) {
-            PRINTF1("in AVF0 *** Error sending message to MATR, code %d\n", status)
+            PRINTF1("in AVF0 *** Error sending message to PRC, code %d\n", status)
         }
     }
 }
