@@ -929,7 +929,6 @@ void applyCorrection( double correction )
         correctionInt =  ceil(correction);
     }
     waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
-    //set_wfp_delta_f0_f0_2();
 }
 
 void snapshot_resynchronization( unsigned char *timePtr )
@@ -1210,7 +1209,7 @@ void set_wfp_delta_f2( void )   // parameter not used, only delta_f0 and delta_f
     delta_snapshot = waveform_picker_regs->delta_snapshot;
     nb_samples_per_snapshot = parameter_dump_packet.sy_lfr_n_swf_l[0] * 256 + parameter_dump_packet.sy_lfr_n_swf_l[1];
 
-    waveform_picker_regs->delta_f2 = delta_snapshot - nb_samples_per_snapshot / 2;
+    waveform_picker_regs->delta_f2 = delta_snapshot - nb_samples_per_snapshot / 2 - 1;
 }
 
 //*****************
