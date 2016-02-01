@@ -291,8 +291,6 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
-            hk_lfr_le_me_he_update();
-
             set_hk_lfr_time_not_synchro();
 
             housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
@@ -306,6 +304,8 @@ rtems_task hous_task(rtems_task_argument argument)
             get_temperatures( housekeeping_packet.hk_lfr_temp_scm );
             get_v_e1_e2_f3(   housekeeping_packet.hk_lfr_sc_v_f3  );
             get_cpu_load( (unsigned char *) &housekeeping_packet.hk_lfr_cpu_load );
+
+            hk_lfr_le_me_he_update();
 
             // SEND PACKET
             status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
@@ -680,14 +680,14 @@ void hk_lfr_le_me_he_update()
             + housekeeping_packet.hk_lfr_dpu_spw_escape
             + housekeeping_packet.hk_lfr_dpu_spw_credit
             + housekeeping_packet.hk_lfr_dpu_spw_write_sync
-            + housekeeping_packet.hk_lfr_dpu_spw_rx_ahb
-            + housekeeping_packet.hk_lfr_dpu_spw_tx_ahb
             + housekeeping_packet.hk_lfr_timecode_erroneous
             + housekeeping_packet.hk_lfr_timecode_missing
             + housekeeping_packet.hk_lfr_timecode_invalid
             + housekeeping_packet.hk_lfr_time_timecode_it
             + housekeeping_packet.hk_lfr_time_not_synchro
             + housekeeping_packet.hk_lfr_time_timecode_ctr;
+    // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb => not handled by the grspw driver
+    // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb => not handled by the grspw driver
 
     //update the medium severity error counter
     hk_lfr_me_cnt =
