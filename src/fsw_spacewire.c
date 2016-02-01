@@ -349,6 +349,7 @@ rtems_task link_task( rtems_task_argument argument )
         {
             status = rtems_task_wake_after( 10 );                                   // monitor the link each 100ms
             status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
+            watchdog_reload();
         }
 
         status = spacewire_stop_and_start_link( fdSPW );

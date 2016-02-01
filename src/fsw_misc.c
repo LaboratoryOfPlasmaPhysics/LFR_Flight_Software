@@ -86,6 +86,10 @@ rtems_isr watchdog_isr( rtems_vector_number vector )
     rtems_status_code status_code;
 
     status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_12 );
+
+    PRINTF("watchdog_isr *** this is the end, exit(0)\n");
+
+    exit(0);
 }
 
 void watchdog_configure(void)
@@ -199,6 +203,8 @@ rtems_task load_task(rtems_task_argument argument)
     watchdog_configure();
 
     watchdog_start();
+
+    set_sy_lfr_watchdog_enabled( true );
 
     while(1){
         status = rtems_rate_monotonic_period( watchdog_period_id, WATCHDOG_PERIOD );
@@ -642,6 +648,18 @@ void set_hk_lfr_mag_fields_flag( bool state )
     else
     {
         housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xd7;   // [1101 1111]
+    }
+}
+
+void set_sy_lfr_watchdog_enabled( bool state )
+{
+    if (state == true)
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x10;   // [0001 0000]
+    }
+    else
+    {
+        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xef;   // [1110 1111]
     }
 }
 

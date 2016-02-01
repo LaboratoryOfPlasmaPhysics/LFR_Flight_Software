@@ -155,7 +155,7 @@ typedef struct ring_node
 
 //*****
 // TIME
-#define CLKDIV_WATCHDOG     (1100000 - 1)       // 1.1s => 1100000
+#define CLKDIV_WATCHDOG     (10000000 - 1)       // 10.0s => 10 000 000
 #define TIMER_WATCHDOG      1
 #define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
@@ -209,8 +209,8 @@ typedef struct ring_node
 #define TASK_PRIORITY_PRC1 100
 #define TASK_PRIORITY_AVF2 110
 #define TASK_PRIORITY_PRC2 110
+#define TASK_PRIORITY_LOAD 190
 #define TASK_PRIORITY_DUMB 200
-#define TASK_PRIORITY_LOAD 220
 
 #define MSG_QUEUE_COUNT_RECV  10
 #define MSG_QUEUE_COUNT_SEND  50

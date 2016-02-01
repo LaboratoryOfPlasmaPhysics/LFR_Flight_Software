@@ -39,6 +39,7 @@ void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider);
 rtems_isr watchdog_isr( rtems_vector_number vector );
 void watchdog_configure(void);
 void watchdog_stop(void);
+void watchdog_reload(void);
 void watchdog_start(void);
 
 // SERIAL LINK
@@ -61,6 +62,7 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential );
 void get_cpu_load( unsigned char *resource_statistics );
 void set_hk_lfr_sc_potential_flag( bool state );
 void set_hk_lfr_mag_fields_flag( bool state );
+void set_sy_lfr_watchdog_enabled( bool state );
 void set_hk_lfr_calib_enable( bool state );
 void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause );
 void hk_lfr_le_me_he_update();
