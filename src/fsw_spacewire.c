@@ -567,6 +567,17 @@ void spacewire_set_RE( unsigned char val, unsigned int regAddr ) // [R]MAP [E]na
 
 void spacewire_read_statistics( void )
 {
+    /** This function reads the SpaceWire statistics from the grspw RTEMS driver.
+     *
+     * @param void
+     *
+     * @return void
+     *
+     * Once they are read, the counters are stored in a global variable used during the building of the
+     * HK packets.
+     *
+     */
+
     rtems_status_code status;
     spw_stats current;
 

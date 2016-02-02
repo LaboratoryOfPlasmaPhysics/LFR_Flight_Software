@@ -14,7 +14,6 @@
 #include "fsw_init.h"
 
 extern spw_stats grspw_stats;
-extern spw_stats spw_backup;
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;
 

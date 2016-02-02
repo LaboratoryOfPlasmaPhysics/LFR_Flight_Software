@@ -61,13 +61,13 @@ ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
 //***********************************************************
 // Interrupt Service Routine for spectral matrices processing
 
-void spectral_matrices_isr_f0( unsigned char statusReg )
+void spectral_matrices_isr_f0( int statusReg )
 {
     unsigned char status;
     rtems_status_code status_code;
     ring_node *full_ring_node;
 
-    status = statusReg & 0x03;   // [0011] get the status_ready_matrix_f0_x bits
+    status = (unsigned char) (statusReg & 0x03);   // [0011] get the status_ready_matrix_f0_x bits
 
     switch(status)
     {
@@ -119,13 +119,13 @@ void spectral_matrices_isr_f0( unsigned char statusReg )
     }
 }
 
-void spectral_matrices_isr_f1( unsigned char statusReg )
+void spectral_matrices_isr_f1( int statusReg )
 {
     rtems_status_code status_code;
     unsigned char status;
     ring_node *full_ring_node;
 
-    status = (statusReg & 0x0c) >> 2;   // [1100] get the status_ready_matrix_f1_x bits
+    status = (unsigned char) ((statusReg & 0x0c) >> 2);   // [1100] get the status_ready_matrix_f1_x bits
 
     switch(status)
     {
@@ -177,12 +177,12 @@ void spectral_matrices_isr_f1( unsigned char statusReg )
     }
 }
 
-void spectral_matrices_isr_f2( unsigned char statusReg )
+void spectral_matrices_isr_f2( int statusReg )
 {
     unsigned char status;
     rtems_status_code status_code;
 
-    status = (statusReg & 0x30) >> 4;   // [0011 0000] get the status_ready_matrix_f2_x bits
+    status = (unsigned char) ((statusReg & 0x30) >> 4);   // [0011 0000] get the status_ready_matrix_f2_x bits
 
     switch(status)
     {
@@ -220,9 +220,19 @@ void spectral_matrices_isr_f2( unsigned char statusReg )
     }
 }
 
-void spectral_matrix_isr_error_handler( unsigned char statusReg )
+void spectral_matrix_isr_error_handler( int statusReg )
 {
+    // STATUS REGISTER
+    // input_fifo_write(2) *** input_fifo_write(1) *** input_fifo_write(0)
+    //           10                    9                       8
+    // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
+    //      7                  6             5       4       3       2       1       0
+
     rtems_status_code status_code;
+
+    //***************************************************
+    // the ASM status register is copied in the HK packet
+    housekeeping_packet.hk_lfr_vhdl_aa_sm = (unsigned char) (statusReg & 0x7c0 >> 6);    // [0111 1100 0000]
 
     if (statusReg & 0x7c0)    // [0111 1100 0000]
     {
@@ -230,6 +240,7 @@ void spectral_matrix_isr_error_handler( unsigned char statusReg )
     }
 
     spectral_matrix_regs->status = spectral_matrix_regs->status & 0x7c0;
+
 }
 
 rtems_isr spectral_matrices_isr( rtems_vector_number vector )
@@ -240,7 +251,7 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
     //      7                  6             5       4       3       2       1       0
 
-    unsigned char statusReg;
+    int statusReg;
 
     static restartState state = WAIT_FOR_F2;
 

@@ -78,6 +78,3 @@ unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounterHK;
 spw_stats grspw_stats;
-spw_stats spw_backup;
-
-

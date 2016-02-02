@@ -280,6 +280,11 @@ rtems_isr waveforms_isr( rtems_vector_number vector )
 
     waveforms_isr_f3();
 
+    //*************************************************
+    // copy the status bits in the housekeeping packets
+    housekeeping_packet.hk_lfr_vhdl_iir_cal =
+            (unsigned char) ((waveform_picker_regs->status & 0xff00) >> 8);
+
     if ( (waveform_picker_regs->status & 0xff00) != 0x00)    // [1111 1111 0000 0000] check the error bits
     {
         spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_10 );
