@@ -66,8 +66,9 @@ rtems_task spiq_task(rtems_task_argument unused)
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (2)
         if ( linkStatus != 5 )  // [2.a] not in run state, reset the link
         {
-            spacewire_compute_stats_offsets();
+            spacewire_save_stats();
             status = spacewire_several_connect_attemps( );
+            spacewire_restore_stats();
         }
         else                    // [2.b] in run state, start the link
         {
@@ -352,7 +353,9 @@ rtems_task link_task( rtems_task_argument argument )
             watchdog_reload();
         }
 
+        spacewire_save_stats();
         status = spacewire_stop_and_start_link( fdSPW );
+        spacewire_restore_stats();
 
         if (status != RTEMS_SUCCESSFUL)
         {
@@ -505,6 +508,7 @@ int spacewire_several_connect_attemps( void )
         status = rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
 
         status_spw = spacewire_stop_and_start_link( fdSPW );
+
         if (  status_spw != RTEMS_SUCCESSFUL )
         {
             PRINTF1("in spacewire_reset_link *** ERR spacewire_start_link code %d\n",  status_spw)
@@ -563,107 +567,314 @@ void spacewire_set_RE( unsigned char val, unsigned int regAddr ) // [R]MAP [E]na
     }
 }
 
-void spacewire_compute_stats_offsets( void )
+void spacewire_save_stats( void )
 {
-    /** This function computes the SpaceWire statistics offsets in case of a SpaceWire related interruption raising.
+    /** This function save the SpaceWire statistics.
      *
-     * The offsets keep a record of the statistics in case of a reset of the statistics. They are added to the current statistics
-     * to keep the counters consistent even after a reset of the SpaceWire driver (the counter are set to zero by the driver when it
-     * during the open systel call).
+     * @param void
+     *
+     * @return void
      *
      */
 
-    spw_stats spacewire_stats_grspw;
+    spw_stats spw_current;
     rtems_status_code status;
 
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spw_current );
 
-    spacewire_stats_backup.packets_received = spacewire_stats_grspw.packets_received
-            + spacewire_stats.packets_received;
-    spacewire_stats_backup.packets_sent = spacewire_stats_grspw.packets_sent
-            + spacewire_stats.packets_sent;
-    spacewire_stats_backup.parity_err = spacewire_stats_grspw.parity_err
-            + spacewire_stats.parity_err;
-    spacewire_stats_backup.disconnect_err = spacewire_stats_grspw.disconnect_err
-            + spacewire_stats.disconnect_err;
-    spacewire_stats_backup.escape_err = spacewire_stats_grspw.escape_err
-            + spacewire_stats.escape_err;
-    spacewire_stats_backup.credit_err = spacewire_stats_grspw.credit_err
-            + spacewire_stats.credit_err;
-    spacewire_stats_backup.write_sync_err = spacewire_stats_grspw.write_sync_err
-            + spacewire_stats.write_sync_err;
-    spacewire_stats_backup.rx_rmap_header_crc_err = spacewire_stats_grspw.rx_rmap_header_crc_err
-            + spacewire_stats.rx_rmap_header_crc_err;
-    spacewire_stats_backup.rx_rmap_data_crc_err = spacewire_stats_grspw.rx_rmap_data_crc_err
-            + spacewire_stats.rx_rmap_data_crc_err;
-    spacewire_stats_backup.early_ep = spacewire_stats_grspw.early_ep
-            + spacewire_stats.early_ep;
-    spacewire_stats_backup.invalid_address = spacewire_stats_grspw.invalid_address
-            + spacewire_stats.invalid_address;
-    spacewire_stats_backup.rx_eep_err = spacewire_stats_grspw.rx_eep_err
-            + spacewire_stats.rx_eep_err;
-    spacewire_stats_backup.rx_truncated = spacewire_stats_grspw.rx_truncated
-            + spacewire_stats.rx_truncated;
+    //    typedef struct {
+    //        unsigned int tx_link_err;             // NOT IN HK
+    //        unsigned int rx_rmap_header_crc_err;  // NOT IN HK
+    //        unsigned int rx_rmap_data_crc_err;    // NOT IN HK
+    //        unsigned int rx_eep_err;
+    //        unsigned int rx_truncated;
+    //        unsigned int parity_err;
+    //        unsigned int escape_err;
+    //        unsigned int credit_err;
+    //        unsigned int write_sync_err;
+    //        unsigned int disconnect_err;
+    //        unsigned int early_ep;
+    //        unsigned int invalid_address;
+    //        unsigned int packets_sent;
+    //        unsigned int packets_received;
+    //    } spw_stats;
+
+    // rx_eep_err
+    spw_backup.rx_eep_err       = grspw_stats.rx_eep_err        + spw_current.rx_eep_err;
+    // rx_truncated
+    spw_backup.rx_truncated     = grspw_stats.rx_truncated      + spw_current.rx_truncated;
+    // parity_err
+    spw_backup.parity_err       = grspw_stats.parity_err        + spw_current.parity_err;
+    // escape_err
+    spw_backup.escape_err       = grspw_stats.escape_err        + spw_current.escape_err;
+    // credit_err
+    spw_backup.credit_err       = grspw_stats.credit_err        + spw_current.credit_err;
+    // write_sync_err
+    spw_backup.write_sync_err   = grspw_stats.write_sync_err    + spw_current.write_sync_err;
+    // disconnect_err
+    spw_backup.disconnect_err   = grspw_stats.disconnect_err    + spw_current.disconnect_err;
+    // early_ep
+    spw_backup.early_ep         = grspw_stats.early_ep          + spw_current.early_ep;
+    // invalid_address
+    spw_backup.invalid_address  = grspw_stats.invalid_address   + spw_current.invalid_address;
+    // packets_sent
+    spw_backup.packets_sent     = grspw_stats.packets_sent      + spw_current.packets_sent;
+    // packets_received
+    spw_backup.packets_received = grspw_stats.packets_received  + spw_current.packets_received;
+
+}
+
+void spacewire_restore_stats( void )
+{
+    /** This function restore the SpaceWire statistics values recorded before a link restart which reset the counters.
+     *
+     * @param void
+     *
+     * @return void
+     *
+     */
+
+    // rx_eep_err
+    grspw_stats.rx_eep_err      = spw_backup.rx_eep_err ;
+    // rx_truncated
+    grspw_stats.rx_truncated    = spw_backup.rx_truncated;
+    // parity_err
+    grspw_stats.parity_err      = spw_backup.parity_err;
+    // escape_err
+    grspw_stats.escape_err      = spw_backup.escape_err;
+    // credit_err
+    grspw_stats.credit_err      = spw_backup.credit_err;
+    // write_sync_err
+    grspw_stats.write_sync_err  = spw_backup.write_sync_err;
+    // disconnect_err
+    grspw_stats.disconnect_err  = spw_backup.disconnect_err;
+    // early_ep
+    grspw_stats.early_ep        = spw_backup.early_ep;
+    // invalid_address
+    grspw_stats.invalid_address = spw_backup.invalid_address;
+    // packets_sent
+    grspw_stats.packets_sent    = spw_backup.packets_sent;
+    // packets_received
+    grspw_stats.packets_received= spw_backup.packets_received;
+
 }
 
 void spacewire_update_statistics( void )
 {
     rtems_status_code status;
-    spw_stats spacewire_stats_grspw;
+    spw_stats spw_current;
 
-    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spacewire_stats_grspw );
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &spw_current );
 
-    spacewire_stats.packets_received = spacewire_stats_backup.packets_received
-            + spacewire_stats_grspw.packets_received;
-    spacewire_stats.packets_sent = spacewire_stats_backup.packets_sent
-            + spacewire_stats_grspw.packets_sent;
-    spacewire_stats.parity_err = spacewire_stats_backup.parity_err
-            + spacewire_stats_grspw.parity_err;
-    spacewire_stats.disconnect_err = spacewire_stats_backup.disconnect_err
-            + spacewire_stats_grspw.disconnect_err;
-    spacewire_stats.escape_err = spacewire_stats_backup.escape_err
-            + spacewire_stats_grspw.escape_err;
-    spacewire_stats.credit_err = spacewire_stats_backup.credit_err
-            + spacewire_stats_grspw.credit_err;
-    spacewire_stats.write_sync_err = spacewire_stats_backup.write_sync_err
-            + spacewire_stats_grspw.write_sync_err;
-    spacewire_stats.rx_rmap_header_crc_err = spacewire_stats_backup.rx_rmap_header_crc_err
-            + spacewire_stats_grspw.rx_rmap_header_crc_err;
-    spacewire_stats.rx_rmap_data_crc_err = spacewire_stats_backup.rx_rmap_data_crc_err
-            + spacewire_stats_grspw.rx_rmap_data_crc_err;
-    spacewire_stats.early_ep = spacewire_stats_backup.early_ep
-            + spacewire_stats_grspw.early_ep;
-    spacewire_stats.invalid_address = spacewire_stats_backup.invalid_address
-            + spacewire_stats_grspw.invalid_address;
-    spacewire_stats.rx_eep_err = spacewire_stats_backup.rx_eep_err
-            +  spacewire_stats_grspw.rx_eep_err;
-    spacewire_stats.rx_truncated = spacewire_stats_backup.rx_truncated
-            + spacewire_stats_grspw.rx_truncated;
-    //spacewire_stats.tx_link_err;
+//    typedef struct {
+//        unsigned int tx_link_err;             // NOT IN HK
+//        unsigned int rx_rmap_header_crc_err;  // NOT IN HK
+//        unsigned int rx_rmap_data_crc_err;    // NOT IN HK
+//        unsigned int rx_eep_err;
+//        unsigned int rx_truncated;
+//        unsigned int parity_err;
+//        unsigned int escape_err;
+//        unsigned int credit_err;
+//        unsigned int write_sync_err;
+//        unsigned int disconnect_err;
+//        unsigned int early_ep;
+//        unsigned int invalid_address;
+//        unsigned int packets_sent;
+//        unsigned int packets_received;
+//    } spw_stats;
 
+    // rx_eep_err
+    grspw_stats.rx_eep_err      = grspw_stats.rx_eep_err         + spw_current.rx_eep_err;
+    // rx_truncated
+    grspw_stats.rx_truncated    = grspw_stats.rx_truncated       + spw_current.rx_truncated;
+    // parity_err
+    grspw_stats.parity_err      = grspw_stats.parity_err         + spw_current.parity_err;
+    // escape_err
+    grspw_stats.escape_err      = grspw_stats.escape_err         + spw_current.escape_err;
+    // credit_err
+    grspw_stats.credit_err      = grspw_stats.credit_err         + spw_current.credit_err;
+    // write_sync_err
+    grspw_stats.write_sync_err  = grspw_stats.write_sync_err     + spw_current.write_sync_err;
+    // disconnect_err
+    grspw_stats.disconnect_err  = grspw_stats.disconnect_err     + spw_current.disconnect_err;
+    // early_ep
+    grspw_stats.early_ep        = grspw_stats.early_ep           + spw_current.early_ep;
+    // invalid_address
+    grspw_stats.invalid_address = grspw_stats.invalid_address    + spw_current.invalid_address;
+    // packets_sent
+    grspw_stats.packets_sent    = grspw_stats.packets_sent       + spw_current.packets_sent;
+    // packets_received
+    grspw_stats.packets_received= grspw_stats.packets_received   + spw_current.packets_received;
+
+}
+
+void spacewire_get_last_error( void )
+{
+    static spw_stats previous;
+    spw_stats current;
+    rtems_status_code status;
+
+    unsigned int  hk_lfr_last_er_rid;
+    unsigned char hk_lfr_last_er_code;
+    int coarseTime;
+    int fineTime;
+    unsigned char update_hk_lfr_last_er;
+
+    update_hk_lfr_last_er = 0;
+
+    status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current );
+
+    // get current time
+    coarseTime = time_management_regs->coarse_time;
+    fineTime   = time_management_regs->fine_time;
+
+    //    typedef struct {
+    //        unsigned int tx_link_err;             // NOT IN HK
+    //        unsigned int rx_rmap_header_crc_err;  // NOT IN HK
+    //        unsigned int rx_rmap_data_crc_err;    // NOT IN HK
+    //        unsigned int rx_eep_err;
+    //        unsigned int rx_truncated;
+    //        unsigned int parity_err;
+    //        unsigned int escape_err;
+    //        unsigned int credit_err;
+    //        unsigned int write_sync_err;
+    //        unsigned int disconnect_err;
+    //        unsigned int early_ep;
+    //        unsigned int invalid_address;
+    //        unsigned int packets_sent;
+    //        unsigned int packets_received;
+    //    } spw_stats;
+
+    // tx_link_err *** no code associated to this field
+    // rx_rmap_header_crc_err ***  LE *** in HK
+    if (previous.rx_rmap_header_crc_err != current.rx_rmap_header_crc_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_HEADER_CRC;
+        update_hk_lfr_last_er = 1;
+    }
+    // rx_rmap_data_crc_err ***  LE *** NOT IN HK
+    if (previous.rx_rmap_data_crc_err != current.rx_rmap_data_crc_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_DATA_CRC;
+        update_hk_lfr_last_er = 1;
+    }
+    // rx_eep_err
+    if (previous.rx_eep_err != current.rx_eep_err)
+    {
+        hk_lfr_last_er_rid  = RID_ME_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_EEP;
+        update_hk_lfr_last_er = 1;
+    }
+    // rx_truncated
+    if (previous.rx_truncated != current.rx_truncated)
+    {
+        hk_lfr_last_er_rid  = RID_ME_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_RX_TOO_BIG;
+        update_hk_lfr_last_er = 1;
+    }
+    // parity_err
+    if (previous.parity_err != current.parity_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_PARITY;
+        update_hk_lfr_last_er = 1;
+    }
+    // escape_err
+    if (previous.parity_err != current.parity_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_ESCAPE;
+        update_hk_lfr_last_er = 1;
+    }
+    // credit_err
+    if (previous.credit_err != current.credit_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_CREDIT;
+        update_hk_lfr_last_er = 1;
+    }
+    // write_sync_err
+    if (previous.write_sync_err != current.write_sync_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_WRITE_SYNC;
+        update_hk_lfr_last_er = 1;
+    }
+    // disconnect_err
+    if (previous.disconnect_err != current.disconnect_err)
+    {
+        hk_lfr_last_er_rid  = RID_LE_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_DISCONNECT;
+        update_hk_lfr_last_er = 1;
+    }
+    // early_ep
+    if (previous.early_ep != current.early_ep)
+    {
+        hk_lfr_last_er_rid  = RID_ME_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_EARLY_EOP_EEP;
+        update_hk_lfr_last_er = 1;
+    }
+    // invalid_address
+    if (previous.invalid_address != current.invalid_address)
+    {
+        hk_lfr_last_er_rid = RID_ME_LFR_DPU_SPW;
+        hk_lfr_last_er_code = CODE_INVALID_ADDRESS;
+        update_hk_lfr_last_er = 1;
+    }
+
+    // if a field has changed, update the hk_last_er fields
+    if (update_hk_lfr_last_er == 1)
+    {
+        update_hk_lfr_last_er_fields( hk_lfr_last_er_rid, hk_lfr_last_er_code );
+    }
+
+    previous = current;
+}
+
+void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code)
+{
+    unsigned char *coarseTimePtr;
+    unsigned char *fineTimePtr;
+
+    coarseTimePtr = (unsigned char*) &time_management_regs->coarse_time;
+    fineTimePtr = (unsigned char*) &time_management_regs->fine_time;
+
+    housekeeping_packet.hk_lfr_last_er_rid[0]   = (unsigned char) ((rid & 0xff00) >> 8 );
+    housekeeping_packet.hk_lfr_last_er_rid[1]   = (unsigned char)  (rid & 0x00ff);
+    housekeeping_packet.hk_lfr_last_er_code     = code;
+    housekeeping_packet.hk_lfr_last_er_time[0]  = coarseTimePtr[0];
+    housekeeping_packet.hk_lfr_last_er_time[1]  = coarseTimePtr[1];
+    housekeeping_packet.hk_lfr_last_er_time[2]  = coarseTimePtr[2];
+    housekeeping_packet.hk_lfr_last_er_time[3]  = coarseTimePtr[3];
+    housekeeping_packet.hk_lfr_last_er_time[4]  = fineTimePtr[2];
+    housekeeping_packet.hk_lfr_last_er_time[5]  = fineTimePtr[3];
+}
+
+void update_hk_with_grspw_stats( spw_stats stats )
+{
     //****************************
     // DPU_SPACEWIRE_IF_STATISTICS
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0] = (unsigned char) (spacewire_stats.packets_received >> 8);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[1] = (unsigned char) (spacewire_stats.packets_received);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0] = (unsigned char) (spacewire_stats.packets_sent >> 8);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[1] = (unsigned char) (spacewire_stats.packets_sent);
-    //housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt;
-    //housekeeping_packet.hk_lfr_dpu_spw_last_timc;
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0]   = (unsigned char) (stats.packets_received >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[1]   = (unsigned char) (stats.packets_received);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0]  = (unsigned char) (stats.packets_sent >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[1]  = (unsigned char) (stats.packets_sent);
 
     //******************************************
     // ERROR COUNTERS / SPACEWIRE / LOW SEVERITY
-    housekeeping_packet.hk_lfr_dpu_spw_parity = (unsigned char) spacewire_stats.parity_err;
-    housekeeping_packet.hk_lfr_dpu_spw_disconnect = (unsigned char) spacewire_stats.disconnect_err;
-    housekeeping_packet.hk_lfr_dpu_spw_escape = (unsigned char) spacewire_stats.escape_err;
-    housekeeping_packet.hk_lfr_dpu_spw_credit = (unsigned char) spacewire_stats.credit_err;
-    housekeeping_packet.hk_lfr_dpu_spw_write_sync = (unsigned char) spacewire_stats.write_sync_err;
+    housekeeping_packet.hk_lfr_dpu_spw_parity       = (unsigned char) stats.parity_err;
+    housekeeping_packet.hk_lfr_dpu_spw_disconnect   = (unsigned char) stats.disconnect_err;
+    housekeeping_packet.hk_lfr_dpu_spw_escape       = (unsigned char) stats.escape_err;
+    housekeeping_packet.hk_lfr_dpu_spw_credit       = (unsigned char) stats.credit_err;
+    housekeeping_packet.hk_lfr_dpu_spw_write_sync   = (unsigned char) stats.write_sync_err;
 
     //*********************************************
     // ERROR COUNTERS / SPACEWIRE / MEDIUM SEVERITY
-    housekeeping_packet.hk_lfr_dpu_spw_early_eop = (unsigned char) spacewire_stats.early_ep;
-    housekeeping_packet.hk_lfr_dpu_spw_invalid_addr = (unsigned char) spacewire_stats.invalid_address;
-    housekeeping_packet.hk_lfr_dpu_spw_eep = (unsigned char) spacewire_stats.rx_eep_err;
-    housekeeping_packet.hk_lfr_dpu_spw_rx_too_big = (unsigned char) spacewire_stats.rx_truncated;
+    housekeeping_packet.hk_lfr_dpu_spw_early_eop    = (unsigned char) stats.early_ep;
+    housekeeping_packet.hk_lfr_dpu_spw_invalid_addr = (unsigned char) stats.invalid_address;
+    housekeeping_packet.hk_lfr_dpu_spw_eep          = (unsigned char) stats.rx_eep_err;
+    housekeeping_packet.hk_lfr_dpu_spw_rx_too_big   = (unsigned char) stats.rx_truncated;
 }
 
 void increase_unsigned_char_counter( unsigned char *counter )
@@ -695,6 +906,7 @@ rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *use
             // HK_LFR_TIMECODE_MISSING
             // the timecode value has not changed, no valid timecode has been received, the timecode is MISSING
             increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
+            update_hk_lfr_last_er_fields( RID_LE_LFR_TIMEC, CODE_MISSING );
         }
         else if (currentTimecodeCtr == (previousTimecodeCtr+1))
         {
@@ -708,6 +920,7 @@ rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *use
             // the timecode value has changed and the value is not valid, no tickout has been generated
             // this is why the timer has fired
             increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_invalid );
+            update_hk_lfr_last_er_fields( RID_LE_LFR_TIMEC, CODE_INVALID );
         }
     }
     else
@@ -716,6 +929,7 @@ rtems_timer_service_routine timecode_timer_routine( rtems_id timer_id, void *use
         //************************
         // HK_LFR_TIMECODE_MISSING
         increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_missing );
+        update_hk_lfr_last_er_fields( RID_LE_LFR_TIMEC, CODE_MISSING );
     }
 
     rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_13 );
@@ -815,6 +1029,7 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     {
         // this is unexpected but a tickout could have been raised despite of the timecode being erroneous
         increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_timecode_erroneous );
+        update_hk_lfr_last_er_fields( RID_LE_LFR_TIMEC, CODE_ERRONEOUS );
     }
 
     //************************
@@ -823,6 +1038,7 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     if (check_timecode_and_internal_time_coherency( incomingTimecode, internalTime ) == LFR_DEFAULT)
     {
         increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_time_timecode_it );
+        update_hk_lfr_last_er_fields( RID_LE_LFR_TIME, CODE_TIMECODE_IT );
     }
 
     //********************
@@ -831,6 +1047,7 @@ void timecode_irq_handler( void *pDev, void *regs, int minor, unsigned int tc )
     if (incomingTimecode != updateTime)
     {
         increase_unsigned_char_counter( &housekeeping_packet.hk_lfr_time_timecode_ctr );
+        update_hk_lfr_last_er_fields( RID_LE_LFR_TIME, CODE_TIMECODE_CTR );
     }
 
     // launch the timecode timer to detect missing or invalid timecodes

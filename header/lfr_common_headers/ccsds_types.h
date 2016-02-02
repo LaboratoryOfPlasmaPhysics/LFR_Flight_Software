@@ -140,6 +140,30 @@
 #define CORRUPTED           42005   // 0xa4 0x15
 #define CCSDS_TM_VALID      7
 
+// HK_LFR_LAST_ER_RID
+#define RID_LE_LFR_TIME     42119
+#define RID_LE_LFR_DPU_SPW  42128
+#define RID_LE_LFR_TIMEC    42129
+#define RID_ME_LFR_DPU_SPW  42338
+// HK_LFR_LAST_ER_CODE
+#define CODE_PARITY             1
+#define CODE_DISCONNECT         2
+#define CODE_ESCAPE             3
+#define CODE_CREDIT             4
+#define CODE_WRITE_SYNC         5
+#define CODE_EARLY_EOP_EEP      6
+#define CODE_INVALID_ADDRESS    7
+#define CODE_EEP                8
+#define CODE_RX_TOO_BIG         9
+#define CODE_HEADER_CRC         16
+#define CODE_DATA_CRC           17
+#define CODE_ERRONEOUS          20
+#define CODE_MISSING            21
+#define CODE_INVALID            22
+#define CODE_TIMECODE_IT        24
+#define CODE_NOT_SYNCHRO        25
+#define CODE_TIMECODE_CTR       26
+
 // TC SID
 #define SID_TC_GROUND                   0
 #define SID_TC_MISSION_TIMELINE         110

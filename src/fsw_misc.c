@@ -297,6 +297,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             spacewire_update_statistics();
 
+            update_hk_with_grspw_stats( grspw_stats );
+
             set_hk_lfr_time_not_synchro();
 
             housekeeping_packet.hk_lfr_q_sd_fifo_size_max = hk_lfr_q_sd_fifo_size_max;
@@ -751,6 +753,7 @@ void set_hk_lfr_time_not_synchro()
         {
             synchroLost = 1;
             increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_time_not_synchro);
+            update_hk_lfr_last_er_fields( RID_LE_LFR_TIME, CODE_NOT_SYNCHRO );
         }
         break;
     default:

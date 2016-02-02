@@ -920,13 +920,27 @@ void applyCorrection( double correction )
 {
     int correctionInt;
 
-    if (correction>=0)
+    if (correction>=0.)
     {
-        correctionInt = floor(correction);
+        if ( correction > 0.5 )
+        {
+            correctionInt = 1;
+        }
+        else
+        {
+            correctionInt = floor(correction);
+        }
     }
     else
     {
-        correctionInt =  ceil(correction);
+        if ( correction < -0.5)
+        {
+            correctionInt = -1;
+        }
+        else
+        {
+            correctionInt =  ceil(correction);
+        }
     }
     waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
 }
@@ -934,7 +948,6 @@ void applyCorrection( double correction )
 void snapshot_resynchronization( unsigned char *timePtr )
 {
     static double correction    = 0.;
-    static double delay_0       = 0.;
     static resynchro_state state = MEASURE_0;
 
     int correctionInt;
@@ -948,8 +961,7 @@ void snapshot_resynchronization( unsigned char *timePtr )
         // ********
         PRINTF("MEASURE_0 ===\n");
         state = CORRECTION_0;
-        delay_0 = computeCorrection( timePtr );
-        correction = delay_0;
+        correction = computeCorrection( timePtr );
         PRINTF1("MEASURE_0 === correction = %.2f\n", correction );
         applyCorrection( correction );
         PRINTF1("MEASURE_0 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);

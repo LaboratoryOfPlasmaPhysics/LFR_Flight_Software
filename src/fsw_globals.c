@@ -77,7 +77,7 @@ unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounterHK;
-spw_stats spacewire_stats;
-spw_stats spacewire_stats_backup;
+spw_stats grspw_stats;
+spw_stats spw_backup;
 
 
