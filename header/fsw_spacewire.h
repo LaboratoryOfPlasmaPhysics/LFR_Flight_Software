@@ -31,11 +31,9 @@ int spacewire_configure_link(int fd );
 int spacewire_several_connect_attemps( void );
 void spacewire_set_NP( unsigned char val, unsigned int regAddr ); // No Port force
 void spacewire_set_RE( unsigned char val, unsigned int regAddr ); // RMAP Enable
-void spacewire_save_stats( void );
-void spacewire_restore_stats( void );
-void spacewire_update_statistics( void );
+void spacewire_read_statistics( void );
 void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code);
-void update_hk_with_grspw_stats( spw_stats stats );
+void update_hk_with_grspw_stats(void );
 void increase_unsigned_char_counter( unsigned char *counter );
 
 void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header );

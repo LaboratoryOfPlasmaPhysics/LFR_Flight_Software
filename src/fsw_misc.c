@@ -295,9 +295,9 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
 
-            spacewire_update_statistics();
+            spacewire_read_statistics();
 
-            update_hk_with_grspw_stats( grspw_stats );
+            update_hk_with_grspw_stats();
 
             set_hk_lfr_time_not_synchro();
 
