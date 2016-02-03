@@ -70,7 +70,7 @@ typedef struct{
     int addr_data_f3_0;     // 0x20
     int addr_data_f3_1;     // 0x24
     volatile int status;    // 0x28
-    int delta_snapshot;     // 0x2c
+    volatile int delta_snapshot;     // 0x2c
     int delta_f0;           // 0x30
     int delta_f0_2;         // 0x34
     int delta_f1;           // 0x38

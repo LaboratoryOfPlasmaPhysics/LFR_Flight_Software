@@ -273,6 +273,7 @@ rtems_task Init( rtems_task_argument ignored )
     // the timeout is larger because the spw IP needs to receive several valid timecodes before generating a tickout
     // if a tickout is generated, the timer is restarted
     status = rtems_timer_fire_after( timecode_timer_id, TIMECODE_TIMER_TIMEOUT_INIT, timecode_timer_routine, NULL );
+
     grspw_timecode_callback = &timecode_irq_handler;
 
     status = rtems_task_delete(RTEMS_SELF);

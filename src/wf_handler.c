@@ -45,10 +45,8 @@ ring_node ring_node_swf2_extracted;
 
 typedef enum resynchro_state_t
 {
-    MEASURE_0,
-    MEASURE_1,
-    CORRECTION_0,
-    CORRECTION_1
+    MEASURE,
+    CORRECTION
 } resynchro_state;
 
 //*********************
@@ -205,6 +203,8 @@ inline void waveform_isr_normal_sbm1_sbm2( void )
             waveform_picker_regs->addr_data_f0_1    = current_ring_node_f0->buffer_address;
             waveform_picker_regs->status            = waveform_picker_regs->status & 0x00001102; // [0001 0001 0000 0010]
         }
+        // send an event to the WFRM task for resynchro activities
+        status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_SWF_RESYNCH );
     }
 
     //***
@@ -350,10 +350,8 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
 
     while(1){
         // wait for an RTEMS_EVENT
-        rtems_event_receive(RTEMS_EVENT_MODE_NORMAL,
+        rtems_event_receive(RTEMS_EVENT_MODE_NORMAL | RTEMS_EVENT_SWF_RESYNCH,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-
-        snapshot_resynchronization( (unsigned char *)  &ring_node_to_send_swf_f0->coarseTime );
 
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
@@ -364,6 +362,10 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send_swf_f0,     sizeof( ring_node* ) );
             status =  rtems_message_queue_send( queue_id, &ring_node_swf1_extracted_ptr, sizeof( ring_node* ) );
             status =  rtems_message_queue_send( queue_id, &ring_node_swf2_extracted_ptr, sizeof( ring_node* ) );
+        }
+        if (event_out == RTEMS_EVENT_SWF_RESYNCH)
+        {
+            snapshot_resynchronization( (unsigned char *)  &ring_node_to_send_swf_f0->coarseTime );
         }
     }
 }
@@ -461,7 +463,8 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
     BOOT_PRINTF("in CWF2 ***\n")
 
             while(1){
-        // wait for an RTEMS_EVENT
+        // wait for an RTEMS_EVENT// send the snapshot when built
+        status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
         rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
                              RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send = getRingNodeToSendCWF( 2 );
@@ -482,10 +485,8 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
                 // extract the snapshot
                 build_snapshot_from_ring( ring_node_to_send_swf_f2, 2, acquisitionTimeF0_asLong,
                                           &ring_node_swf2_extracted, swf2_extracted );
-                // send the snapshot when built
-                status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
                 extractSWF2 = false;
-                swf2_ready = true;
+                swf2_ready = true;  // once the snapshot at f2 is ready the CWF1 task will send an event to WFRM
             }
             if (swf0_ready_flag_f2 == true)
             {
@@ -953,7 +954,7 @@ void applyCorrection( double correction )
 void snapshot_resynchronization( unsigned char *timePtr )
 {
     static double correction    = 0.;
-    static resynchro_state state = MEASURE_0;
+    static resynchro_state state = MEASURE;
 
     int correctionInt;
 
@@ -962,35 +963,26 @@ void snapshot_resynchronization( unsigned char *timePtr )
     switch (state)
     {
 
-    case MEASURE_0:
+    case MEASURE:
         // ********
-        PRINTF("MEASURE_0 ===\n");
-        state = CORRECTION_0;
+        PRINTF("MEASURE ===\n");
+        state = CORRECTION;
         correction = computeCorrection( timePtr );
-        PRINTF1("MEASURE_0 === correction = %.2f\n", correction );
+        PRINTF1("MEASURE === correction = %.2f\n", correction );
         applyCorrection( correction );
-        PRINTF1("MEASURE_0 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+        PRINTF1("MEASURE === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
         //****
         break;
 
-    case CORRECTION_0:
+    case CORRECTION:
         //************
-        PRINTF("CORRECTION_0 ===\n");
-        state = CORRECTION_1;
+        PRINTF("CORRECTION ===\n");
+        state = MEASURE;
         computeCorrection( timePtr );
         correction = -correction;
-        PRINTF1("CORRECTION_0 === correction = %.2f\n", correction );
+        PRINTF1("CORRECTION === correction = %.2f\n", correction );
         applyCorrection( correction );
-        PRINTF1("CORRECTION_0 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
-        //****
-        break;
-
-    case CORRECTION_1:
-        //************
-        PRINTF("CORRECTION_1 ===\n");
-        state = MEASURE_0;
-        computeCorrection( timePtr );
-        PRINTF1("CORRECTION_1 === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+        PRINTF1("CORRECTION === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
         //****
         break;
 
