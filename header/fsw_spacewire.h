@@ -31,6 +31,7 @@ int spacewire_several_connect_attemps( void );
 void spacewire_set_NP( unsigned char val, unsigned int regAddr ); // No Port force
 void spacewire_set_RE( unsigned char val, unsigned int regAddr ); // RMAP Enable
 void spacewire_read_statistics( void );
+void spacewire_get_last_error( void );
 void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code);
 void update_hk_with_grspw_stats(void );
 void increase_unsigned_char_counter( unsigned char *counter );

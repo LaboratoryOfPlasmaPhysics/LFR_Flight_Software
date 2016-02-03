@@ -581,6 +581,8 @@ void spacewire_read_statistics( void )
     rtems_status_code status;
     spw_stats current;
 
+    spacewire_get_last_error();
+
     // read the current statistics
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current );
 
