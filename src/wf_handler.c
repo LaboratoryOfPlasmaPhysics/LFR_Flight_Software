@@ -953,6 +953,15 @@ void applyCorrection( double correction )
 
 void snapshot_resynchronization( unsigned char *timePtr )
 {
+    /** This function compute a correction to apply on delta_snapshot.
+     *
+     *
+     * @param timePtr is a pointer to the acquisition time of the snapshot being considered.
+     *
+     * @return void
+     *
+     */
+
     static double correction    = 0.;
     static resynchro_state state = MEASURE;
 
