@@ -206,8 +206,6 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     {
         PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
 
-        update_last_valid_transition_date( transitionCoarseTime );
-
         switch(requestedMode)
         {
         case LFR_MODE_STANDBY:
@@ -361,6 +359,8 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
     housekeeping_packet.hk_lfr_update_time_tc_cnt[0] = (unsigned char) (val >> 8);
     housekeeping_packet.hk_lfr_update_time_tc_cnt[1] = (unsigned char) (val);
 
+    oneTcLfrUpdateTimeReceived = 1;
+
     return LFR_SUCCESSFUL;
 }
 
@@ -454,7 +454,7 @@ void update_last_valid_transition_date( unsigned int transitionCoarseTime )
     if (transitionCoarseTime == 0)
     {
         lastValidEnterModeTime = time_management_regs->coarse_time + 1;
-        PRINTF1("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n", transitionCoarseTime);
+        PRINTF1("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n", lastValidEnterModeTime);
     }
     else
     {
@@ -681,12 +681,14 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
+        status = restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     case LFR_MODE_SBM2:
-        restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
+        status = restart_asm_activities( LFR_MODE_NORMAL ); // this is necessary to restart ASM tasks to update the parameters
         status = LFR_SUCCESSFUL;                   // lfrCurrentMode will be updated after the execution of close_action
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     default:
         break;
@@ -778,8 +780,9 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:                       // lfrCurrentMode will be updated after the execution of close_action
-        restart_asm_activities( LFR_MODE_SBM1 );
+        status = restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     case LFR_MODE_BURST:
         status = stop_current_mode();           // stop the current mode
@@ -791,8 +794,9 @@ int enter_mode_sbm1( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM2:
-        restart_asm_activities( LFR_MODE_SBM1 );
+        status = restart_asm_activities( LFR_MODE_SBM1 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     default:
         break;
@@ -844,8 +848,9 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_NORMAL:
-        restart_asm_activities( LFR_MODE_SBM2 );
+        status = restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     case LFR_MODE_BURST:
         status = stop_current_mode();           // stop the current mode
@@ -857,8 +862,9 @@ int enter_mode_sbm2( unsigned int transitionCoarseTime )
         }
         break;
     case LFR_MODE_SBM1:
-        restart_asm_activities( LFR_MODE_SBM2 );
+        status = restart_asm_activities( LFR_MODE_SBM2 );
         status = LFR_SUCCESSFUL;                // lfrCurrentMode will be updated after the execution of close_action
+        update_last_valid_transition_date( transitionCoarseTime );
         break;
     default:
         break;
@@ -1273,7 +1279,7 @@ void launch_waveform_picker( unsigned char mode, unsigned int transitionCoarseTi
     if (transitionCoarseTime == 0)
     {
         // instant transition means transition on the next valid date
-        // this is mandatory to have a good snapshot period a a good correction of the snapshot period
+        // this is mandatory to have a good snapshot period and a good correction of the snapshot period
         waveform_picker_regs->start_date = time_management_regs->coarse_time + 1;
     }
     else

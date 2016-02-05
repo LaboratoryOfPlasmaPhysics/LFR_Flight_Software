@@ -964,6 +964,7 @@ void snapshot_resynchronization( unsigned char *timePtr )
 
     static double correction    = 0.;
     static resynchro_state state = MEASURE;
+    static unsigned int nbSnapshots = 0;
 
     int correctionInt;
 
@@ -974,7 +975,7 @@ void snapshot_resynchronization( unsigned char *timePtr )
 
     case MEASURE:
         // ********
-        PRINTF("MEASURE ===\n");
+        PRINTF1("MEASURE === %d\n", nbSnapshots);
         state = CORRECTION;
         correction = computeCorrection( timePtr );
         PRINTF1("MEASURE === correction = %.2f\n", correction );
@@ -985,7 +986,7 @@ void snapshot_resynchronization( unsigned char *timePtr )
 
     case CORRECTION:
         //************
-        PRINTF("CORRECTION ===\n");
+        PRINTF1("CORRECTION === %d\n", nbSnapshots);
         state = MEASURE;
         computeCorrection( timePtr );
         correction = -correction;
@@ -999,6 +1000,8 @@ void snapshot_resynchronization( unsigned char *timePtr )
         break;
 
     }
+
+    nbSnapshots++;
 }
 
 //**************

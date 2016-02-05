@@ -13,6 +13,7 @@
 #include "lfr_cpu_usage_report.h"
 
 extern unsigned int lastValidEnterModeTime;
+extern unsigned char oneTcLfrUpdateTimeReceived;
 
 //****
 // ISR

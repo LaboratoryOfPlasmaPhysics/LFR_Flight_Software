@@ -33,6 +33,7 @@ int fdUART = 0;
 unsigned char lfrCurrentMode;
 unsigned char pa_bia_status_info;
 unsigned char thisIsAnASMRestart = 0;
+unsigned char oneTcLfrUpdateTimeReceived = 0;
 
 // WAVEFORMS GLOBAL VARIABLES   // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes = 24584
                                 //  97 * 256 = 24832 => delta = 248 bytes = 62 words
