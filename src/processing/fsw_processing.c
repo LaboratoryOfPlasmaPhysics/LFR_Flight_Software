@@ -225,14 +225,15 @@ void spectral_matrix_isr_error_handler( int statusReg )
     // STATUS REGISTER
     // input_fifo_write(2) *** input_fifo_write(1) *** input_fifo_write(0)
     //           10                    9                       8
-    // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
+    // buffer_full ** [bad_component_err] ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
     //      7                  6             5       4       3       2       1       0
+    // [bad_component_err] not defined in the last version of the VHDL code
 
     rtems_status_code status_code;
 
     //***************************************************
     // the ASM status register is copied in the HK packet
-    housekeeping_packet.hk_lfr_vhdl_aa_sm = (unsigned char) (statusReg & 0x7c0 >> 6);    // [0111 1100 0000]
+    housekeeping_packet.hk_lfr_vhdl_aa_sm = (unsigned char) (statusReg & 0x780 >> 7);    // [0111 1000 0000]
 
     if (statusReg & 0x7c0)    // [0111 1100 0000]
     {
