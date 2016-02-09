@@ -902,8 +902,6 @@ double computeCorrection( unsigned char *timePtr )
     deltaNext_ms        = ((double) deltaNextTick) / 65536. * 1000.;
 
     PRINTF2("    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
-//    PRINTF2("    delta previous = %llu fine time ticks, delta next = %llu fine time ticks\n",
-//            deltaPreviousTick, deltaNextTick);
 
     // which tick is the closest?
     if (deltaPreviousTick > deltaNextTick)
@@ -926,9 +924,9 @@ void applyCorrection( double correction )
 {
     int correctionInt;
 
-    if (correction>=0.)
+    if (correction >= 0.)
     {
-        if ( correction > 0.5 )
+        if ( (1. > correction) && (correction > 0.5) )
         {
             correctionInt = 1;
         }
@@ -939,7 +937,7 @@ void applyCorrection( double correction )
     }
     else
     {
-        if ( correction < -0.5)
+        if ( (correction < -1.) && (correction < -0.5) )
         {
             correctionInt = -1;
         }
