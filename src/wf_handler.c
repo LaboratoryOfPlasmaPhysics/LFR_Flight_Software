@@ -932,7 +932,7 @@ void applyCorrection( double correction )
         }
         else
         {
-            correctionInt = floor(correction);
+            correctionInt = 2 * floor(correction);
         }
     }
     else
@@ -943,7 +943,7 @@ void applyCorrection( double correction )
         }
         else
         {
-            correctionInt =  ceil(correction);
+            correctionInt =  2 * ceil(correction);
         }
     }
     waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
@@ -987,9 +987,7 @@ void snapshot_resynchronization( unsigned char *timePtr )
         PRINTF1("CORRECTION === %d\n", nbSnapshots);
         state = MEASURE;
         computeCorrection( timePtr );
-        correction = -correction;
-        PRINTF1("CORRECTION === correction = %.2f\n", correction );
-        applyCorrection( correction );
+        set_wfp_delta_snapshot();
         PRINTF1("CORRECTION === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
         //****
         break;
