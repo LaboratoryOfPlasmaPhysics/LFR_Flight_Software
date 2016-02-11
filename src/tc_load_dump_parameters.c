@@ -58,7 +58,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     // CHECK THE PARAMETERS SET CONSISTENCY
     if (flag == LFR_SUCCESSFUL)
     {
-        flag = check_common_par_consistency( TC, queue_id );
+        flag = check_normal_par_consistency( TC, queue_id );
     }
 
     // SET THE PARAMETERS IF THEY ARE CONSISTENT
@@ -469,7 +469,7 @@ int action_dump_par( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 //***********************
 // NORMAL MODE PARAMETERS
 
-int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int check_normal_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     unsigned char msb;
     unsigned char lsb;
@@ -517,7 +517,7 @@ int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_i
     // sy_lfr_n_swf_p
     if (flag == LFR_SUCCESSFUL)
     {
-        if ( sy_lfr_n_swf_p < 16 )
+        if ( sy_lfr_n_swf_p < 22 )
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P+10, sy_lfr_n_swf_p );
             flag = WRONG_APP_DATA;

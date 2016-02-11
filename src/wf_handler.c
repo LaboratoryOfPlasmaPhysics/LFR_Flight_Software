@@ -937,7 +937,7 @@ void applyCorrection( double correction )
     }
     else
     {
-        if ( (correction < -1.) && (correction < -0.5) )
+        if ( (-1. < correction) && (correction < -0.5) )
         {
             correctionInt = -1;
         }

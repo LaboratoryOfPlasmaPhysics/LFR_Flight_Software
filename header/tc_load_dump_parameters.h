@@ -32,7 +32,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
 int action_dump_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
 // NORMAL
-int check_common_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
+int check_normal_par_consistency( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 int set_sy_lfr_n_swf_l( ccsdsTelecommandPacket_t *TC );
 int set_sy_lfr_n_swf_p( ccsdsTelecommandPacket_t *TC );
 int set_sy_lfr_n_asm_p( ccsdsTelecommandPacket_t *TC );
