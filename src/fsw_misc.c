@@ -792,13 +792,6 @@ void set_hk_lfr_ahb_correctable()
             + iurfErrorCounter
             + housekeeping_packet.hk_lfr_ahb_correctable;
 
-    if (ahb_correctable > 255)
-    {
-        housekeeping_packet.hk_lfr_ahb_correctable =  255;
-    }
-    else
-    {
-        housekeeping_packet.hk_lfr_ahb_correctable = ahb_correctable;
-    }
+    housekeeping_packet.hk_lfr_ahb_correctable = (unsigned char) (ahb_correctable & 0xff);  // [1111 1111]
 
 }
