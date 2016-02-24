@@ -275,7 +275,7 @@ rtems_task hous_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_cancel(HK_id);
     DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
 
-    set_hk_lfr_reset_cause( POWER_ON );
+    set_hk_lfr_reset_cause( UNKNOWN_CAUSE );
 
     while(1){ // launch the rate monotonic task
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
@@ -294,6 +294,8 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
             housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
             housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+
+            spacewire_update_hk_lfr_link_state( &housekeeping_packet.lfr_status_word[0] );
 
             spacewire_read_statistics();
 
@@ -679,8 +681,11 @@ void set_hk_lfr_calib_enable( bool state )
 
 void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
 {
+    housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf8; // [1111 1000]
+
     housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1]
             | (lfr_reset_cause & 0x07 );   // [0000 0111]
+
 }
 
 void hk_lfr_le_me_he_update()

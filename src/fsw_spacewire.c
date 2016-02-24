@@ -800,6 +800,19 @@ void update_hk_with_grspw_stats( void )
     housekeeping_packet.hk_lfr_dpu_spw_rx_too_big   = (unsigned char) grspw_stats.rx_truncated;
 }
 
+void spacewire_update_hk_lfr_link_state( unsigned char *hk_lfr_status_word_0 )
+{
+    unsigned int *statusRegisterPtr;
+    unsigned char linkState;
+
+    statusRegisterPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_STATUS_REGISTER);
+    linkState = (unsigned char) ( ( (*statusRegisterPtr) >>  21) & 0x07);   // [0000 0111]
+
+    *hk_lfr_status_word_0 = *hk_lfr_status_word_0 & 0xf8;       // [1111 1000] set link state to 0
+
+    *hk_lfr_status_word_0 = *hk_lfr_status_word_0 | linkState;  // update hk_lfr_dpu_spw_link_state
+}
+
 void increase_unsigned_char_counter( unsigned char *counter )
 {
     // update the number of valid timecodes that have been received
