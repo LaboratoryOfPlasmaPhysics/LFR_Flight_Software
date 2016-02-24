@@ -275,7 +275,7 @@ rtems_task hous_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_cancel(HK_id);
     DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
 
-    set_hk_lfr_reset_cause( UNKNOWN_CAUSE );
+    set_hk_lfr_reset_cause( POWER_ON );
 
     while(1){ // launch the rate monotonic task
         status = rtems_rate_monotonic_period( HK_id, HK_PERIOD );
