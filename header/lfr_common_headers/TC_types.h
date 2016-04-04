@@ -93,6 +93,16 @@ typedef struct
     unsigned char set5;
     unsigned char set6;
     unsigned char set7[8];
+    unsigned char set8_cp_rpw_sc_rw1_f1[4];
+    unsigned char set8_cp_rpw_sc_rw1_f2[4];
+    unsigned char set8_cp_rpw_sc_rw2_f1[4];
+    unsigned char set8_cp_rpw_sc_rw2_f2[4];
+    unsigned char set8_cp_rpw_sc_rw3_f1[4];
+    unsigned char set8_cp_rpw_sc_rw3_f2[4];
+    unsigned char set8_cp_rpw_sc_rw4_f1[4];
+    unsigned char set8_cp_rpw_sc_rw4_f2[4];
+    unsigned char set9_spare;
+    unsigned char set9_rw_f_flags;
     unsigned char spare1[2];
     unsigned char spare2[2];
     unsigned char spare3[2];
@@ -108,23 +118,6 @@ typedef struct
     unsigned char spare13[2];
     unsigned char spare14[2];
     unsigned char spare15[2];
-    unsigned char spare16[2];
-    unsigned char spare17[2];
-    unsigned char spare18[2];
-    unsigned char spare19[2];
-    unsigned char spare20[2];
-    unsigned char spare21[2];
-    unsigned char spare22[2];
-    unsigned char spare23[2];
-    unsigned char spare24[2];
-    unsigned char spare25[2];
-    unsigned char spare26[2];
-    unsigned char spare27[2];
-    unsigned char spare28[2];
-    unsigned char spare29[2];
-    unsigned char spare30[2];
-    unsigned char spare31[2];
-    unsigned char spare32[2];
     unsigned char crc[2];
 } Packet_TC_LFR_UPDATE_INFO_t;
 
@@ -231,5 +224,22 @@ typedef struct
     unsigned char crc[2];
 
 } Packet_TC_LFR_DUMP_KCOEFFICIENTS_t;
+
+typedef struct
+{   // the CCSDS header is added by LPPMON
+    unsigned char packetID[2];
+    unsigned char packetSequenceControl[2];
+    unsigned char packetLength[2];
+    // DATA FIELD HEADER
+    unsigned char ccsdsSecHeaderFlag_pusVersion_ack;
+    unsigned char serviceType;
+    unsigned char serviceSubType;
+    unsigned char sourceID;
+    unsigned char spare_sy_lfr_pas_filter_enabled;
+    unsigned char sy_lfr_pas_filter_modulus;
+    unsigned char sy_lfr_pas_filter_nstd;
+    unsigned char sy_lfr_pas_filter_offset;
+    unsigned char crc[2];
+} Packet_TC_LFR_LOAD_PAS_FILTER_t;
 
 #endif // TC_TYPES_H

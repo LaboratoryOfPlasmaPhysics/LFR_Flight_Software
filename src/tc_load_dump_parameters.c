@@ -310,6 +310,32 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     return flag;
 }
 
+int action_load_pas_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+{
+    /** This function updates the LFR registers with the incoming sbm2 parameters.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     * @param queue_id is the id of the queue which handles TM related to this execution step
+     *
+     */
+
+    int flag;
+
+    flag = LFR_DEFAULT;
+
+    flag = check_sy_lfr_pas_filter_parameters( TC, queue_id );
+
+    if (flag  == LFR_SUCCESSFUL)
+    {
+        parameter_dump_packet.spare_sy_lfr_pas_filter_enabled = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ];
+        parameter_dump_packet.sy_lfr_pas_filter_modulus = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
+        parameter_dump_packet.sy_lfr_pas_filter_nstd = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD ];
+        parameter_dump_packet.sy_lfr_pas_filter_offset = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+    }
+
+    return flag;
+}
+
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
@@ -883,6 +909,59 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 
 
     return status;
+}
+
+//***************************
+// TC_LFR_LOAD_PAS_FILTER_PAR
+
+int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+{
+    int flag;
+    rtems_status_code status;
+
+    unsigned char sy_lfr_pas_filter_enabled;
+    unsigned char sy_lfr_pas_filter_modulus;
+    unsigned char sy_lfr_pas_filter_nstd;
+    unsigned char sy_lfr_pas_filter_offset;
+
+    flag = LFR_SUCCESSFUL;
+
+    //***************
+    // get parameters
+    sy_lfr_pas_filter_enabled = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ] & 0x01;   // [0000 0001]
+    sy_lfr_pas_filter_modulus = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
+    sy_lfr_pas_filter_nstd = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD ];
+    sy_lfr_pas_filter_offset = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+
+    //******************
+    // check consistency
+    // sy_lfr_pas_filter_enabled
+    // sy_lfr_pas_filter_modulus
+    if ( (sy_lfr_pas_filter_modulus < 4) || (sy_lfr_pas_filter_modulus > 8) )
+    {
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS+10, sy_lfr_pas_filter_modulus );
+        flag = WRONG_APP_DATA;
+    }
+    // sy_lfr_pas_filter_nstd
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if ( sy_lfr_pas_filter_nstd > 8 )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD+10, sy_lfr_pas_filter_nstd );
+            flag = WRONG_APP_DATA;
+        }
+    }
+    // sy_lfr_pas_filter_offset
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if (sy_lfr_pas_filter_offset > 7)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET+10, sy_lfr_pas_filter_offset );
+            flag = WRONG_APP_DATA;
+        }
+    }
+
+    return flag;
 }
 
 //**************

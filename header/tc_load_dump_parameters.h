@@ -28,6 +28,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsig
 int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
 int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int action_load_pas_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_dump_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
@@ -59,6 +60,9 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 
 // FBINS_MASK
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
+
+// TC_LFR_LOAD_PARS_FILTER_PAR
+int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t *TC , rtems_id queue_id);

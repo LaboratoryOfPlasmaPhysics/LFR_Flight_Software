@@ -123,6 +123,10 @@ rtems_task actn_task( rtems_task_argument unused )
                 result = action_load_fbins_mask( &TC, queue_snd_id, time );
                 close_action( &TC, result, queue_snd_id );
                 break;
+            case TC_SUBTYPE_LOAD_PAS_FILTER_PAR:
+                result = action_load_pas_filter_par( &TC, queue_snd_id, time );
+                close_action( &TC, result, queue_snd_id );
+                break;
             case TC_SUBTYPE_UPDT_TIME:
                 result = action_update_time( &TC );
                 close_action( &TC, result, queue_snd_id );
