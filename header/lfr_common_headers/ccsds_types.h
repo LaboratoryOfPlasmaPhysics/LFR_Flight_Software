@@ -87,7 +87,7 @@
 #define TC_SUBTYPE_LOAD_K               93
 #define TC_SUBTYPE_DUMP_K               95
 #define TC_SUBTYPE_LOAD_FBINS           91
-#define TC_SUBTYPE_LOAD_PAS_FILTER_PAR  97
+#define TC_SUBTYPE_LOAD_FILTER_PAR      97
 #define TC_SUBTYPE_UPDT_TIME            129
 
 // TC LEN
@@ -105,7 +105,7 @@
 #define TC_LEN_LOAD_K               142
 #define TC_LEN_DUMP_K               12
 #define TC_LEN_LOAD_FBINS           60
-#define TC_LEN_LOAD_PAS_FILTER_PAR  16
+#define TC_LEN_LOAD_FILTER_PAR      28
 #define TC_LEN_UPDT_TIME            18
 
 // PACKET CODES
@@ -245,7 +245,7 @@ enum apid_destid{
 #define PACKET_LENGTH_TC_EXE_ERROR                  (24   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_CORRUPTED              (32   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_HK                            (136  - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_PARAMETER_DUMP                (88   - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP                (148  - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_K_DUMP                        (3920 - CCSDS_TC_TM_PACKET_OFFSET)
 // SCIENCE ASM
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1       (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 32 bins  (32 + 32 + 24 ), 3 packets
@@ -451,7 +451,7 @@ typedef struct {
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char hkBIA;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char pktCnt;
@@ -476,7 +476,7 @@ typedef struct {
     unsigned char time[6];
     // AUXILIARY DATA HEADER
     unsigned char sid;
-    unsigned char hkBIA;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
@@ -499,7 +499,7 @@ typedef struct {
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char biaStatusInfo;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char pa_lfr_pkt_cnt_asm;
@@ -524,7 +524,7 @@ typedef struct {
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char biaStatusInfo;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
@@ -548,7 +548,7 @@ typedef struct {
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char biaStatusInfo;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
@@ -675,7 +675,7 @@ typedef struct {
     unsigned char hk_lfr_ahb_correctable;
     unsigned char hk_lfr_ahb_uncorrectable;
     // reaction wheel frequency
-    unsigned char hk_lfr_sw_rw_f_flags;
+    unsigned char hk_lfr_sc_rw_f_flags;
 } Packet_TM_LFR_HK_t;
 
 typedef struct {
@@ -743,8 +743,24 @@ typedef struct {
     // PAS FILTER PARAMETERS
     unsigned char spare_sy_lfr_pas_filter_enabled;
     unsigned char sy_lfr_pas_filter_modulus;
-    unsigned char sy_lfr_pas_filter_nstd;
+    unsigned char sy_lfr_pas_filter_tbad[4];
     unsigned char sy_lfr_pas_filter_offset;
+    unsigned char sy_lfr_pas_filter_shift[4];
+    unsigned char sy_lfr_sc_rw_delta_f[4];
+
+    // LFR_RW_MASK
+    unsigned char sy_lfr_rw_mask_f0_word1[4];
+    unsigned char sy_lfr_rw_mask_f0_word2[4];
+    unsigned char sy_lfr_rw_mask_f0_word3[4];
+    unsigned char sy_lfr_rw_mask_f0_word4[4];
+    unsigned char sy_lfr_rw_mask_f1_word1[4];
+    unsigned char sy_lfr_rw_mask_f1_word2[4];
+    unsigned char sy_lfr_rw_mask_f1_word3[4];
+    unsigned char sy_lfr_rw_mask_f1_word4[4];
+    unsigned char sy_lfr_rw_mask_f2_word1[4];
+    unsigned char sy_lfr_rw_mask_f2_word2[4];
+    unsigned char sy_lfr_rw_mask_f2_word3[4];
+    unsigned char sy_lfr_rw_mask_f2_word4[4];
 
     // SPARE
     unsigned char source_data_spare;

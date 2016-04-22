@@ -66,6 +66,7 @@ unsigned int lastValidEnterModeTime;
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet;
+unsigned char cp_rpw_sc_rw_f_flags;
 // message queues occupancy
 unsigned char hk_lfr_q_sd_fifo_size_max;
 unsigned char hk_lfr_q_rv_fifo_size_max;
@@ -79,3 +80,16 @@ unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID];
 unsigned short sequenceCounterHK;
 spw_stats grspw_stats;
+
+// TC_LFR_UPDATE_INFO
+float cp_rpw_sc_rw1_f1;
+float cp_rpw_sc_rw1_f2;
+float cp_rpw_sc_rw2_f1;
+float cp_rpw_sc_rw2_f2;
+float cp_rpw_sc_rw3_f1;
+float cp_rpw_sc_rw3_f2;
+float cp_rpw_sc_rw4_f1;
+float cp_rpw_sc_rw4_f2;
+unsigned char rw_fbins_mask_f0[16];
+unsigned char rw_fbins_mask_f1[16];
+unsigned char rw_fbins_mask_f2[16];

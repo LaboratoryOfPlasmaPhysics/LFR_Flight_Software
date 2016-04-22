@@ -310,7 +310,7 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
     return flag;
 }
 
-int action_load_pas_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
+int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -327,10 +327,21 @@ int action_load_pas_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, 
 
     if (flag  == LFR_SUCCESSFUL)
     {
-        parameter_dump_packet.spare_sy_lfr_pas_filter_enabled = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ];
-        parameter_dump_packet.sy_lfr_pas_filter_modulus = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
-        parameter_dump_packet.sy_lfr_pas_filter_nstd = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD ];
-        parameter_dump_packet.sy_lfr_pas_filter_offset = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+        parameter_dump_packet.spare_sy_lfr_pas_filter_enabled   = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ];
+        parameter_dump_packet.sy_lfr_pas_filter_modulus         = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
+        parameter_dump_packet.sy_lfr_pas_filter_tbad[0]         = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD + 0 ];
+        parameter_dump_packet.sy_lfr_pas_filter_tbad[1]         = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD + 1 ];
+        parameter_dump_packet.sy_lfr_pas_filter_tbad[2]         = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD + 2 ];
+        parameter_dump_packet.sy_lfr_pas_filter_tbad[3]         = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD + 3 ];
+        parameter_dump_packet.sy_lfr_pas_filter_offset          = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+        parameter_dump_packet.sy_lfr_pas_filter_shift[0]        = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT + 0 ];
+        parameter_dump_packet.sy_lfr_pas_filter_shift[1]        = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT + 1 ];
+        parameter_dump_packet.sy_lfr_pas_filter_shift[2]        = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT + 2 ];
+        parameter_dump_packet.sy_lfr_pas_filter_shift[3]        = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT + 3 ];
+        parameter_dump_packet.sy_lfr_sc_rw_delta_f[0]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 0 ];
+        parameter_dump_packet.sy_lfr_sc_rw_delta_f[1]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 1 ];
+        parameter_dump_packet.sy_lfr_sc_rw_delta_f[2]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 2 ];
+        parameter_dump_packet.sy_lfr_sc_rw_delta_f[3]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 3 ];
     }
 
     return flag;
@@ -790,7 +801,7 @@ int set_sy_lfr_s1_bp_p1( ccsdsTelecommandPacket_t *TC )
 
 //*********************
 // SBM2 MODE PARAMETERS
-int set_sy_lfr_s2_bp_p0(ccsdsTelecommandPacket_t *TC)
+int set_sy_lfr_s2_bp_p0( ccsdsTelecommandPacket_t *TC )
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S2_BP_P0).
      *
@@ -882,6 +893,149 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode )
     return status;
 }
 
+void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
+{
+    /** This function get the reaction wheels frequencies in the incoming TC_LFR_UPDATE_INFO and copy the values locally.
+     *
+     * @param TC points to the TeleCommand packet that is being processed
+     *
+     */
+
+    unsigned char * bytePosPtr; // pointer to the beginning of the incoming TC packet
+    unsigned char * floatPtr;   // pointer to the Most Significant Byte of the considered float
+
+    bytePosPtr = (unsigned char *) &TC->packetID;
+
+    // cp_rpw_sc_rw1_f1
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw1_f1;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 3 ];
+    // cp_rpw_sc_rw1_f2
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw1_f2;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 3 ];
+    // cp_rpw_sc_rw2_f1
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw2_f1;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 3 ];
+    // cp_rpw_sc_rw2_f2
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw2_f2;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 3 ];
+    // cp_rpw_sc_rw3_f1
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw3_f1;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 3 ];
+    // cp_rpw_sc_rw3_f2
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw3_f2;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 3 ];
+    // cp_rpw_sc_rw4_f1
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw4_f1;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 3 ];
+    // cp_rpw_sc_rw4_f2
+    floatPtr = (unsigned char *) &cp_rpw_sc_rw4_f2;
+    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 ];
+    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 1 ];
+    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 2 ];
+    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 3 ];
+}
+
+void setFBinMask( unsigned char *fbins_mask, float freq, unsigned char deltaFreq, unsigned char flag )
+{
+    unsigned int fBelow;
+
+    // compute the index of the frequency immediately below the reaction wheel frequency
+    fBelow = (unsigned int) ( floor( ((double) cp_rpw_sc_rw1_f1) / ((double) deltaFreq)) );
+
+    if (fBelow < 127) // if fbelow is greater than 127 or equal to 127, this means that the reaction wheel frequency is outside the frequency range
+    {
+        if (flag == 1)
+        {
+//            rw_fbins_mask[k] = (1 << fBelow) | (1 << fAbove);
+        }
+    }
+}
+
+void build_rw_fbins_mask( unsigned int channel )
+{
+    unsigned char rw_fbins_mask[16];
+    unsigned char *maskPtr;
+    double deltaF;
+    unsigned k;
+
+    k = 0;
+
+    switch (channel)
+    {
+    case 0:
+        maskPtr = rw_fbins_mask_f0;
+        deltaF = 96.;
+        break;
+    case 1:
+        maskPtr = rw_fbins_mask_f1;
+        deltaF = 16.;
+        break;
+    case 2:
+        maskPtr = rw_fbins_mask_f2;
+        deltaF = 1.;
+        break;
+    default:
+        break;
+    }
+
+    for (k = 0; k < 16; k++)
+    {
+        rw_fbins_mask[k] = 0x00;
+    }
+
+    // RW1 F1
+//    setFBinMask( rw_fbins_mask, fBelow );
+
+    // RW1 F2
+
+    // RW2 F1
+
+    // RW2 F2
+
+    // RW3 F1
+
+    // RW3 F2
+
+    // RW4 F1
+
+    // RW4 F2
+
+
+    // update the value of the fbins related to reaction wheels frequency filtering
+    for (k = 0; k < 16; k++)
+    {
+        maskPtr[k] = rw_fbins_mask[k];
+    }
+}
+
+void build_rw_fbins_masks()
+{
+    build_rw_fbins_mask( 0 );
+    build_rw_fbins_mask( 1 );
+    build_rw_fbins_mask( 2 );
+}
+
 //***********
 // FBINS MASK
 
@@ -921,8 +1075,10 @@ int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id q
 
     unsigned char sy_lfr_pas_filter_enabled;
     unsigned char sy_lfr_pas_filter_modulus;
-    unsigned char sy_lfr_pas_filter_nstd;
+    float sy_lfr_pas_filter_tbad;
     unsigned char sy_lfr_pas_filter_offset;
+    float sy_lfr_pas_filtershift;
+    float sy_lfr_sc_rw_delta_f;
 
     flag = LFR_SUCCESSFUL;
 
@@ -930,7 +1086,7 @@ int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id q
     // get parameters
     sy_lfr_pas_filter_enabled = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ] & 0x01;   // [0000 0001]
     sy_lfr_pas_filter_modulus = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
-    sy_lfr_pas_filter_nstd = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD ];
+
     sy_lfr_pas_filter_offset = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
 
     //******************
@@ -942,15 +1098,7 @@ int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id q
         status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS+10, sy_lfr_pas_filter_modulus );
         flag = WRONG_APP_DATA;
     }
-    // sy_lfr_pas_filter_nstd
-    if (flag == LFR_SUCCESSFUL)
-    {
-        if ( sy_lfr_pas_filter_nstd > 8 )
-        {
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_NSTD+10, sy_lfr_pas_filter_nstd );
-            flag = WRONG_APP_DATA;
-        }
-    }
+    // sy_lfr_pas_filter_tbad
     // sy_lfr_pas_filter_offset
     if (flag == LFR_SUCCESSFUL)
     {
@@ -960,6 +1108,8 @@ int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id q
             flag = WRONG_APP_DATA;
         }
     }
+    // sy_lfr_pas_filtershift
+    // sy_lfr_sc_rw_delta_f
 
     return flag;
 }

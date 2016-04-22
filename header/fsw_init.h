@@ -21,6 +21,15 @@ extern rtems_id    Task_id[20];         /* array of task ids */
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;
 extern unsigned char pa_bia_status_info;
+extern unsigned char cp_rpw_sc_rw_f_flags;
+extern float cp_rpw_sc_rw1_f1;
+extern float cp_rpw_sc_rw1_f2;
+extern float cp_rpw_sc_rw2_f1;
+extern float cp_rpw_sc_rw2_f2;
+extern float cp_rpw_sc_rw3_f1;
+extern float cp_rpw_sc_rw3_f2;
+extern float cp_rpw_sc_rw4_f1;
+extern float cp_rpw_sc_rw4_f2;
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);

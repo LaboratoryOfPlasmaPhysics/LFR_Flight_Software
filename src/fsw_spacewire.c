@@ -1021,7 +1021,7 @@ void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
     header->time[0] = 0x00;
     // AUXILIARY DATA HEADER
     header->sid = 0x00;
-    header->hkBIA = DEFAULT_HKBIA;
+    header->pa_bia_status_info = DEFAULT_HKBIA;
     header->blkNr[0] = 0x00;
     header->blkNr[1] = 0x00;
 }
@@ -1051,7 +1051,7 @@ void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
     header->time[0] = 0x00;
     // AUXILIARY DATA HEADER
     header->sid     = 0x00;
-    header->hkBIA   = DEFAULT_HKBIA;
+    header->pa_bia_status_info   = DEFAULT_HKBIA;
     header->pktCnt  = DEFAULT_PKTCNT;  // PKT_CNT
     header->pktNr   = 0x00;
     header->blkNr[0]        = (unsigned char) (BLK_NR_CWF >> 8);
@@ -1083,7 +1083,7 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header )
     header->time[0] = 0x00;
     // AUXILIARY DATA HEADER
     header->sid     = 0x00;
-    header->biaStatusInfo = 0x00;
+    header->pa_bia_status_info = 0x00;
     header->pa_lfr_pkt_cnt_asm = 0x00;
     header->pa_lfr_pkt_nr_asm = 0x00;
     header->pa_lfr_asm_blk_nr[0] = 0x00;
@@ -1126,7 +1126,7 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
 
     header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
-    header->hkBIA = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF     );
@@ -1209,7 +1209,7 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
     dataPtr     = (int*) ring_node_to_send->buffer_address;
     sid = ring_node_to_send->sid;
 
-    header->hkBIA = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
     for (i=0; i<7; i++) // send waveform
@@ -1300,7 +1300,7 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
 
     header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
-    header->hkBIA = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
     header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
@@ -1361,7 +1361,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
 
-    header->biaStatusInfo = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
     for (i=0; i<3; i++)
@@ -1441,7 +1441,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
 
-    header->biaStatusInfo = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
     for (i=0; i<3; i++)
@@ -1521,7 +1521,7 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
 
-    header->biaStatusInfo = pa_bia_status_info;
+    header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
     for (i=0; i<3; i++)

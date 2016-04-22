@@ -35,7 +35,7 @@ typedef struct
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char biaStatusInfo;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
@@ -61,7 +61,7 @@ typedef struct
     unsigned char time[6];
     // AUXILIARY HEADER
     unsigned char sid;
-    unsigned char biaStatusInfo;
+    unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
     unsigned char acquisitionTime[6];
@@ -91,6 +91,9 @@ extern volatile int sm_f2[ ];
 // parameters
 extern struct param_local_str param_local;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
+extern unsigned char rw_fbins_mask_f0[16];
+extern unsigned char rw_fbins_mask_f1[16];
+extern unsigned char rw_fbins_mask_f2[16];
 
 // registers
 extern time_management_regs_t *time_management_regs;

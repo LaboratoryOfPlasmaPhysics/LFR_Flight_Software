@@ -123,8 +123,8 @@ rtems_task actn_task( rtems_task_argument unused )
                 result = action_load_fbins_mask( &TC, queue_snd_id, time );
                 close_action( &TC, result, queue_snd_id );
                 break;
-            case TC_SUBTYPE_LOAD_PAS_FILTER_PAR:
-                result = action_load_pas_filter_par( &TC, queue_snd_id, time );
+            case TC_SUBTYPE_LOAD_FILTER_PAR:
+                result = action_load_filter_par( &TC, queue_snd_id, time );
                 close_action( &TC, result, queue_snd_id );
                 break;
             case TC_SUBTYPE_UPDT_TIME:
@@ -293,6 +293,11 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & 0xfe; // [1111 1110]
     pa_bia_status_info = pa_bia_status_info
             | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 0x1);
+
+    // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
+    cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
+    getReactionWheelsFrequencies( TC );
+    build_rw_fbins_masks();
 
     result = status;
 

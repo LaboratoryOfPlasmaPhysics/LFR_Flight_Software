@@ -160,6 +160,15 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
     pa_bia_status_info = 0x00;
+    cp_rpw_sc_rw_f_flags = 0x00;
+    cp_rpw_sc_rw1_f1 = 0.0;
+    cp_rpw_sc_rw1_f2 = 0.0;
+    cp_rpw_sc_rw2_f1 = 0.0;
+    cp_rpw_sc_rw2_f2 = 0.0;
+    cp_rpw_sc_rw3_f1 = 0.0;
+    cp_rpw_sc_rw3_f2 = 0.0;
+    cp_rpw_sc_rw4_f1 = 0.0;
+    cp_rpw_sc_rw4_f2 = 0.0;
     update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization

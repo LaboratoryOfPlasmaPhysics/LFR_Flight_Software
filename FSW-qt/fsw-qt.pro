@@ -116,7 +116,6 @@ HEADERS += \
     ../header/lfr_common_headers/fsw_params.h \
     ../header/lfr_common_headers/fsw_params_nb_bytes.h \
     ../header/lfr_common_headers/fsw_params_processing.h \
-    ../header/lfr_common_headers/TC_types.h \
     ../header/lfr_common_headers/tm_byte_positions.h \
     ../LFR_basic-parameters/basic_parameters.h \
     ../LFR_basic-parameters/basic_parameters_params.h \

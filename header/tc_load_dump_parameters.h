@@ -20,6 +20,9 @@ extern float k_coeff_intercalib_f0_sbm[ ];
 extern float k_coeff_intercalib_f1_norm[ ];
 extern float k_coeff_intercalib_f1_sbm[ ];
 extern float k_coeff_intercalib_f2[ ];
+extern unsigned char rw_fbins_mask_f0[16];
+extern unsigned char rw_fbins_mask_f1[16];
+extern unsigned char rw_fbins_mask_f2[16];
 
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
@@ -28,7 +31,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsig
 int action_load_sbm2_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
 int action_load_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
-int action_load_pas_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
+int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time);
 int action_dump_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
@@ -57,6 +60,9 @@ int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC );
 unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
+void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
+void build_rw_fbins_mask( unsigned int channel );
+void build_rw_fbins_masks();
 
 // FBINS_MASK
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
