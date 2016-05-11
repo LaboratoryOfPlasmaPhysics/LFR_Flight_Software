@@ -162,8 +162,8 @@ typedef struct ring_node
 #define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
-#define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2s
-#define TIMECODE_TIMER_TIMEOUT_INIT         200     // 200 * 10 ms = 20.s
+#define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2 s
+#define TIMECODE_TIMER_TIMEOUT_INIT         200     // 200 * 10 ms = 2.0 s
 #define TIMECODE_MASK                       0x3f    // 0011 1111
 
 //**********

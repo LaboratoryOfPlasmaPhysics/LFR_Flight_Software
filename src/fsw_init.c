@@ -172,7 +172,8 @@ rtems_task Init( rtems_task_argument ignored )
     update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization
-    WFP_init_rings();  LEON_Clear_interrupt( IRQ_SPARC_GPTIMER_WATCHDOG );    // initialize the waveform rings
+    WFP_init_rings();
+    LEON_Clear_interrupt( IRQ_SPARC_GPTIMER_WATCHDOG );    // initialize the waveform rings
     WFP_reset_current_ring_nodes();
     reset_waveform_picker_regs();
 
