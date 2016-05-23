@@ -51,9 +51,9 @@ rtems_task actn_task( rtems_task_argument unused )
     result = LFR_SUCCESSFUL;
     subtype = 0;          // subtype of the current TC packet
 
-    BOOT_PRINTF("in ACTN *** \n")
+    BOOT_PRINTF("in ACTN *** \n");
 
-            while(1)
+    while(1)
     {
         status = rtems_message_queue_receive( queue_rcv_id, (char*) &TC, &size,
                                               RTEMS_WAIT, RTEMS_NO_TIMEOUT);

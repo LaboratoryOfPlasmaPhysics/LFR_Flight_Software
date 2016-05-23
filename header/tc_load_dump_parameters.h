@@ -68,7 +68,7 @@ void build_rw_fbins_masks();
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
 
 // TC_LFR_LOAD_PARS_FILTER_PAR
-int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
+int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t *TC , rtems_id queue_id);

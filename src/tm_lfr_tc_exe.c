@@ -85,7 +85,7 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
      * @param TC points to the TeleCommand packet that is being processed
      * @param queue_id is the id of the queue which handles TM
      * @param byte_position is the byte position of the MSB of the parameter that has been seen as inconsistent
-     * @param rcv_value  is the value of the LSB of the parameter that has been deteced as inconsistent
+     * @param rcv_value  is the value of the LSB of the parameter that has been detected as inconsistent
      *
      * @return RTEMS directive status code:
      * - RTEMS_SUCCESSFUL - message sent successfully

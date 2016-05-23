@@ -323,7 +323,7 @@ int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
 
     flag = LFR_DEFAULT;
 
-    flag = check_sy_lfr_pas_filter_parameters( TC, queue_id );
+    flag = check_sy_lfr_filter_parameters( TC, queue_id );
 
     if (flag  == LFR_SUCCESSFUL)
     {
@@ -907,57 +907,51 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
     bytePosPtr = (unsigned char *) &TC->packetID;
 
     // cp_rpw_sc_rw1_f1
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw1_f1;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw1_f1,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1 ] );
+
     // cp_rpw_sc_rw1_f2
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw1_f2;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw1_f2,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2 ] );
+
     // cp_rpw_sc_rw2_f1
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw2_f1;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw2_f1,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1 ] );
+
     // cp_rpw_sc_rw2_f2
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw2_f2;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw2_f2,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2 ] );
+
     // cp_rpw_sc_rw3_f1
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw3_f1;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw3_f1,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1 ] );
+
     // cp_rpw_sc_rw3_f2
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw3_f2;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw3_f2,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2 ] );
+
     // cp_rpw_sc_rw4_f1
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw4_f1;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw4_f1,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1 ] );
+
     // cp_rpw_sc_rw4_f2
-    floatPtr = (unsigned char *) &cp_rpw_sc_rw4_f2;
-    floatPtr[0] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 ];
-    floatPtr[1] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 1 ];
-    floatPtr[2] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 2 ];
-    floatPtr[3] = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 + 3 ];
+    copyFloatByChar( (unsigned char*) &cp_rpw_sc_rw4_f2,
+                     (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 ] );
 }
 
 void setFBinMask( unsigned char *fbins_mask, float freq, unsigned char deltaFreq, unsigned char flag )
 {
+    /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
+     *
+     * @param fbins_mask
+     * @param freq
+     * @param deltaFreq
+     * @param flag [true] filtering enabled [false] filtering disabled
+     *
+     * @return void
+     *
+     */
+
     unsigned int fBelow;
 
     // compute the index of the frequency immediately below the reaction wheel frequency
@@ -1005,7 +999,7 @@ void build_rw_fbins_mask( unsigned int channel )
     }
 
     // RW1 F1
-//    setFBinMask( rw_fbins_mask, fBelow );
+    setFBinMask( rw_fbins_mask, fBelow );
 
     // RW1 F2
 
@@ -1068,7 +1062,7 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 //***************************
 // TC_LFR_LOAD_PAS_FILTER_PAR
 
-int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
+int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     int flag;
     rtems_status_code status;
@@ -1077,39 +1071,81 @@ int check_sy_lfr_pas_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id q
     unsigned char sy_lfr_pas_filter_modulus;
     float sy_lfr_pas_filter_tbad;
     unsigned char sy_lfr_pas_filter_offset;
-    float sy_lfr_pas_filtershift;
+    float sy_lfr_pas_filter_shift;
     float sy_lfr_sc_rw_delta_f;
+    char *parPtr;
 
     flag = LFR_SUCCESSFUL;
+    sy_lfr_pas_filter_tbad  = 0.0;
+    sy_lfr_pas_filter_shift = 0.0;
+    sy_lfr_sc_rw_delta_f    = 0.0;
+    parPtr = NULL;
 
     //***************
     // get parameters
-    sy_lfr_pas_filter_enabled = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ] & 0x01;   // [0000 0001]
-    sy_lfr_pas_filter_modulus = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
-
-    sy_lfr_pas_filter_offset = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+    sy_lfr_pas_filter_enabled   = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ] & 0x01;   // [0000 0001]
+    sy_lfr_pas_filter_modulus   = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
+    copyFloatByChar(
+                (char*) &sy_lfr_pas_filter_tbad,
+                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD ]
+                );
+    sy_lfr_pas_filter_offset    = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
+    copyFloatByChar(
+                (char*) &sy_lfr_pas_filter_shift,
+                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT ]
+                );
+    copyFloatByChar(
+                (char*) &sy_lfr_sc_rw_delta_f,
+                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F ]
+                );
 
     //******************
-    // check consistency
+    // CHECK CONSISTENCY
+
+    //**************************
     // sy_lfr_pas_filter_enabled
+    // nothing to check, value is 0 or 1
+
+    //**************************
     // sy_lfr_pas_filter_modulus
     if ( (sy_lfr_pas_filter_modulus < 4) || (sy_lfr_pas_filter_modulus > 8) )
     {
         status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS+10, sy_lfr_pas_filter_modulus );
         flag = WRONG_APP_DATA;
     }
+
+    //***********************
     // sy_lfr_pas_filter_tbad
+    if ( (sy_lfr_pas_filter_tbad < 0.0) || (sy_lfr_pas_filter_tbad > 4.0) )
+    {
+        parPtr = (char*) &sy_lfr_pas_filter_tbad;
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD+10, parPtr[3] );
+        flag = WRONG_APP_DATA;
+    }
+
+    //*************************
     // sy_lfr_pas_filter_offset
     if (flag == LFR_SUCCESSFUL)
     {
-        if (sy_lfr_pas_filter_offset > 7)
+        if ( (sy_lfr_pas_filter_offset < 0) || (sy_lfr_pas_filter_offset > 7) )
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET+10, sy_lfr_pas_filter_offset );
             flag = WRONG_APP_DATA;
         }
     }
-    // sy_lfr_pas_filtershift
+
+    //************************
+    // sy_lfr_pas_filter_shift
+    if ( (sy_lfr_pas_filter_shift < 0.0) || (sy_lfr_pas_filter_shift > 1.0) )
+    {
+        parPtr = (char*) &sy_lfr_pas_filter_shift;
+        status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT+10, parPtr[3] );
+        flag = WRONG_APP_DATA;
+    }
+
+    //*********************
     // sy_lfr_sc_rw_delta_f
+    // nothing to check, no default value in the ICD
 
     return flag;
 }
