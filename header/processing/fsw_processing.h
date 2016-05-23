@@ -91,12 +91,6 @@ extern volatile int sm_f2[ ];
 // parameters
 extern struct param_local_str param_local;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
-extern unsigned char rw_fbins_mask_f0[16];
-extern unsigned char rw_fbins_mask_f1[16];
-extern unsigned char rw_fbins_mask_f2[16];
-extern unsigned char merged_fbins_mask_f0[16];
-extern unsigned char merged_fbins_mask_f1[16];
-extern unsigned char merged_fbins_mask_f2[16];
 
 // registers
 extern time_management_regs_t *time_management_regs;
