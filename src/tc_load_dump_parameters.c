@@ -974,7 +974,7 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
     binBelow = (int) ( floor( ((double) fmin) / ((double) deltaFreq)) );
 
     // compute the index of the frequency bin immediately above fMAX
-    binAbove = (int) ( ceil( ((double) fMAX) / ((double) deltaFreq)) );
+    binAbove = (int) ( floor( ((double) fMAX) / ((double) deltaFreq)) );
 
     for (bin = binBelow; bin <= binAbove; bin++)
     {
