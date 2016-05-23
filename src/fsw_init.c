@@ -169,6 +169,7 @@ rtems_task Init( rtems_task_argument ignored )
     cp_rpw_sc_rw3_f2 = 0.0;
     cp_rpw_sc_rw4_f1 = 0.0;
     cp_rpw_sc_rw4_f2 = 0.0;
+    sy_lfr_sc_rw_delta_f = 0.0;
     update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization

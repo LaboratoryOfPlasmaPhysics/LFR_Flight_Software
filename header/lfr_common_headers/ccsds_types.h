@@ -707,7 +707,7 @@ typedef struct {
     unsigned char sy_lfr_n_bp_p0;
     unsigned char sy_lfr_n_bp_p1;
     unsigned char sy_lfr_n_cwf_long_f3;
-    unsigned char lfr_normal_parameters_spare;
+    unsigned char pa_rpw_spare8_1;
 
     //*****************
     // BURST PARAMETERS
@@ -741,6 +741,7 @@ typedef struct {
     unsigned char sy_lfr_fbins_f2_word4[4];
 
     // PAS FILTER PARAMETERS
+    unsigned char pa_rpw_spare8_2;
     unsigned char spare_sy_lfr_pas_filter_enabled;
     unsigned char sy_lfr_pas_filter_modulus;
     unsigned char sy_lfr_pas_filter_tbad[4];
@@ -763,7 +764,7 @@ typedef struct {
     unsigned char sy_lfr_rw_mask_f2_word4[4];
 
     // SPARE
-    unsigned char source_data_spare;
+    unsigned char pa_rpw_spare8_3;
 } Packet_TM_LFR_PARAMETER_DUMP_t;
 
 typedef struct {

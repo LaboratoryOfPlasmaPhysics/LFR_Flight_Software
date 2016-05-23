@@ -90,6 +90,6 @@ float cp_rpw_sc_rw3_f1;
 float cp_rpw_sc_rw3_f2;
 float cp_rpw_sc_rw4_f1;
 float cp_rpw_sc_rw4_f2;
-unsigned char rw_fbins_mask_f0[16];
-unsigned char rw_fbins_mask_f1[16];
-unsigned char rw_fbins_mask_f2[16];
+float sy_lfr_sc_rw_delta_f;
+
+fbins_masks_t fbins_masks;

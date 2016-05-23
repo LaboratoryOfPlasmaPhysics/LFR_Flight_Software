@@ -20,9 +20,7 @@ extern float k_coeff_intercalib_f0_sbm[ ];
 extern float k_coeff_intercalib_f1_norm[ ];
 extern float k_coeff_intercalib_f1_sbm[ ];
 extern float k_coeff_intercalib_f2[ ];
-extern unsigned char rw_fbins_mask_f0[16];
-extern unsigned char rw_fbins_mask_f1[16];
-extern unsigned char rw_fbins_mask_f2[16];
+extern fbins_masks_t fbins_masks;
 
 int action_load_common_par( ccsdsTelecommandPacket_t *TC );
 int action_load_normal_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id , unsigned char *time);
@@ -61,8 +59,10 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
-void build_rw_fbins_mask( unsigned int channel );
-void build_rw_fbins_masks();
+void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag );
+void build_sy_lfr_rw_mask( unsigned int channel );
+void build_sy_lfr_rw_masks();
+void merge_fbins_masks( void );
 
 // FBINS_MASK
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );

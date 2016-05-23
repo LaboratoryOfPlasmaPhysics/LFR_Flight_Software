@@ -272,4 +272,10 @@ struct param_local_str{
     unsigned int local_sbm2_nb_cwf_max;
 };
 
+typedef struct {
+    unsigned char merged_fbins_mask_f0[16];
+    unsigned char merged_fbins_mask_f1[16];
+    unsigned char merged_fbins_mask_f2[16];
+} fbins_masks_t;
+
 #endif // FSW_PARAMS_H_INCLUDED

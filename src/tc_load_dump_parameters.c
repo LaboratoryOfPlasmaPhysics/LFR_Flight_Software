@@ -342,6 +342,10 @@ int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         parameter_dump_packet.sy_lfr_sc_rw_delta_f[1]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 1 ];
         parameter_dump_packet.sy_lfr_sc_rw_delta_f[2]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 2 ];
         parameter_dump_packet.sy_lfr_sc_rw_delta_f[3]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 3 ];
+
+        // store the parameter sy_lfr_sc_rw_delta_f as a float
+        copyFloatByChar( (unsigned char*) &sy_lfr_sc_rw_delta_f,
+                         (unsigned char*) &parameter_dump_packet.sy_lfr_sc_rw_delta_f[0] );
     }
 
     return flag;
@@ -902,7 +906,6 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
      */
 
     unsigned char * bytePosPtr; // pointer to the beginning of the incoming TC packet
-    unsigned char * floatPtr;   // pointer to the Most Significant Byte of the considered float
 
     bytePosPtr = (unsigned char *) &TC->packetID;
 
@@ -939,54 +942,78 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
                      (unsigned char*) &bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2 ] );
 }
 
-void setFBinMask( unsigned char *fbins_mask, float freq, unsigned char deltaFreq, unsigned char flag )
+void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag )
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
      *
      * @param fbins_mask
-     * @param freq
-     * @param deltaFreq
+     * @param rw_f is the reaction wheel frequency to filter
+     * @param delta_f is the frequency step between the frequency bins, it depends on the frequency channel
      * @param flag [true] filtering enabled [false] filtering disabled
      *
      * @return void
      *
      */
 
-    unsigned int fBelow;
+    float fmin;
+    float fMAX;
+    int binBelow;
+    int binAbove;
+    unsigned int whichByte;
+    unsigned char selectedByte;
+    int bin;
 
-    // compute the index of the frequency immediately below the reaction wheel frequency
-    fBelow = (unsigned int) ( floor( ((double) cp_rpw_sc_rw1_f1) / ((double) deltaFreq)) );
+    whichByte = 0;
+    bin = 0;
 
-    if (fBelow < 127) // if fbelow is greater than 127 or equal to 127, this means that the reaction wheel frequency is outside the frequency range
+    // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
+    fmin = rw_f - sy_lfr_sc_rw_delta_f / 2.;
+    fMAX = rw_f + sy_lfr_sc_rw_delta_f / 2.;
+
+    // compute the index of the frequency bin immediately below fmin
+    binBelow = (int) ( floor( ((double) fmin) / ((double) deltaFreq)) );
+
+    // compute the index of the frequency bin immediately above fMAX
+    binAbove = (int) ( ceil( ((double) fMAX) / ((double) deltaFreq)) );
+
+    for (bin = binBelow; bin <= binAbove; bin++)
     {
-        if (flag == 1)
+        if ( (bin >= 0) && (bin<=127) )
         {
-//            rw_fbins_mask[k] = (1 << fBelow) | (1 << fAbove);
+            if (flag == 1)
+            {
+                whichByte = bin >> 3;   // division by 8
+                selectedByte = (unsigned char) ( 1 << (bin - (whichByte * 8)) );
+                fbins_mask[whichByte] = fbins_mask[whichByte] & (~selectedByte);
+            }
         }
     }
 }
 
-void build_rw_fbins_mask( unsigned int channel )
+void build_sy_lfr_rw_mask( unsigned int channel )
 {
-    unsigned char rw_fbins_mask[16];
+    unsigned char local_rw_fbins_mask[16];
     unsigned char *maskPtr;
     double deltaF;
     unsigned k;
 
     k = 0;
 
+    maskPtr = NULL;
+    deltaF = 1.;
+
     switch (channel)
     {
     case 0:
-        maskPtr = rw_fbins_mask_f0;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
         deltaF = 96.;
         break;
     case 1:
-        maskPtr = rw_fbins_mask_f1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
         deltaF = 16.;
         break;
     case 2:
-        maskPtr = rw_fbins_mask_f2;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
         deltaF = 1.;
         break;
     default:
@@ -995,39 +1022,76 @@ void build_rw_fbins_mask( unsigned int channel )
 
     for (k = 0; k < 16; k++)
     {
-        rw_fbins_mask[k] = 0x00;
+        local_rw_fbins_mask[k] = 0xff;
     }
 
     // RW1 F1
-    setFBinMask( rw_fbins_mask, fBelow );
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw1_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x80) >> 7 );   // [1000 0000]
 
     // RW1 F2
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw1_f2, deltaF, (cp_rpw_sc_rw_f_flags & 0x40) >> 6 );   // [0100 0000]
 
     // RW2 F1
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw2_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x20) >> 5 );   // [0010 0000]
 
     // RW2 F2
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw2_f2, deltaF, (cp_rpw_sc_rw_f_flags & 0x10) >> 4 );   // [0001 0000]
 
     // RW3 F1
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw3_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x08) >> 3 );   // [0000 1000]
 
     // RW3 F2
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw3_f2, deltaF, (cp_rpw_sc_rw_f_flags & 0x04) >> 2 );   // [0000 0100]
 
     // RW4 F1
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw4_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x02) >> 1 );   // [0000 0010]
 
     // RW4 F2
-
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw1_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x01)       );  // [0000 0001]
 
     // update the value of the fbins related to reaction wheels frequency filtering
-    for (k = 0; k < 16; k++)
+    if (maskPtr != NULL)
     {
-        maskPtr[k] = rw_fbins_mask[k];
+        for (k = 0; k < 16; k++)
+        {
+            maskPtr[k] = local_rw_fbins_mask[k];
+        }
     }
 }
 
-void build_rw_fbins_masks()
+void build_sy_lfr_rw_masks( void )
 {
-    build_rw_fbins_mask( 0 );
-    build_rw_fbins_mask( 1 );
-    build_rw_fbins_mask( 2 );
+    build_sy_lfr_rw_mask( 0 );
+    build_sy_lfr_rw_mask( 1 );
+    build_sy_lfr_rw_mask( 2 );
+
+    merge_fbins_masks();
+}
+
+void merge_fbins_masks( void )
+{
+    unsigned char k;
+
+    unsigned char *fbins_f0;
+    unsigned char *fbins_f1;
+    unsigned char *fbins_f2;
+    unsigned char *rw_mask_f0;
+    unsigned char *rw_mask_f1;
+    unsigned char *rw_mask_f2;
+
+    fbins_f0 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
+    fbins_f1 = parameter_dump_packet.sy_lfr_fbins_f1_word1;
+    fbins_f2 = parameter_dump_packet.sy_lfr_fbins_f2_word1;
+    rw_mask_f0 = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
+    rw_mask_f1 = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
+    rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
+
+    for( k=0; k < 16; k++ )
+    {
+        fbins_masks.merged_fbins_mask_f0[k] = fbins_f0[k] & rw_mask_f0[k];
+        fbins_masks.merged_fbins_mask_f1[k] = fbins_f1[k] & rw_mask_f1[k];
+        fbins_masks.merged_fbins_mask_f2[k] = fbins_f2[k] & rw_mask_f2[k];
+    }
 }
 
 //***********
@@ -1049,12 +1113,6 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
     {
         fbins_mask_dump[k] = fbins_mask_TC[k];
     }
-    for (k=0; k < NB_FBINS_MASKS; k++)
-    {
-        unsigned char *auxPtr;
-        auxPtr = &parameter_dump_packet.sy_lfr_fbins_f0_word1[k*NB_BYTES_PER_FBINS_MASK];
-    }
-
 
     return status;
 }
@@ -1086,17 +1144,17 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
     sy_lfr_pas_filter_enabled   = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED ] & 0x01;   // [0000 0001]
     sy_lfr_pas_filter_modulus   = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS ];
     copyFloatByChar(
-                (char*) &sy_lfr_pas_filter_tbad,
-                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD ]
+                (unsigned char*) &sy_lfr_pas_filter_tbad,
+                (unsigned char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD ]
                 );
     sy_lfr_pas_filter_offset    = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET ];
     copyFloatByChar(
-                (char*) &sy_lfr_pas_filter_shift,
-                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT ]
+                (unsigned char*) &sy_lfr_pas_filter_shift,
+                (unsigned char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT ]
                 );
     copyFloatByChar(
-                (char*) &sy_lfr_sc_rw_delta_f,
-                (char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F ]
+                (unsigned char*) &sy_lfr_sc_rw_delta_f,
+                (unsigned char*) &TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F ]
                 );
 
     //******************

@@ -684,13 +684,13 @@ int getFBinMask( int index, unsigned char channel )
     switch(channel)
     {
     case 0:
-        sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
+        sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f0;
         break;
     case 1:
-        sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f1_word1;
+        sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f1;
         break;
     case 2:
-        sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f2_word1;
+        sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f2;
         break;
     default:
         PRINTF("ERR *** in getFBinMask, wrong frequency channel")

@@ -59,7 +59,7 @@ typedef struct {
 
 // PDB >= 0.1.28, 0x80000f54
 typedef struct{
-    int data_shaping;       // 0x00 00 *** R1 R0 SP1 SP0 BW
+    int data_shaping;       // 0x00 00 *** R2 R1 R0 SP1 SP0 BW
     int run_burst_enable;   // 0x04 01 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
     int addr_data_f0_0;     // 0x08
     int addr_data_f0_1;     // 0x0c
