@@ -700,7 +700,8 @@ void hk_lfr_le_me_he_update()
             + housekeeping_packet.hk_lfr_timecode_invalid
             + housekeeping_packet.hk_lfr_time_timecode_it
             + housekeeping_packet.hk_lfr_time_not_synchro
-            + housekeeping_packet.hk_lfr_time_timecode_ctr;
+            + housekeeping_packet.hk_lfr_time_timecode_ctr
+            + housekeeping_packet.hk_lfr_ahb_correctable;
     // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb => not handled by the grspw driver
     // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb => not handled by the grspw driver
 
@@ -758,7 +759,7 @@ void set_hk_lfr_time_not_synchro()
 
 }
 
-void set_hk_lfr_ahb_correctable()
+void set_hk_lfr_ahb_correctable()   // CRITICITY L
 {
     /** This function builds the error counter hk_lfr_ahb_correctable using the statistics provided
      * by the Cache Control Register (ASI 2, offset 0) and in the Register Protection Control Register (ASR16) on the

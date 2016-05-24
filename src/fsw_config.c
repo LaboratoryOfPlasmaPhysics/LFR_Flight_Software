@@ -6,7 +6,7 @@ struct drvmgr_key grlib_grspw_0n1_res[] = {
     	{"rxBdCnt", KEY_TYPE_INT, {(unsigned int)10}},
     	{"txDataSize", KEY_TYPE_INT, {(unsigned int)4096}},
         {"txHdrSize", KEY_TYPE_INT, {(unsigned int)34}},
-    	{"rxPktSize", KEY_TYPE_INT, {(unsigned int)248+4}},
+        {"rxPktSize", KEY_TYPE_INT, {(unsigned int)228+4}},
     	KEY_EMPTY
 };
 
