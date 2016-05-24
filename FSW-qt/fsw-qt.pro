@@ -10,7 +10,7 @@ TEMPLATE = app
 #           debug_tch
 #           lpp_dpu_destid      /!\ REMOVE BEFORE DELIVERY TO LESIA /!\
 #           debug_watchdog
-CONFIG += console verbose lpp_dpu_destid
+CONFIG += console verbose lpp_dpu_destid cpu_usage_report
 CONFIG -= qt
 
 include(./sparc.pri)

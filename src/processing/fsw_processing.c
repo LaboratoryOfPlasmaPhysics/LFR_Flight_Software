@@ -666,7 +666,7 @@ void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *co
                         + averaged_spec_mat[ offsetASM + k ] * fBinMask );
             }
             compressed_spec_mat[ offsetCompressed ] =
-                    compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage);
+                    (divider != 0.) ? compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage) : 0.0;
         }
     }
 
@@ -702,6 +702,81 @@ int getFBinMask( int index, unsigned char channel )
     fbin = (int) ((sy_lfr_fbins_fx_word1[ NB_BYTES_PER_FREQ_MASK - 1 - indexInChar] >> indexInTheChar) & 0x1);
 
     return fbin;
+}
+
+unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
+{
+    u_int64_t acquisitionTime;
+    u_int64_t timecodeReference;
+    u_int64_t offsetInFineTime;
+    u_int64_t shiftInFineTime;
+    u_int64_t tBadInFineTime;
+    u_int64_t acquisitionTimeRangeMin;
+    u_int64_t acquisitionTimeRangeMax;
+    unsigned char pasFilteringIsEnabled;
+    unsigned char ret;
+
+    pasFilteringIsEnabled = (parameter_dump_packet.spare_sy_lfr_pas_filter_enabled & 0x01); // [0000 0001]
+    ret = 1;
+
+    //***************************
+    // <FOR TESTING PURPOSE ONLY>
+    unsigned char   sy_lfr_pas_filter_modulus   = 4;
+    unsigned char   sy_lfr_pas_filter_offset    = 1;
+    float           sy_lfr_pas_filter_shift     = 0.5;
+    float           sy_lfr_pas_filter_tbad      = 1.0;
+    // </FOR TESTING PURPOSE ONLY>
+    //****************************
+
+    // compute acquisition time from caoarseTime and fineTime
+    acquisitionTime = ( ((u_int64_t)coarseTime) <<  16 )
+            + (u_int64_t) fineTime;
+
+    // compute the timecode reference
+    timecodeReference = (u_int64_t) (floor( ((double) coarseTime) / ((double) sy_lfr_pas_filter_modulus) )
+            * ((double) sy_lfr_pas_filter_modulus)) * 65536;
+
+    // compute the acquitionTime range
+    offsetInFineTime    = ((double) sy_lfr_pas_filter_offset)   * 65536;
+    shiftInFineTime     = ((double) sy_lfr_pas_filter_shift)    * 65536;
+    tBadInFineTime      = ((double) sy_lfr_pas_filter_tbad)     * 65536;
+
+    acquisitionTimeRangeMin =
+            timecodeReference
+            + offsetInFineTime
+            + shiftInFineTime
+            - acquisitionDurations[channel];
+    acquisitionTimeRangeMax =
+            timecodeReference
+            + offsetInFineTime
+            + shiftInFineTime
+            + tBadInFineTime;
+
+    if ( (acquisitionTime >= acquisitionTimeRangeMin)
+         && (acquisitionTime <= acquisitionTimeRangeMax)
+         && (pasFilteringIsEnabled == 1) )
+    {
+        ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
+    }
+    else
+    {
+        ret = 1;    // the acquisition time is OUTSIDE the range, the matrix can be used for the averaging
+    }
+
+//    printf("coarseTime = %x, fineTime = %x\n",
+//           coarseTime,
+//           fineTime);
+
+//    printf("[ret = %d] *** acquisitionTime = %f, Reference = %f",
+//           ret,
+//           acquisitionTime / 65536.,
+//           timecodeReference / 65536.);
+
+//    printf(", Min = %f, Max = %f\n",
+//           acquisitionTimeRangeMin / 65536.,
+//           acquisitionTimeRangeMax / 65536.);
+
+    return ret;
 }
 
 void init_kcoeff_sbm_from_kcoeff_norm(float *input_kcoeff, float *output_kcoeff, unsigned char nb_bins_norm)

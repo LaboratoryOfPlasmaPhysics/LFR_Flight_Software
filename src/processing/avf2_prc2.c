@@ -143,6 +143,7 @@ rtems_task prc2_task( rtems_task_argument argument )
     bp_packet                   packet_norm_bp1;
     bp_packet                   packet_norm_bp2;
     ring_node                   *current_ring_node_to_send_asm_f2;
+    float nbSMInASMNORM;
 
     unsigned long long int localTime;
 
@@ -182,14 +183,16 @@ rtems_task prc2_task( rtems_task_argument argument )
 
         localTime = getTimeAsUnsignedLongLongInt( );
 
+        nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
+
         //*****
         //*****
         // NORM
         //*****
         //*****
-        // 1)  compress the matrix for Basic Parameters calculation
+        // 1) compress the matrix for Basic Parameters calculation
         ASM_compress_reorganize_and_divide_mask( asm_f2_patched_norm, compressed_sm_norm_f2,
-                                     nb_sm_before_f2.norm_bp1,
+                                     nbSMInASMNORM,
                                      NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2,
                                      ASM_F2_INDICE_START, CHANNELF2 );
         // BP1_F2
@@ -258,19 +261,60 @@ void SM_average_f2( float *averaged_spec_mat_f2,
 {
     float sum;
     unsigned int i;
+    unsigned char keepMatrix;
+
+    // test acquisitionTime validity
+    keepMatrix = acquisitionTimeIsValid( ring_node->coarseTime, ring_node->fineTime, 2 );
 
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
         sum = ( (int *) (ring_node->buffer_address) ) [ i ];
-        if ( (nbAverageNormF2 == 0) )
+        if ( (nbAverageNormF2 == 0) )   // average initialization
         {
-            averaged_spec_mat_f2[ i ] = sum;
+            if (keepMatrix == 1)    // keep the matrix and add it to the average
+            {
+                averaged_spec_mat_f2[ i ] = sum;
+            }
+            else                    // drop the matrix and initialize the average
+            {
+                averaged_spec_mat_f2[ i ] = 0.;
+            }
             msgForMATR->coarseTimeNORM  = ring_node->coarseTime;
             msgForMATR->fineTimeNORM    = ring_node->fineTime;
         }
         else
         {
-            averaged_spec_mat_f2[ i ] = ( averaged_spec_mat_f2[  i ] + sum );
+            if (keepMatrix == 1)    // keep the matrix and add it to the average
+            {
+                averaged_spec_mat_f2[ i ] = ( averaged_spec_mat_f2[  i ] + sum );
+            }
+            else
+            {
+                // nothing to do, the matrix is not valid
+            }
+        }
+    }
+
+    if (keepMatrix == 1)
+    {
+        if ( (nbAverageNormF2 == 0) )
+        {
+            msgForMATR->numberOfSMInASMNORM = 1;
+        }
+        else
+        {
+            msgForMATR->numberOfSMInASMNORM++;
+        }
+    }
+    else
+    {
+        if ( (nbAverageNormF2 == 0) )
+        {
+            msgForMATR->numberOfSMInASMNORM = 0;
+        }
+        else
+        {
+            // nothing to do
         }
     }
 }

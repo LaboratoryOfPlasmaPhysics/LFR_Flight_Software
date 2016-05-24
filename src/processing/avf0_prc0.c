@@ -98,7 +98,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
                     current_ring_node_asm_burst_sbm_f0->matrix,
                     ring_node_tab,
                     nb_norm_bp1, nb_sbm_bp1,
-                    &msgForPRC );
+                    &msgForPRC, 0 );    // 0 => frequency channel 0
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0;
@@ -195,6 +195,8 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
     bp_packet               packet_sbm_bp1;
     bp_packet               packet_sbm_bp2;
     ring_node               *current_ring_node_to_send_asm_f0;
+    float nbSMInASMNORM;
+    float nbSMInASMSBM;
 
     // init the ring of the averaged spectral matrices which will be transmitted to the DPU
     init_ring( ring_to_send_asm_f0, NB_RING_NODES_ASM_F0, (volatile int*) buffer_asm_f0, TOTAL_SIZE_SM );
@@ -265,6 +267,9 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
         ASM_patch( incomingMsg->norm->matrix,      asm_f0_patched_norm      );
         ASM_patch( incomingMsg->burst_sbm->matrix, asm_f0_patched_burst_sbm );
 
+        nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
+        nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
+
         //****************
         //****************
         // BURST SBM1 SBM2
@@ -275,7 +280,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             sid = getSID( incomingMsg->event );
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_reorganize_and_divide_mask( asm_f0_patched_burst_sbm, compressed_sm_sbm_f0,
-                                         nb_sm_before_f0.burst_sbm_bp1,
+                                         nbSMInASMSBM,
                                          NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,
                                          ASM_F0_INDICE_START, CHANNELF0);
             // 2) compute the BP1 set
@@ -313,7 +318,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
         {
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_reorganize_and_divide_mask( asm_f0_patched_norm, compressed_sm_norm_f0,
-                                         nb_sm_before_f0.norm_bp1,
+                                         nbSMInASMNORM,
                                          NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0,
                                          ASM_F0_INDICE_START, CHANNELF0 );
             // 2) compute the BP1 set
@@ -346,7 +351,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
             // 1) reorganize the ASM and divide
             ASM_reorganize_and_divide( asm_f0_patched_norm,
                                        (float*) current_ring_node_to_send_asm_f0->buffer_address,
-                                       nb_sm_before_f0.norm_bp1 );
+                                       nbSMInASMNORM );
             current_ring_node_to_send_asm_f0->coarseTime    = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f0->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f0->sid           = SID_NORM_ASM_F0;

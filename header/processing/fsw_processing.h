@@ -80,6 +80,8 @@ typedef struct asm_msg
     unsigned int fineTimeNORM;
     unsigned int coarseTimeSBM;
     unsigned int fineTimeSBM;
+    unsigned int numberOfSMInASMNORM;
+    unsigned int numberOfSMInASMSBM;
 } asm_msg;
 
 extern unsigned char thisIsAnASMRestart;
@@ -87,6 +89,7 @@ extern unsigned char thisIsAnASMRestart;
 extern volatile int sm_f0[ ];
 extern volatile int sm_f1[ ];
 extern volatile int sm_f2[ ];
+extern unsigned int acquisitionDurations[];
 
 // parameters
 extern struct param_local_str param_local;
@@ -145,12 +148,7 @@ extern rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id );
 static inline void SM_average(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                               ring_node *ring_node_tab[],
                               unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-                              asm_msg *msgForMATR );
-
-static inline void SM_average_debug(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                                    ring_node *ring_node_tab[],
-                                    unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-                                    asm_msg *msgForMATR );
+                              asm_msg *msgForMATR , unsigned char channel);
 
 void ASM_patch( float *inputASM, float *outputASM );
 
@@ -165,24 +163,52 @@ static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, 
 
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
+unsigned char acquisitionTimeIsValid(unsigned int coarseTime, unsigned int fineTime, unsigned char channel);
+
 void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
                  ring_node *ring_node_tab[],
                  unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-                 asm_msg *msgForMATR )
+                 asm_msg *msgForMATR, unsigned char channel )
 {
     float sum;
     unsigned int i;
+    unsigned int k;
+    unsigned char incomingSMIsValid[8];
+    unsigned int numberOfValidSM;
+    unsigned char isValid;
 
+    //**************
+    // PAS FILTERING
+    // check acquisitionTime of the incoming data
+    numberOfValidSM = 0;
+    for (k=0; k<8; k++)
+    {
+        isValid = acquisitionTimeIsValid( ring_node_tab[k]->coarseTime, ring_node_tab[k]->fineTime, channel );
+        incomingSMIsValid[k] = isValid;
+        numberOfValidSM = numberOfValidSM + isValid;
+    }
+
+    //************************
+    // AVERAGE SPECTRAL MATRIX
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
-        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
-                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
+//        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
+//                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
+
+        sum = ( (incomingSMIsValid[0] == 1) ? ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[1] == 1) ? ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[2] == 1) ? ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[3] == 1) ? ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[4] == 1) ? ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[5] == 1) ? ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[6] == 1) ? ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ] : 0.0 )
+                + ( (incomingSMIsValid[7] == 1) ? ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ] : 0.0 );
 
         if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
         {
@@ -214,25 +240,28 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
             //            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n", nbAverageNORM, nbAverageSBM)
         }
     }
-}
 
-void SM_average_debug( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                       ring_node *ring_node_tab[],
-                       unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-                       asm_msg *msgForMATR )
-{
-    float sum;
-    unsigned int i;
-
-    for(i=0; i<TOTAL_SIZE_SM; i++)
+    //*******************
+    // UPDATE SM COUNTERS
+    if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
     {
-        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ];
-        averaged_spec_mat_NORM[ i ] = sum;
-        averaged_spec_mat_SBM[  i ] = sum;
-        msgForMATR->coarseTimeNORM  = ring_node_tab[0]->coarseTime;
-        msgForMATR->fineTimeNORM    = ring_node_tab[0]->fineTime;
-        msgForMATR->coarseTimeSBM   = ring_node_tab[0]->coarseTime;
-        msgForMATR->fineTimeSBM     = ring_node_tab[0]->fineTime;
+        msgForMATR->numberOfSMInASMNORM = numberOfValidSM;
+        msgForMATR->numberOfSMInASMSBM  = numberOfValidSM;
+    }
+    else if ( (nbAverageNORM != 0) && (nbAverageSBM != 0) )
+    {
+        msgForMATR->numberOfSMInASMNORM = msgForMATR->numberOfSMInASMNORM   + numberOfValidSM;
+        msgForMATR->numberOfSMInASMSBM  = msgForMATR->numberOfSMInASMSBM    + numberOfValidSM;
+    }
+    else if ( (nbAverageNORM != 0) && (nbAverageSBM == 0) )
+    {
+        msgForMATR->numberOfSMInASMNORM = msgForMATR->numberOfSMInASMNORM   + numberOfValidSM;
+        msgForMATR->numberOfSMInASMSBM  = numberOfValidSM;
+    }
+    else
+    {
+        msgForMATR->numberOfSMInASMNORM = numberOfValidSM;
+        msgForMATR->numberOfSMInASMSBM  = msgForMATR->numberOfSMInASMSBM    + numberOfValidSM;
     }
 }
 
@@ -255,7 +284,7 @@ void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_m
                     asmComponent * NB_BINS_PER_SM
                     + frequencyBin;
             averaged_spec_mat_reorganized[offsetASMReorganized  ] =
-                    averaged_spec_mat[ offsetASM ] / divider;
+                    (divider != 0.0) ? averaged_spec_mat[ offsetASM ] / divider : 0.0;
         }
     }
 }

@@ -93,3 +93,4 @@ float cp_rpw_sc_rw4_f2;
 float sy_lfr_sc_rw_delta_f;
 
 fbins_masks_t fbins_masks;
+unsigned int acquisitionDurations[3] = {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};

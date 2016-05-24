@@ -221,9 +221,9 @@ typedef struct ring_node
 #define MSG_QUEUE_COUNT_PRC2  5
 #define MSG_QUEUE_SIZE_SEND             812 // 808 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
 #define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
-#define MSG_QUEUE_SIZE_PRC0             28  // two pointers, one rtems_event + 4 integers
-#define MSG_QUEUE_SIZE_PRC1             28  // two pointers, one rtems_event + 4 integers
-#define MSG_QUEUE_SIZE_PRC2             28  // two pointers, one rtems_event + 4 integers
+#define MSG_QUEUE_SIZE_PRC0             36  // two pointers, one rtems_event + 6 integers
+#define MSG_QUEUE_SIZE_PRC1             36  // two pointers, one rtems_event + 6 integers
+#define MSG_QUEUE_SIZE_PRC2             36  // two pointers, one rtems_event + 6 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1
@@ -277,5 +277,9 @@ typedef struct {
     unsigned char merged_fbins_mask_f1[16];
     unsigned char merged_fbins_mask_f2[16];
 } fbins_masks_t;
+
+#define ACQUISITION_DURATION_F0 683     // 256 / 24576 * 65536
+#define ACQUISITION_DURATION_F1 4096    // 256 /  4096 * 65536
+#define ACQUISITION_DURATION_F2 65536   // 256 /   256 * 65536
 
 #endif // FSW_PARAMS_H_INCLUDED
