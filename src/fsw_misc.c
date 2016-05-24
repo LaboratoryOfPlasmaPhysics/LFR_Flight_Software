@@ -683,14 +683,21 @@ void hk_lfr_le_me_he_update()
     unsigned int hk_lfr_le_cnt;
     unsigned int hk_lfr_me_cnt;
     unsigned int hk_lfr_he_cnt;
+    unsigned int current_hk_lfr_le_cnt;
+    unsigned int current_hk_lfr_me_cnt;
+    unsigned int current_hk_lfr_he_cnt;
 
     hk_lfr_le_cnt = 0;
     hk_lfr_me_cnt = 0;
     hk_lfr_he_cnt = 0;
+    current_hk_lfr_le_cnt = ((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256 + housekeeping_packet.hk_lfr_le_cnt[1];
+    current_hk_lfr_me_cnt = ((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256 + housekeeping_packet.hk_lfr_me_cnt[1];
+    current_hk_lfr_he_cnt = ((unsigned int) housekeeping_packet.hk_lfr_he_cnt[0]) * 256 + housekeeping_packet.hk_lfr_he_cnt[1];
 
     //update the low severity error counter
     hk_lfr_le_cnt =
-            housekeeping_packet.hk_lfr_dpu_spw_parity
+            current_hk_lfr_le_cnt
+            + housekeeping_packet.hk_lfr_dpu_spw_parity
             + housekeeping_packet.hk_lfr_dpu_spw_disconnect
             + housekeeping_packet.hk_lfr_dpu_spw_escape
             + housekeeping_packet.hk_lfr_dpu_spw_credit
@@ -707,7 +714,8 @@ void hk_lfr_le_me_he_update()
 
     //update the medium severity error counter
     hk_lfr_me_cnt =
-            housekeeping_packet.hk_lfr_dpu_spw_early_eop
+            current_hk_lfr_me_cnt
+            + housekeeping_packet.hk_lfr_dpu_spw_early_eop
             + housekeeping_packet.hk_lfr_dpu_spw_invalid_addr
             + housekeeping_packet.hk_lfr_dpu_spw_eep
             + housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
