@@ -358,6 +358,7 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
 
             // 3) send the spectral matrix packets
             status =  rtems_message_queue_send( queue_id, &current_ring_node_to_send_asm_f0, sizeof( ring_node* ) );
+
             // change asm ring node
             current_ring_node_to_send_asm_f0 = current_ring_node_to_send_asm_f0->next;
         }

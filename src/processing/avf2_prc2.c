@@ -233,8 +233,10 @@ rtems_task prc2_task( rtems_task_argument argument )
             current_ring_node_to_send_asm_f2->coarseTime    = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f2->fineTime      = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f2->sid           = SID_NORM_ASM_F2;
+
             // 3) send the spectral matrix packets
             status =  rtems_message_queue_send( queue_id_send, &current_ring_node_to_send_asm_f2, sizeof( ring_node* ) );
+
             // change asm ring node
             current_ring_node_to_send_asm_f2 = current_ring_node_to_send_asm_f2->next;
         }

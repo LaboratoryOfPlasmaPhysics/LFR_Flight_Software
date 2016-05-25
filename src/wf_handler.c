@@ -404,9 +404,9 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     ring_node_cwf3_light.sid = SID_NORM_CWF_F3;
     ring_node_cwf3_light.status = 0x00;
 
-    BOOT_PRINTF("in CWF3 ***\n")
+    BOOT_PRINTF("in CWF3 ***\n");
 
-            while(1){
+    while(1){
         // wait for an RTEMS_EVENT
         rtems_event_receive( RTEMS_EVENT_0,
                              RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
@@ -416,14 +416,14 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
             ring_node_to_send_cwf = getRingNodeToSendCWF( 3 );
             if ( (parameter_dump_packet.sy_lfr_n_cwf_long_f3 & 0x01) == 0x01)
             {
-                PRINTF("send CWF_LONG_F3\n")
-                        ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+                PRINTF("send CWF_LONG_F3\n");
+                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
                 status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
             }
             else
             {
-                PRINTF("send CWF_F3 (light)\n")
-                        send_waveform_CWF3_light( ring_node_to_send_cwf, &ring_node_cwf3_light, queue_id );
+                PRINTF("send CWF_F3 (light)\n");
+                send_waveform_CWF3_light( ring_node_to_send_cwf, &ring_node_cwf3_light, queue_id );
             }
 
         }
@@ -460,23 +460,27 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
         PRINTF1("in CWF2 *** ERR get_message_queue_id_send %d\n", status)
     }
 
-    BOOT_PRINTF("in CWF2 ***\n")
+    BOOT_PRINTF("in CWF2 ***\n");
 
-            while(1){
+    while(1){
         // wait for an RTEMS_EVENT// send the snapshot when built
         status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2 );
         rtems_event_receive( RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
                              RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send = getRingNodeToSendCWF( 2 );
         if (event_out == RTEMS_EVENT_MODE_BURST)
-        {
+        {   // data are sent whatever the transition time
             status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
         }
         else if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
             if ( lfrCurrentMode == LFR_MODE_SBM2 )
             {
-                status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
+                // data are sent depending on the transition time
+                if ( time_management_regs->coarse_time >= lastValidEnterModeTime)
+                {
+                    status =  rtems_message_queue_send( queue_id, &ring_node_to_send, sizeof( ring_node* ) );
+                }
             }
             // launch snapshot extraction if needed
             if (extractSWF2 == true)
@@ -532,10 +536,10 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
         ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
         if (lfrCurrentMode == LFR_MODE_SBM1)
         {
-            status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
-            if (status != 0)
+            // data are sent depending on the transition time
+            if ( time_management_regs->coarse_time >= lastValidEnterModeTime )
             {
-                PRINTF("cwf sending failed\n")
+                status =  rtems_message_queue_send( queue_id, &ring_node_to_send_cwf, sizeof( ring_node* ) );
             }
         }
         // launch snapshot extraction if needed
