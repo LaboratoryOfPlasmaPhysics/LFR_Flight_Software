@@ -30,7 +30,7 @@ extern float cp_rpw_sc_rw3_f1;
 extern float cp_rpw_sc_rw3_f2;
 extern float cp_rpw_sc_rw4_f1;
 extern float cp_rpw_sc_rw4_f2;
-extern float sy_lfr_sc_rw_delta_f;
+extern filterPar_t filterPar;
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);

@@ -278,6 +278,22 @@ typedef struct {
     unsigned char merged_fbins_mask_f2[16];
 } fbins_masks_t;
 
+#define DEFAULT_SY_LFR_PAS_FILTER_ENABLED   0
+#define DEFAULT_SY_LFR_PAS_FILTER_MODULUS   4
+#define DEFAULT_SY_LFR_PAS_FILTER_TBAD      1.0
+#define DEFAULT_SY_LFR_PAS_FILTER_OFFSET    0
+#define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5
+#define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.025
+
+typedef struct{
+    unsigned char spare_sy_lfr_pas_filter_enabled;
+    unsigned char sy_lfr_pas_filter_modulus;
+    float sy_lfr_pas_filter_tbad;
+    unsigned char sy_lfr_pas_filter_offset;
+    float sy_lfr_pas_filter_shift;
+    float sy_lfr_sc_rw_delta_f;
+} filterPar_t;
+
 #define ACQUISITION_DURATION_F0 683     // 256 / 24576 * 65536
 #define ACQUISITION_DURATION_F1 4096    // 256 /  4096 * 65536
 #define ACQUISITION_DURATION_F2 65536   // 256 /   256 * 65536

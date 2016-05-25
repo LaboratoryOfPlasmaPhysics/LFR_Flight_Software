@@ -716,30 +716,21 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
 
-    pasFilteringIsEnabled = (parameter_dump_packet.spare_sy_lfr_pas_filter_enabled & 0x01); // [0000 0001]
+    pasFilteringIsEnabled = (filterPar.spare_sy_lfr_pas_filter_enabled & 0x01); // [0000 0001]
     ret = 1;
-
-    //***************************
-    // <FOR TESTING PURPOSE ONLY>
-    unsigned char   sy_lfr_pas_filter_modulus   = 4;
-    unsigned char   sy_lfr_pas_filter_offset    = 1;
-    float           sy_lfr_pas_filter_shift     = 0.5;
-    float           sy_lfr_pas_filter_tbad      = 1.0;
-    // </FOR TESTING PURPOSE ONLY>
-    //****************************
 
     // compute acquisition time from caoarseTime and fineTime
     acquisitionTime = ( ((u_int64_t)coarseTime) <<  16 )
             + (u_int64_t) fineTime;
 
     // compute the timecode reference
-    timecodeReference = (u_int64_t) (floor( ((double) coarseTime) / ((double) sy_lfr_pas_filter_modulus) )
-            * ((double) sy_lfr_pas_filter_modulus)) * 65536;
+    timecodeReference = (u_int64_t) (floor( ((double) coarseTime) / ((double) filterPar.sy_lfr_pas_filter_modulus) )
+            * ((double) filterPar.sy_lfr_pas_filter_modulus)) * 65536;
 
     // compute the acquitionTime range
-    offsetInFineTime    = ((double) sy_lfr_pas_filter_offset)   * 65536;
-    shiftInFineTime     = ((double) sy_lfr_pas_filter_shift)    * 65536;
-    tBadInFineTime      = ((double) sy_lfr_pas_filter_tbad)     * 65536;
+    offsetInFineTime    = ((double) filterPar.sy_lfr_pas_filter_offset)   * 65536;
+    shiftInFineTime     = ((double) filterPar.sy_lfr_pas_filter_shift)    * 65536;
+    tBadInFineTime      = ((double) filterPar.sy_lfr_pas_filter_tbad)     * 65536;
 
     acquisitionTimeRangeMin =
             timecodeReference

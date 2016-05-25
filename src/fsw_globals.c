@@ -90,7 +90,9 @@ float cp_rpw_sc_rw3_f1;
 float cp_rpw_sc_rw3_f2;
 float cp_rpw_sc_rw4_f1;
 float cp_rpw_sc_rw4_f2;
-float sy_lfr_sc_rw_delta_f;
+
+// TC_LFR_LOAD_FILTER_PAR
+filterPar_t filterPar;
 
 fbins_masks_t fbins_masks;
 unsigned int acquisitionDurations[3] = {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};

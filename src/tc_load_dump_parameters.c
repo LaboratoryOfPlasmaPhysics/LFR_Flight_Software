@@ -343,9 +343,25 @@ int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         parameter_dump_packet.sy_lfr_sc_rw_delta_f[2]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 2 ];
         parameter_dump_packet.sy_lfr_sc_rw_delta_f[3]           = TC->dataAndCRC[ DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + 3 ];
 
+        //****************************
+        // store PAS filter parameters
+        // sy_lfr_pas_filter_enabled
+        filterPar.spare_sy_lfr_pas_filter_enabled   = parameter_dump_packet.spare_sy_lfr_pas_filter_enabled;
+        // sy_lfr_pas_filter_modulus
+        filterPar.sy_lfr_pas_filter_modulus         = parameter_dump_packet.sy_lfr_pas_filter_modulus;
+        // sy_lfr_pas_filter_tbad
+        copyFloatByChar( (unsigned char*) &filterPar.sy_lfr_pas_filter_tbad,
+                         parameter_dump_packet.sy_lfr_pas_filter_tbad );
+        // sy_lfr_pas_filter_offset
+        filterPar.sy_lfr_pas_filter_offset          = parameter_dump_packet.sy_lfr_pas_filter_offset;
+        // sy_lfr_pas_filter_shift
+        copyFloatByChar( (unsigned char*) &filterPar.sy_lfr_pas_filter_shift,
+                         parameter_dump_packet.sy_lfr_pas_filter_shift );
+
+        //****************************************************
         // store the parameter sy_lfr_sc_rw_delta_f as a float
-        copyFloatByChar( (unsigned char*) &sy_lfr_sc_rw_delta_f,
-                         (unsigned char*) &parameter_dump_packet.sy_lfr_sc_rw_delta_f[0] );
+        copyFloatByChar( (unsigned char*) &filterPar.sy_lfr_sc_rw_delta_f,
+                         parameter_dump_packet.sy_lfr_sc_rw_delta_f );
     }
 
     return flag;
@@ -967,8 +983,8 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
     bin = 0;
 
     // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
-    fmin = rw_f - sy_lfr_sc_rw_delta_f / 2.;
-    fMAX = rw_f + sy_lfr_sc_rw_delta_f / 2.;
+    fmin = rw_f - filterPar.sy_lfr_sc_rw_delta_f / 2.;
+    fMAX = rw_f + filterPar.sy_lfr_sc_rw_delta_f / 2.;
 
     // compute the index of the frequency bin immediately below fmin
     binBelow = (int) ( floor( ((double) fmin) / ((double) deltaFreq)) );
