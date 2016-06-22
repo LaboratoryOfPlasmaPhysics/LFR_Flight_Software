@@ -73,6 +73,7 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t *TC , rtems_id queue_id);
 void copyFloatByChar( unsigned char *destination, unsigned char *source );
+void floatToChar( float value, unsigned char* ptr);
 
 void init_parameter_dump( void );
 void init_kcoefficients_dump( void );

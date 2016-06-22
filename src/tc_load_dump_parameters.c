@@ -1322,6 +1322,17 @@ void copyFloatByChar( unsigned char *destination, unsigned char *source )
     destination[3] = source[3];
 }
 
+void floatToChar( float value, unsigned char* ptr)
+{
+    unsigned char* valuePtr;
+
+    valuePtr = (unsigned char*) &value;
+    ptr[0] = valuePtr[0];
+    ptr[1] = valuePtr[0];
+    ptr[2] = valuePtr[0];
+    ptr[3] = valuePtr[0];
+}
+
 //**********
 // init dump
 
@@ -1393,6 +1404,21 @@ void init_parameter_dump( void )
     for (k=0; k < NB_FBINS_MASKS * NB_BYTES_PER_FBINS_MASK; k++)
     {
         parameter_dump_packet.sy_lfr_fbins_f0_word1[k] = 0xff;
+    }
+
+    // PAS FILTER PARAMETERS
+    parameter_dump_packet.pa_rpw_spare8_2                   = 0x00;
+    parameter_dump_packet.spare_sy_lfr_pas_filter_enabled   = 0x00;
+    parameter_dump_packet.sy_lfr_pas_filter_modulus         = DEFAULT_SY_LFR_PAS_FILTER_MODULUS;
+    floatToChar( DEFAULT_SY_LFR_PAS_FILTER_TBAD,    parameter_dump_packet.sy_lfr_pas_filter_tbad );
+    parameter_dump_packet.sy_lfr_pas_filter_offset          = DEFAULT_SY_LFR_PAS_FILTER_OFFSET;
+    floatToChar( DEFAULT_SY_LFR_PAS_FILTER_SHIFT,   parameter_dump_packet.sy_lfr_pas_filter_shift );
+    floatToChar( DEFAULT_SY_LFR_SC_RW_DELTA_F,      parameter_dump_packet.sy_lfr_sc_rw_delta_f );
+
+    // LFR_RW_MASK
+    for (k=0; k < NB_FBINS_MASKS * NB_BYTES_PER_FBINS_MASK; k++)
+    {
+        parameter_dump_packet.sy_lfr_rw_mask_f0_word1[k] = 0xff;
     }
 }
 
