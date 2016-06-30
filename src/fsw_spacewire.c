@@ -158,6 +158,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("in RECV *** packet lenght too short\n")
             }
             else {
+                PRINTF1("incoming TC with len: %d\n", len);
                 estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
                 currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> 8);
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
@@ -168,7 +169,7 @@ rtems_task recv_task( rtems_task_argument unused )
                      || (parserCode == ILL_SUBTYPE)     || (parserCode == WRONG_APP_DATA)
                      || (parserCode == WRONG_SRC_ID) )
                 { // send TM_LFR_TC_EXE_CORRUPTED
-                    PRINTF1("TC corrupted received, with code: %d\n", parserCode)
+                    PRINTF1("TC corrupted received, with code: %d\n", parserCode);
                     if ( !( (currentTC.serviceType==TC_TYPE_TIME) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_TIME) )
                          &&
                          !( (currentTC.serviceType==TC_TYPE_GEN) && (currentTC.serviceSubType==TC_SUBTYPE_UPDT_INFO))

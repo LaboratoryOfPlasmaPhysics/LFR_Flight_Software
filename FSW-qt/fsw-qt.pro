@@ -15,6 +15,8 @@ CONFIG -= qt
 
 include(./sparc.pri)
 
+INCLUDEPATH += /opt/rtems-4.10/sparc-rtems/leon3/lib/include
+
 # flight software version
 SWVERSION=-1-0
 DEFINES += SW_VERSION_N1=3 # major

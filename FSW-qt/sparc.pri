@@ -13,7 +13,8 @@ QMAKE_OBJCOPY= sparc-rtems-objcopy
 QMAKE_STRIP=sparc-rtems-strip
 QMAKE_GDB=sparc-rtems-gdb
 
-INCLUDEPATH += /opt/rtems-4.10
+#INCLUDEPATH += /opt/rtems-4.10
+INCLUDEPATH += /opt/rtems-4.10/sparc-rtems/leon3/lib/include
 
 QMAKE_CFLAGS_DEBUG= -g
 QMAKE_CFLAGS_RELEASE=""
@@ -61,15 +62,16 @@ contains( TEMPLATE, app ) {
 #QMAKE_CFLAGS_DEBUG      += -O0
 #QMAKE_CXXFLAGS_RELEASE  += -O0
 #QMAKE_CXXFLAGS_DEBUG    += -O0
+
 QMAKE_CFLAGS_RELEASE    += -O3
 QMAKE_CFLAGS_DEBUG      += -O3
 QMAKE_CXXFLAGS_RELEASE  += -O3
 QMAKE_CXXFLAGS_DEBUG    += -O3
 
-#QMAKE_CFLAGS_RELEASE+= -O3 -std=c99
-#QMAKE_CFLAGS_DEBUG+= -O3 -std=c99
-#QMAKE_CXXFLAGS_RELEASE+= -O3 -std=c99
-#QMAKE_CXXFLAGS_DEBUG+= -O3  -std=c99
+#QMAKE_CFLAGS_RELEASE    += -O3 -std=c99
+#QMAKE_CFLAGS_DEBUG      += -O3 -std=c99
+#QMAKE_CXXFLAGS_RELEASE  += -O3 -std=c99
+#QMAKE_CXXFLAGS_DEBUG    += -O3 -std=c99
 
 contains( TEMPLATE, app ) {
     grmon.target = grmon

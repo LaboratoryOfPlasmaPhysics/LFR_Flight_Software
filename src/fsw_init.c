@@ -45,17 +45,21 @@
 
 /* If --drvmgr was enabled during the configuration of the RTEMS kernel */
 #ifdef RTEMS_DRVMGR_STARTUP
-    #ifdef LEON3
-    /* Add Timer and UART Driver */
-        #ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
-            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
-        #endif
-        #ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
-            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
-        #endif
-    #endif
-    #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW   /* GRSPW Driver */
-    #include <drvmgr/drvmgr_confdefs.h>
+#ifdef LEON3
+/* Add Timer and UART Driver */
+
+#ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
+#endif
+
+#ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+#define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
+#endif
+
+#endif
+#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW   /* GRSPW Driver */
+
+#include <drvmgr/drvmgr_confdefs.h>
 #endif
 
 #include "fsw_init.h"

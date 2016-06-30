@@ -347,6 +347,7 @@ int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
         // store PAS filter parameters
         // sy_lfr_pas_filter_enabled
         filterPar.spare_sy_lfr_pas_filter_enabled   = parameter_dump_packet.spare_sy_lfr_pas_filter_enabled;
+        set_sy_lfr_pas_filter_enabled( parameter_dump_packet.spare_sy_lfr_pas_filter_enabled & 0x01 );
         // sy_lfr_pas_filter_modulus
         filterPar.sy_lfr_pas_filter_modulus         = parameter_dump_packet.sy_lfr_pas_filter_modulus;
         // sy_lfr_pas_filter_tbad
