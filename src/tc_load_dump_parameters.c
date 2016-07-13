@@ -972,39 +972,114 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
      *
      */
 
-    float fmin;
-    float fMAX;
+    float f_RW_min;
+    float f_RW_MAX;
+    float fi_min;
+    float fi_MAX;
+    float fi;
+    float deltaBelow;
+    float deltaAbove;
     int binBelow;
     int binAbove;
+    int closestBin;
     unsigned int whichByte;
-    unsigned char selectedByte;
+    int selectedByte;
     int bin;
+    int binToRemove[3];
+    int k;
 
     whichByte = 0;
     bin = 0;
 
+    binToRemove[0] = -1;
+    binToRemove[1] = -1;
+    binToRemove[2] = -1;
+
     // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
-    fmin = rw_f - filterPar.sy_lfr_sc_rw_delta_f / 2.;
-    fMAX = rw_f + filterPar.sy_lfr_sc_rw_delta_f / 2.;
+    f_RW_min = rw_f - filterPar.sy_lfr_sc_rw_delta_f / 2.;
+    f_RW_MAX = rw_f + filterPar.sy_lfr_sc_rw_delta_f / 2.;
 
-    // compute the index of the frequency bin immediately below fmin
-    binBelow = (int) ( floor( ((double) fmin) / ((double) deltaFreq)) );
+    // compute the index of the frequency bin immediately below rw_f
+    binBelow = (int) ( floor( ((double) rw_f) / ((double) deltaFreq)) );
+    deltaBelow = rw_f - binBelow * deltaFreq;
 
-    // compute the index of the frequency bin immediately above fMAX
-    binAbove = (int) ( floor( ((double) fMAX) / ((double) deltaFreq)) );
+    // compute the index of the frequency bin immediately above rw_f
+    binAbove = (int) ( ceil(  ((double) rw_f) / ((double) deltaFreq)) );
+    deltaAbove = binAbove * deltaFreq - rw_f;
 
-    for (bin = binBelow; bin <= binAbove; bin++)
+    // search the closest bin
+    if (deltaAbove > deltaBelow)
     {
-        if ( (bin >= 0) && (bin<=127) )
+        closestBin = binBelow;
+    }
+    else
+    {
+        closestBin = binAbove;
+    }
+
+    // compute the fi interval [fi - Delta_f * 0.285, fi + Delta_f * 0.285]
+    fi = closestBin * deltaFreq;
+
+    fi_min = fi - (deltaFreq * 0.285);
+    if ( fi_min < 0 )
+    {
+        fi_min = 0;
+    }
+    else if ( fi_min > (deltaFreq*127) )
+    {
+        fi_min = -1;
+    }
+
+    fi_MAX = fi + (deltaFreq * 0.285);
+    if ( fi_MAX > (deltaFreq*127) )
+    {
+        fi_MAX = -1;
+    }
+
+    // 1. IF [ f_RW_min, f_RW_MAX] is included in [ fi_min; fi_MAX ]
+    // => remove f_(i), f_(i-1) and f_(i+1)
+    if ( ( f_RW_min > fi_min ) && ( f_RW_MAX < fi_MAX ) )
+    {
+        binToRemove[0] = closestBin - 1;
+        binToRemove[1] = closestBin;
+        binToRemove[2] = closestBin + 1;
+    }
+    // 2. ELSE
+    // => remove the two f_(i) which are around f_RW
+    else
+    {
+        binToRemove[0] = binBelow;
+        binToRemove[1] = binAbove;
+        binToRemove[2] = -1;
+    }
+
+    for (k = 0; k <= 3; k++)
+    {
+        bin = binToRemove[k];
+        if ( (bin >= 0) && (bin <= 127) )
         {
             if (flag == 1)
             {
-                whichByte = bin >> 3;   // division by 8
-                selectedByte = (unsigned char) ( 1 << (bin - (whichByte * 8)) );
-                fbins_mask[whichByte] = fbins_mask[whichByte] & (~selectedByte);
+                whichByte = (bin >> 3);    // division by 8
+                selectedByte = ( 1 << (bin - (whichByte * 8)) );
+
+                printf("whichByte = %d, bin = %d, selectedByte = %x (%x)\n", whichByte, bin, selectedByte, ~selectedByte);
+
+                fbins_mask[15 - whichByte] = fbins_mask[15 - whichByte] & ((unsigned char) (~selectedByte)); // bytes are ordered MSB first in the packets
             }
         }
     }
+
+    if (flag == 1)
+    {
+        printf("fi = %f, fi_min = %f, fi_MAX = %f\n", fi, fi_min, fi_MAX);
+        printf("deltaFreq = %d, flag = %d, rw_f = %f, f_RW_min = %f, f_RW_MAX = %f\n", deltaFreq, flag, rw_f, f_RW_min, f_RW_MAX);
+        printf("%x %x %x %x ** %x %x %x %x ** %x %x %x %x ** %x %x %x %x\n\n", fbins_mask[0], fbins_mask[1], fbins_mask[2], fbins_mask[3],
+                fbins_mask[4], fbins_mask[5], fbins_mask[6], fbins_mask[7],
+                fbins_mask[8], fbins_mask[9], fbins_mask[10], fbins_mask[11],
+                fbins_mask[12], fbins_mask[13], fbins_mask[14], fbins_mask[15]);
+    }
+
 }
 
 void build_sy_lfr_rw_mask( unsigned int channel )
@@ -1064,7 +1139,7 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw4_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x02) >> 1 );   // [0000 0010]
 
     // RW4 F2
-    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw1_f1, deltaF, (cp_rpw_sc_rw_f_flags & 0x01)       );  // [0000 0001]
+    setFBinMask( local_rw_fbins_mask, cp_rpw_sc_rw4_f2, deltaF, (cp_rpw_sc_rw_f_flags & 0x01)       );  // [0000 0001]
 
     // update the value of the fbins related to reaction wheels frequency filtering
     if (maskPtr != NULL)
