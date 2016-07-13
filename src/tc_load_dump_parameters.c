@@ -1062,24 +1062,10 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
             {
                 whichByte = (bin >> 3);    // division by 8
                 selectedByte = ( 1 << (bin - (whichByte * 8)) );
-
-                printf("whichByte = %d, bin = %d, selectedByte = %x (%x)\n", whichByte, bin, selectedByte, ~selectedByte);
-
                 fbins_mask[15 - whichByte] = fbins_mask[15 - whichByte] & ((unsigned char) (~selectedByte)); // bytes are ordered MSB first in the packets
             }
         }
     }
-
-    if (flag == 1)
-    {
-        printf("fi = %f, fi_min = %f, fi_MAX = %f\n", fi, fi_min, fi_MAX);
-        printf("deltaFreq = %d, flag = %d, rw_f = %f, f_RW_min = %f, f_RW_MAX = %f\n", deltaFreq, flag, rw_f, f_RW_min, f_RW_MAX);
-        printf("%x %x %x %x ** %x %x %x %x ** %x %x %x %x ** %x %x %x %x\n\n", fbins_mask[0], fbins_mask[1], fbins_mask[2], fbins_mask[3],
-                fbins_mask[4], fbins_mask[5], fbins_mask[6], fbins_mask[7],
-                fbins_mask[8], fbins_mask[9], fbins_mask[10], fbins_mask[11],
-                fbins_mask[12], fbins_mask[13], fbins_mask[14], fbins_mask[15]);
-    }
-
 }
 
 void build_sy_lfr_rw_mask( unsigned int channel )
