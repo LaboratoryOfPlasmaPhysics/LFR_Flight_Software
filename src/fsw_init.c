@@ -26,7 +26,7 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS 20
+#define CONFIGURE_MAXIMUM_TASKS 21 // number of tasks concurrently active including INIT
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
@@ -34,7 +34,7 @@
 #define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
 #define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
 #define CONFIGURE_MAXIMUM_DRIVERS 16
-#define CONFIGURE_MAXIMUM_PERIODS 5
+#define CONFIGURE_MAXIMUM_PERIODS 5 // [hous] [load] [avgv]
 #define CONFIGURE_MAXIMUM_TIMERS 5 // [spiq] [link] [spacewire_reset_link]
 #define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
 #ifdef PRINT_STACK_REPORT
@@ -143,10 +143,10 @@ rtems_task Init( rtems_task_argument ignored )
 
     PRINTF("*************************\n")
     PRINTF("** LFR Flight Software **\n")
-    PRINTF1("** %d.", SW_VERSION_N1)
-    PRINTF1("%d."   , SW_VERSION_N2)
-    PRINTF1("%d."   , SW_VERSION_N3)
-    PRINTF1("%d            **\n", SW_VERSION_N4)
+    PRINTF1("** %d-", SW_VERSION_N1)
+    PRINTF1("%d-"   , SW_VERSION_N2)
+    PRINTF1("%d-"   , SW_VERSION_N3)
+    PRINTF1("%d             **\n", SW_VERSION_N4)
 
     vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
     PRINTF("** VHDL                **\n")
@@ -342,6 +342,7 @@ void create_names( void ) // create all names for tasks and queues
      */
 
     // task names
+    Task_name[TASKID_AVGV] = rtems_build_name( 'A', 'V', 'G', 'V' );
     Task_name[TASKID_RECV] = rtems_build_name( 'R', 'E', 'C', 'V' );
     Task_name[TASKID_ACTN] = rtems_build_name( 'A', 'C', 'T', 'N' );
     Task_name[TASKID_SPIQ] = rtems_build_name( 'S', 'P', 'I', 'Q' );
@@ -364,6 +365,7 @@ void create_names( void ) // create all names for tasks and queues
 
     // rate monotonic period names
     name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
+    name_avgv_rate_monotonic = rtems_build_name( 'A', 'V', 'G', 'V' );
 
     misc_name[QUEUE_RECV] = rtems_build_name( 'Q', '_', 'R', 'V' );
     misc_name[QUEUE_SEND] = rtems_build_name( 'Q', '_', 'S', 'D' );
@@ -553,6 +555,14 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_HOUS]
         );
     }
+    if (status == RTEMS_SUCCESSFUL) // AVGV
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_AVGV], TASK_PRIORITY_AVGV, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVGV]
+        );
+    }
 
     return status;
 }
@@ -706,6 +716,13 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start( Task_id[TASKID_HOUS], hous_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)     // AVGV
+    {
+        status = rtems_task_start( Task_id[TASKID_AVGV], avgv_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVGV\n")
         }
     }
     if (status == RTEMS_SUCCESSFUL)     // DUMB

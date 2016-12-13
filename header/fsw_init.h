@@ -16,8 +16,8 @@
 #include "avf1_prc1.h"
 #include "avf2_prc2.h"
 
-extern rtems_name  Task_name[20];       /* array of task names */
-extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name  Task_name[];       /* array of task names */
+extern rtems_id    Task_id[];         /* array of task ids */
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;
 extern unsigned char pa_bia_status_info;
