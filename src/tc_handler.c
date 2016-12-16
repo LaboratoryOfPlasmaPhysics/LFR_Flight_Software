@@ -295,8 +295,9 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
             | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 0x1);
 
     // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
-    cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
+    //cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
     getReactionWheelsFrequencies( TC );
+    set_hk_lfr_sc_rw_f_flags();
     build_sy_lfr_rw_masks();
 
     result = status;

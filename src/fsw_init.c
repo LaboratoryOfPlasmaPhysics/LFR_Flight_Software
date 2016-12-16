@@ -164,15 +164,28 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
     pa_bia_status_info = 0x00;
-    cp_rpw_sc_rw_f_flags = 0x00;
-    cp_rpw_sc_rw1_f1 = 0.0;
-    cp_rpw_sc_rw1_f2 = 0.0;
-    cp_rpw_sc_rw2_f1 = 0.0;
-    cp_rpw_sc_rw2_f2 = 0.0;
-    cp_rpw_sc_rw3_f1 = 0.0;
-    cp_rpw_sc_rw3_f2 = 0.0;
-    cp_rpw_sc_rw4_f1 = 0.0;
-    cp_rpw_sc_rw4_f2 = 0.0;
+
+    // initialize all reaction wheels frequencies to NaN
+    rw_f.cp_rpw_sc_rw1_f1 = NAN;
+    rw_f.cp_rpw_sc_rw1_f2 = NAN;
+    rw_f.cp_rpw_sc_rw1_f3 = NAN;
+    rw_f.cp_rpw_sc_rw1_f4 = NAN;
+    rw_f.cp_rpw_sc_rw2_f1 = NAN;
+    rw_f.cp_rpw_sc_rw2_f2 = NAN;
+    rw_f.cp_rpw_sc_rw2_f3 = NAN;
+    rw_f.cp_rpw_sc_rw2_f4 = NAN;
+    rw_f.cp_rpw_sc_rw3_f1 = NAN;
+    rw_f.cp_rpw_sc_rw3_f2 = NAN;
+    rw_f.cp_rpw_sc_rw3_f3 = NAN;
+    rw_f.cp_rpw_sc_rw3_f4 = NAN;
+    rw_f.cp_rpw_sc_rw4_f1 = NAN;
+    rw_f.cp_rpw_sc_rw4_f2 = NAN;
+    rw_f.cp_rpw_sc_rw4_f3 = NAN;
+    rw_f.cp_rpw_sc_rw4_f4 = NAN;
+
+    cp_rpw_sc_rw1_rw2_f_flags = 0x00;
+    cp_rpw_sc_rw3_rw4_f_flags = 0x00;
+
     // initialize filtering parameters
     filterPar.spare_sy_lfr_pas_filter_enabled   = DEFAULT_SY_LFR_PAS_FILTER_ENABLED;
     filterPar.sy_lfr_pas_filter_modulus         = DEFAULT_SY_LFR_PAS_FILTER_MODULUS;
@@ -313,7 +326,7 @@ void init_local_mode_parameters( void )
 
     BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
-    //BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
+    BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
 
     // init sequence counters
 

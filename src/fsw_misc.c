@@ -7,6 +7,10 @@
 
 #include "fsw_misc.h"
 
+int16_t hk_lfr_sc_v_f3_as_int16;
+int16_t hk_lfr_sc_e1_f3_as_int16;
+int16_t hk_lfr_sc_e2_f3_as_int16;
+
 void timer_configure(unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() )
 {
@@ -317,7 +321,8 @@ rtems_task hous_task(rtems_task_argument argument)
 
             hk_lfr_le_me_he_update();
 
-            housekeeping_packet.hk_lfr_sc_rw_f_flags = cp_rpw_sc_rw_f_flags;
+            housekeeping_packet.hk_lfr_sc_rw1_rw2_f_flags = cp_rpw_sc_rw1_rw2_f_flags;
+            housekeeping_packet.hk_lfr_sc_rw3_rw4_f_flags = cp_rpw_sc_rw3_rw4_f_flags;
 
             // SEND PACKET
             status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
@@ -345,6 +350,9 @@ rtems_task avgv_task(rtems_task_argument argument)
     float average_v;
     float average_e1;
     float average_e2;
+    float newValue_v;
+    float newValue_e1;
+    float newValue_e2;
     unsigned char k;
     unsigned char indexOfOldValue;
 
@@ -376,6 +384,9 @@ rtems_task avgv_task(rtems_task_argument argument)
         average_v = 0.;
         average_e1 = 0.;
         average_e2 = 0.;
+        newValue_v = 0.;
+        newValue_e1 = 0.;
+        newValue_e2 = 0.;
     }
 
     k = 0;
@@ -386,21 +397,20 @@ rtems_task avgv_task(rtems_task_argument argument)
             PRINTF1( "in AVGV *** ERR period: %d\n", status);
         }
         else {
-            // store new value in buffer
-            v[k] = waveform_picker_regs->v;
-            e1[k] = waveform_picker_regs->e1;
-            e2[k] = waveform_picker_regs->e2;
-            if (k == (MOVING_AVERAGE - 1))
-            {
-                indexOfOldValue = 0;
-            }
-            else
-            {
-                indexOfOldValue = k + 1;
-            }
-            average_v = average_v + v[k] - v[indexOfOldValue];
-            average_e1 = average_e1 + e1[k] - e1[indexOfOldValue];
-            average_e2 = average_e2 + e2[k] - e2[indexOfOldValue];
+            // get new values
+            newValue_v = waveform_picker_regs->v;
+            newValue_e1 = waveform_picker_regs->e1;
+            newValue_e2 = waveform_picker_regs->e2;
+
+            // compute the moving average
+            average_v = average_v + newValue_v - v[k];
+            average_e1 = average_e1 + newValue_e1 - e1[k];
+            average_e2 = average_e2 + newValue_e2 - e2[k];
+
+            // store new values in buffers
+            v[k] = newValue_v;
+            e1[k] = newValue_e1;
+            e2[k] = newValue_e2;
         }
         if (k == (MOVING_AVERAGE-1))
         {
@@ -413,9 +423,14 @@ rtems_task avgv_task(rtems_task_argument argument)
         }
     }
 
-    PRINTF("in AVGV *** deleting task\n")
+    //update int16 values
+    hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / ((float) MOVING_AVERAGE) );
+    hk_lfr_sc_e1_f3_as_int16 =  (int16_t) (average_e1 / ((float) MOVING_AVERAGE) );
+    hk_lfr_sc_e2_f3_as_int16 =  (int16_t) (average_e2 / ((float) MOVING_AVERAGE) );
 
-            status = rtems_task_delete( RTEMS_SELF ); // should not return
+    PRINTF("in AVGV *** deleting task\n");
+
+    status = rtems_task_delete( RTEMS_SELF ); // should not return
 
     return;
 }
@@ -682,16 +697,16 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     unsigned char* e1_ptr;
     unsigned char* e2_ptr;
 
-    v_ptr  = (unsigned char *) &waveform_picker_regs->v;
-    e1_ptr = (unsigned char *) &waveform_picker_regs->e1;
-    e2_ptr = (unsigned char *) &waveform_picker_regs->e2;
+    v_ptr  = (unsigned char *) &hk_lfr_sc_v_f3_as_int16;
+    e1_ptr = (unsigned char *) &hk_lfr_sc_e1_f3_as_int16;
+    e2_ptr = (unsigned char *) &hk_lfr_sc_e2_f3_as_int16;
 
-    spacecraft_potential[0] = v_ptr[2];
-    spacecraft_potential[1] = v_ptr[3];
-    spacecraft_potential[2] = e1_ptr[2];
-    spacecraft_potential[3] = e1_ptr[3];
-    spacecraft_potential[4] = e2_ptr[2];
-    spacecraft_potential[5] = e2_ptr[3];
+    spacecraft_potential[0] = v_ptr[0];
+    spacecraft_potential[1] = v_ptr[1];
+    spacecraft_potential[2] = e1_ptr[0];
+    spacecraft_potential[3] = e1_ptr[1];
+    spacecraft_potential[4] = e2_ptr[0];
+    spacecraft_potential[5] = e2_ptr[1];
 }
 
 void get_cpu_load( unsigned char *resource_statistics )

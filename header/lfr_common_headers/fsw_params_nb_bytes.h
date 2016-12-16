@@ -32,15 +32,26 @@
 #define BYTE_POS_UPDATE_INFO_PARAMETERS_SET2        11
 #define BYTE_POS_UPDATE_INFO_PARAMETERS_SET5        34
 #define BYTE_POS_UPDATE_INFO_PARAMETERS_SET6        35
+// RW1
 #define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F1       44
 #define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F2       48
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1       52
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2       56
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1       60
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2       64
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1       68
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2       72
-#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS   77
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F3       52
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW1_F4       56
+// RW2
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F1       60
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F2       64
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F3       68
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW2_F4       72
+// RW3
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F1       76
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F2       80
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F3       84
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW3_F4       88
+// RW4
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F1       92
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2       96
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F3       100
+#define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F4       104
 
 // TC_LFR_ENTER_MODE
 #define BYTE_POS_CP_MODE_LFR_SET            11
@@ -52,6 +63,8 @@
 #define NB_BYTES_PER_FBINS_MASK 4
 
 // TC_LFR_LOAD_FILTER_PAR
+#define NB_RW_K_COEFFS                          16
+#define NB_BYTES_PER_RW_K_COEFF                 4
 #define DATAFIELD_POS_PA_RPW_SPARE8_2           0   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED 1   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS 2   // 8  bits
@@ -59,6 +72,22 @@
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET  7   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT   8   // 32 bits
 #define DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F      12  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW1_K1             16  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW1_K2             20  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW1_K3             24  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW1_K4             28  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW2_K1             32  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW2_K2             36  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW2_K3             40  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW2_K4             44  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW3_K1             48  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW3_K2             52  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW3_K3             56  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW3_K4             60  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW4_K1             64  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW4_K2             68  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW4_K3             72  // 32  bits
+#define DATAFIELD_POS_SY_LFR_RW4_K4             76  // 32  bits
 
 // TC_LFR_LOAD_KCOEFFICIENTS
 #define NB_BYTES_PER_FLOAT 4

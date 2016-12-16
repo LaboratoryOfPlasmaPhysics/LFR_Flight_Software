@@ -58,6 +58,8 @@ int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC );
 unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
+void set_hk_lfr_sc_rw_f_flag( unsigned char wheel, unsigned char freq, float value );
+void set_hk_lfr_sc_rw_f_flags( void );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
 void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag );
 void build_sy_lfr_rw_mask( unsigned int channel );
