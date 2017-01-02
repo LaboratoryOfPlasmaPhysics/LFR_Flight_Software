@@ -10,20 +10,5 @@ set(LFR_BP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/LFR_basic-parameters/basic_parameters
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/sparc/")
 
-include_directories("header"
-	 "header/lfr_common_headers"
-	 "header/processing"
-         "LFR_basic-parameters"
-         "src")
-
 add_subdirectory(src)
-
-
-
-option(test "Build all tests." ON) # Makes boolean 'test' available.
-
-
-if (test)
-
-
-endif()
+add_subdirectory(timegen-qt)

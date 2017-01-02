@@ -1,30 +1,20 @@
 cmake_minimum_required (VERSION 2.6)
-project (FSW)
+project (timegen)
 
 include(sparc-rtems)
 
-include_directories("../header"
-	 "../header/lfr_common_headers"
-	 "../header/processing"
-         "../LFR_basic-parameters"
-         "../src")
+include_directories("./src"
+	 "./header"
+	 "./header/processing"
+         "./src/LFR_basic-parameters")
 
-set(SOURCES    wf_handler.c
-     tc_handler.c
-     fsw_misc.c
-     fsw_init.c
-     fsw_globals.c
-     fsw_spacewire.c
-     tc_load_dump_parameters.c
-     tm_lfr_tc_exe.c
-     tc_acceptance.c
-     processing/fsw_processing.c
-     processing/avf0_prc0.c
-     processing/avf1_prc1.c
-     processing/avf2_prc2.c
-     lfr_cpu_usage_report.c
-     ${LFR_BP_SRC}
-)
+set(SOURCES  src/tc_handler.c
+    src/fsw_misc.c
+    src/fsw_init.c
+    src/fsw_globals.c
+    src/fsw_spacewire.c
+    src/tc_acceptance.c
+    ../LFR_basic-parameters/basic_parameters.c)
 
 
 option(verbose "Enable verbose LFR" ON)
@@ -74,4 +64,4 @@ add_definitions(-DSW_VERSION_N2=1)
 add_definitions(-DSW_VERSION_N3=0)
 add_definitions(-DSW_VERSION_N4=4)
 
-add_executable(FSW ${SOURCES})
+add_executable(timegen ${SOURCES})
