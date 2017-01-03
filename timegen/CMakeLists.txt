@@ -14,7 +14,23 @@ set(SOURCES  src/tc_handler.c
     src/fsw_globals.c
     src/fsw_spacewire.c
     src/tc_acceptance.c
-    ../LFR_basic-parameters/basic_parameters.c)
+    ../LFR_basic-parameters/basic_parameters.c
+    header/tc_handler.h
+    header/grlib_regs.h
+    header/fsw_params.h
+    header/fsw_misc.h
+    header/fsw_init.h
+    header/ccsds_types.h
+    header/fsw_spacewire.h
+    header/tc_acceptance.h
+    header/fsw_params_nb_bytes.h
+    header/fsw_params_processing.h
+    header/fsw_params_wf_handler.h
+    header/lfr_cpu_usage_report.h
+    ../LFR_basic-parameters/basic_parameters.h
+    ../LFR_basic-parameters/basic_parameters_params.h
+    header/TC_types.h
+    )
 
 
 option(timegen_verbose "Enable verbose Timegen" ON)

@@ -24,6 +24,29 @@ set(SOURCES    wf_handler.c
      processing/avf2_prc2.c
      lfr_cpu_usage_report.c
      ${LFR_BP_SRC}
+     ../header/wf_handler.h
+     ../header/tc_handler.h
+     ../header/grlib_regs.h
+     ../header/fsw_misc.h
+     ../header/fsw_init.h
+     ../header/fsw_spacewire.h
+     ../header/tc_load_dump_parameters.h
+     ../header/tm_lfr_tc_exe.h
+     ../header/tc_acceptance.h
+     ../header/processing/fsw_processing.h
+     ../header/processing/avf0_prc0.h
+     ../header/processing/avf1_prc1.h
+     ../header/processing/avf2_prc2.h
+     ../header/fsw_params_wf_handler.h
+     ../header/lfr_cpu_usage_report.h
+     ../header/lfr_common_headers/ccsds_types.h
+     ../header/lfr_common_headers/fsw_params.h
+     ../header/lfr_common_headers/fsw_params_nb_bytes.h
+     ../header/lfr_common_headers/fsw_params_processing.h
+     ../header/lfr_common_headers/tm_byte_positions.h
+     ../LFR_basic-parameters/basic_parameters.h
+     ../LFR_basic-parameters/basic_parameters_params.h
+     ../header/GscMemoryLPP.hpp
 )
 
 
