@@ -161,6 +161,7 @@ typedef struct ring_node
 #define TIMER_WATCHDOG      1
 #define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
+#define AVGV_PERIOD                         6       //   6 * 10ms => 60ms (1 / 16 = 62.5ms)
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
 #define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2 s
 #define TIMECODE_TIMER_TIMEOUT_INIT         200     // 200 * 10 ms = 2.0 s
@@ -174,6 +175,7 @@ typedef struct ring_node
 
 //******
 // RTEMS
+#define TASKID_AVGV 0
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
 #define TASKID_SPIQ 3
@@ -196,6 +198,7 @@ typedef struct ring_node
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_LINK 20
+#define TASK_PRIORITY_AVGV 25
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //

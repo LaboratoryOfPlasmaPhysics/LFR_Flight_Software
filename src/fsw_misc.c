@@ -335,6 +335,91 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
+rtems_task avgv_task(rtems_task_argument argument)
+{
+#define MOVING_AVERAGE 16
+    rtems_status_code status;
+    unsigned int v[MOVING_AVERAGE];
+    unsigned int e1[MOVING_AVERAGE];
+    unsigned int e2[MOVING_AVERAGE];
+    float average_v;
+    float average_e1;
+    float average_e2;
+    unsigned char k;
+    unsigned char indexOfOldValue;
+
+    BOOT_PRINTF("in AVGV ***\n");
+
+    if (rtems_rate_monotonic_ident( name_avgv_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
+        status = rtems_rate_monotonic_create( name_avgv_rate_monotonic, &AVGV_id );
+        if( status != RTEMS_SUCCESSFUL ) {
+            PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status );
+        }
+    }
+
+    status = rtems_rate_monotonic_cancel(AVGV_id);
+    if( status != RTEMS_SUCCESSFUL ) {
+        PRINTF1( "ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status );
+    }
+    else {
+        DEBUG_PRINTF("OK  *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id)\n");
+    }
+
+    // initialize values
+    k = 0;
+    indexOfOldValue = MOVING_AVERAGE - 1;
+    for (k = 0; k < MOVING_AVERAGE; k++)
+    {
+        v[k] = 0;
+        e1[k] = 0;
+        e2[k] = 0;
+        average_v = 0.;
+        average_e1 = 0.;
+        average_e2 = 0.;
+    }
+
+    k = 0;
+
+    while(1){ // launch the rate monotonic task
+        status = rtems_rate_monotonic_period( AVGV_id, AVGV_PERIOD );
+        if ( status != RTEMS_SUCCESSFUL ) {
+            PRINTF1( "in AVGV *** ERR period: %d\n", status);
+        }
+        else {
+            // store new value in buffer
+            v[k] = waveform_picker_regs->v;
+            e1[k] = waveform_picker_regs->e1;
+            e2[k] = waveform_picker_regs->e2;
+            if (k == (MOVING_AVERAGE - 1))
+            {
+                indexOfOldValue = 0;
+            }
+            else
+            {
+                indexOfOldValue = k + 1;
+            }
+            average_v = average_v + v[k] - v[indexOfOldValue];
+            average_e1 = average_e1 + e1[k] - e1[indexOfOldValue];
+            average_e2 = average_e2 + e2[k] - e2[indexOfOldValue];
+        }
+        if (k == (MOVING_AVERAGE-1))
+        {
+            k = 0;
+            printf("tick\n");
+        }
+        else
+        {
+            k++;
+        }
+    }
+
+    PRINTF("in AVGV *** deleting task\n")
+
+            status = rtems_task_delete( RTEMS_SELF ); // should not return
+
+    return;
+}
+
 rtems_task dumb_task( rtems_task_argument unused )
 {
     /** This RTEMS taks is used to print messages without affecting the general behaviour of the software.
