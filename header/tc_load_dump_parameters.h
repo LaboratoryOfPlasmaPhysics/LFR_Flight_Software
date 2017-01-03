@@ -12,6 +12,10 @@
 #include "avf0_prc0.h"
 
 #define FLOAT_EQUAL_ZERO 0.001
+#define RW1 1
+#define RW2 2
+#define RW3 3
+#define RW4 4
 
 extern unsigned short sequenceCounterParameterDump;
 extern unsigned short sequenceCounters_TM_DUMP[];
@@ -61,7 +65,7 @@ unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 void set_hk_lfr_sc_rw_f_flag( unsigned char wheel, unsigned char freq, float value );
 void set_hk_lfr_sc_rw_f_flags( void );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
-void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag );
+void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float k);
 void build_sy_lfr_rw_mask( unsigned int channel );
 void build_sy_lfr_rw_masks();
 void merge_fbins_masks( void );

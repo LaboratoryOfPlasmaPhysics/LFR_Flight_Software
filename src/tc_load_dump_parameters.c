@@ -1062,7 +1062,7 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
 
 }
 
-void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag )
+void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float k )
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
      *
@@ -1077,91 +1077,48 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
 
     float f_RW_min;
     float f_RW_MAX;
-    float fi_min;
-    float fi_MAX;
-    float fi;
-    float deltaBelow;
-    float deltaAbove;
+    float bandWidth;
     int binBelow;
     int binAbove;
-    int closestBin;
     unsigned int whichByte;
     int selectedByte;
     int bin;
-    int binToRemove[3];
-    int k;
+    int binToRemove;
 
+    f_RW_min = 0.0;
+    f_RW_MAX = 0.0;
+    bandWidth = 0.0;
+    binBelow = -1;
+    binAbove = -1;
     whichByte = 0;
-    bin = 0;
+    selectedByte = -1;
+    bin = -1;
+    binToRemove = -1;
 
-    binToRemove[0] = -1;
-    binToRemove[1] = -1;
-    binToRemove[2] = -1;
-
-    // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
-    f_RW_min = rw_f - filterPar.sy_lfr_sc_rw_delta_f / 2.;
-    f_RW_MAX = rw_f + filterPar.sy_lfr_sc_rw_delta_f / 2.;
-
-    // compute the index of the frequency bin immediately below rw_f
-    binBelow = (int) ( floor( ((double) rw_f) / ((double) deltaFreq)) );
-    deltaBelow = rw_f - binBelow * deltaFreq;
-
-    // compute the index of the frequency bin immediately above rw_f
-    binAbove = (int) ( ceil(  ((double) rw_f) / ((double) deltaFreq)) );
-    deltaAbove = binAbove * deltaFreq - rw_f;
-
-    // search the closest bin
-    if (deltaAbove > deltaBelow)
+    if (!isnan(rw_f))
     {
-        closestBin = binBelow;
-    }
-    else
-    {
-        closestBin = binAbove;
-    }
+        // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
+        bandWidth = filterPar.sy_lfr_sc_rw_delta_f * k;
+        f_RW_min = rw_f - bandWidth / 2.;
+        f_RW_MAX = rw_f + bandWidth / 2.;
 
-    // compute the fi interval [fi - Delta_f * 0.285, fi + Delta_f * 0.285]
-    fi = closestBin * deltaFreq;
-
-    fi_min = fi - (deltaFreq * 0.285);
-    if ( fi_min < 0 )
-    {
-        fi_min = 0;
-    }
-    else if ( fi_min > (deltaFreq*127) )
-    {
-        fi_min = -1;
-    }
-
-    fi_MAX = fi + (deltaFreq * 0.285);
-    if ( fi_MAX > (deltaFreq*127) )
-    {
-        fi_MAX = -1;
-    }
-
-    // 1. IF [ f_RW_min, f_RW_MAX] is included in [ fi_min; fi_MAX ]
-    // => remove f_(i), f_(i-1) and f_(i+1)
-    if ( ( f_RW_min > fi_min ) && ( f_RW_MAX < fi_MAX ) )
-    {
-        binToRemove[0] = closestBin - 1;
-        binToRemove[1] = closestBin;
-        binToRemove[2] = closestBin + 1;
-    }
-    // 2. ELSE
-    // => remove the two f_(i) which are around f_RW
-    else
-    {
-        binToRemove[0] = binBelow;
-        binToRemove[1] = binAbove;
-        binToRemove[2] = -1;
-    }
-
-    for (k = 0; k <= 3; k++)
-    {
-        bin = binToRemove[k];
-        if ( (bin >= 0) && (bin <= 127) )
+        // compute the index of the frequency bin immediately below f_RW_min
+        binBelow = (int) ( floor( ((double) f_RW_min) / ((double) deltaFreq)) );
+        if (binBelow < 0)
         {
-            if (flag == 1)
+            binBelow = -1;
+        }
+
+        // compute the index of the frequency bin immediately above f_RW_MAX
+        binAbove = (int) ( ceil(  ((double) f_RW_MAX) / ((double) deltaFreq)) );
+        if (binAbove > 127)
+        {
+            binAbove = 128;
+        }
+
+        for (binToRemove = binBelow; binToRemove <= binAbove; binToRemove++)
+        {
+            if ( (binToRemove >= 0) && (binToRemove <= 127) )
             {
                 whichByte = (bin >> 3);    // division by 8
                 selectedByte = ( 1 << (bin - (whichByte * 8)) );
@@ -1169,6 +1126,7 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
             }
         }
     }
+
 }
 
 void build_sy_lfr_rw_mask( unsigned int channel )
@@ -1207,28 +1165,28 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     }
 
     // RW1
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f1, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x80) >> 7 ); // [1000 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f2, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x40) >> 6 ); // [0100 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f1, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x20) >> 5 ); // [0010 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f2, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x10) >> 4 ); // [0001 0000]
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f1, deltaF, filterPar.sy_lfr_rw1_k1 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f2, deltaF, filterPar.sy_lfr_rw1_k2 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f3, deltaF, filterPar.sy_lfr_rw1_k3 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw1_f4, deltaF, filterPar.sy_lfr_rw1_k4 );
 
     // RW2
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f1, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x08) >> 3 ); // [0000 1000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f2, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x04) >> 2 ); // [0000 0100]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f1, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x02) >> 1 ); // [0000 0010]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f2, deltaF, (cp_rpw_sc_rw1_rw2_f_flags & 0x01)      ); // [0000 0001]
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f1, deltaF, filterPar.sy_lfr_rw2_k1 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f2, deltaF, filterPar.sy_lfr_rw2_k2 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f3, deltaF, filterPar.sy_lfr_rw2_k3 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw2_f4, deltaF, filterPar.sy_lfr_rw2_k4 );
 
     // RW3
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f1, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x80) >> 7 ); // [1000 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f2, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x40) >> 6 ); // [0100 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f1, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x20) >> 5 ); // [0010 0000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f2, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x10) >> 4 ); // [0001 0000]
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f1, deltaF, filterPar.sy_lfr_rw3_k1 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f2, deltaF, filterPar.sy_lfr_rw3_k2 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f3, deltaF, filterPar.sy_lfr_rw3_k3 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw3_f4, deltaF, filterPar.sy_lfr_rw3_k4 );
 
     // RW4
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f1, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x08) >> 3 ); // [0000 1000]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f2, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x04) >> 2 ); // [0000 0100]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f1, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x02) >> 1 ); // [0000 0010]
-    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f2, deltaF, (cp_rpw_sc_rw3_rw4_f_flags & 0x03)      ); // [0000 0001]
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f1, deltaF, filterPar.sy_lfr_rw4_k1 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f2, deltaF, filterPar.sy_lfr_rw4_k2 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f3, deltaF, filterPar.sy_lfr_rw4_k3 );
+    setFBinMask( local_rw_fbins_mask, rw_f.cp_rpw_sc_rw4_f4, deltaF, filterPar.sy_lfr_rw4_k4 );
 
     // update the value of the fbins related to reaction wheels frequency filtering
     if (maskPtr != NULL)

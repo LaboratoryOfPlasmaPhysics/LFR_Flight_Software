@@ -421,12 +421,12 @@ rtems_task avgv_task(rtems_task_argument argument)
         {
             k++;
         }
-    }
 
-    //update int16 values
-    hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / ((float) MOVING_AVERAGE) );
-    hk_lfr_sc_e1_f3_as_int16 =  (int16_t) (average_e1 / ((float) MOVING_AVERAGE) );
-    hk_lfr_sc_e2_f3_as_int16 =  (int16_t) (average_e2 / ((float) MOVING_AVERAGE) );
+        //update int16 values
+        hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / ((float) MOVING_AVERAGE) );
+        hk_lfr_sc_e1_f3_as_int16 =  (int16_t) (average_e1 / ((float) MOVING_AVERAGE) );
+        hk_lfr_sc_e2_f3_as_int16 =  (int16_t) (average_e2 / ((float) MOVING_AVERAGE) );
+    }
 
     PRINTF("in AVGV *** deleting task\n");
 
