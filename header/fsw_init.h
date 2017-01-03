@@ -16,16 +16,21 @@
 #include "avf1_prc1.h"
 #include "avf2_prc2.h"
 
-extern rtems_name  Task_name[];       /* array of task names */
-extern rtems_id    Task_id[];         /* array of task ids */
+extern rtems_name  Task_name[20];       /* array of task names */
+extern rtems_id    Task_id[20];         /* array of task ids */
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;
 extern unsigned char pa_bia_status_info;
-extern unsigned char cp_rpw_sc_rw1_rw2_f_flags;
-extern unsigned char cp_rpw_sc_rw3_rw4_f_flags;
-
+extern unsigned char cp_rpw_sc_rw_f_flags;
+extern float cp_rpw_sc_rw1_f1;
+extern float cp_rpw_sc_rw1_f2;
+extern float cp_rpw_sc_rw2_f1;
+extern float cp_rpw_sc_rw2_f2;
+extern float cp_rpw_sc_rw3_f1;
+extern float cp_rpw_sc_rw3_f2;
+extern float cp_rpw_sc_rw4_f1;
+extern float cp_rpw_sc_rw4_f2;
 extern filterPar_t filterPar;
-extern rw_f_t rw_f;
 
 // RTEMS TASKS
 rtems_task Init( rtems_task_argument argument);

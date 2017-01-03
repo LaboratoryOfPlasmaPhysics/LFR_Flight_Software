@@ -1,4 +1,3 @@
-
 QMAKE_CC=sparc-rtems-gcc
 message(C compiler forced to: $$QMAKE_CC)
 QMAKE_CXX=sparc-rtems-g++

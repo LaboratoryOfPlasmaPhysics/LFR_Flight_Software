@@ -161,7 +161,6 @@ typedef struct ring_node
 #define TIMER_WATCHDOG      1
 #define WATCHDOG_PERIOD     100                 // 1s
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
-#define AVGV_PERIOD                         6       //   6 * 10ms => 60ms (1 / 16 = 62.5ms)
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
 #define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2 s
 #define TIMECODE_TIMER_TIMEOUT_INIT         200     // 200 * 10 ms = 2.0 s
@@ -175,7 +174,6 @@ typedef struct ring_node
 
 //******
 // RTEMS
-#define TASKID_AVGV 0
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
 #define TASKID_SPIQ 3
@@ -198,7 +196,6 @@ typedef struct ring_node
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_LINK 20
-#define TASK_PRIORITY_AVGV 25
 #define TASK_PRIORITY_HOUS 30
 #define TASK_PRIORITY_CWF1 35   // CWF1 and CWF2 are never running together
 #define TASK_PRIORITY_CWF2 35   //
@@ -287,10 +284,6 @@ typedef struct {
 #define DEFAULT_SY_LFR_PAS_FILTER_OFFSET    0
 #define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5
 #define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.025
-#define DEFAULT_SY_LFR_RW_K1                1.
-#define DEFAULT_SY_LFR_RW_K2                8.
-#define DEFAULT_SY_LFR_RW_K3                24.
-#define DEFAULT_SY_LFR_RW_K4                48.
 
 typedef struct{
     unsigned char spare_sy_lfr_pas_filter_enabled;
@@ -299,50 +292,7 @@ typedef struct{
     unsigned char sy_lfr_pas_filter_offset;
     float sy_lfr_pas_filter_shift;
     float sy_lfr_sc_rw_delta_f;
-    // rw1_k
-    float sy_lfr_rw1_k1;
-    float sy_lfr_rw1_k2;
-    float sy_lfr_rw1_k3;
-    float sy_lfr_rw1_k4;
-    // rw2_k
-    float sy_lfr_rw2_k1;
-    float sy_lfr_rw2_k2;
-    float sy_lfr_rw2_k3;
-    float sy_lfr_rw2_k4;
-    // rw3_k
-    float sy_lfr_rw3_k1;
-    float sy_lfr_rw3_k2;
-    float sy_lfr_rw3_k3;
-    float sy_lfr_rw3_k4;
-    // rw4_k
-    float sy_lfr_rw4_k1;
-    float sy_lfr_rw4_k2;
-    float sy_lfr_rw4_k3;
-    float sy_lfr_rw4_k4;
 } filterPar_t;
-
-typedef struct{
-    // rw1_f
-    float cp_rpw_sc_rw1_f1;
-    float cp_rpw_sc_rw1_f2;
-    float cp_rpw_sc_rw1_f3;
-    float cp_rpw_sc_rw1_f4;
-    // rw2_f
-    float cp_rpw_sc_rw2_f1;
-    float cp_rpw_sc_rw2_f2;
-    float cp_rpw_sc_rw2_f3;
-    float cp_rpw_sc_rw2_f4;
-    // rw3_f
-    float cp_rpw_sc_rw3_f1;
-    float cp_rpw_sc_rw3_f2;
-    float cp_rpw_sc_rw3_f3;
-    float cp_rpw_sc_rw3_f4;
-    // rw4_f
-    float cp_rpw_sc_rw4_f1;
-    float cp_rpw_sc_rw4_f2;
-    float cp_rpw_sc_rw4_f3;
-    float cp_rpw_sc_rw4_f4;
-} rw_f_t;
 
 #define ACQUISITION_DURATION_F0 683     // 256 / 24576 * 65536
 #define ACQUISITION_DURATION_F1 4096    // 256 /  4096 * 65536

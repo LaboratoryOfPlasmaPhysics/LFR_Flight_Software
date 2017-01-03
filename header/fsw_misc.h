@@ -28,8 +28,6 @@ extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int*
 
 rtems_name name_hk_rate_monotonic;  // name of the HK rate monotonic
 rtems_id HK_id;                     // id of the HK rate monotonic period
-rtems_name name_avgv_rate_monotonic;  // name of the AVGV rate monotonic
-rtems_id AVGV_id;                     // id of the AVGV rate monotonic period
 
 void timer_configure( unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );
@@ -52,7 +50,6 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
 // RTEMS TASKS
 rtems_task load_task( rtems_task_argument argument );
 rtems_task hous_task( rtems_task_argument argument );
-rtems_task avgv_task( rtems_task_argument argument );
 rtems_task dumb_task( rtems_task_argument unused );
 
 void init_housekeeping_parameters( void );
