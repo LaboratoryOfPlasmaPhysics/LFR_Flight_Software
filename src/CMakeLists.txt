@@ -1,8 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
-project (FSW)
+project (fsw)
 
 include(sparc-rtems)
-include(cppcheck)
 
 include_directories("../header"
 	 "../header/lfr_common_headers"
@@ -103,6 +102,4 @@ add_definitions(-DSW_VERSION_N2=${SW_VERSION_N2})
 add_definitions(-DSW_VERSION_N3=${SW_VERSION_N3})
 add_definitions(-DSW_VERSION_N4=${SW_VERSION_N4})
 
-add_executable(FSW ${SOURCES})
-
-add_test_cppcheck(FSW STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
+add_executable(fsw ${SOURCES})

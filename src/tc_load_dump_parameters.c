@@ -1390,9 +1390,9 @@ void floatToChar( float value, unsigned char* ptr)
 
     valuePtr = (unsigned char*) &value;
     ptr[0] = valuePtr[0];
-    ptr[1] = valuePtr[0];
-    ptr[2] = valuePtr[0];
-    ptr[3] = valuePtr[0];
+    ptr[1] = valuePtr[1];
+    ptr[2] = valuePtr[2];
+    ptr[3] = valuePtr[3];
 }
 
 //**********

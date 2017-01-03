@@ -213,7 +213,7 @@ static void faultTolerantScheme()
     }
     else
     {
-        PRINTF("in faultTolerantScheme *** not a Leon3FT not detected\n");
+        PRINTF("in faultTolerantScheme *** Leon3FT not detected\n");
         PRINTF2("                       *** vendorID = 0x%x, deviceId = 0x%x\n", vendorId, deviceId);
     }
 }

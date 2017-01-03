@@ -314,7 +314,6 @@ void init_local_mode_parameters( void )
 
     BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
     BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
-    BOOT_PRINTF1("nb_interrupt_f0_MAX = %d\n", param_local.local_nb_interrupt_f0_MAX)
 
     // init sequence counters
 
