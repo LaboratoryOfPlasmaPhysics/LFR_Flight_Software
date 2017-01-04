@@ -1025,7 +1025,7 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
     {
         fi_min = 0;
     }
-    else if ( fi_min > (deltaFreq*127) )
+    else if ( fi_min > (deltaFreq * 127) )
     {
         fi_min = -1;
     }
@@ -1053,7 +1053,7 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
         binToRemove[2] = -1;
     }
 
-    for (k = 0; k <= 3; k++)
+    for (k = 0; k < 3; k++)
     {
         bin = binToRemove[k];
         if ( (bin >= 0) && (bin <= 127) )
