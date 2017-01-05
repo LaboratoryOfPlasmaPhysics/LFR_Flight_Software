@@ -726,20 +726,25 @@ typedef struct {
     unsigned char sy_lfr_s2_bp_p1;
 
     // mask F0
-    unsigned char sy_lfr_fbins_f0_word1[4];
-    unsigned char sy_lfr_fbins_f0_word2[4];
-    unsigned char sy_lfr_fbins_f0_word3[4];
-    unsigned char sy_lfr_fbins_f0_word4[4];
-    // mask F1
-    unsigned char sy_lfr_fbins_f1_word1[4];
-    unsigned char sy_lfr_fbins_f1_word2[4];
-    unsigned char sy_lfr_fbins_f1_word3[4];
-    unsigned char sy_lfr_fbins_f1_word4[4];
-    // mask F2
-    unsigned char sy_lfr_fbins_f2_word1[4];
-    unsigned char sy_lfr_fbins_f2_word2[4];
-    unsigned char sy_lfr_fbins_f2_word3[4];
-    unsigned char sy_lfr_fbins_f2_word4[4];
+    union{
+        struct{
+            unsigned char f0_word1[4];
+            unsigned char f0_word2[4];
+            unsigned char f0_word3[4];
+            unsigned char f0_word4[4];
+            // mask F1
+            unsigned char f1_word1[4];
+            unsigned char f1_word2[4];
+            unsigned char f1_word3[4];
+            unsigned char f1_word4[4];
+            // mask F2
+            unsigned char f2_word1[4];
+            unsigned char f2_word2[4];
+            unsigned char f2_word3[4];
+            unsigned char f2_word4[4];
+        } fx;
+        unsigned char raw[ 4 * 4 * 3 ];
+    } sy_lfr_fbins;
 
     // PAS FILTER PARAMETERS
     unsigned char pa_rpw_spare8_2;
@@ -751,18 +756,25 @@ typedef struct {
     unsigned char sy_lfr_sc_rw_delta_f[4];
 
     // LFR_RW_MASK
-    unsigned char sy_lfr_rw_mask_f0_word1[4];
-    unsigned char sy_lfr_rw_mask_f0_word2[4];
-    unsigned char sy_lfr_rw_mask_f0_word3[4];
-    unsigned char sy_lfr_rw_mask_f0_word4[4];
-    unsigned char sy_lfr_rw_mask_f1_word1[4];
-    unsigned char sy_lfr_rw_mask_f1_word2[4];
-    unsigned char sy_lfr_rw_mask_f1_word3[4];
-    unsigned char sy_lfr_rw_mask_f1_word4[4];
-    unsigned char sy_lfr_rw_mask_f2_word1[4];
-    unsigned char sy_lfr_rw_mask_f2_word2[4];
-    unsigned char sy_lfr_rw_mask_f2_word3[4];
-    unsigned char sy_lfr_rw_mask_f2_word4[4];
+    union{
+        struct{
+            unsigned char f0_word1[4];
+            unsigned char f0_word2[4];
+            unsigned char f0_word3[4];
+            unsigned char f0_word4[4];
+            // mask F1
+            unsigned char f1_word1[4];
+            unsigned char f1_word2[4];
+            unsigned char f1_word3[4];
+            unsigned char f1_word4[4];
+            // mask F2
+            unsigned char f2_word1[4];
+            unsigned char f2_word2[4];
+            unsigned char f2_word3[4];
+            unsigned char f2_word4[4];
+        } fx;
+        unsigned char raw[ 4 * 4 * 3 ];
+    } sy_lfr_rw_mask;
 
     // SPARE
     unsigned char pa_rpw_spare8_3;

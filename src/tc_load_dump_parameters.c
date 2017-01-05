@@ -1017,40 +1017,31 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
         closestBin = binAbove;
     }
 
-    // compute the fi interval [fi - Delta_f * 0.285, fi + Delta_f * 0.285]
+    // compute the fi interval [fi - deltaFreq * 0.285, fi + deltaFreq * 0.285]
     fi = closestBin * deltaFreq;
-
     fi_min = fi - (deltaFreq * 0.285);
-    if ( fi_min < 0 )
-    {
-        fi_min = 0;
-    }
-    else if ( fi_min > (deltaFreq * 127) )
-    {
-        fi_min = -1;
-    }
-
     fi_MAX = fi + (deltaFreq * 0.285);
-    if ( fi_MAX > (deltaFreq*127) )
-    {
-        fi_MAX = -1;
-    }
+
+    //**************************************************************************************
+    // be careful here, one shall take into account that the bin 0 IS DROPPED in the spectra
+    // thus, the index 0 in a mask corresponds to the bin 1 of the spectrum
+    //**************************************************************************************
 
     // 1. IF [ f_RW_min, f_RW_MAX] is included in [ fi_min; fi_MAX ]
     // => remove f_(i), f_(i-1) and f_(i+1)
     if ( ( f_RW_min > fi_min ) && ( f_RW_MAX < fi_MAX ) )
     {
-        binToRemove[0] = closestBin - 1;
-        binToRemove[1] = closestBin;
-        binToRemove[2] = closestBin + 1;
+        binToRemove[0] = (closestBin - 1) - 1;
+        binToRemove[1] = (closestBin)     - 1;
+        binToRemove[2] = (closestBin + 1) - 1;
     }
     // 2. ELSE
     // => remove the two f_(i) which are around f_RW
     else
     {
-        binToRemove[0] = binBelow;
-        binToRemove[1] = binAbove;
-        binToRemove[2] = -1;
+        binToRemove[0] = (binBelow) - 1;
+        binToRemove[1] = (binAbove) - 1;
+        binToRemove[2] = (-1);
     }
 
     for (k = 0; k < 3; k++)
@@ -1083,15 +1074,15 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     switch (channel)
     {
     case 0:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1;
         deltaF = 96.;
         break;
     case 1:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1;
         deltaF = 16.;
         break;
     case 2:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1;
         deltaF = 1.;
         break;
     default:
@@ -1157,12 +1148,12 @@ void merge_fbins_masks( void )
     unsigned char *rw_mask_f1;
     unsigned char *rw_mask_f2;
 
-    fbins_f0 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
-    fbins_f1 = parameter_dump_packet.sy_lfr_fbins_f1_word1;
-    fbins_f2 = parameter_dump_packet.sy_lfr_fbins_f2_word1;
-    rw_mask_f0 = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
-    rw_mask_f1 = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
-    rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
+    fbins_f0 = parameter_dump_packet.sy_lfr_fbins.fx.f0_word1;
+    fbins_f1 = parameter_dump_packet.sy_lfr_fbins.fx.f1_word1;
+    fbins_f2 = parameter_dump_packet.sy_lfr_fbins.fx.f2_word1;
+    rw_mask_f0 = parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1;
+    rw_mask_f1 = parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1;
+    rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1;
 
     for( k=0; k < 16; k++ )
     {
@@ -1184,7 +1175,7 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 
     status = LFR_SUCCESSFUL;
 
-    fbins_mask_dump = parameter_dump_packet.sy_lfr_fbins_f0_word1;
+    fbins_mask_dump = parameter_dump_packet.sy_lfr_fbins.raw;
     fbins_mask_TC = TC->dataAndCRC;
 
     for (k=0; k < NB_FBINS_MASKS * NB_BYTES_PER_FBINS_MASK; k++)
@@ -1465,7 +1456,7 @@ void init_parameter_dump( void )
     // FBINS MASKS
     for (k=0; k < NB_FBINS_MASKS * NB_BYTES_PER_FBINS_MASK; k++)
     {
-        parameter_dump_packet.sy_lfr_fbins_f0_word1[k] = 0xff;
+        parameter_dump_packet.sy_lfr_fbins.raw[k] = 0xff;
     }
 
     // PAS FILTER PARAMETERS
@@ -1480,7 +1471,7 @@ void init_parameter_dump( void )
     // LFR_RW_MASK
     for (k=0; k < NB_FBINS_MASKS * NB_BYTES_PER_FBINS_MASK; k++)
     {
-        parameter_dump_packet.sy_lfr_rw_mask_f0_word1[k] = 0xff;
+        parameter_dump_packet.sy_lfr_rw_mask.raw[k] = 0xff;
     }
 }
 
