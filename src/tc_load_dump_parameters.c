@@ -1121,11 +1121,50 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     // update the value of the fbins related to reaction wheels frequency filtering
     if (maskPtr != NULL)
     {
+        printf("channel = %d\n", channel);
         for (k = 0; k < 16; k++)
         {
+            printf("%x ", local_rw_fbins_mask[k]);
             maskPtr[k] = local_rw_fbins_mask[k];
         }
+        printf("\n", local_rw_fbins_mask[k]);
     }
+}
+
+void print_sy_lfr_rw_masks( void )
+{
+    int k;
+
+    printf("cp_rpw_sc_rw1_f1 = %f\n", cp_rpw_sc_rw1_f1);
+    printf("cp_rpw_sc_rw1_f2 = %f\n", cp_rpw_sc_rw1_f2);
+    printf("cp_rpw_sc_rw2_f1 = %f\n", cp_rpw_sc_rw2_f1);
+    printf("cp_rpw_sc_rw2_f2 = %f\n", cp_rpw_sc_rw2_f2);
+    printf("cp_rpw_sc_rw3_f1 = %f\n", cp_rpw_sc_rw3_f1);
+    printf("cp_rpw_sc_rw3_f2 = %f\n", cp_rpw_sc_rw3_f2);
+    printf("cp_rpw_sc_rw4_f1 = %f\n", cp_rpw_sc_rw4_f1);
+    printf("cp_rpw_sc_rw4_f2 = %f\n", cp_rpw_sc_rw4_f2);
+
+    printf("f0\n");
+    for (k = 0; k < 16; k++)
+    {
+        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1[k] );
+    }
+    printf("\n");
+
+    printf("f1\n");
+    for (k = 0; k < 16; k++)
+    {
+        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1[k] );
+    }
+    printf("\n");
+
+    printf("f2\n");
+    for (k = 0; k < 16; k++)
+    {
+        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1[k] );
+    }
+    printf("\n");
+
 }
 
 void build_sy_lfr_rw_masks( void )
@@ -1133,6 +1172,8 @@ void build_sy_lfr_rw_masks( void )
     build_sy_lfr_rw_mask( 0 );
     build_sy_lfr_rw_mask( 1 );
     build_sy_lfr_rw_mask( 2 );
+
+    print_sy_lfr_rw_masks();
 
     merge_fbins_masks();
 }
