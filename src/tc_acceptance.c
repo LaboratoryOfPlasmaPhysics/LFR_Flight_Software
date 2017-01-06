@@ -151,7 +151,7 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int estimatedPacketL
     }
     if (status == CCSDS_TM_VALID)   // CHECK THAT THE PACKET DOES NOT EXCEED THE MAX SIZE
     {
-        if ( packetLength >= CCSDS_TC_PKT_MAX_SIZE ) {
+        if ( packetLength > CCSDS_TC_PKT_MAX_SIZE ) {
             status = WRONG_LEN_PKT;
         }
     }

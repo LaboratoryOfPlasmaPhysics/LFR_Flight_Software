@@ -300,6 +300,9 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     getReactionWheelsFrequencies( TC );
     build_sy_lfr_rw_masks();
 
+    // once the masks are built, they have to be merged with the fbins_mask
+    merge_fbins_masks();
+
     result = status;
 
     return result;

@@ -158,8 +158,8 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("in RECV *** packet lenght too short\n")
             }
             else {
-//                PRINTF1("incoming TC with len: %d\n", len);
                 estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
+                PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
                 currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> 8);
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
                 // CHECK THE TC
@@ -445,6 +445,11 @@ int spacewire_configure_link( int fd )
 
     spacewire_set_NP(1, REGS_ADDR_GRSPW); // [N]o [P]ort force
     spacewire_set_RE(1, REGS_ADDR_GRSPW); // [R]MAP [E]nable, the dedicated call seems to  break the no port force configuration
+    spw_ioctl_packetsize packetsize;
+
+    packetsize.rxsize = 228;
+    packetsize.txdsize = 4096;
+    packetsize.txhsize = 34;
 
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) {
@@ -479,6 +484,11 @@ int spacewire_configure_link( int fd )
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
     if (status!=RTEMS_SUCCESSFUL) {
         PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
+    }
+    //
+    status = ioctl(fd, SPACEWIRE_IOCTRL_SET_PACKETSIZE, packetsize); // set rxsize, txdsize and txhsize
+    if (status!=RTEMS_SUCCESSFUL) {
+        PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_PACKETSIZE,\n")
     }
 
     return status;

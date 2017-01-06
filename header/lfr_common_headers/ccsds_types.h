@@ -3,11 +3,10 @@
 
 #define CCSDS_PROTOCOLE_EXTRA_BYTES 4
 #define CCSDS_TC_TM_PACKET_OFFSET 7
-#define CCSDS_TELEMETRY_HEADER_LENGTH 16+4
+#define CCSDS_TELEMETRY_HEADER_LENGTH (16+4)
 #define CCSDS_TM_PKT_MAX_SIZE 4412
-#define CCSDS_TELECOMMAND_HEADER_LENGTH 10+4
-//#define CCSDS_TC_PKT_MAX_SIZE 256
-#define CCSDS_TC_PKT_MAX_SIZE 2048
+#define CCSDS_TELECOMMAND_HEADER_LENGTH (10+4)
+#define CCSDS_TC_PKT_MAX_SIZE (228+3) // => 3 is for Prot ID, Reserved and User App bytes
 #define CCSDS_TC_PKT_MIN_SIZE 16
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
@@ -557,7 +556,7 @@ typedef struct {
 } Header_TM_LFR_SCIENCE_BP_t;
 
 typedef struct {
-    //targetLogicalAddress is removed by the grspw module
+    // TARGET LOGICAL ADDRESS (targetLogicalAddress) IS REMOVED BY THE GRSPW MODULE
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;

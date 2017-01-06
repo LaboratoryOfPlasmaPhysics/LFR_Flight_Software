@@ -307,6 +307,9 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
 
     flag = set_sy_lfr_fbins( TC );
 
+    // once the fbins masks have been stored, they have to be merged with the masks which handle the reaction wheels frequencies filtering
+    merge_fbins_masks();
+
     return flag;
 }
 
@@ -503,7 +506,6 @@ int action_dump_par( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
      */
 
     int status;
-    int k;
 
     increment_seq_counter_destination_id_dump( parameter_dump_packet.packetSequenceControl, TC->sourceID );
     parameter_dump_packet.destinationID = TC->sourceID;
@@ -516,25 +518,6 @@ int action_dump_par( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     parameter_dump_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
     parameter_dump_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
     // SEND DATA
-    printf("f0\n");
-    for (k = 0; k<16; k++)
-    {
-        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1[k]);
-    }
-    printf("\n");
-    printf("f1\n");
-    for (k = 0; k<16; k++)
-    {
-        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1[k]);
-    }
-    printf("\n");
-    printf("f2\n");
-    for (k = 0; k<16; k++)
-    {
-        printf("%x ", parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1[k]);
-    }
-    printf("\n");
-
     status =  rtems_message_queue_send( queue_id, &parameter_dump_packet,
                                         PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
     if (status != RTEMS_SUCCESSFUL) {
@@ -1153,8 +1136,6 @@ void build_sy_lfr_rw_masks( void )
     build_sy_lfr_rw_mask( 0 );
     build_sy_lfr_rw_mask( 1 );
     build_sy_lfr_rw_mask( 2 );
-
-    merge_fbins_masks();
 }
 
 void merge_fbins_masks( void )
@@ -1493,6 +1474,9 @@ void init_parameter_dump( void )
     {
         parameter_dump_packet.sy_lfr_rw_mask.raw[k] = 0xff;
     }
+
+    // once the reaction wheels masks have been initialized, they have to be merged with the fbins masks
+    merge_fbins_masks();
 }
 
 void init_kcoefficients_dump( void )
