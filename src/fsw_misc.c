@@ -775,58 +775,143 @@ void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
 
 }
 
-void hk_lfr_le_me_he_update()
+void increment_hk_counter( unsigned char newValue, unsigned char oldValue, unsigned int *counter )
 {
-    unsigned int hk_lfr_le_cnt;
-    unsigned int hk_lfr_me_cnt;
-    unsigned int hk_lfr_he_cnt;
-    unsigned int current_hk_lfr_le_cnt;
-    unsigned int current_hk_lfr_me_cnt;
-    unsigned int current_hk_lfr_he_cnt;
+    int delta;
 
-    hk_lfr_le_cnt = 0;
-    hk_lfr_me_cnt = 0;
-    hk_lfr_he_cnt = 0;
-    current_hk_lfr_le_cnt = ((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256 + housekeeping_packet.hk_lfr_le_cnt[1];
-    current_hk_lfr_me_cnt = ((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256 + housekeeping_packet.hk_lfr_me_cnt[1];
-    current_hk_lfr_he_cnt = ((unsigned int) housekeeping_packet.hk_lfr_he_cnt[0]) * 256 + housekeeping_packet.hk_lfr_he_cnt[1];
+    delta = 0;
 
-    //update the low severity error counter
-    hk_lfr_le_cnt =
-            current_hk_lfr_le_cnt
-            + housekeeping_packet.hk_lfr_dpu_spw_parity
-            + housekeeping_packet.hk_lfr_dpu_spw_disconnect
-            + housekeeping_packet.hk_lfr_dpu_spw_escape
-            + housekeeping_packet.hk_lfr_dpu_spw_credit
-            + housekeeping_packet.hk_lfr_dpu_spw_write_sync
-            + housekeeping_packet.hk_lfr_timecode_erroneous
-            + housekeeping_packet.hk_lfr_timecode_missing
-            + housekeeping_packet.hk_lfr_timecode_invalid
-            + housekeeping_packet.hk_lfr_time_timecode_it
-            + housekeeping_packet.hk_lfr_time_not_synchro
-            + housekeeping_packet.hk_lfr_time_timecode_ctr
-            + housekeeping_packet.hk_lfr_ahb_correctable;
+    if (newValue >= oldValue)
+    {
+        delta = newValue - oldValue;
+    }
+    else
+    {
+        delta = 255 - oldValue + newValue;
+    }
+
+    *counter = *counter + delta;
+}
+
+void hk_lfr_le_update( void )
+{
+    static hk_lfr_le_t old_hk_lfr_le = {0};
+    hk_lfr_le_t new_hk_lfr_le;
+    unsigned int counter;
+
+    counter = ((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256 + housekeeping_packet.hk_lfr_le_cnt[1];
+
+    // DPU
+    new_hk_lfr_le.dpu_spw_parity    = housekeeping_packet.hk_lfr_dpu_spw_parity;
+    new_hk_lfr_le.dpu_spw_disconnect= housekeeping_packet.hk_lfr_dpu_spw_disconnect;
+    new_hk_lfr_le.dpu_spw_escape    = housekeeping_packet.hk_lfr_dpu_spw_escape;
+    new_hk_lfr_le.dpu_spw_credit    = housekeeping_packet.hk_lfr_dpu_spw_credit;
+    new_hk_lfr_le.dpu_spw_write_sync= housekeeping_packet.hk_lfr_dpu_spw_write_sync;
+    // TIMECODE
+    new_hk_lfr_le.timecode_erroneous= housekeeping_packet.hk_lfr_timecode_erroneous;
+    new_hk_lfr_le.timecode_missing  = housekeeping_packet.hk_lfr_timecode_missing;
+    new_hk_lfr_le.timecode_invalid  = housekeeping_packet.hk_lfr_timecode_invalid;
+    // TIME
+    new_hk_lfr_le.time_timecode_it  = housekeeping_packet.hk_lfr_time_timecode_it;
+    new_hk_lfr_le.time_not_synchro  = housekeeping_packet.hk_lfr_time_not_synchro;
+    new_hk_lfr_le.time_timecode_ctr = housekeeping_packet.hk_lfr_time_timecode_ctr;
+    //AHB
+    new_hk_lfr_le.ahb_correctable   = housekeeping_packet.hk_lfr_ahb_correctable;
     // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb => not handled by the grspw driver
     // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb => not handled by the grspw driver
 
-    //update the medium severity error counter
-    hk_lfr_me_cnt =
-            current_hk_lfr_me_cnt
-            + housekeeping_packet.hk_lfr_dpu_spw_early_eop
-            + housekeeping_packet.hk_lfr_dpu_spw_invalid_addr
-            + housekeeping_packet.hk_lfr_dpu_spw_eep
-            + housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
+    // update the le counter
+    // DPU
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_parity,    old_hk_lfr_le.dpu_spw_parity,       counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_disconnect,old_hk_lfr_le.dpu_spw_disconnect,   counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_escape,    old_hk_lfr_le.dpu_spw_escape,       counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_credit,    old_hk_lfr_le.dpu_spw_credit,       counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_write_sync,old_hk_lfr_le.dpu_spw_write_sync,   counter );
+    // TIMECODE
+    increment_hk_counter( new_hk_lfr_le.timecode_erroneous,old_hk_lfr_le.timecode_erroneous,   counter );
+    increment_hk_counter( new_hk_lfr_le.timecode_missing,  old_hk_lfr_le.timecode_missing,     counter );
+    increment_hk_counter( new_hk_lfr_le.timecode_invalid,  old_hk_lfr_le.timecode_invalid,     counter );
+    // TIME
+    increment_hk_counter( new_hk_lfr_le.time_timecode_it,  old_hk_lfr_le.time_timecode_it,     counter );
+    increment_hk_counter( new_hk_lfr_le.time_not_synchro,  old_hk_lfr_le.time_not_synchro,     counter );
+    increment_hk_counter( new_hk_lfr_le.time_timecode_ctr, old_hk_lfr_le.time_timecode_ctr,    counter );
+    // AHB
+    increment_hk_counter( new_hk_lfr_le.ahb_correctable,   old_hk_lfr_le.ahb_correctable,      counter );
 
-    //update the high severity error counter
-    hk_lfr_he_cnt = 0;
+    // DPU
+    old_hk_lfr_le.dpu_spw_parity    = new_hk_lfr_le.dpu_spw_parity;
+    old_hk_lfr_le.dpu_spw_disconnect= new_hk_lfr_le.dpu_spw_disconnect;
+    old_hk_lfr_le.dpu_spw_escape    = new_hk_lfr_le.dpu_spw_escape;
+    old_hk_lfr_le.dpu_spw_credit    = new_hk_lfr_le.dpu_spw_credit;
+    old_hk_lfr_le.dpu_spw_write_sync= new_hk_lfr_le.dpu_spw_write_sync;
+    // TIMECODE
+    old_hk_lfr_le.timecode_erroneous= new_hk_lfr_le.timecode_erroneous;
+    old_hk_lfr_le.timecode_missing  = new_hk_lfr_le.timecode_missing;
+    old_hk_lfr_le.timecode_invalid  = new_hk_lfr_le.timecode_invalid;
+    // TIME
+    old_hk_lfr_le.time_timecode_it  = new_hk_lfr_le.time_timecode_it;
+    old_hk_lfr_le.time_not_synchro  = new_hk_lfr_le.time_not_synchro;
+    old_hk_lfr_le.time_timecode_ctr = new_hk_lfr_le.time_timecode_ctr;
+    //AHB
+    old_hk_lfr_le.ahb_correctable   = new_hk_lfr_le.ahb_correctable;
+    // housekeeping_packet.hk_lfr_dpu_spw_rx_ahb => not handled by the grspw driver
+    // housekeeping_packet.hk_lfr_dpu_spw_tx_ahb => not handled by the grspw driver
 
     // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // LE
     housekeeping_packet.hk_lfr_le_cnt[0] = (unsigned char) ((hk_lfr_le_cnt & 0xff00) >> 8);
     housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (hk_lfr_le_cnt & 0x00ff);
+}
+
+void hk_lfr_me_update( void )
+{
+    static hk_lfr_me_t old_hk_lfr_me = {0};
+    hk_lfr_me_t new_hk_lfr_me;
+    unsigned int counter;
+
+    counter = ((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256 + housekeeping_packet.hk_lfr_me_cnt[1];
+
+    // get the current values
+    new_hk_lfr_me.dpu_spw_early_eop     = housekeeping_packet.hk_lfr_dpu_spw_early_eop;
+    new_hk_lfr_me.dpu_spw_invalid_addr  = housekeeping_packet.hk_lfr_dpu_spw_invalid_addr;
+    new_hk_lfr_me.dpu_spw_eep           = housekeeping_packet.hk_lfr_dpu_spw_eep;
+    new_hk_lfr_me.dpu_spw_rx_too_big    = housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
+
+    // update the me counter
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_early_eop,      old_hk_lfr_me.dpu_spw_early_eop,    counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_invalid_addr,   old_hk_lfr_me.dpu_spw_invalid_addr, counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_eep,            old_hk_lfr_me.dpu_spw_eep,          counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_rx_too_big,     old_hk_lfr_me.dpu_spw_rx_too_big,   counter );
+
+    // store the counters for the next time
+    old_hk_lfr_me.dpu_spw_early_eop     = new_hk_lfr_me.dpu_spw_early_eop;
+    old_hk_lfr_me.dpu_spw_invalid_addr  = new_hk_lfr_me.dpu_spw_invalid_addr;
+    old_hk_lfr_me.dpu_spw_eep           = new_hk_lfr_me.dpu_spw_eep;
+    old_hk_lfr_me.dpu_spw_rx_too_big    = new_hk_lfr_me.dpu_spw_rx_too_big;
+
+    // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // ME
     housekeeping_packet.hk_lfr_me_cnt[0] = (unsigned char) ((hk_lfr_me_cnt & 0xff00) >> 8);
     housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (hk_lfr_me_cnt & 0x00ff);
+}
+
+void hk_lfr_le_me_he_update()
+{
+
+    unsigned int hk_lfr_he_cnt;
+
+    hk_lfr_he_cnt = ((unsigned int) housekeeping_packet.hk_lfr_he_cnt[0]) * 256 + housekeeping_packet.hk_lfr_he_cnt[1];
+
+    //update the low severity error counter
+    hk_lfr_le_update( );
+
+    //update the medium severity error counter
+    hk_lfr_me_update();
+
+    //update the high severity error counter
+    hk_lfr_he_cnt = 0;
+
+    // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // HE
     housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & 0xff00) >> 8);
     housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & 0x00ff);

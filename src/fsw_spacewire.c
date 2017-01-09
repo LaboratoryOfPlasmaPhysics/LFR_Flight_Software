@@ -159,7 +159,7 @@ rtems_task recv_task( rtems_task_argument unused )
             }
             else {
                 estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
-                PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
+                //PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
                 currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> 8);
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
                 // CHECK THE TC

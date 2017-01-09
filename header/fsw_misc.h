@@ -20,6 +20,28 @@ enum lfr_reset_cause_t{
     UNEXP_RESET
 };
 
+typedef struct{
+    unsigned char dpu_spw_parity;
+    unsigned char dpu_spw_disconnect;
+    unsigned char dpu_spw_escape;
+    unsigned char dpu_spw_credit;
+    unsigned char dpu_spw_write_sync;
+    unsigned char timecode_erroneous;
+    unsigned char timecode_missing;
+    unsigned char timecode_invalid;
+    unsigned char time_timecode_it;
+    unsigned char time_not_synchro;
+    unsigned char time_timecode_ctr;
+    unsigned char ahb_correctable;
+} hk_lfr_le_t;
+
+typedef struct{
+    unsigned char dpu_spw_early_eop;
+    unsigned char dpu_spw_invalid_addr;
+    unsigned char dpu_spw_eep;
+    unsigned char dpu_spw_rx_too_big;
+} hk_lfr_me_t;
+
 extern gptimer_regs_t *gptimer_regs;
 extern void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int*, unsigned int* );
 extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int* );

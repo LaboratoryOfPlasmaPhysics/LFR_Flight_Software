@@ -665,8 +665,14 @@ void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *co
                         ( compressed_spec_mat[ offsetCompressed ]
                         + averaged_spec_mat[ offsetASM + k ] * fBinMask );
             }
-            compressed_spec_mat[ offsetCompressed ] =
-                    (divider != 0.) ? compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage) : 0.0;
+            if (divider != 0)
+            {
+                compressed_spec_mat[ offsetCompressed ] = compressed_spec_mat[ offsetCompressed ] / (divider * nbBinsToAverage);
+            }
+            else
+            {
+                compressed_spec_mat[ offsetCompressed ] = 0.0;
+            }
         }
     }
 

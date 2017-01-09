@@ -49,8 +49,8 @@ unsigned char lfr_rtems_cpu_usage_report( void )
                 for ( i=1 ; i <= information->maximum ; i++ ) {
                     the_thread = (Thread_Control *)information->local_table[ i ];
 
-                    if ( the_thread != NULL )
-                        total_units += the_thread->cpu_time_used;
+                    if ( the_thread != NULL ) {
+                        total_units += the_thread->cpu_time_used; }
                 }
             }
         }
