@@ -10,6 +10,30 @@
 #include "fsw_spacewire.h"
 #include "lfr_cpu_usage_report.h"
 
+#define LFR_RESET_CAUSE_UNKNOWN_CAUSE 0
+#define WATCHDOG_LOOP_PRINTF    10
+#define WATCHDOG_LOOP_DEBUG     3
+
+#define DUMB_MESSAGE_NB 15
+#define NB_RTEMS_EVENTS 32
+#define EVENT_12        12
+#define EVENT_13        13
+#define EVENT_14        14
+#define DUMB_MESSAGE_0  "in DUMB *** default"
+#define DUMB_MESSAGE_1  "in DUMB *** timecode_irq_handler"
+#define DUMB_MESSAGE_2  "in DUMB *** f3 buffer changed"
+#define DUMB_MESSAGE_3  "in DUMB *** in SMIQ *** Error sending event to AVF0"
+#define DUMB_MESSAGE_4  "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ"
+#define DUMB_MESSAGE_5  "in DUMB *** waveforms_simulator_isr"
+#define DUMB_MESSAGE_6  "VHDL SM *** two buffers f0 ready"
+#define DUMB_MESSAGE_7  "ready for dump"
+#define DUMB_MESSAGE_8  "VHDL ERR *** spectral matrix"
+#define DUMB_MESSAGE_9  "tick"
+#define DUMB_MESSAGE_10 "VHDL ERR *** waveform picker"
+#define DUMB_MESSAGE_11 "VHDL ERR *** unexpected ready matrix values"
+#define DUMB_MESSAGE_12 "WATCHDOG timer"
+#define DUMB_MESSAGE_13 "TIMECODE timer"
+#define DUMB_MESSAGE_14 "TIMECODE ISR"
 
 enum lfr_reset_cause_t{
     UNKNOWN_CAUSE,
@@ -45,8 +69,6 @@ typedef struct{
 extern gptimer_regs_t *gptimer_regs;
 extern void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int*, unsigned int* );
 extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int* );
-
-#define LFR_RESET_CAUSE_UNKNOWN_CAUSE 0
 
 rtems_name name_hk_rate_monotonic;  // name of the HK rate monotonic
 rtems_id HK_id;                     // id of the HK rate monotonic period

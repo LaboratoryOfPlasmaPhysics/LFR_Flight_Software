@@ -22,10 +22,13 @@
 #include "fsw_params.h"
 #include "fsw_params_wf_handler.h"
 
+#define NB_OF_TASKS 20
+#define NB_OF_MISC_NAMES 5
+
 // RTEMS GLOBAL VARIABLES
-rtems_name  misc_name[5];
-rtems_name  Task_name[20];       /* array of task names */
-rtems_id    Task_id[20];         /* array of task ids */
+rtems_name  misc_name[NB_OF_MISC_NAMES];
+rtems_name  Task_name[NB_OF_TASKS];       /* array of task names */
+rtems_id    Task_id[NB_OF_TASKS];         /* array of task ids */
 rtems_name timecode_timer_name;
 rtems_id timecode_timer_id;
 int fdSPW = 0;
@@ -95,4 +98,5 @@ float cp_rpw_sc_rw4_f2;
 filterPar_t filterPar;
 
 fbins_masks_t fbins_masks;
-unsigned int acquisitionDurations[3] = {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};
+unsigned int acquisitionDurations[NB_ACQUISITION_DURATION]
+= {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};

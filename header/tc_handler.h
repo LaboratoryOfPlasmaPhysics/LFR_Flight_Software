@@ -12,6 +12,36 @@
 
 #include "lfr_cpu_usage_report.h"
 
+#define MAX_DELTA_COARSE_TIME   3
+#define NB_SCIENCE_TASKS        10
+#define NB_ASM_TASKS            6
+#define STATUS_0    0
+#define STATUS_1    1
+#define STATUS_2    2
+#define STATUS_3    3
+#define STATUS_4    4
+#define STATUS_5    5
+#define STATUS_6    6
+#define STATUS_7    7
+#define STATUS_8    8
+#define STATUS_9    9
+
+#define CAL_F0              625
+#define CAL_F1              10000
+#define CAL_FS              160256.410
+#define CAL_SCALE_FACTOR    (0.250 / 0.000654) // 191, 500 mVpp, 2 sinus waves => 500 mVpp each, amplitude = 250 mV
+#define CAL_NB_PTS          256
+#define CAL_DATA_MASK       0xfff
+#define CAL_F_DIVISOR       38  // 25 MHz => 160 256 (39 - 1)
+// INTERLEAVED MODE
+#define CAL_FS_INTER          240384.615
+#define CAL_NB_PTS_INTER      384
+#define CAL_DATA_MASK_INTER   0x3f
+#define CAL_DATA_SHIFT_INTER  12
+#define BYTES_FOR_2_SAMPLES   3   // one need 3 bytes = 24 bits to store 3 samples of 12 bits in interleaved mode
+#define STEPS_FOR_STORAGE_INTER 128
+#define CAL_F_DIVISOR_INTER 26  // 25 MHz => 240 384
+
 extern unsigned int lastValidEnterModeTime;
 extern unsigned char oneTcLfrUpdateTimeReceived;
 

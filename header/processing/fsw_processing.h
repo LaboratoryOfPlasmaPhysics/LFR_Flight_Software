@@ -11,6 +11,10 @@
 
 #include "fsw_params.h"
 
+#define SBM_COEFF_PER_NORM_COEFF    2
+#define MAX_SRC_DATA                780     // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
+#define MAX_SRC_DATA_WITH_SPARE     143     // 13 bins  * 11 Bytes
+
 typedef struct ring_node_asm
 {
     struct ring_node_asm *next;
@@ -24,24 +28,24 @@ typedef struct
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
-    unsigned char acquisitionTime[6];
-    unsigned char pa_lfr_bp_blk_nr[2];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
+    unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
     // SOURCE DATA
-    unsigned char data[ 780 ];   // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
+    unsigned char data[ MAX_SRC_DATA ];   // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
 } bp_packet;
 
 typedef struct
@@ -50,25 +54,25 @@ typedef struct
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
-    unsigned char acquisitionTime[6];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
     unsigned char source_data_spare;
-    unsigned char pa_lfr_bp_blk_nr[2];
+    unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
     // SOURCE DATA
-    unsigned char data[ 143 ];   // 13 bins  * 11 Bytes
+    unsigned char data[ MAX_SRC_DATA_WITH_SPARE ];   // 13 bins  * 11 Bytes
 } bp_packet_with_spare; // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 
 typedef struct asm_msg
@@ -99,8 +103,8 @@ extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern time_management_regs_t *time_management_regs;
 extern volatile spectral_matrix_regs_t *spectral_matrix_regs;
 
-extern rtems_name  misc_name[5];
-extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_name  misc_name[];
+extern rtems_id    Task_id[];         /* array of task ids */
 
 ring_node * getRingNodeForAveraging( unsigned char frequencyChannel);
 // ISR
@@ -173,7 +177,7 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
     float sum;
     unsigned int i;
     unsigned int k;
-    unsigned char incomingSMIsValid[8];
+    unsigned char incomingSMIsValid[NB_SM_BEFORE_AVF0_F1];
     unsigned int numberOfValidSM;
     unsigned char isValid;
 
@@ -181,7 +185,7 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
     // PAS FILTERING
     // check acquisitionTime of the incoming data
     numberOfValidSM = 0;
-    for (k=0; k<8; k++)
+    for (k=0; k<NB_SM_BEFORE_AVF0_F1; k++)
     {
         isValid = acquisitionTimeIsValid( ring_node_tab[k]->coarseTime, ring_node_tab[k]->fineTime, channel );
         incomingSMIsValid[k] = isValid;
@@ -201,14 +205,14 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
 //                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
 //                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
 
-        sum = ( (incomingSMIsValid[0] == 1) ? ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[1] == 1) ? ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[2] == 1) ? ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[3] == 1) ? ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[4] == 1) ? ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[5] == 1) ? ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[6] == 1) ? ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ] : 0.0 )
-                + ( (incomingSMIsValid[7] == 1) ? ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ] : 0.0 );
+        sum = ( incomingSMIsValid[0] * ((int *)(ring_node_tab[0]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[1] * ((int *)(ring_node_tab[1]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[2] * ((int *)(ring_node_tab[2]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[3] * ((int *)(ring_node_tab[3]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[4] * ((int *)(ring_node_tab[4]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[5] * ((int *)(ring_node_tab[5]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[6] * ((int *)(ring_node_tab[6]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[7] * ((int *)(ring_node_tab[7]->buffer_address) )[ i ] );
 
         if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
         {
@@ -278,13 +282,19 @@ void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_m
         for( frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++ )
         {
             offsetASMReorganized =
-                    frequencyBin * NB_VALUES_PER_SM
+                    (frequencyBin * NB_VALUES_PER_SM)
                     + asmComponent;
             offsetASM            =
-                    asmComponent * NB_BINS_PER_SM
+                    (asmComponent * NB_BINS_PER_SM)
                     + frequencyBin;
-            averaged_spec_mat_reorganized[offsetASMReorganized  ] =
-                    (divider != 0.0) ? averaged_spec_mat[ offsetASM ] / divider : 0.0;
+            if ( divider != INIT_FLOAT )
+            {
+                averaged_spec_mat_reorganized[offsetASMReorganized  ] = averaged_spec_mat[ offsetASM ] / divider;
+            }
+            else
+            {
+                averaged_spec_mat_reorganized[offsetASMReorganized  ] = INIT_FLOAT;
+            }
         }
     }
 }
@@ -304,12 +314,12 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, float *compres
         for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
         {
             offsetCompressed =  // NO TIME OFFSET
-                    frequencyBin * NB_VALUES_PER_SM
+                    (frequencyBin * NB_VALUES_PER_SM)
                     + asmComponent;
             offsetASM =         // NO TIME OFFSET
-                    asmComponent * NB_BINS_PER_SM
+                    (asmComponent * NB_BINS_PER_SM)
                     + ASMIndexStart
-                    + frequencyBin * nbBinsToAverage;
+                    + (frequencyBin * nbBinsToAverage);
             compressed_spec_mat[ offsetCompressed ] = 0;
             for ( k = 0; k < nbBinsToAverage; k++ )
             {
@@ -340,8 +350,8 @@ void ASM_convert( volatile float *input_matrix, char *output_matrix)
     {
         for ( asmComponent=0; asmComponent<NB_VALUES_PER_SM; asmComponent++)
         {
-            offsetInput  =       (frequencyBin*NB_VALUES_PER_SM) + asmComponent   ;
-            offsetOutput = 2 * ( (frequencyBin*NB_VALUES_PER_SM) + asmComponent ) ;
+            offsetInput  =                      (frequencyBin*NB_VALUES_PER_SM) + asmComponent   ;
+            offsetOutput = SM_BYTES_PER_VAL * ( (frequencyBin*NB_VALUES_PER_SM) + asmComponent ) ;
             pt_char_input =  (char*) &input_matrix [ offsetInput  ];
             pt_char_output = (char*) &output_matrix[ offsetOutput ];
             pt_char_output[0] = pt_char_input[0];   // bits 31 downto 24 of the float

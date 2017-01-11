@@ -11,6 +11,33 @@
 #include "fsw_params_wf_handler.h"
 
 #define pi 3.14159265359
+#define T0_IN_FINETIME  ( 65536. / 24576. )
+#define T1_IN_FINETIME  ( 65536. / 4096.  )
+#define T2_IN_FINETIME  ( 65536. / 256.   )
+#define T3_IN_FINETIME  ( 65536. / 16.    )
+
+#define TICKS_PER_T1    16
+#define TICKS_PER_T2    256
+#define TICKS_PER_S     65536.
+#define MS_PER_S        1000.
+
+#define FREQ_F0     24576.
+#define FREQ_F1     4096.
+#define FREQ_F2     256.
+#define FREQ_F3     16.
+
+#define DELTAT_F0   2731    // (2048. / 24576. / 2.) * 65536. = 2730.667;
+#define DELTAT_F1   16384   // (2048. / 4096.  / 2.) * 65536. = 16384;
+#define DELTAT_F2   262144  // (2048. / 256.   / 2.) * 65536. = 262144;
+
+#define OFFSET_2_BYTES  2
+
+#define ONE_TICK_CORR_INTERVAL_0_MIN 0.5
+#define ONE_TICK_CORR_INTERVAL_0_MAX 1.0
+#define ONE_TICK_CORR_INTERVAL_1_MIN -1.0
+#define ONE_TICK_CORR_INTERVAL_1_MAX -0.5
+#define ONE_TICK_CORR   1
+#define CORR_MULT       2
 
 extern int fdSPW;
 
@@ -30,7 +57,7 @@ extern struct param_local_str param_local;
 extern unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
 extern unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
 
-extern rtems_id    Task_id[20];         /* array of task ids */
+extern rtems_id    Task_id[];         /* array of task ids */
 
 extern unsigned char lfrCurrentMode;
 

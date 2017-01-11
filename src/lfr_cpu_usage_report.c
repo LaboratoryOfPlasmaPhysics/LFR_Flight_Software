@@ -18,7 +18,8 @@ unsigned char lfr_rtems_cpu_usage_report( void )
     uint32_t             api_index;
     Thread_Control      *the_thread;
     Objects_Information *information;
-    uint32_t             ival, fval;
+    uint32_t             ival;
+    uint32_t             fval;
 #ifndef __RTEMS_USE_TICKS_FOR_STATISTICS__
     Timestamp_Control  uptime;
     Timestamp_Control  total;
@@ -92,7 +93,7 @@ unsigned char lfr_rtems_cpu_usage_report( void )
                         uint64_t ival_64;
 
                         ival_64 = the_thread->cpu_time_used;
-                        ival_64 *= 100000;
+                        ival_64 *= CONST_100000;
                         ival = ival_64 / total_units;
                     }
                     else
@@ -100,14 +101,14 @@ unsigned char lfr_rtems_cpu_usage_report( void )
                         ival = 0;
                     }
 
-                    fval = ival % 1000;
-                    ival /= 1000;
+                    fval = ival % CONST_1000;
+                    ival /= CONST_1000;
     #endif
                 }
             }
         }
     }
-    cpu_load = (unsigned char) (100 - ival);
+    cpu_load = (unsigned char) (CONST_100 - ival);
 
     return cpu_load;
 }

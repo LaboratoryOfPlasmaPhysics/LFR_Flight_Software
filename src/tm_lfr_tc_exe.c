@@ -41,22 +41,22 @@ int send_tm_lfr_tc_exe_success( ccsdsTelecommandPacket_t *TC, rtems_id queue_id 
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_SUCCESS     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_OK;
     TM.destinationID = TC->sourceID;
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -106,24 +106,24 @@ int send_tm_lfr_tc_exe_inconsistent( ccsdsTelecommandPacket_t *TC, rtems_id queu
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_INCONSISTENT     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
     TM.destinationID = TC->sourceID;
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
-    TM.tc_failure_code[0] = (char) (WRONG_APP_DATA >> 8);
+    TM.tc_failure_code[0] = (char) (WRONG_APP_DATA >> SHIFT_1_BYTE);
     TM.tc_failure_code[1] = (char) (WRONG_APP_DATA     );
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -174,24 +174,24 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
     TM.destinationID = TC->sourceID;    // default destination id
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
-    TM.tc_failure_code[0] = (char) (TC_NOT_EXE >> 8);
+    TM.tc_failure_code[0] = (char) (TC_NOT_EXE >> SHIFT_1_BYTE);
     TM.tc_failure_code[1] = (char) (TC_NOT_EXE     );
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -242,24 +242,24 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
     TM.destinationID = TC->sourceID;    // default destination id
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
-    TM.tc_failure_code[0] = (char) (FUNCT_NOT_IMPL >> 8);
+    TM.tc_failure_code[0] = (char) (FUNCT_NOT_IMPL >> SHIFT_1_BYTE);
     TM.tc_failure_code[1] = (char) (FUNCT_NOT_IMPL     );
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -308,24 +308,24 @@ int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_ERROR     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
     TM.destinationID = TC->sourceID;    // default destination id
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
-    TM.tc_failure_code[0] = (char) (FAIL_DETECTED >> 8);
+    TM.tc_failure_code[0] = (char) (FAIL_DETECTED >> SHIFT_1_BYTE);
     TM.tc_failure_code[1] = (char) (FAIL_DETECTED     );
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -376,8 +376,8 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     unsigned int estimatedPacketLength;
     unsigned char *packetDataField;
 
-    packetLength = (TC->packetLength[0] * 256) + TC->packetLength[1];   // compute the packet length parameter written in the TC
-    estimatedPacketLength = (unsigned int) (currentTC_LEN_RCV[0] * 256 + currentTC_LEN_RCV[1]);
+    packetLength = (TC->packetLength[0] * CONST_256) + TC->packetLength[1];   // compute the packet length parameter written in the TC
+    estimatedPacketLength = (unsigned int) ((currentTC_LEN_RCV[0] * CONST_256) + currentTC_LEN_RCV[1]);
     packetDataField = (unsigned char *) &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
@@ -385,24 +385,24 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.reserved = DEFAULT_RESERVED;
     TM.userApplication = CCSDS_USER_APP;
     // PACKET HEADER
-    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> 8);
+    TM.packetID[0] = (unsigned char) (APID_TM_TC_EXE >> SHIFT_1_BYTE);
     TM.packetID[1] = (unsigned char) (APID_TM_TC_EXE     );
     increment_seq_counter_destination_id( TM.packetSequenceControl, TC->sourceID );
-    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED >> 8);
+    TM.packetLength[0] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED >> SHIFT_1_BYTE);
     TM.packetLength[1] = (unsigned char) (PACKET_LENGTH_TC_EXE_CORRUPTED     );
     // DATA FIELD HEADER
     TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     TM.serviceType = TM_TYPE_TC_EXE;
     TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
     TM.destinationID = destinationID;
-    TM.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    TM.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    TM.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    TM.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    TM.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    TM.time[5] = (unsigned char) (time_management_regs->fine_time);
+    TM.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    TM.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    TM.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    TM.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    TM.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     //
-    TM.tc_failure_code[0] = (unsigned char) (CORRUPTED >> 8);
+    TM.tc_failure_code[0] = (unsigned char) (CORRUPTED >> SHIFT_1_BYTE);
     TM.tc_failure_code[1] = (unsigned char) (CORRUPTED     );
     TM.telecommand_pkt_id[0] = TC->packetID[0];
     TM.telecommand_pkt_id[1] = TC->packetID[1];
@@ -494,12 +494,12 @@ void increment_seq_counter_destination_id( unsigned char *packet_sequence_contro
         break;
     }
 
-    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;
-    sequence_cnt                = sequenceCounters_TC_EXE[ i ] & 0x3fff;
+    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << SHIFT_1_BYTE;
+    sequence_cnt                = sequenceCounters_TC_EXE[ i ] & SEQ_CNT_MASK;
 
     new_packet_sequence_control = segmentation_grouping_flag | sequence_cnt ;
 
-    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> 8);
+    packet_sequence_control[0] = (unsigned char) (new_packet_sequence_control >> SHIFT_1_BYTE);
     packet_sequence_control[1] = (unsigned char) (new_packet_sequence_control     );
 
     // increment the sequence counter

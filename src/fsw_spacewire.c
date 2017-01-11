@@ -57,14 +57,14 @@ rtems_task spiq_task(rtems_task_argument unused)
 
         // [1] CHECK THE LINK
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (1)
-        if ( linkStatus != 5) {
+        if ( linkStatus != SPW_LINK_OK) {
             PRINTF1("in SPIQ *** linkStatus %d, wait...\n", linkStatus)
             status = rtems_task_wake_after( SY_LFR_DPU_CONNECT_TIMEOUT );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status (2)
-        if ( linkStatus != 5 )  // [2.a] not in run state, reset the link
+        if ( linkStatus != SPW_LINK_OK )  // [2.a] not in run state, reset the link
         {
             spacewire_read_statistics();
             status = spacewire_several_connect_attemps( );
@@ -122,8 +122,8 @@ rtems_task recv_task( rtems_task_argument unused )
 
     int len;
     ccsdsTelecommandPacket_t currentTC;
-    unsigned char computed_CRC[ 2 ];
-    unsigned char currentTC_LEN_RCV[ 2 ];
+    unsigned char computed_CRC[ BYTES_PER_CRC ];
+    unsigned char currentTC_LEN_RCV[ BYTES_PER_PKT_LEN ];
     unsigned char destinationID;
     unsigned int estimatedPacketLength;
     unsigned int parserCode;
@@ -158,9 +158,9 @@ rtems_task recv_task( rtems_task_argument unused )
                 PRINTF("in RECV *** packet lenght too short\n")
             }
             else {
-                estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - 3); // => -3 is for Prot ID, Reserved and User App bytes
+                estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - PROTID_RES_APP); // => -3 is for Prot ID, Reserved and User App bytes
                 //PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
-                currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> 8);
+                currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> SHIFT_1_BYTE);
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
                 // CHECK THE TC
                 parserCode = tc_parser( &currentTC, estimatedPacketLength, computed_CRC ) ;
@@ -191,7 +191,7 @@ rtems_task recv_task( rtems_task_argument unused )
                 else
                 { // send valid TC to the action launcher
                     status =  rtems_message_queue_send( queue_recv_id, &currentTC,
-                                                        estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + 3);
+                                                        estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + PROTID_RES_APP);
                 }
             }
         }
@@ -260,8 +260,8 @@ rtems_task send_task( rtems_task_argument argument)
             {
                 charPtr[0] = incomingData[0];
                 charPtr[1] = incomingData[1];
-                charPtr[2] = incomingData[2];
-                charPtr[3] = incomingData[3];
+                charPtr[BYTE_2] = incomingData[BYTE_2];
+                charPtr[BYTE_3] = incomingData[BYTE_3];
                 incomingRingNodePtr = (ring_node*) ring_node_address;
                 sid = incomingRingNodePtr->sid;
                 if ( (sid==SID_NORM_CWF_LONG_F3)
@@ -346,9 +346,9 @@ rtems_task link_task( rtems_task_argument argument )
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
         PRINTF("in LINK *** wait for the link\n")
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);       // get the link status
-        while( linkStatus != 5)                                                     // wait for the link
+        while( linkStatus != SPW_LINK_OK)                                           // wait for the link
         {
-            status = rtems_task_wake_after( 10 );                                   // monitor the link each 100ms
+            status = rtems_task_wake_after( SPW_LINK_WAIT );                        // monitor the link each 100ms
             status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus);   // get the link status
             watchdog_reload();
         }
@@ -447,9 +447,9 @@ int spacewire_configure_link( int fd )
     spacewire_set_RE(1, REGS_ADDR_GRSPW); // [R]MAP [E]nable, the dedicated call seems to  break the no port force configuration
     spw_ioctl_packetsize packetsize;
 
-    packetsize.rxsize = 228;
-    packetsize.txdsize = 4096;
-    packetsize.txhsize = 34;
+    packetsize.rxsize   = SPW_RXSIZE;
+    packetsize.txdsize  = SPW_TXDSIZE;
+    packetsize.txhsize  = SPW_TXHSIZE;
 
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1);              // sets the blocking mode for reception
     if (status!=RTEMS_SUCCESSFUL) {
@@ -481,7 +481,7 @@ int spacewire_configure_link( int fd )
         PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n")
     }
     //
-    status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, 0x0909); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
+    status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL, CONF_TCODE_CTRL); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
     if (status!=RTEMS_SUCCESSFUL) {
         PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n")
     }
@@ -546,10 +546,10 @@ void spacewire_set_NP( unsigned char val, unsigned int regAddr ) // [N]o [P]ort 
     unsigned int *spwptr = (unsigned int*) regAddr;
 
     if (val == 1) {
-        *spwptr = *spwptr | 0x00100000; // [NP] set the No port force bit
+        *spwptr = *spwptr | SPW_BIT_NP; // [NP] set the No port force bit
     }
     if (val== 0) {
-        *spwptr = *spwptr & 0xffdfffff;
+        *spwptr = *spwptr & SPW_BIT_NP_MASK;
     }
 }
 
@@ -568,11 +568,11 @@ void spacewire_set_RE( unsigned char val, unsigned int regAddr ) // [R]MAP [E]na
 
     if (val == 1)
     {
-        *spwptr = *spwptr | 0x00010000; // [RE] set the RMAP Enable bit
+        *spwptr = *spwptr | SPW_BIT_RE; // [RE] set the RMAP Enable bit
     }
     if (val== 0)
     {
-        *spwptr = *spwptr & 0xfffdffff;
+        *spwptr = *spwptr & SPW_BIT_RE_MASK;
     }
 }
 
@@ -775,24 +775,24 @@ void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code)
     coarseTimePtr = (unsigned char*) &time_management_regs->coarse_time;
     fineTimePtr = (unsigned char*) &time_management_regs->fine_time;
 
-    housekeeping_packet.hk_lfr_last_er_rid[0]   = (unsigned char) ((rid & 0xff00) >> 8 );
-    housekeeping_packet.hk_lfr_last_er_rid[1]   = (unsigned char)  (rid & 0x00ff);
+    housekeeping_packet.hk_lfr_last_er_rid[0]   = (unsigned char) ((rid & BYTE0_MASK) >> SHIFT_1_BYTE );
+    housekeeping_packet.hk_lfr_last_er_rid[1]   = (unsigned char)  (rid & BYTE1_MASK);
     housekeeping_packet.hk_lfr_last_er_code     = code;
     housekeeping_packet.hk_lfr_last_er_time[0]  = coarseTimePtr[0];
     housekeeping_packet.hk_lfr_last_er_time[1]  = coarseTimePtr[1];
-    housekeeping_packet.hk_lfr_last_er_time[2]  = coarseTimePtr[2];
-    housekeeping_packet.hk_lfr_last_er_time[3]  = coarseTimePtr[3];
-    housekeeping_packet.hk_lfr_last_er_time[4]  = fineTimePtr[2];
-    housekeeping_packet.hk_lfr_last_er_time[5]  = fineTimePtr[3];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_2]  = coarseTimePtr[BYTE_2];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_3]  = coarseTimePtr[BYTE_3];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_4]  = fineTimePtr[BYTE_2];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_5]  = fineTimePtr[BYTE_3];
 }
 
 void update_hk_with_grspw_stats( void )
 {
     //****************************
     // DPU_SPACEWIRE_IF_STATISTICS
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0]   = (unsigned char) (grspw_stats.packets_received >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[0]   = (unsigned char) (grspw_stats.packets_received >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_dpu_spw_pkt_rcv_cnt[1]   = (unsigned char) (grspw_stats.packets_received);
-    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0]  = (unsigned char) (grspw_stats.packets_sent >> 8);
+    housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[0]  = (unsigned char) (grspw_stats.packets_sent >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_dpu_spw_pkt_sent_cnt[1]  = (unsigned char) (grspw_stats.packets_sent);
 
     //******************************************
@@ -817,9 +817,10 @@ void spacewire_update_hk_lfr_link_state( unsigned char *hk_lfr_status_word_0 )
     unsigned char linkState;
 
     statusRegisterPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_STATUS_REGISTER);
-    linkState = (unsigned char) ( ( (*statusRegisterPtr) >>  21) & 0x07);   // [0000 0111]
+    linkState =
+            (unsigned char) ( ( (*statusRegisterPtr) >>  SPW_LINK_STAT_POS) & STATUS_WORD_LINK_STATE_BITS);   // [0000 0111]
 
-    *hk_lfr_status_word_0 = *hk_lfr_status_word_0 & 0xf8;       // [1111 1000] set link state to 0
+    *hk_lfr_status_word_0 = *hk_lfr_status_word_0 & STATUS_WORD_LINK_STATE_MASK;       // [1111 1000] set link state to 0
 
     *hk_lfr_status_word_0 = *hk_lfr_status_word_0 | linkState;  // update hk_lfr_dpu_spw_link_state
 }
@@ -827,7 +828,7 @@ void spacewire_update_hk_lfr_link_state( unsigned char *hk_lfr_status_word_0 )
 void increase_unsigned_char_counter( unsigned char *counter )
 {
     // update the number of valid timecodes that have been received
-    if (*counter == 255)
+    if (*counter == UINT8_MAX)
     {
         *counter = 0;
     }
@@ -858,7 +859,7 @@ unsigned int check_timecode_and_previous_timecode_coherency(unsigned char curren
     {
         if (currentTimecodeCtr == 0)
         {
-            if (previousTimecodeCtr == 63)
+            if (previousTimecodeCtr == SPW_TIMECODE_MAX)
             {
                 ret = LFR_SUCCESSFUL;
             }
@@ -1017,24 +1018,24 @@ void init_header_cwf( Header_TM_LFR_SCIENCE_CWF_t *header )
     header->userApplication         = CCSDS_USER_APP;
     header->packetSequenceControl[0]= TM_PACKET_SEQ_CTRL_STANDALONE;
     header->packetSequenceControl[1]= TM_PACKET_SEQ_CNT_DEFAULT;
-    header->packetLength[0] = 0x00;
-    header->packetLength[1] = 0x00;
+    header->packetLength[0] = INIT_CHAR;
+    header->packetLength[1] = INIT_CHAR;
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
     header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_6; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
+    header->time[BYTE_0] = INIT_CHAR;
+    header->time[BYTE_1] = INIT_CHAR;
+    header->time[BYTE_2] = INIT_CHAR;
+    header->time[BYTE_3] = INIT_CHAR;
+    header->time[BYTE_4] = INIT_CHAR;
+    header->time[BYTE_5] = INIT_CHAR;
     // AUXILIARY DATA HEADER
-    header->sid = 0x00;
+    header->sid = INIT_CHAR;
     header->pa_bia_status_info = DEFAULT_HKBIA;
-    header->blkNr[0] = 0x00;
-    header->blkNr[1] = 0x00;
+    header->blkNr[0] = INIT_CHAR;
+    header->blkNr[1] = INIT_CHAR;
 }
 
 void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
@@ -1043,29 +1044,29 @@ void init_header_swf( Header_TM_LFR_SCIENCE_SWF_t *header )
     header->protocolIdentifier          = CCSDS_PROTOCOLE_ID;
     header->reserved        = DEFAULT_RESERVED;
     header->userApplication = CCSDS_USER_APP;
-    header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+    header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> SHIFT_1_BYTE);
     header->packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
     header->packetSequenceControl[0]    = TM_PACKET_SEQ_CTRL_STANDALONE;
     header->packetSequenceControl[1]    = TM_PACKET_SEQ_CNT_DEFAULT;
-    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
+    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> SHIFT_1_BYTE);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
     header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_6; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
+    header->time[BYTE_0] = INIT_CHAR;
+    header->time[BYTE_1] = INIT_CHAR;
+    header->time[BYTE_2] = INIT_CHAR;
+    header->time[BYTE_3] = INIT_CHAR;
+    header->time[BYTE_4] = INIT_CHAR;
+    header->time[BYTE_5] = INIT_CHAR;
     // AUXILIARY DATA HEADER
-    header->sid     = 0x00;
+    header->sid     = INIT_CHAR;
     header->pa_bia_status_info   = DEFAULT_HKBIA;
-    header->pktCnt  = DEFAULT_PKTCNT;  // PKT_CNT
-    header->pktNr   = 0x00;
-    header->blkNr[0]        = (unsigned char) (BLK_NR_CWF >> 8);
+    header->pktCnt  = PKTCNT_SWF;  // PKT_CNT
+    header->pktNr   = INIT_CHAR;
+    header->blkNr[0]        = (unsigned char) (BLK_NR_CWF >> SHIFT_1_BYTE);
     header->blkNr[1]        = (unsigned char) (BLK_NR_CWF     );
 }
 
@@ -1075,30 +1076,30 @@ void init_header_asm( Header_TM_LFR_SCIENCE_ASM_t *header )
     header->protocolIdentifier          = CCSDS_PROTOCOLE_ID;
     header->reserved        = DEFAULT_RESERVED;
     header->userApplication = CCSDS_USER_APP;
-    header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+    header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> SHIFT_1_BYTE);
     header->packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
     header->packetSequenceControl[0]    = TM_PACKET_SEQ_CTRL_STANDALONE;
     header->packetSequenceControl[1]    = TM_PACKET_SEQ_CNT_DEFAULT;
-    header->packetLength[0] = 0x00;
-    header->packetLength[1] = 0x00;
+    header->packetLength[0] = INIT_CHAR;
+    header->packetLength[1] = INIT_CHAR;
     // DATA FIELD HEADER
     header->spare1_pusVersion_spare2    = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     header->serviceType     = TM_TYPE_LFR_SCIENCE; // service type
     header->serviceSubType  = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     header->destinationID   = TM_DESTINATION_ID_GROUND;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
-    header->time[0] = 0x00;
+    header->time[BYTE_0] = INIT_CHAR;
+    header->time[BYTE_1] = INIT_CHAR;
+    header->time[BYTE_2] = INIT_CHAR;
+    header->time[BYTE_3] = INIT_CHAR;
+    header->time[BYTE_4] = INIT_CHAR;
+    header->time[BYTE_5] = INIT_CHAR;
     // AUXILIARY DATA HEADER
-    header->sid     = 0x00;
-    header->pa_bia_status_info = 0x00;
-    header->pa_lfr_pkt_cnt_asm = 0x00;
-    header->pa_lfr_pkt_nr_asm = 0x00;
-    header->pa_lfr_asm_blk_nr[0] = 0x00;
-    header->pa_lfr_asm_blk_nr[1] = 0x00;
+    header->sid     = INIT_CHAR;
+    header->pa_bia_status_info = INIT_CHAR;
+    header->pa_lfr_pkt_cnt_asm = INIT_CHAR;
+    header->pa_lfr_pkt_nr_asm = INIT_CHAR;
+    header->pa_lfr_asm_blk_nr[0] = INIT_CHAR;
+    header->pa_lfr_asm_blk_nr[1] = INIT_CHAR;
 }
 
 int spw_send_waveform_CWF( ring_node *ring_node_to_send,
@@ -1135,11 +1136,11 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
     fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (int*) ring_node_to_send->buffer_address;
 
-    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> 8);
+    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_336 >> SHIFT_1_BYTE);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_336     );
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
-    header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> 8);
+    header->blkNr[0] = (unsigned char) (BLK_NR_CWF >> SHIFT_1_BYTE);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF     );
 
     for (i=0; i<NB_PACKETS_PER_GROUP_OF_CWF; i++) // send waveform
@@ -1160,20 +1161,20 @@ int spw_send_waveform_CWF( ring_node *ring_node_to_send,
         //
         header->time[0] = header->acquisitionTime[0];
         header->time[1] = header->acquisitionTime[1];
-        header->time[2] = header->acquisitionTime[2];
-        header->time[3] = header->acquisitionTime[3];
-        header->time[4] = header->acquisitionTime[4];
-        header->time[5] = header->acquisitionTime[5];
+        header->time[BYTE_2] = header->acquisitionTime[BYTE_2];
+        header->time[BYTE_3] = header->acquisitionTime[BYTE_3];
+        header->time[BYTE_4] = header->acquisitionTime[BYTE_4];
+        header->time[BYTE_5] = header->acquisitionTime[BYTE_5];
 
         // SET PACKET ID
         if ( (sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2) )
         {
-            header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2 >> 8);
+            header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2 >> SHIFT_1_BYTE);
             header->packetID[1] = (unsigned char) (APID_TM_SCIENCE_SBM1_SBM2);
         }
         else
         {
-            header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+            header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> SHIFT_1_BYTE);
             header->packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
         }
 
@@ -1223,7 +1224,7 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i=0; i<7; i++) // send waveform
+    for (i=0; i<PKTCNT_SWF; i++) // send waveform
     {
         spw_ioctl_send_SWF.data = (char*) &dataPtr[ (i * BLK_NR_304 * NB_WORDS_SWF_BLK) ];
         spw_ioctl_send_SWF.hdr = (char*) header;
@@ -1232,32 +1233,32 @@ int spw_send_waveform_SWF( ring_node *ring_node_to_send,
         increment_seq_counter_source_id( header->packetSequenceControl, sid );
 
         // SET PACKET LENGTH AND BLKNR
-        if (i == 6)
+        if (i == (PKTCNT_SWF-1))
         {
             spw_ioctl_send_SWF.dlen = BLK_NR_224 * NB_BYTES_SWF_BLK;
-            header->packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_224 >> 8);
+            header->packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_224 >> SHIFT_1_BYTE);
             header->packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_224     );
-            header->blkNr[0] = (unsigned char) (BLK_NR_224 >> 8);
+            header->blkNr[0] = (unsigned char) (BLK_NR_224 >> SHIFT_1_BYTE);
             header->blkNr[1] = (unsigned char) (BLK_NR_224     );
         }
         else
         {
             spw_ioctl_send_SWF.dlen = BLK_NR_304 * NB_BYTES_SWF_BLK;
-            header->packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_304 >> 8);
+            header->packetLength[0] = (unsigned char) (TM_LEN_SCI_SWF_304 >> SHIFT_1_BYTE);
             header->packetLength[1] = (unsigned char) (TM_LEN_SCI_SWF_304     );
-            header->blkNr[0] = (unsigned char) (BLK_NR_304 >> 8);
+            header->blkNr[0] = (unsigned char) (BLK_NR_304 >> SHIFT_1_BYTE);
             header->blkNr[1] = (unsigned char) (BLK_NR_304     );
         }
 
         // SET PACKET TIME
         compute_acquisition_time( coarseTime, fineTime, sid, i, header->acquisitionTime );
         //
-        header->time[0] = header->acquisitionTime[0];
-        header->time[1] = header->acquisitionTime[1];
-        header->time[2] = header->acquisitionTime[2];
-        header->time[3] = header->acquisitionTime[3];
-        header->time[4] = header->acquisitionTime[4];
-        header->time[5] = header->acquisitionTime[5];
+        header->time[BYTE_0] = header->acquisitionTime[BYTE_0];
+        header->time[BYTE_1] = header->acquisitionTime[BYTE_1];
+        header->time[BYTE_2] = header->acquisitionTime[BYTE_2];
+        header->time[BYTE_3] = header->acquisitionTime[BYTE_3];
+        header->time[BYTE_4] = header->acquisitionTime[BYTE_4];
+        header->time[BYTE_5] = header->acquisitionTime[BYTE_5];
 
         // SET SID
         header->sid = sid;
@@ -1309,11 +1310,11 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
     fineTime    = ring_node_to_send->fineTime;
     dataPtr     = (char*) ring_node_to_send->buffer_address;
 
-    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> 8);
+    header->packetLength[0] = (unsigned char) (TM_LEN_SCI_CWF_672 >> SHIFT_1_BYTE);
     header->packetLength[1] = (unsigned char) (TM_LEN_SCI_CWF_672     );
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
-    header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> 8);
+    header->blkNr[0] = (unsigned char) (BLK_NR_CWF_SHORT_F3 >> SHIFT_1_BYTE);
     header->blkNr[1] = (unsigned char) (BLK_NR_CWF_SHORT_F3     );
 
     //*********************
@@ -1334,15 +1335,15 @@ int spw_send_waveform_CWF3_light( ring_node *ring_node_to_send,
         // SET PACKET TIME
         compute_acquisition_time( coarseTime, fineTime, SID_NORM_CWF_F3, i, header->acquisitionTime );
         //
-        header->time[0] = header->acquisitionTime[0];
-        header->time[1] = header->acquisitionTime[1];
-        header->time[2] = header->acquisitionTime[2];
-        header->time[3] = header->acquisitionTime[3];
-        header->time[4] = header->acquisitionTime[4];
-        header->time[5] = header->acquisitionTime[5];
+        header->time[BYTE_0] = header->acquisitionTime[BYTE_0];
+        header->time[BYTE_1] = header->acquisitionTime[BYTE_1];
+        header->time[BYTE_2] = header->acquisitionTime[BYTE_2];
+        header->time[BYTE_3] = header->acquisitionTime[BYTE_3];
+        header->time[BYTE_4] = header->acquisitionTime[BYTE_4];
+        header->time[BYTE_5] = header->acquisitionTime[BYTE_5];
 
         // SET PACKET ID
-        header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> 8);
+        header->packetID[0] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST >> SHIFT_1_BYTE);
         header->packetID[1] = (unsigned char) (APID_TM_SCIENCE_NORMAL_BURST);
 
         // SEND PACKET
@@ -1375,7 +1376,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i=0; i<3; i++)
+    for (i=0; i<PKTCNT_ASM; i++)
     {
         if ((i==0) || (i==1))
         {
@@ -1385,7 +1386,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_1) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_1) >> SHIFT_1_BYTE ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0_1);        // BLK_NR LSB
         }
         else
@@ -1396,7 +1397,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_2;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F0_2) >> SHIFT_1_BYTE ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F0_2);        // BLK_NR LSB
         }
 
@@ -1406,26 +1407,26 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
 
         // (2) BUILD THE HEADER
         increment_seq_counter_source_id( header->packetSequenceControl, sid );
-        header->packetLength[0] = (unsigned char) (length>>8);
+        header->packetLength[0] = (unsigned char) (length >> SHIFT_1_BYTE);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
-        header->pa_lfr_pkt_cnt_asm = 3;
+        header->pa_lfr_pkt_cnt_asm = PKTCNT_ASM;
         header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
 
         // (3) SET PACKET TIME
-        header->time[0] = (unsigned char) (coarseTime>>24);
-        header->time[1] = (unsigned char) (coarseTime>>16);
-        header->time[2] = (unsigned char) (coarseTime>>8);
-        header->time[3] = (unsigned char) (coarseTime);
-        header->time[4] = (unsigned char) (fineTime>>8);
-        header->time[5] = (unsigned char) (fineTime);
+        header->time[BYTE_0] = (unsigned char) (coarseTime >> SHIFT_3_BYTES);
+        header->time[BYTE_1] = (unsigned char) (coarseTime >> SHIFT_2_BYTES);
+        header->time[BYTE_2] = (unsigned char) (coarseTime >> SHIFT_1_BYTE);
+        header->time[BYTE_3] = (unsigned char) (coarseTime);
+        header->time[BYTE_4] = (unsigned char) (fineTime >> SHIFT_1_BYTE);
+        header->time[BYTE_5] = (unsigned char) (fineTime);
         //
-        header->acquisitionTime[0] = header->time[0];
-        header->acquisitionTime[1] = header->time[1];
-        header->acquisitionTime[2] = header->time[2];
-        header->acquisitionTime[3] = header->time[3];
-        header->acquisitionTime[4] = header->time[4];
-        header->acquisitionTime[5] = header->time[5];
+        header->acquisitionTime[BYTE_0] = header->time[BYTE_0];
+        header->acquisitionTime[BYTE_1] = header->time[BYTE_1];
+        header->acquisitionTime[BYTE_2] = header->time[BYTE_2];
+        header->acquisitionTime[BYTE_3] = header->time[BYTE_3];
+        header->acquisitionTime[BYTE_4] = header->time[BYTE_4];
+        header->acquisitionTime[BYTE_5] = header->time[BYTE_5];
 
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
@@ -1455,7 +1456,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i=0; i<3; i++)
+    for (i=0; i<PKTCNT_ASM; i++)
     {
         if ((i==0) || (i==1))
         {
@@ -1465,7 +1466,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_1;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_1) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_1) >> SHIFT_1_BYTE ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1_1);        // BLK_NR LSB
         }
         else
@@ -1476,7 +1477,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_2;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
-            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_2) >> 8 ); // BLK_NR MSB
+            header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F1_2) >> SHIFT_1_BYTE ); // BLK_NR MSB
             header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F1_2);        // BLK_NR LSB
         }
 
@@ -1486,26 +1487,26 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
 
         // (2) BUILD THE HEADER
         increment_seq_counter_source_id( header->packetSequenceControl, sid );
-        header->packetLength[0] = (unsigned char) (length>>8);
+        header->packetLength[0] = (unsigned char) (length >> SHIFT_1_BYTE);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
-        header->pa_lfr_pkt_cnt_asm = 3;
+        header->pa_lfr_pkt_cnt_asm = PKTCNT_ASM;
         header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
 
         // (3) SET PACKET TIME
-        header->time[0] = (unsigned char) (coarseTime>>24);
-        header->time[1] = (unsigned char) (coarseTime>>16);
-        header->time[2] = (unsigned char) (coarseTime>>8);
-        header->time[3] = (unsigned char) (coarseTime);
-        header->time[4] = (unsigned char) (fineTime>>8);
-        header->time[5] = (unsigned char) (fineTime);
+        header->time[BYTE_0] = (unsigned char) (coarseTime >> SHIFT_3_BYTES);
+        header->time[BYTE_1] = (unsigned char) (coarseTime >> SHIFT_2_BYTES);
+        header->time[BYTE_2] = (unsigned char) (coarseTime >> SHIFT_1_BYTE);
+        header->time[BYTE_3] = (unsigned char) (coarseTime);
+        header->time[BYTE_4] = (unsigned char) (fineTime >> SHIFT_1_BYTE);
+        header->time[BYTE_5] = (unsigned char) (fineTime);
         //
-        header->acquisitionTime[0] = header->time[0];
-        header->acquisitionTime[1] = header->time[1];
-        header->acquisitionTime[2] = header->time[2];
-        header->acquisitionTime[3] = header->time[3];
-        header->acquisitionTime[4] = header->time[4];
-        header->acquisitionTime[5] = header->time[5];
+        header->acquisitionTime[BYTE_0] = header->time[BYTE_0];
+        header->acquisitionTime[BYTE_1] = header->time[BYTE_1];
+        header->acquisitionTime[BYTE_2] = header->time[BYTE_2];
+        header->acquisitionTime[BYTE_3] = header->time[BYTE_3];
+        header->acquisitionTime[BYTE_4] = header->time[BYTE_4];
+        header->acquisitionTime[BYTE_5] = header->time[BYTE_5];
 
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
@@ -1535,7 +1536,7 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i=0; i<3; i++)
+    for (i=0; i<PKTCNT_ASM; i++)
     {
 
         spw_ioctl_send_ASM.dlen = DLEN_ASM_F2_PKT;
@@ -1544,7 +1545,7 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
                 ];
         length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
         header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3;
-        header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> 8 ); // BLK_NR MSB
+        header->pa_lfr_asm_blk_nr[0] = (unsigned char)  ( (NB_BINS_PER_PKT_ASM_F2) >> SHIFT_1_BYTE ); // BLK_NR MSB
         header->pa_lfr_asm_blk_nr[1] = (unsigned char)    (NB_BINS_PER_PKT_ASM_F2);        // BLK_NR LSB
 
         spw_ioctl_send_ASM.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_ASM;
@@ -1553,26 +1554,26 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
 
         // (2) BUILD THE HEADER
         increment_seq_counter_source_id( header->packetSequenceControl, sid );
-        header->packetLength[0] = (unsigned char) (length>>8);
+        header->packetLength[0] = (unsigned char) (length >> SHIFT_1_BYTE);
         header->packetLength[1] = (unsigned char) (length);
         header->sid = (unsigned char) sid;   // SID
-        header->pa_lfr_pkt_cnt_asm = 3;
+        header->pa_lfr_pkt_cnt_asm = PKTCNT_ASM;
         header->pa_lfr_pkt_nr_asm = (unsigned char) (i+1);
 
         // (3) SET PACKET TIME
-        header->time[0] = (unsigned char) (coarseTime>>24);
-        header->time[1] = (unsigned char) (coarseTime>>16);
-        header->time[2] = (unsigned char) (coarseTime>>8);
-        header->time[3] = (unsigned char) (coarseTime);
-        header->time[4] = (unsigned char) (fineTime>>8);
-        header->time[5] = (unsigned char) (fineTime);
+        header->time[BYTE_0] = (unsigned char) (coarseTime >> SHIFT_3_BYTES);
+        header->time[BYTE_1] = (unsigned char) (coarseTime >> SHIFT_2_BYTES);
+        header->time[BYTE_2] = (unsigned char) (coarseTime >> SHIFT_1_BYTE);
+        header->time[BYTE_3] = (unsigned char) (coarseTime);
+        header->time[BYTE_4] = (unsigned char) (fineTime >> SHIFT_1_BYTE);
+        header->time[BYTE_5] = (unsigned char) (fineTime);
         //
-        header->acquisitionTime[0] = header->time[0];
-        header->acquisitionTime[1] = header->time[1];
-        header->acquisitionTime[2] = header->time[2];
-        header->acquisitionTime[3] = header->time[3];
-        header->acquisitionTime[4] = header->time[4];
-        header->acquisitionTime[5] = header->time[5];
+        header->acquisitionTime[BYTE_0] = header->time[BYTE_0];
+        header->acquisitionTime[BYTE_1] = header->time[BYTE_1];
+        header->acquisitionTime[BYTE_2] = header->time[BYTE_2];
+        header->acquisitionTime[BYTE_3] = header->time[BYTE_3];
+        header->acquisitionTime[BYTE_4] = header->time[BYTE_4];
+        header->acquisitionTime[BYTE_5] = header->time[BYTE_5];
 
         // (4) SEND PACKET
         status = ioctl( fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM );
@@ -1593,7 +1594,7 @@ void spw_send_k_dump( ring_node *ring_node_to_send )
 
     kcoefficients_dump = (Packet_TM_LFR_KCOEFFICIENTS_DUMP_t *) ring_node_to_send->buffer_address;
 
-    packetLength = kcoefficients_dump->packetLength[0] * 256 + kcoefficients_dump->packetLength[1];
+    packetLength = (kcoefficients_dump->packetLength[0] * CONST_256) + kcoefficients_dump->packetLength[1];
 
     size = packetLength + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
 
@@ -1605,5 +1606,5 @@ void spw_send_k_dump( ring_node *ring_node_to_send )
         PRINTF2("in SEND *** (2.a) ERRNO = %d, size = %d\n", errno, size)
     }
 
-    ring_node_to_send->status = 0x00;
+    ring_node_to_send->status = INIT_CHAR;
 }

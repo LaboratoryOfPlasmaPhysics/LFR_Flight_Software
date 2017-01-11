@@ -32,7 +32,7 @@ rtems_task actn_task( rtems_task_argument unused )
     ccsdsTelecommandPacket_t TC;    // TC sent to the ACTN task
     size_t size;                    // size of the incoming TC packet
     unsigned char subtype;          // subtype of the current TC packet
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     rtems_id queue_rcv_id;
     rtems_id queue_snd_id;
 
@@ -177,7 +177,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
     requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
     transitionCoarseTime_ptr = (unsigned int *) ( &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
-    transitionCoarseTime = (*transitionCoarseTime_ptr) & 0x7fffffff;
+    transitionCoarseTime = (*transitionCoarseTime_ptr) & COARSE_TIME_MASK;
 
     status = check_mode_value( requestedMode );
 
@@ -262,24 +262,24 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     bytePosPtr = (unsigned char *) &TC->packetID;
 
     // check LFR mode
-    mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET5 ] & 0x1e) >> 1;
+    mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET5 ] & BITS_LFR_MODE) >> SHIFT_LFR_MODE;
     status = check_update_info_hk_lfr_mode( mode );
     if (status == LFR_SUCCESSFUL)  // check TDS mode
     {
-        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & 0xf0) >> 4;
+        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & BITS_TDS_MODE) >> SHIFT_TDS_MODE;
         status = check_update_info_hk_tds_mode( mode );
     }
     if (status == LFR_SUCCESSFUL)  // check THR mode
     {
-        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & 0x0f);
+        mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & BITS_THR_MODE);
         status = check_update_info_hk_thr_mode( mode );
     }
     if (status == LFR_SUCCESSFUL)  // if the parameter check is successful
     {
-        val = housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * 256
+        val = (housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * CONST_256)
                 + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
         val++;
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> 8);
+        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
         housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
     }
 
@@ -290,9 +290,9 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
     // => pa_bia_mode_bias2_enabled 1 bit
     // => pa_bia_mode_bias3_enabled 1 bit
     // => pa_bia_on_off (cp_dpu_bias_on_off)
-    pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & 0xfe; // [1111 1110]
+    pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & BITS_BIA; // [1111 1110]
     pa_bia_status_info = pa_bia_status_info
-            | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 0x1);
+            | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 1);
 
     // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
 
@@ -361,15 +361,15 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
 
     unsigned int val;
 
-    time_management_regs->coarse_time_load = (TC->dataAndCRC[0] << 24)
-            + (TC->dataAndCRC[1] << 16)
-            + (TC->dataAndCRC[2] << 8)
-            + TC->dataAndCRC[3];
+    time_management_regs->coarse_time_load = (TC->dataAndCRC[BYTE_0] << SHIFT_3_BYTES)
+            + (TC->dataAndCRC[BYTE_1] << SHIFT_2_BYTES)
+            + (TC->dataAndCRC[BYTE_2] << SHIFT_1_BYTE)
+            + TC->dataAndCRC[BYTE_3];
 
-    val = housekeeping_packet.hk_lfr_update_time_tc_cnt[0] * 256
+    val = (housekeeping_packet.hk_lfr_update_time_tc_cnt[0] * CONST_256)
             + housekeeping_packet.hk_lfr_update_time_tc_cnt[1];
     val++;
-    housekeeping_packet.hk_lfr_update_time_tc_cnt[0] = (unsigned char) (val >> 8);
+    housekeeping_packet.hk_lfr_update_time_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_update_time_tc_cnt[1] = (unsigned char) (val);
 
     oneTcLfrUpdateTimeReceived = 1;
@@ -490,7 +490,7 @@ int check_transition_date( unsigned int transitionCoarseTime )
     }
     else
     {
-        localCoarseTime = time_management_regs->coarse_time & 0x7fffffff;
+        localCoarseTime = time_management_regs->coarse_time & COARSE_TIME_MASK;
 
         PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
 
@@ -503,7 +503,7 @@ int check_transition_date( unsigned int transitionCoarseTime )
         if (status == LFR_SUCCESSFUL)
         {
             deltaCoarseTime = transitionCoarseTime - localCoarseTime;
-            if ( deltaCoarseTime > 3 )                  // SSS-CP-EQS-323
+            if ( deltaCoarseTime > MAX_DELTA_COARSE_TIME )  // SSS-CP-EQS-323
             {
                 status = LFR_DEFAULT;
                 PRINTF1("ERR *** in check_transition_date *** deltaCoarseTime = %x\n", deltaCoarseTime)
@@ -906,76 +906,76 @@ int restart_science_tasks( unsigned char lfrRequestedMode )
      *
      */
 
-    rtems_status_code status[10];
+    rtems_status_code status[NB_SCIENCE_TASKS];
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
 
-    status[0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
-    if (status[0] != RTEMS_SUCCESSFUL)
+    status[STATUS_0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
+    if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[0])
+        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
     }
 
-    status[1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
-    if (status[1] != RTEMS_SUCCESSFUL)
+    status[STATUS_1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
+    if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[1])
+        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
     }
 
-    status[2] = rtems_task_restart( Task_id[TASKID_WFRM],1 );
-    if (status[2] != RTEMS_SUCCESSFUL)
+    status[STATUS_2] = rtems_task_restart( Task_id[TASKID_WFRM],1 );
+    if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** WFRM ERR %d\n", status[2])
+        PRINTF1("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2])
     }
 
-    status[3] = rtems_task_restart( Task_id[TASKID_CWF3],1 );
-    if (status[3] != RTEMS_SUCCESSFUL)
+    status[STATUS_3] = rtems_task_restart( Task_id[TASKID_CWF3],1 );
+    if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF3 ERR %d\n", status[3])
+        PRINTF1("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3])
     }
 
-    status[4] = rtems_task_restart( Task_id[TASKID_CWF2],1 );
-    if (status[4] != RTEMS_SUCCESSFUL)
+    status[STATUS_4] = rtems_task_restart( Task_id[TASKID_CWF2],1 );
+    if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF2 ERR %d\n", status[4])
+        PRINTF1("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4])
     }
 
-    status[5] = rtems_task_restart( Task_id[TASKID_CWF1],1 );
-    if (status[5] != RTEMS_SUCCESSFUL)
+    status[STATUS_5] = rtems_task_restart( Task_id[TASKID_CWF1],1 );
+    if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF1 ERR %d\n", status[5])
+        PRINTF1("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5])
     }
 
-    status[6] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
-    if (status[6] != RTEMS_SUCCESSFUL)
+    status[STATUS_6] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
+    if (status[STATUS_6] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[6])
+        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6])
     }
 
-    status[7] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
-    if (status[7] != RTEMS_SUCCESSFUL)
+    status[STATUS_7] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
+    if (status[STATUS_7] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[7])
+        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7])
     }
 
-    status[8] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
-    if (status[8] != RTEMS_SUCCESSFUL)
+    status[STATUS_8] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
+    if (status[STATUS_8] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[8])
+        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8])
     }
 
-    status[9] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
-    if (status[9] != RTEMS_SUCCESSFUL)
+    status[STATUS_9] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
+    if (status[STATUS_9] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[9])
+        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9])
     }
 
-    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
-         (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
-         (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) ||
-         (status[6] != RTEMS_SUCCESSFUL) || (status[7] != RTEMS_SUCCESSFUL) ||
-         (status[8] != RTEMS_SUCCESSFUL) || (status[9] != RTEMS_SUCCESSFUL) )
+    if ( (status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_2] != RTEMS_SUCCESSFUL) || (status[STATUS_3] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_4] != RTEMS_SUCCESSFUL) || (status[STATUS_5] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_6] != RTEMS_SUCCESSFUL) || (status[STATUS_7] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_8] != RTEMS_SUCCESSFUL) || (status[STATUS_9] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -997,50 +997,50 @@ int restart_asm_tasks( unsigned char lfrRequestedMode )
      *
      */
 
-    rtems_status_code status[6];
+    rtems_status_code status[NB_ASM_TASKS];
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
 
-    status[0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
-    if (status[0] != RTEMS_SUCCESSFUL)
+    status[STATUS_0] = rtems_task_restart( Task_id[TASKID_AVF0], lfrRequestedMode );
+    if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[0])
+        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
     }
 
-    status[1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
-    if (status[1] != RTEMS_SUCCESSFUL)
+    status[STATUS_1] = rtems_task_restart( Task_id[TASKID_PRC0], lfrRequestedMode );
+    if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[1])
+        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
     }
 
-    status[2] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
-    if (status[2] != RTEMS_SUCCESSFUL)
+    status[STATUS_2] = rtems_task_restart( Task_id[TASKID_AVF1], lfrRequestedMode );
+    if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[2])
+        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2])
     }
 
-    status[3] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
-    if (status[3] != RTEMS_SUCCESSFUL)
+    status[STATUS_3] = rtems_task_restart( Task_id[TASKID_PRC1],lfrRequestedMode );
+    if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[3])
+        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3])
     }
 
-    status[4] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
-    if (status[4] != RTEMS_SUCCESSFUL)
+    status[STATUS_4] = rtems_task_restart( Task_id[TASKID_AVF2], 1 );
+    if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[4])
+        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4])
     }
 
-    status[5] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
-    if (status[5] != RTEMS_SUCCESSFUL)
+    status[STATUS_5] = rtems_task_restart( Task_id[TASKID_PRC2], 1 );
+    if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[5])
+        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5])
     }
 
-    if ( (status[0] != RTEMS_SUCCESSFUL) || (status[1] != RTEMS_SUCCESSFUL) ||
-         (status[2] != RTEMS_SUCCESSFUL) || (status[3] != RTEMS_SUCCESSFUL) ||
-         (status[4] != RTEMS_SUCCESSFUL) || (status[5] != RTEMS_SUCCESSFUL) )
+    if ( (status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_2] != RTEMS_SUCCESSFUL) || (status[STATUS_3] != RTEMS_SUCCESSFUL) ||
+         (status[STATUS_4] != RTEMS_SUCCESSFUL) || (status[STATUS_5] != RTEMS_SUCCESSFUL) )
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -1323,11 +1323,11 @@ void set_sm_irq_onNewMatrix( unsigned char value )
 {
     if (value == 1)
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x01;
+        spectral_matrix_regs->config = spectral_matrix_regs->config | BIT_IRQ_ON_NEW_MATRIX;
     }
     else
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffe;   // 1110
+        spectral_matrix_regs->config = spectral_matrix_regs->config & MASK_IRQ_ON_NEW_MATRIX;   // 1110
     }
 }
 
@@ -1335,11 +1335,11 @@ void set_sm_irq_onError( unsigned char value )
 {
     if (value == 1)
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config | 0x02;
+        spectral_matrix_regs->config = spectral_matrix_regs->config | BIT_IRQ_ON_ERROR;
     }
     else
     {
-        spectral_matrix_regs->config = spectral_matrix_regs->config & 0xfffffffd;   // 1101
+        spectral_matrix_regs->config = spectral_matrix_regs->config & MASK_IRQ_ON_ERROR;   // 1101
     }
 }
 
@@ -1358,67 +1358,75 @@ void setCalibrationDivisor( unsigned int divisionFactor )
     time_management_regs->calDivisor = divisionFactor;
 }
 
-void setCalibrationData( void ){
+void setCalibrationData( void )
+{
+    /** This function is used to store the values used to drive the DAC in order to generate the SCM calibration signal
+     *
+     * @param void
+     *
+     * @return void
+     *
+     */
+
     unsigned int k;
     unsigned short data;
     float val;
-    float f0;
-    float f1;
-    float fs;
     float Ts;
-    float scaleFactor;
 
-    f0 = 625;
-    f1 = 10000;
-    fs = 160256.410;
-    Ts = 1. / fs;
-    scaleFactor = 0.250 / 0.000654; // 191, 500 mVpp, 2 sinus waves => 500 mVpp each, amplitude = 250 mV
-
-    time_management_regs->calDataPtr = 0x00;
+    time_management_regs->calDataPtr = INIT_CHAR;
 
     // build the signal for the SCM calibration
-    for (k=0; k<256; k++)
+    for (k = 0; k < CAL_NB_PTS; k++)
     {
-        val = sin( 2 * pi * f0 * k * Ts )
-                + sin(  2 * pi * f1 * k * Ts );
-        data = (unsigned short) ((val * scaleFactor) + 2048);
-        time_management_regs->calData = data & 0xfff;
+        val = sin( 2 * pi * CAL_F0 * k * Ts )
+                + sin(  2 * pi * CAL_F1 * k * Ts );
+        data = (unsigned short) ((val * CAL_SCALE_FACTOR) + CONST_2048);
+        time_management_regs->calData = data & CAL_DATA_MASK;
     }
 }
 
-void setCalibrationDataInterleaved( void ){
+void setCalibrationDataInterleaved( void )
+{
+    /** This function is used to store the values used to drive the DAC in order to generate the SCM calibration signal
+     *
+     * @param void
+     *
+     * @return void
+     *
+     * In interleaved mode, one can store more values than in normal mode.
+     * The data are stored in bunch of 18 bits, 12 bits from one sample and 6 bits from another sample.
+     * T store 3 values, one need two write operations.
+     * s1 [ b11 b10 b9 b8 b7 b6 ] s0 [ b11 b10 b9 b8 b7 b6 b5 b3 b2 b1 b0 ]
+     * s1 [ b5  b4  b3 b2 b1 b0 ] s2 [ b11 b10 b9 b8 b7 b6 b5 b3 b2 b1 b0 ]
+     *
+     */
+
     unsigned int k;
     float val;
-    float f0;
-    float f1;
-    float fs;
     float Ts;
-    unsigned short data[384];
+    unsigned short data[CAL_NB_PTS_INTER];
     unsigned char *dataPtr;
 
-    f0 = 625;
-    f1 = 10000;
-    fs = 240384.615;
-    Ts = 1. / fs;
+    Ts = 1. / CAL_FS_INTER;
 
-    time_management_regs->calDataPtr = 0x00;
+    time_management_regs->calDataPtr = INIT_CHAR;
 
     // build the signal for the SCM calibration
-    for (k=0; k<384; k++)
+    for (k=0; k<CAL_NB_PTS_INTER; k++)
     {
-        val = sin( 2 * pi * f0 * k * Ts )
-                + sin(  2 * pi * f1 * k * Ts );
-        data[k] = (unsigned short) (val * 512 + 2048);
+        val = sin( 2 * pi * CAL_F0 * k * Ts )
+                + sin(  2 * pi * CAL_F1 * k * Ts );
+        data[k] = (unsigned short) ((val * CONST_512) + CONST_2048);
     }
 
     // write the signal in interleaved mode
-    for (k=0; k<128; k++)
+    for (k=0; k < STEPS_FOR_STORAGE_INTER; k++)
     {
-        dataPtr = (unsigned char*) &data[k*3 + 2];
-        time_management_regs->calData = (data[k*3] & 0xfff)
-                + ( (dataPtr[0] & 0x3f) << 12);
-        time_management_regs->calData = (data[k*3 + 1] & 0xfff)
-                + ( (dataPtr[1] & 0x3f) << 12);
+        dataPtr = (unsigned char*) &data[ (k * BYTES_FOR_2_SAMPLES) + 2 ];
+        time_management_regs->calData = ( data[ k * BYTES_FOR_2_SAMPLES ]     & CAL_DATA_MASK )
+                + ( (dataPtr[0] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
+        time_management_regs->calData = ( data[(k * BYTES_FOR_2_SAMPLES) + 1] & CAL_DATA_MASK )
+                + ( (dataPtr[1] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
     }
 }
 
@@ -1426,11 +1434,11 @@ void setCalibrationReload( bool state)
 {
     if (state == true)
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000010;   // [0001 0000]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | BIT_CAL_RELOAD;   // [0001 0000]
     }
     else
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffef;   // [1110 1111]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & MASK_CAL_RELOAD;   // [1110 1111]
     }
 }
 
@@ -1439,11 +1447,11 @@ void setCalibrationEnable( bool state )
     // this bit drives the multiplexer
     if (state == true)
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000040;   // [0100 0000]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | BIT_CAL_ENABLE;   // [0100 0000]
     }
     else
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffbf; // [1011 1111]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & MASK_CAL_ENABLE; // [1011 1111]
     }
 }
 
@@ -1452,11 +1460,11 @@ void setCalibrationInterleaved( bool state )
     // this bit drives the multiplexer
     if (state == true)
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | 0x00000020;   // [0010 0000]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl | BIT_SET_INTERLEAVED;   // [0010 0000]
     }
     else
     {
-        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & 0xffffffdf; // [1101 1111]
+        time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & MASK_SET_INTERLEAVED; // [1101 1111]
     }
 }
 
@@ -1482,14 +1490,14 @@ void configureCalibration( bool interleaved )
     if ( interleaved == true )
     {
         setCalibrationInterleaved( true );
-        setCalibrationPrescaler( 0 );   // 25 MHz   => 25 000 000
-        setCalibrationDivisor(  26 );   //          => 240 384
+        setCalibrationPrescaler( 0 );                   // 25 MHz   => 25 000 000
+        setCalibrationDivisor( CAL_F_DIVISOR_INTER );   //          => 240 384
         setCalibrationDataInterleaved();
     }
     else
     {
-        setCalibrationPrescaler( 0 );   // 25 MHz   => 25 000 000
-        setCalibrationDivisor(  38 );   //          => 160 256 (39 - 1)
+        setCalibrationPrescaler( 0 );           // 25 MHz   => 25 000 000
+        setCalibrationDivisor( CAL_F_DIVISOR ); //          => 160 256 (39 - 1)
         setCalibrationData();
     }
 }
@@ -1509,20 +1517,20 @@ void update_last_TC_exe( ccsdsTelecommandPacket_t *TC, unsigned char * time )
 
     housekeeping_packet.hk_lfr_last_exe_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_exe_tc_id[1] = TC->packetID[1];
-    housekeeping_packet.hk_lfr_last_exe_tc_type[0] = 0x00;
+    housekeeping_packet.hk_lfr_last_exe_tc_type[0] = INIT_CHAR;
     housekeeping_packet.hk_lfr_last_exe_tc_type[1] = TC->serviceType;
-    housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = 0x00;
+    housekeeping_packet.hk_lfr_last_exe_tc_subtype[0] = INIT_CHAR;
     housekeeping_packet.hk_lfr_last_exe_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_exe_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_exe_tc_time[5] = time[5];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_0] = time[BYTE_0];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_1] = time[BYTE_1];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_2] = time[BYTE_2];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_3] = time[BYTE_3];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_4] = time[BYTE_4];
+    housekeeping_packet.hk_lfr_last_exe_tc_time[BYTE_5] = time[BYTE_5];
 
-    val = housekeeping_packet.hk_lfr_exe_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
+    val = (housekeeping_packet.hk_lfr_exe_tc_cnt[0] * CONST_256) + housekeeping_packet.hk_lfr_exe_tc_cnt[1];
     val++;
-    housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> 8);
+    housekeeping_packet.hk_lfr_exe_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_exe_tc_cnt[1] = (unsigned char) (val);
 }
 
@@ -1539,20 +1547,20 @@ void update_last_TC_rej(ccsdsTelecommandPacket_t *TC, unsigned char * time )
 
     housekeeping_packet.hk_lfr_last_rej_tc_id[0] = TC->packetID[0];
     housekeeping_packet.hk_lfr_last_rej_tc_id[1] = TC->packetID[1];
-    housekeeping_packet.hk_lfr_last_rej_tc_type[0] = 0x00;
+    housekeeping_packet.hk_lfr_last_rej_tc_type[0] = INIT_CHAR;
     housekeeping_packet.hk_lfr_last_rej_tc_type[1] = TC->serviceType;
-    housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = 0x00;
+    housekeeping_packet.hk_lfr_last_rej_tc_subtype[0] = INIT_CHAR;
     housekeeping_packet.hk_lfr_last_rej_tc_subtype[1] = TC->serviceSubType;
-    housekeeping_packet.hk_lfr_last_rej_tc_time[0] = time[0];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[1] = time[1];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[2] = time[2];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[3] = time[3];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[4] = time[4];
-    housekeeping_packet.hk_lfr_last_rej_tc_time[5] = time[5];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_0] = time[BYTE_0];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_1] = time[BYTE_1];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_2] = time[BYTE_2];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_3] = time[BYTE_3];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_4] = time[BYTE_4];
+    housekeeping_packet.hk_lfr_last_rej_tc_time[BYTE_5] = time[BYTE_5];
 
-    val = housekeeping_packet.hk_lfr_rej_tc_cnt[0] * 256 + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
+    val = (housekeeping_packet.hk_lfr_rej_tc_cnt[0] * CONST_256) + housekeeping_packet.hk_lfr_rej_tc_cnt[1];
     val++;
-    housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> 8);
+    housekeeping_packet.hk_lfr_rej_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_rej_tc_cnt[1] = (unsigned char) (val);
 }
 
@@ -1619,7 +1627,8 @@ void updateLFRCurrentMode( unsigned char requestedMode )
      */
 
     // update the local value of lfrCurrentMode with the value contained in the housekeeping_packet structure
-    housekeeping_packet.lfr_status_word[0] = (unsigned char) ((requestedMode << 4) + 0x0d);
+    housekeeping_packet.lfr_status_word[0] = (housekeeping_packet.lfr_status_word[0] & STATUS_WORD_LFR_MODE_MASK)
+            + (unsigned char) ( requestedMode << STATUS_WORD_LFR_MODE_SHIFT );
     lfrCurrentMode = requestedMode;
 }
 
@@ -1627,11 +1636,11 @@ void set_lfr_soft_reset( unsigned char value )
 {
     if (value == 1)
     {
-        time_management_regs->ctrl = time_management_regs->ctrl | 0x00000004; // [0100]
+        time_management_regs->ctrl = time_management_regs->ctrl | BIT_SOFT_RESET; // [0100]
     }
     else
     {
-        time_management_regs->ctrl = time_management_regs->ctrl & 0xfffffffb; // [1011]
+        time_management_regs->ctrl = time_management_regs->ctrl & MASK_SOFT_RESET; // [1011]
     }
 }
 

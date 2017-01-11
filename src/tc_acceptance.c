@@ -10,7 +10,7 @@
 #include "tc_acceptance.h"
 #include <stdio.h>
 
-unsigned int lookUpTableForCRC[256];
+unsigned int lookUpTableForCRC[CONST_256];
 
 //**********************
 // GENERAL USE FUNCTIONS
@@ -25,7 +25,7 @@ unsigned int Crc_opt( unsigned char D, unsigned int Chk)
      *
      */
 
-    return(((Chk << 8) & 0xff00)^lookUpTableForCRC [(((Chk >> 8)^D) & 0x00ff)]);
+    return(((Chk << SHIFT_1_BYTE) & BYTE0_MASK)^lookUpTableForCRC [(((Chk >> SHIFT_1_BYTE)^D) & BYTE1_MASK)]);
 }
 
 void initLookUpTableForCRC( void )
@@ -39,32 +39,32 @@ void initLookUpTableForCRC( void )
     unsigned int i;
     unsigned int tmp;
 
-    for (i=0; i<256; i++)
+    for (i=0; i<CONST_256; i++)
     {
         tmp = 0;
-        if((i & 1) != 0) {
-            tmp = tmp ^ 0x1021;
+        if((i & BIT_0) != 0) {
+            tmp = tmp ^ CONST_CRC_0;
         }
-        if((i & 2) != 0) {
-            tmp = tmp ^ 0x2042;
+        if((i & BIT_1) != 0) {
+            tmp = tmp ^ CONST_CRC_1;
         }
-        if((i & 4) != 0) {
-            tmp = tmp ^ 0x4084;
+        if((i & BIT_2) != 0) {
+            tmp = tmp ^ CONST_CRC_2;
         }
-        if((i & 8) != 0) {
-            tmp = tmp ^ 0x8108;
+        if((i & BIT_3) != 0) {
+            tmp = tmp ^ CONST_CRC_3;
         }
-        if((i & 16) != 0) {
-            tmp = tmp ^ 0x1231;
+        if((i & BIT_4) != 0) {
+            tmp = tmp ^ CONST_CRC_4;
         }
-        if((i & 32) != 0) {
-            tmp = tmp ^ 0x2462;
+        if((i & BIT_5) != 0) {
+            tmp = tmp ^ CONST_CRC_5;
         }
-        if((i & 64) != 0) {
-            tmp = tmp ^ 0x48c4;
+        if((i & BIT_6) != 0) {
+            tmp = tmp ^ CONST_CRC_6;
         }
-        if((i & 128) != 0) {
-            tmp = tmp ^ 0x9188;
+        if((i & BIT_7) != 0) {
+            tmp = tmp ^ CONST_CRC_7;
         }
         lookUpTableForCRC[i] = tmp;
     }
@@ -84,12 +84,12 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
 
     unsigned int Chk;
     int j;
-    Chk = 0xffff; // reset the syndrom to all ones
+    Chk = CRC_RESET; // reset the syndrom to all ones
     for (j=0; j<sizeOfData; j++) {
         Chk = Crc_opt(data[j], Chk);
     }
-    crcAsTwoBytes[0] = (unsigned char) (Chk >> 8);
-    crcAsTwoBytes[1] = (unsigned char) (Chk & 0x00ff);
+    crcAsTwoBytes[0] = (unsigned char) (Chk >> SHIFT_1_BYTE);
+    crcAsTwoBytes[1] = (unsigned char) (Chk & BYTE1_MASK);
 }
 
 //*********************
@@ -125,9 +125,10 @@ int tc_parser(ccsdsTelecommandPacket_t * TCPacket, unsigned int estimatedPacketL
     status = CCSDS_TM_VALID;
 
     // APID check *** APID on 2 bytes
-    pid             = ((TCPacket->packetID[0] & 0x07)<<4) + ( (TCPacket->packetID[1]>>4) & 0x0f );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
-    category        = (TCPacket->packetID[1] & 0x0f);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
-    packetLength    = (TCPacket->packetLength[0] * 256) + TCPacket->packetLength[1];
+    pid             = ((TCPacket->packetID[0] & BITS_PID_0) << SHIFT_4_BITS)
+            + ( (TCPacket->packetID[1] >> SHIFT_4_BITS) & BITS_PID_1 );   // PID = 11 *** 7 bits xxxxx210 7654xxxx
+    category        = (TCPacket->packetID[1] & BITS_CAT);         // PACKET_CATEGORY = 12 *** 4 bits xxxxxxxx xxxx3210
+    packetLength    = (TCPacket->packetLength[0] * CONST_256) + TCPacket->packetLength[1];
     packetType      = TCPacket->serviceType;
     packetSubtype   = TCPacket->serviceSubType;
     sid             = TCPacket->sourceID;
@@ -455,9 +456,9 @@ int tc_check_crc( ccsdsTelecommandPacket_t * TCPacket, unsigned int length, unsi
     unsigned char * CCSDSContent;
 
     CCSDSContent = (unsigned char*) TCPacket->packetID;
-    GetCRCAsTwoBytes(CCSDSContent, computed_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - 2); // 2 CRC bytes removed from the calculation of the CRC
+    GetCRCAsTwoBytes(CCSDSContent, computed_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - BYTES_PER_CRC); // 2 CRC bytes removed from the calculation of the CRC
 
-    if (computed_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -2]) {
+    if (computed_CRC[0] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET - BYTES_PER_CRC]) {
         status = INCOR_CHECKSUM;
     }
     else if (computed_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET -1]) {

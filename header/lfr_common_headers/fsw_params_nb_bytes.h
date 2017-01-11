@@ -1,9 +1,11 @@
-#ifndef TM_BYTE_POSITIONS_H
-#define TM_BYTE_POSITIONS_H
+#ifndef FSW_PARAMS_NB_BYTES_H
+#define FSW_PARAMS_NB_BYTES_H
 
 #define PACKET_POS_SEQUENCE_CNT             6   // 4 + 2
 #define PACKET_POS_PA_LFR_SID_PKT           20   // 4 + 16
 #define PACKET_POS_SERVICE_TYPE             11   // 4 + 7
+
+#define DATAFIELD_OFFSET                    10
 
 // TC_LFR_LOAD_COMMON_PAR
 
@@ -42,14 +44,18 @@
 #define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW4_F2       72
 #define BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS   77
 
+#define BITS_LFR_MODE   0x1e
+#define SHIFT_LFR_MODE  1
+#define BITS_TDS_MODE   0xf0
+#define SHIFT_TDS_MODE  4
+#define BITS_THR_MODE   0x0f
+#define BITS_BIA        0xfe
+
 // TC_LFR_ENTER_MODE
 #define BYTE_POS_CP_MODE_LFR_SET            11
 #define BYTE_POS_CP_LFR_ENTER_MODE_TIME     12
 
 //TC_LFR_LOAD_FBINS_MASK
-#define NB_FBINS_MASKS          12
-#define NB_BYTES_PER_FREQ_MASK  16
-#define NB_BYTES_PER_FBINS_MASK 4
 
 // TC_LFR_LOAD_FILTER_PAR
 #define DATAFIELD_POS_PA_RPW_SPARE8_2           0   // 8  bits
@@ -62,7 +68,10 @@
 
 // TC_LFR_LOAD_KCOEFFICIENTS
 #define NB_BYTES_PER_FLOAT 4
-#define DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY 0 // 10 - 10
-#define DATAFIELD_POS_SY_LFR_KCOEFF_1  2        // 12 - 10
+#define DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY   0   // 10 - 10
+#define DATAFIELD_POS_SY_LFR_KCOEFF_1  2            // 12 - 10
 
-#endif // TM_BYTE_POSITIONS_H
+// TM_LFR_KCOEFFICIENTS_DUMP
+#define BYTE_POS_KCOEFFICIENTS_PARAMETES        20
+
+#endif // FSW_PARAMS_NB_BYTES_H

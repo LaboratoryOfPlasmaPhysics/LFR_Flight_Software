@@ -42,13 +42,13 @@ ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)
 
     node = NULL;
     switch ( frequencyChannel ) {
-    case 0:
+    case CHANNELF0:
         node = ring_node_for_averaging_sm_f0;
         break;
-    case 1:
+    case CHANNELF1:
         node = ring_node_for_averaging_sm_f1;
         break;
-    case 2:
+    case CHANNELF2:
         node = ring_node_for_averaging_sm_f2;
         break;
     default:
@@ -67,18 +67,18 @@ void spectral_matrices_isr_f0( int statusReg )
     rtems_status_code status_code;
     ring_node *full_ring_node;
 
-    status = (unsigned char) (statusReg & 0x03);   // [0011] get the status_ready_matrix_f0_x bits
+    status = (unsigned char) (statusReg & BITS_STATUS_F0);   // [0011] get the status_ready_matrix_f0_x bits
 
     switch(status)
     {
     case 0:
         break;
-    case 3:
+    case BIT_READY_0_1:
         // UNEXPECTED VALUE
-        spectral_matrix_regs->status = 0x03;   // [0011]
+        spectral_matrix_regs->status = BIT_READY_0_1;   // [0011]
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
-    case 1:
+    case BIT_READY_0:
         full_ring_node = current_ring_node_sm_f0->previous;
         full_ring_node->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
         full_ring_node->fineTime = spectral_matrix_regs->f0_0_fine_time;
@@ -86,7 +86,7 @@ void spectral_matrices_isr_f0( int statusReg )
         spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
         nb_sm_f0 = nb_sm_f0 + 1;
-        if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
+        if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
         {
             ring_node_for_averaging_sm_f0 = full_ring_node;
             if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
@@ -95,9 +95,9 @@ void spectral_matrices_isr_f0( int statusReg )
             }
             nb_sm_f0 = 0;
         }
-        spectral_matrix_regs->status = 0x01;   // [0000 0001]
+        spectral_matrix_regs->status = BIT_READY_0;   // [0000 0001]
         break;
-    case 2:
+    case BIT_READY_1:
         full_ring_node = current_ring_node_sm_f0->previous;
         full_ring_node->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
         full_ring_node->fineTime = spectral_matrix_regs->f0_1_fine_time;
@@ -105,7 +105,7 @@ void spectral_matrices_isr_f0( int statusReg )
         spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
         nb_sm_f0 = nb_sm_f0 + 1;
-        if (nb_sm_f0 == NB_SM_BEFORE_AVF0)
+        if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
         {
             ring_node_for_averaging_sm_f0 = full_ring_node;
             if (rtems_event_send( Task_id[TASKID_AVF0], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
@@ -114,7 +114,7 @@ void spectral_matrices_isr_f0( int statusReg )
             }
             nb_sm_f0 = 0;
         }
-        spectral_matrix_regs->status = 0x02;   // [0000 0010]
+        spectral_matrix_regs->status = BIT_READY_1;   // [0000 0010]
         break;
     }
 }
@@ -125,18 +125,18 @@ void spectral_matrices_isr_f1( int statusReg )
     unsigned char status;
     ring_node *full_ring_node;
 
-    status = (unsigned char) ((statusReg & 0x0c) >> 2);   // [1100] get the status_ready_matrix_f1_x bits
+    status = (unsigned char) ((statusReg & BITS_STATUS_F1) >> SHIFT_2_BITS);   // [1100] get the status_ready_matrix_f1_x bits
 
     switch(status)
     {
     case 0:
         break;
-    case 3:
+    case BIT_READY_0_1:
         // UNEXPECTED VALUE
-        spectral_matrix_regs->status = 0xc0;   // [1100]
+        spectral_matrix_regs->status = BITS_STATUS_F1;   // [1100]
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
-    case 1:
+    case BIT_READY_0:
         full_ring_node = current_ring_node_sm_f1->previous;
         full_ring_node->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
         full_ring_node->fineTime = spectral_matrix_regs->f1_0_fine_time;
@@ -144,7 +144,7 @@ void spectral_matrices_isr_f1( int statusReg )
         spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
         nb_sm_f1 = nb_sm_f1 + 1;
-        if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
+        if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
         {
             ring_node_for_averaging_sm_f1 = full_ring_node;
             if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
@@ -153,9 +153,9 @@ void spectral_matrices_isr_f1( int statusReg )
             }
             nb_sm_f1 = 0;
         }
-        spectral_matrix_regs->status = 0x04;   // [0000 0100]
+        spectral_matrix_regs->status = BIT_STATUS_F1_0;   // [0000 0100]
         break;
-    case 2:
+    case BIT_READY_1:
         full_ring_node = current_ring_node_sm_f1->previous;
         full_ring_node->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
         full_ring_node->fineTime = spectral_matrix_regs->f1_1_fine_time;
@@ -163,7 +163,7 @@ void spectral_matrices_isr_f1( int statusReg )
         spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
         // if there are enough ring nodes ready, wake up an AVFx task
         nb_sm_f1 = nb_sm_f1 + 1;
-        if (nb_sm_f1 == NB_SM_BEFORE_AVF1)
+        if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
         {
             ring_node_for_averaging_sm_f1 = full_ring_node;
             if (rtems_event_send( Task_id[TASKID_AVF1], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
@@ -172,7 +172,7 @@ void spectral_matrices_isr_f1( int statusReg )
             }
             nb_sm_f1 = 0;
         }
-        spectral_matrix_regs->status = 0x08;   // [1000 0000]
+        spectral_matrix_regs->status = BIT_STATUS_F1_1;   // [1000 0000]
         break;
     }
 }
@@ -182,36 +182,36 @@ void spectral_matrices_isr_f2( int statusReg )
     unsigned char status;
     rtems_status_code status_code;
 
-    status = (unsigned char) ((statusReg & 0x30) >> 4);   // [0011 0000] get the status_ready_matrix_f2_x bits
+    status = (unsigned char) ((statusReg & BITS_STATUS_F2) >> SHIFT_4_BITS);   // [0011 0000] get the status_ready_matrix_f2_x bits
 
     switch(status)
     {
     case 0:
         break;
-    case 3:
+    case BIT_READY_0_1:
         // UNEXPECTED VALUE
-        spectral_matrix_regs->status = 0x30;   // [0011 0000]
+        spectral_matrix_regs->status = BITS_STATUS_F2;   // [0011 0000]
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_11 );
         break;
-    case 1:
+    case BIT_READY_0:
         ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
         current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
         ring_node_for_averaging_sm_f2->coarseTime = spectral_matrix_regs->f2_0_coarse_time;
         ring_node_for_averaging_sm_f2->fineTime = spectral_matrix_regs->f2_0_fine_time;
         spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->buffer_address;
-        spectral_matrix_regs->status = 0x10;   // [0001 0000]
+        spectral_matrix_regs->status = BIT_STATUS_F2_0;   // [0001 0000]
         if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
         {
             status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
         }
         break;
-    case 2:
+    case BIT_READY_1:
         ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
         current_ring_node_sm_f2 = current_ring_node_sm_f2->next;
         ring_node_for_averaging_sm_f2->coarseTime = spectral_matrix_regs->f2_1_coarse_time;
         ring_node_for_averaging_sm_f2->fineTime = spectral_matrix_regs->f2_1_fine_time;
         spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
-        spectral_matrix_regs->status = 0x20;   // [0010 0000]
+        spectral_matrix_regs->status = BIT_STATUS_F2_1;   // [0010 0000]
         if (rtems_event_send( Task_id[TASKID_AVF2], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL)
         {
             status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
@@ -233,14 +233,14 @@ void spectral_matrix_isr_error_handler( int statusReg )
 
     //***************************************************
     // the ASM status register is copied in the HK packet
-    housekeeping_packet.hk_lfr_vhdl_aa_sm = (unsigned char) (statusReg & 0x780 >> 7);    // [0111 1000 0000]
+    housekeeping_packet.hk_lfr_vhdl_aa_sm = (unsigned char) ((statusReg & BITS_HK_AA_SM) >> SHIFT_7_BITS);    // [0111 1000 0000]
 
-    if (statusReg & 0x7c0)    // [0111 1100 0000]
+    if (statusReg & BITS_SM_ERR)    // [0111 1100 0000]
     {
         status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_8 );
     }
 
-    spectral_matrix_regs->status = spectral_matrix_regs->status & 0x7c0;
+    spectral_matrix_regs->status = spectral_matrix_regs->status & BITS_SM_ERR;
 
 }
 
@@ -270,19 +270,19 @@ rtems_isr spectral_matrices_isr( rtems_vector_number vector )
     {   // a restart sequence has to be launched
         switch (state) {
         case WAIT_FOR_F2:
-            if ((statusReg & 0x30) != 0x00)   // [0011 0000] check the status_ready_matrix_f2_x bits
+            if ((statusReg & BITS_STATUS_F2) != INIT_CHAR)   // [0011 0000] check the status_ready_matrix_f2_x bits
             {
                 state = WAIT_FOR_F1;
             }
             break;
         case WAIT_FOR_F1:
-            if ((statusReg & 0x0c) != 0x00)   // [0000 1100] check the status_ready_matrix_f1_x bits
+            if ((statusReg & BITS_STATUS_F1) != INIT_CHAR)   // [0000 1100] check the status_ready_matrix_f1_x bits
             {
                 state = WAIT_FOR_F0;
             }
             break;
         case WAIT_FOR_F0:
-            if ((statusReg & 0x03) != 0x00)   // [0000 0011] check the status_ready_matrix_f0_x bits
+            if ((statusReg & BITS_STATUS_F0) != INIT_CHAR)   // [0000 0011] check the status_ready_matrix_f0_x bits
             {
                 state = WAIT_FOR_F2;
                 thisIsAnASMRestart = 0;
@@ -357,37 +357,37 @@ void BP_init_header( bp_packet *packet,
 {
     packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
     packet->protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    packet->reserved = 0x00;
+    packet->reserved = INIT_CHAR;
     packet->userApplication = CCSDS_USER_APP;
-    packet->packetID[0] = (unsigned char) (apid >> 8);
+    packet->packetID[0] = (unsigned char) (apid >> SHIFT_1_BYTE);
     packet->packetID[1] = (unsigned char) (apid);
     packet->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    packet->packetSequenceControl[1] = 0x00;
-    packet->packetLength[0] = (unsigned char) (packetLength >> 8);
+    packet->packetSequenceControl[1] = INIT_CHAR;
+    packet->packetLength[0] = (unsigned char) (packetLength >> SHIFT_1_BYTE);
     packet->packetLength[1] = (unsigned char) (packetLength);
     // DATA FIELD HEADER
-    packet->spare1_pusVersion_spare2 = 0x10;
+    packet->spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
     packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
     packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     packet->destinationID = TM_DESTINATION_ID_GROUND;
-    packet->time[0] = 0x00;
-    packet->time[1] = 0x00;
-    packet->time[2] = 0x00;
-    packet->time[3] = 0x00;
-    packet->time[4] = 0x00;
-    packet->time[5] = 0x00;
+    packet->time[BYTE_0] = INIT_CHAR;
+    packet->time[BYTE_1] = INIT_CHAR;
+    packet->time[BYTE_2] = INIT_CHAR;
+    packet->time[BYTE_3] = INIT_CHAR;
+    packet->time[BYTE_4] = INIT_CHAR;
+    packet->time[BYTE_5] = INIT_CHAR;
     // AUXILIARY DATA HEADER
     packet->sid = sid;
-    packet->pa_bia_status_info = 0x00;
-    packet->sy_lfr_common_parameters_spare = 0x00;
-    packet->sy_lfr_common_parameters = 0x00;
-    packet->acquisitionTime[0] = 0x00;
-    packet->acquisitionTime[1] = 0x00;
-    packet->acquisitionTime[2] = 0x00;
-    packet->acquisitionTime[3] = 0x00;
-    packet->acquisitionTime[4] = 0x00;
-    packet->acquisitionTime[5] = 0x00;
-    packet->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
+    packet->pa_bia_status_info = INIT_CHAR;
+    packet->sy_lfr_common_parameters_spare = INIT_CHAR;
+    packet->sy_lfr_common_parameters = INIT_CHAR;
+    packet->acquisitionTime[BYTE_0] = INIT_CHAR;
+    packet->acquisitionTime[BYTE_1] = INIT_CHAR;
+    packet->acquisitionTime[BYTE_2] = INIT_CHAR;
+    packet->acquisitionTime[BYTE_3] = INIT_CHAR;
+    packet->acquisitionTime[BYTE_4] = INIT_CHAR;
+    packet->acquisitionTime[BYTE_5] = INIT_CHAR;
+    packet->pa_lfr_bp_blk_nr[0] = INIT_CHAR;  // BLK_NR MSB
     packet->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
 
@@ -397,32 +397,32 @@ void BP_init_header_with_spare( bp_packet_with_spare *packet,
 {
     packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
     packet->protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    packet->reserved = 0x00;
+    packet->reserved = INIT_CHAR;
     packet->userApplication = CCSDS_USER_APP;
-    packet->packetID[0] = (unsigned char) (apid >> 8);
+    packet->packetID[0] = (unsigned char) (apid >> SHIFT_1_BYTE);
     packet->packetID[1] = (unsigned char) (apid);
     packet->packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    packet->packetSequenceControl[1] = 0x00;
-    packet->packetLength[0] = (unsigned char) (packetLength >> 8);
+    packet->packetSequenceControl[1] = INIT_CHAR;
+    packet->packetLength[0] = (unsigned char) (packetLength >> SHIFT_1_BYTE);
     packet->packetLength[1] = (unsigned char) (packetLength);
     // DATA FIELD HEADER
-    packet->spare1_pusVersion_spare2 = 0x10;
+    packet->spare1_pusVersion_spare2 = SPARE1_PUSVERSION_SPARE2;
     packet->serviceType = TM_TYPE_LFR_SCIENCE; // service type
     packet->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3; // service subtype
     packet->destinationID = TM_DESTINATION_ID_GROUND;
     // AUXILIARY DATA HEADER
     packet->sid = sid;
-    packet->pa_bia_status_info = 0x00;
-    packet->sy_lfr_common_parameters_spare = 0x00;
-    packet->sy_lfr_common_parameters = 0x00;
-    packet->time[0] = 0x00;
-    packet->time[0] = 0x00;
-    packet->time[0] = 0x00;
-    packet->time[0] = 0x00;
-    packet->time[0] = 0x00;
-    packet->time[0] = 0x00;
-    packet->source_data_spare = 0x00;
-    packet->pa_lfr_bp_blk_nr[0] = 0x00;  // BLK_NR MSB
+    packet->pa_bia_status_info = INIT_CHAR;
+    packet->sy_lfr_common_parameters_spare = INIT_CHAR;
+    packet->sy_lfr_common_parameters = INIT_CHAR;
+    packet->time[BYTE_0] = INIT_CHAR;
+    packet->time[BYTE_1] = INIT_CHAR;
+    packet->time[BYTE_2] = INIT_CHAR;
+    packet->time[BYTE_3] = INIT_CHAR;
+    packet->time[BYTE_4] = INIT_CHAR;
+    packet->time[BYTE_5] = INIT_CHAR;
+    packet->source_data_spare = INIT_CHAR;
+    packet->pa_lfr_bp_blk_nr[0] = INIT_CHAR;  // BLK_NR MSB
     packet->pa_lfr_bp_blk_nr[1] = blkNr;  // BLK_NR LSB
 }
 
@@ -477,7 +477,7 @@ void reset_sm_status( void )
     // ---------- 5 -- 4 -- 3 -- 2 -- 1 -- 0 --
     // ready bits f2_1 f2_0 f1_1 f1_1 f0_1 f0_0
 
-    spectral_matrix_regs->status = 0x7ff;   // [0111 1111 1111]
+    spectral_matrix_regs->status = BITS_STATUS_REG;   // [0111 1111 1111]
 }
 
 void reset_spectral_matrix_regs( void )
@@ -511,29 +511,30 @@ void reset_spectral_matrix_regs( void )
     spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
     spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
 
-    spectral_matrix_regs->matrix_length = 0xc8; // 25 * 128 / 16 = 200 = 0xc8
+    spectral_matrix_regs->matrix_length = DEFAULT_MATRIX_LENGTH; // 25 * 128 / 16 = 200 = 0xc8
 }
 
 void set_time( unsigned char *time, unsigned char * timeInBuffer )
 {
-    time[0] = timeInBuffer[0];
-    time[1] = timeInBuffer[1];
-    time[2] = timeInBuffer[2];
-    time[3] = timeInBuffer[3];
-    time[4] = timeInBuffer[6];
-    time[5] = timeInBuffer[7];
+    time[BYTE_0] = timeInBuffer[BYTE_0];
+    time[BYTE_1] = timeInBuffer[BYTE_1];
+    time[BYTE_2] = timeInBuffer[BYTE_2];
+    time[BYTE_3] = timeInBuffer[BYTE_3];
+    time[BYTE_4] = timeInBuffer[BYTE_6];
+    time[BYTE_5] = timeInBuffer[BYTE_7];
 }
 
 unsigned long long int get_acquisition_time( unsigned char *timePtr )
 {
     unsigned long long int acquisitionTimeAslong;
-    acquisitionTimeAslong = 0x00;
-    acquisitionTimeAslong = ( (unsigned long long int) (timePtr[0] & 0x7f) << 40 ) // [0111 1111] mask the synchronization bit
-            + ( (unsigned long long int) timePtr[1] << 32 )
-            + ( (unsigned long long int) timePtr[2] << 24 )
-            + ( (unsigned long long int) timePtr[3] << 16 )
-            + ( (unsigned long long int) timePtr[6] << 8  )
-            + ( (unsigned long long int) timePtr[7]       );
+    acquisitionTimeAslong = INIT_CHAR;
+    acquisitionTimeAslong =
+            ( (unsigned long long int) (timePtr[BYTE_0] & SYNC_BIT_MASK) << SHIFT_5_BYTES ) // [0111 1111] mask the synchronization bit
+            + ( (unsigned long long int) timePtr[BYTE_1] << SHIFT_4_BYTES )
+            + ( (unsigned long long int) timePtr[BYTE_2] << SHIFT_3_BYTES )
+            + ( (unsigned long long int) timePtr[BYTE_3] << SHIFT_2_BYTES )
+            + ( (unsigned long long int) timePtr[BYTE_6] << SHIFT_1_BYTE  )
+            + ( (unsigned long long int) timePtr[BYTE_7]       );
     return acquisitionTimeAslong;
 }
 
@@ -581,10 +582,10 @@ void extractReImVectors( float *inputASM, float *outputASM, unsigned int asmComp
     float im;
 
     for (i=0; i<NB_BINS_PER_SM; i++){
-        re = inputASM[ (asmComponent*NB_BINS_PER_SM) + i * 2    ];
-        im = inputASM[ (asmComponent*NB_BINS_PER_SM) + i * 2 + 1];
-        outputASM[ (asmComponent   *NB_BINS_PER_SM)  +  i] = re;
-        outputASM[ (asmComponent+1)*NB_BINS_PER_SM   +  i] = im;
+        re = inputASM[ (asmComponent*NB_BINS_PER_SM) + (i * SM_BYTES_PER_VAL)    ];
+        im = inputASM[ (asmComponent*NB_BINS_PER_SM) + (i * SM_BYTES_PER_VAL) + 1];
+        outputASM[ ( asmComponent   *NB_BINS_PER_SM) +  i] = re;
+        outputASM[ ((asmComponent+1)*NB_BINS_PER_SM) +  i] = im;
     }
 }
 
@@ -601,22 +602,22 @@ void copyReVectors( float *inputASM, float *outputASM, unsigned int asmComponent
 
 void ASM_patch( float *inputASM, float *outputASM )
 {
-    extractReImVectors( inputASM, outputASM, 1);    // b1b2
-    extractReImVectors( inputASM, outputASM, 3 );   // b1b3
-    extractReImVectors( inputASM, outputASM, 5 );   // b1e1
-    extractReImVectors( inputASM, outputASM, 7 );   // b1e2
-    extractReImVectors( inputASM, outputASM, 10 );  // b2b3
-    extractReImVectors( inputASM, outputASM, 12 );  // b2e1
-    extractReImVectors( inputASM, outputASM, 14 );  // b2e2
-    extractReImVectors( inputASM, outputASM, 17 );  // b3e1
-    extractReImVectors( inputASM, outputASM, 19 );  // b3e2
-    extractReImVectors( inputASM, outputASM, 22 );  // e1e2
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B1B2);    // b1b2
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B1B3 );   // b1b3
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B1E1 );   // b1e1
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B1E2 );   // b1e2
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B2B3 );   // b2b3
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B2E1 );   // b2e1
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B2E2 );   // b2e2
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B3E1 );   // b3e1
+    extractReImVectors( inputASM, outputASM, ASM_COMP_B3E2 );   // b3e2
+    extractReImVectors( inputASM, outputASM, ASM_COMP_E1E2 );   // e1e2
 
-    copyReVectors(inputASM, outputASM, 0 );    // b1b1
-    copyReVectors(inputASM, outputASM, 9 );    // b2b2
-    copyReVectors(inputASM, outputASM, 16);    // b3b3
-    copyReVectors(inputASM, outputASM, 21);    // e1e1
-    copyReVectors(inputASM, outputASM, 24);    // e2e2
+    copyReVectors(inputASM, outputASM, ASM_COMP_B1B1 );     // b1b1
+    copyReVectors(inputASM, outputASM, ASM_COMP_B2B2 );     // b2b2
+    copyReVectors(inputASM, outputASM, ASM_COMP_B3B3);      // b3b3
+    copyReVectors(inputASM, outputASM, ASM_COMP_E1E1);      // e1e1
+    copyReVectors(inputASM, outputASM, ASM_COMP_E2E2);      // e2e2
 }
 
 void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *compressed_spec_mat , float divider,
@@ -649,21 +650,20 @@ void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *co
         for( frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++ )
         {
             offsetCompressed =  // NO TIME OFFSET
-                    frequencyBin * NB_VALUES_PER_SM
+                    (frequencyBin * NB_VALUES_PER_SM)
                     + asmComponent;
             offsetASM =         // NO TIME OFFSET
-                    asmComponent * NB_BINS_PER_SM
+                    (asmComponent * NB_BINS_PER_SM)
                     + ASMIndexStart
-                    + frequencyBin * nbBinsToAverage;
+                    + (frequencyBin * nbBinsToAverage);
             offsetFBin = ASMIndexStart
-                    + frequencyBin * nbBinsToAverage;
+                    + (frequencyBin * nbBinsToAverage);
             compressed_spec_mat[ offsetCompressed ] = 0;
             for ( k = 0; k < nbBinsToAverage; k++ )
             {
                 fBinMask = getFBinMask( offsetFBin + k, channel );
-                compressed_spec_mat[offsetCompressed ] =
-                        ( compressed_spec_mat[ offsetCompressed ]
-                        + averaged_spec_mat[ offsetASM + k ] * fBinMask );
+                compressed_spec_mat[offsetCompressed ] = compressed_spec_mat[ offsetCompressed ]
+                        + (averaged_spec_mat[ offsetASM + k ] * fBinMask);
             }
             if (divider != 0)
             {
@@ -671,7 +671,7 @@ void ASM_compress_reorganize_and_divide_mask(float *averaged_spec_mat, float *co
             }
             else
             {
-                compressed_spec_mat[ offsetCompressed ] = 0.0;
+                compressed_spec_mat[ offsetCompressed ] = INIT_FLOAT;
             }
         }
     }
@@ -689,23 +689,23 @@ int getFBinMask( int index, unsigned char channel )
 
     switch(channel)
     {
-    case 0:
+    case CHANNELF0:
         sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f0;
         break;
-    case 1:
+    case CHANNELF1:
         sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f1;
         break;
-    case 2:
+    case CHANNELF2:
         sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f2;
         break;
     default:
         PRINTF("ERR *** in getFBinMask, wrong frequency channel")
     }
 
-    indexInChar = index >> 3;
-    indexInTheChar = index - indexInChar * 8;
+    indexInChar = index >> SHIFT_3_BITS;
+    indexInTheChar = index - (indexInChar * BITS_PER_BYTE);
 
-    fbin = (int) ((sy_lfr_fbins_fx_word1[ NB_BYTES_PER_FREQ_MASK - 1 - indexInChar] >> indexInTheChar) & 0x1);
+    fbin = (int) ((sy_lfr_fbins_fx_word1[ BYTES_PER_MASK - 1 - indexInChar] >> indexInTheChar) & 1);
 
     return fbin;
 }
@@ -722,21 +722,21 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
 
-    pasFilteringIsEnabled = (filterPar.spare_sy_lfr_pas_filter_enabled & 0x01); // [0000 0001]
+    pasFilteringIsEnabled = (filterPar.spare_sy_lfr_pas_filter_enabled & 1); // [0000 0001]
     ret = 1;
 
     // compute acquisition time from caoarseTime and fineTime
-    acquisitionTime = ( ((u_int64_t)coarseTime) <<  16 )
+    acquisitionTime = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
             + (u_int64_t) fineTime;
 
     // compute the timecode reference
-    timecodeReference = (u_int64_t) (floor( ((double) coarseTime) / ((double) filterPar.sy_lfr_pas_filter_modulus) )
-            * ((double) filterPar.sy_lfr_pas_filter_modulus)) * 65536;
+    timecodeReference = (u_int64_t) ( (floor( ((double) coarseTime) / ((double) filterPar.sy_lfr_pas_filter_modulus) )
+            * ((double) filterPar.sy_lfr_pas_filter_modulus)) * CONST_65536 );
 
     // compute the acquitionTime range
-    offsetInFineTime    = ((double) filterPar.sy_lfr_pas_filter_offset)   * 65536;
-    shiftInFineTime     = ((double) filterPar.sy_lfr_pas_filter_shift)    * 65536;
-    tBadInFineTime      = ((double) filterPar.sy_lfr_pas_filter_tbad)     * 65536;
+    offsetInFineTime    = ((double) filterPar.sy_lfr_pas_filter_offset)   * CONST_65536;
+    shiftInFineTime     = ((double) filterPar.sy_lfr_pas_filter_shift)    * CONST_65536;
+    tBadInFineTime      = ((double) filterPar.sy_lfr_pas_filter_tbad)     * CONST_65536;
 
     acquisitionTimeRangeMin =
             timecodeReference
@@ -785,8 +785,10 @@ void init_kcoeff_sbm_from_kcoeff_norm(float *input_kcoeff, float *output_kcoeff,
     {
         for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
         {
-            output_kcoeff[ (bin*NB_K_COEFF_PER_BIN + kcoeff)*2     ] = input_kcoeff[ bin*NB_K_COEFF_PER_BIN + kcoeff ];
-            output_kcoeff[ (bin*NB_K_COEFF_PER_BIN + kcoeff)*2 + 1 ] = input_kcoeff[ bin*NB_K_COEFF_PER_BIN + kcoeff ];
+            output_kcoeff[ ( ( bin * NB_K_COEFF_PER_BIN ) + kcoeff ) * SBM_COEFF_PER_NORM_COEFF     ]
+                    = input_kcoeff[ (bin*NB_K_COEFF_PER_BIN) + kcoeff ];
+            output_kcoeff[ ( ( bin * NB_K_COEFF_PER_BIN ) + kcoeff ) * SBM_COEFF_PER_NORM_COEFF + 1 ]
+                    = input_kcoeff[ (bin*NB_K_COEFF_PER_BIN) + kcoeff ];
         }
     }
 }

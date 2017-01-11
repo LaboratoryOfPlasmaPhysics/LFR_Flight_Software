@@ -9,6 +9,76 @@
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
 
+//*******
+// MACROS
+#ifdef PRINT_MESSAGES_ON_CONSOLE
+#define PRINTF(x) printf(x);
+#define PRINTF1(x,y) printf(x,y);
+#define PRINTF2(x,y,z) printf(x,y,z);
+#else
+#define PRINTF(x) ;
+#define PRINTF1(x,y) ;
+#define PRINTF2(x,y,z) ;
+#endif
+
+#ifdef BOOT_MESSAGES
+#define BOOT_PRINTF(x) printf(x);
+#define BOOT_PRINTF1(x,y) printf(x,y);
+#define BOOT_PRINTF2(x,y,z) printf(x,y,z);
+#else
+#define BOOT_PRINTF(x) ;
+#define BOOT_PRINTF1(x,y) ;
+#define BOOT_PRINTF2(x,y,z) ;
+#endif
+
+#ifdef DEBUG_MESSAGES
+#define DEBUG_PRINTF(x) printf(x);
+#define DEBUG_PRINTF1(x,y) printf(x,y);
+#define DEBUG_PRINTF2(x,y,z) printf(x,y,z);
+#else
+#define DEBUG_PRINTF(x) ;
+#define DEBUG_PRINTF1(x,y) ;
+#define DEBUG_PRINTF2(x,y,z) ;
+#endif
+
+#define CONST_65536 65536   // 2^16
+#define CONST_2048  2048    // 2^11
+#define CONST_512   512     // 2^9
+#define CONST_256   256     // 2^8
+#define CONST_128   128     // 2^7
+#define UINT8_MAX   255
+
+#define FLOAT_MSBYTE    0
+#define FLOAT_LSBYTE    3
+#define BITS_PER_BYTE   8
+#define INIT_FLOAT      0.
+#define INIT_CHAR       0x00
+#define INT8_ALL_F      0xff
+#define INT16_ALL_F     0xffff
+#define INT32_ALL_F     0xffffffff
+#define INT32_ALL_0     0x00000000
+#define SHIFT_1_BYTE    8
+#define SHIFT_2_BYTES   16
+#define SHIFT_3_BYTES   24
+#define SHIFT_4_BYTES   32
+#define SHIFT_5_BYTES   40
+#define SHIFT_2_BITS    2
+#define SHIFT_3_BITS    3
+#define SHIFT_4_BITS    4
+#define SHIFT_5_BITS    5
+#define SHIFT_6_BITS    6
+#define SHIFT_7_BITS    7
+#define BYTE_0  0
+#define BYTE_1  1
+#define BYTE_2  2
+#define BYTE_3  3
+#define BYTE_4  4
+#define BYTE_5  5
+#define BYTE_6  6
+#define BYTE_7  7
+#define BYTE0_MASK  0xff00
+#define BYTE1_MASK  0x00ff
+
 enum lfr_transition_type_t{
     TRANSITION_NOT_SPECIFIC,
     TRANSITION_NORM_TO_S1,
@@ -93,35 +163,56 @@ typedef struct ring_node
 #define RTEMS_EVENT_BURST_BP2_F1    RTEMS_EVENT_22
 #define RTEMS_EVENT_SWF_RESYNCH     RTEMS_EVENT_23
 
-//****************************
-// LFR DEFAULT MODE PARAMETERS
+//********************************************
+//********************************************
+// LFR PARAMETERS: DEFAULT, MIN AND MAX VALUES
+
 #define DEFAULT_LAST_VALID_TRANSITION_DATE 0xffffffff
+
 // COMMON
 #define DEFAULT_SY_LFR_COMMON0 0x00
 #define DEFAULT_SY_LFR_COMMON1 0x20 // default value bw sp0 sp1 r0 r1 r2 = 1 0 0 0 0 0
+
 // NORM
 #define DFLT_SY_LFR_N_SWF_L 2048 // nb sample
 #define DFLT_SY_LFR_N_SWF_P 300  // sec
+#define MIN_SY_LFR_N_SWF_P  22  // sec
 #define DFLT_SY_LFR_N_ASM_P 3600 // sec
 #define DFLT_SY_LFR_N_BP_P0 4    // sec
 #define DFLT_SY_LFR_N_BP_P1 20   // sec
 #define DFLT_SY_LFR_N_CWF_LONG_F3 0      // 0 => production of light continuous waveforms at f3
 #define MIN_DELTA_SNAPSHOT 16       // sec
+
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
 #define DEFAULT_SY_LFR_B_BP_P1 5    // sec
+
 // SBM1
-#define DEFAULT_SY_LFR_S1_BP_P0 1   // sec
+#define S1_BP_P0_SCALE          0.25
+#define DEFAULT_SY_LFR_S1_BP_P0 1   // 0.25 sec
 #define DEFAULT_SY_LFR_S1_BP_P1 1   // sec
+
 // SBM2
 #define DEFAULT_SY_LFR_S2_BP_P0 1   // sec
 #define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
+
 // ADDITIONAL PARAMETERS
 #define TIME_BETWEEN_TWO_SWF_PACKETS 30     // nb x 10 ms => 300 ms
 #define TIME_BETWEEN_TWO_CWF3_PACKETS 1000  // nb x 10 ms => 10 s
+
 // STATUS WORD
 #define DEFAULT_STATUS_WORD_BYTE0 0x0d  // [0000] [1] [101] mode 4 bits / SPW enabled 1 bit / state is run 3 bits
+
 #define DEFAULT_STATUS_WORD_BYTE1 0x00
+// TC_LFR_LOAD_FILTER_PAR
+#define MIN_PAS_FILTER_MODULUS  4
+#define MAX_PAS_FILTER_MODULUS  8
+#define MIN_PAS_FILTER_TBAD     0.0
+#define MAX_PAS_FILTER_TBAD     4.0
+#define MIN_PAS_FILTER_OFFSET   0
+#define MAX_PAS_FILTER_OFFSET   7
+#define MIN_PAS_FILTER_SHIFT    0.0
+#define MAX_PAS_FILTER_SHIFT    1.0
 //
 #define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
 #define SY_LFR_DPU_CONNECT_ATTEMPT 3
@@ -139,6 +230,7 @@ typedef struct ring_node
 
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f54  // PDB >= 0.1.28
+#define APB_OFFSET_VHDL_REV         0xb0
 #define REGS_ADDR_VHDL_VERSION      0x80000ff0
 
 #define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
@@ -163,6 +255,8 @@ typedef struct ring_node
 #define HK_PERIOD                           100     // 100 * 10ms => 1s
 #define AVGV_PERIOD                         6       //   6 * 10ms => 60ms (1 / 16 = 62.5ms)
 #define SY_LFR_TIME_SYN_TIMEOUT_in_ticks    200     // 200 * 10 ms = 2 s
+#define HK_SYNC_WAIT                        10      //  10 * 10 ms = 100 ms
+#define SPW_LINK_WAIT                       10      //  10 * 10 ms = 100 ms
 #define TIMECODE_TIMER_TIMEOUT              120     // 120 * 10 ms = 1.2 s
 #define TIMECODE_TIMER_TIMEOUT_INIT         200     // 200 * 10 ms = 2.0 s
 #define TIMECODE_MASK                       0x3f    // 0011 1111
@@ -175,6 +269,8 @@ typedef struct ring_node
 
 //******
 // RTEMS
+#define STACK_SIZE_MULT 2
+
 #define TASKID_AVGV 0
 #define TASKID_RECV 1
 #define TASKID_ACTN 2
@@ -234,38 +330,6 @@ typedef struct ring_node
 #define QUEUE_PRC1 3
 #define QUEUE_PRC2 4
 
-//*******
-// MACROS
-#ifdef PRINT_MESSAGES_ON_CONSOLE
-#define PRINTF(x) printf(x);
-#define PRINTF1(x,y) printf(x,y);
-#define PRINTF2(x,y,z) printf(x,y,z);
-#else
-#define PRINTF(x) ;
-#define PRINTF1(x,y) ;
-#define PRINTF2(x,y,z) ;
-#endif
-
-#ifdef BOOT_MESSAGES
-#define BOOT_PRINTF(x) printf(x);
-#define BOOT_PRINTF1(x,y) printf(x,y);
-#define BOOT_PRINTF2(x,y,z) printf(x,y,z);
-#else
-#define BOOT_PRINTF(x) ;
-#define BOOT_PRINTF1(x,y) ;
-#define BOOT_PRINTF2(x,y,z) ;
-#endif
-
-#ifdef DEBUG_MESSAGES
-#define DEBUG_PRINTF(x) printf(x);
-#define DEBUG_PRINTF1(x,y) printf(x,y);
-#define DEBUG_PRINTF2(x,y,z) printf(x,y,z);
-#else
-#define DEBUG_PRINTF(x) ;
-#define DEBUG_PRINTF1(x,y) ;
-#define DEBUG_PRINTF2(x,y,z) ;
-#endif
-
 #define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 
 struct param_local_str{
@@ -275,10 +339,15 @@ struct param_local_str{
     unsigned int local_sbm2_nb_cwf_max;
 };
 
+//************
+// FBINS MASKS
+
+#define BYTES_PER_FBINS_MASK 16
+
 typedef struct {
-    unsigned char merged_fbins_mask_f0[16];
-    unsigned char merged_fbins_mask_f1[16];
-    unsigned char merged_fbins_mask_f2[16];
+    unsigned char merged_fbins_mask_f0[BYTES_PER_FBINS_MASK];
+    unsigned char merged_fbins_mask_f1[BYTES_PER_FBINS_MASK];
+    unsigned char merged_fbins_mask_f2[BYTES_PER_FBINS_MASK];
 } fbins_masks_t;
 
 #define DEFAULT_SY_LFR_PAS_FILTER_ENABLED   0
@@ -297,6 +366,7 @@ typedef struct{
     float sy_lfr_sc_rw_delta_f;
 } filterPar_t;
 
+#define NB_ACQUISITION_DURATION 3
 #define ACQUISITION_DURATION_F0 683     // 256 / 24576 * 65536
 #define ACQUISITION_DURATION_F1 4096    // 256 /  4096 * 65536
 #define ACQUISITION_DURATION_F2 65536   // 256 /   256 * 65536

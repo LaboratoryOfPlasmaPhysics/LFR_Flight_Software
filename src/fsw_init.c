@@ -164,16 +164,16 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc0();
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
-    pa_bia_status_info = 0x00;
-    cp_rpw_sc_rw_f_flags = 0x00;
-    cp_rpw_sc_rw1_f1 = 0.0;
-    cp_rpw_sc_rw1_f2 = 0.0;
-    cp_rpw_sc_rw2_f1 = 0.0;
-    cp_rpw_sc_rw2_f2 = 0.0;
-    cp_rpw_sc_rw3_f1 = 0.0;
-    cp_rpw_sc_rw3_f2 = 0.0;
-    cp_rpw_sc_rw4_f1 = 0.0;
-    cp_rpw_sc_rw4_f2 = 0.0;
+    pa_bia_status_info = INIT_CHAR;
+    cp_rpw_sc_rw_f_flags = INIT_CHAR;
+    cp_rpw_sc_rw1_f1 = INIT_FLOAT;
+    cp_rpw_sc_rw1_f2 = INIT_FLOAT;
+    cp_rpw_sc_rw2_f1 = INIT_FLOAT;
+    cp_rpw_sc_rw2_f2 = INIT_FLOAT;
+    cp_rpw_sc_rw3_f1 = INIT_FLOAT;
+    cp_rpw_sc_rw3_f2 = INIT_FLOAT;
+    cp_rpw_sc_rw4_f1 = INIT_FLOAT;
+    cp_rpw_sc_rw4_f2 = INIT_FLOAT;
     // initialize filtering parameters
     filterPar.spare_sy_lfr_pas_filter_enabled   = DEFAULT_SY_LFR_PAS_FILTER_ENABLED;
     filterPar.sy_lfr_pas_filter_modulus         = DEFAULT_SY_LFR_PAS_FILTER_MODULUS;
@@ -319,17 +319,17 @@ void init_local_mode_parameters( void )
 
     for(i = 0; i<SEQ_CNT_NB_DEST_ID; i++)
     {
-        sequenceCounters_TC_EXE[i] = 0x00;
-        sequenceCounters_TM_DUMP[i] = 0x00;
+        sequenceCounters_TC_EXE[i] = INIT_CHAR;
+        sequenceCounters_TM_DUMP[i] = INIT_CHAR;
     }
-    sequenceCounters_SCIENCE_NORMAL_BURST = 0x00;
-    sequenceCounters_SCIENCE_SBM1_SBM2 =    0x00;
-    sequenceCounterHK =                     TM_PACKET_SEQ_CTRL_STANDALONE << 8;
+    sequenceCounters_SCIENCE_NORMAL_BURST = INIT_CHAR;
+    sequenceCounters_SCIENCE_SBM1_SBM2 =    INIT_CHAR;
+    sequenceCounterHK =                     TM_PACKET_SEQ_CTRL_STANDALONE << TM_PACKET_SEQ_SHIFT;
 }
 
 void reset_local_time( void )
 {
-    time_management_regs->ctrl = time_management_regs->ctrl | 0x02;  // [0010] software reset, coarse time = 0x80000000
+    time_management_regs->ctrl = time_management_regs->ctrl | VAL_SOFTWARE_RESET;  // [0010] software reset, coarse time = 0x80000000
 }
 
 void create_names( void ) // create all names for tasks and queues
@@ -403,7 +403,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // SEND
     {
         status = rtems_task_create(
-            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE * 2,
+            Task_name[TASKID_SEND], TASK_PRIORITY_SEND, RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT,
             RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SEND]
         );
@@ -446,7 +446,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // PRC0
     {
         status = rtems_task_create(
-            Task_name[TASKID_PRC0], TASK_PRIORITY_PRC0, RTEMS_MINIMUM_STACK_SIZE * 2,
+            Task_name[TASKID_PRC0], TASK_PRIORITY_PRC0, RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT,
             RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC0]
         );
@@ -462,7 +462,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // PRC1
     {
         status = rtems_task_create(
-            Task_name[TASKID_PRC1], TASK_PRIORITY_PRC1, RTEMS_MINIMUM_STACK_SIZE * 2,
+            Task_name[TASKID_PRC1], TASK_PRIORITY_PRC1, RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT,
             RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC1]
         );
@@ -478,7 +478,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
     if (status == RTEMS_SUCCESSFUL) // PRC2
     {
         status = rtems_task_create(
-            Task_name[TASKID_PRC2], TASK_PRIORITY_PRC2, RTEMS_MINIMUM_STACK_SIZE * 2,
+            Task_name[TASKID_PRC2], TASK_PRIORITY_PRC2, RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT,
             RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC2]
         );
@@ -913,10 +913,10 @@ void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], u
     // BUFFER ADDRESS
     for(i=0; i<nbNodes; i++)
     {
-        ring[i].coarseTime = 0xffffffff;
-        ring[i].fineTime = 0xffffffff;
-        ring[i].sid = 0x00;
-        ring[i].status = 0x00;
+        ring[i].coarseTime  = INT32_ALL_F;
+        ring[i].fineTime    = INT32_ALL_F;
+        ring[i].sid         = INIT_CHAR;
+        ring[i].status      = INIT_CHAR;
         ring[i].buffer_address  = (int) &buffer[ i * bufferSize ];
     }
 

@@ -1,8 +1,23 @@
 #ifndef CCSDS_TYPES_H_INCLUDED
 #define CCSDS_TYPES_H_INCLUDED
 
+#define TXBDCNT     50
+#define RXBDCNT     10
+#define TXDATASIZE  4096
+#define TXHDRSIZE   34
+#define RXPKTSIZE   200
+
+#define SPW_RXSIZE  228
+#define SPW_TXDSIZE 4096
+#define SPW_TXHSIZE 34
+
+#define BITS_PID_0  0x07
+#define BITS_PID_1  0x0f
+#define BITS_CAT    0x0f
+
 #define CCSDS_PROTOCOLE_EXTRA_BYTES 4
-#define CCSDS_TC_TM_PACKET_OFFSET 7
+#define CCSDS_TC_TM_PACKET_OFFSET   7
+#define PROTID_RES_APP              3
 #define CCSDS_TELEMETRY_HEADER_LENGTH (16+4)
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH (10+4)
@@ -26,6 +41,7 @@
 #define APID_TM_SCIENCE_SBM1_SBM2       0x0cfc // PID 79 CAT 12
 #define APID_TM_PARAMETER_DUMP          0x0cc6 // PID 76 CAT 6
 #define APID_TM_KCOEFFICIENTS_DUMP      0x0cc6 // PID 76 CAT 6
+
 // PACKET CAT
 #define TM_PACKET_CAT_TC_EXE    1
 #define TM_PACKET_CAT_HK        4
@@ -37,7 +53,11 @@
 #define TM_PACKET_SEQ_CTRL_FIRST        0x40    // [0100 0000]
 #define TM_PACKET_SEQ_CTRL_LAST         0x80    // [1000 0000]
 #define TM_PACKET_SEQ_CTRL_STANDALONE   0xc0    // [1100 0000]
-#define TM_PACKET_SEQ_CNT_DEFAULT       0x00    // [0000 0000]
+#define TM_PACKET_SEQ_CNT_DEFAULT       0x00    // [0000 0000]         
+#define TM_PACKET_SEQ_SHIFT             8
+#define SEQ_CNT_MAX                     16383
+#define SEQ_CNT_NB_DEST_ID              12
+#define SEQ_CNT_MASK                    0x3fff  // [0011 1111 1111 1111]
 
 // DESTINATION ID
 #define TM_DESTINATION_ID_GROUND                    0
@@ -194,9 +214,6 @@ enum apid_destid{
     AOCS,
     RPW_INTERNAL
 };
-// SEQUENCE COUNTERS
-#define SEQ_CNT_MAX 16383
-#define SEQ_CNT_NB_DEST_ID 12
 
 // TM SID
 #define SID_HK 1
@@ -278,7 +295,8 @@ enum apid_destid{
 #define TM_LEN_SCI_CWF_336  (4060 - CCSDS_TC_TM_PACKET_OFFSET)    // 336 * 12 + 28
 #define TM_LEN_SCI_CWF_672  (4060 - CCSDS_TC_TM_PACKET_OFFSET)    // 672 * 6  + 28
 //
-#define DEFAULT_PKTCNT      0x07
+#define PKTCNT_SWF          0x07
+#define PKTCNT_ASM          3
 #define BLK_NR_304          0x0130
 #define BLK_NR_224          0x00e0
 #define BLK_NR_CWF          0x0150  // 336
@@ -293,24 +311,48 @@ enum TM_TYPE{
     TM_LFR_PAR_DUMP
 };
 
+#define BYTES_PER_PACKETID  2
+#define BYTES_PER_SEQ_CTRL  2
+#define BYTES_PER_PKT_LEN   2
+#define BYTES_PER_TIME      6
+#define BYTES_PER_ERR_CODE  2
+#define BYTES_PER_STA_WRD   2
+#define BYTES_PER_CRC       2
+#define BYTES_PER_BLKNR     2
+#define BYTES_PER_SW_VER    4
+#define BYTES_PER_VHD_VER   3
+#define COUNTER_2_BYTES     2
+#define BYTES_PER_TYPE      2
+#define BYTES_PER_SUBTYPE   2
+#define BYTES_PER_ADDR      4
+#define BYTES_PER_TEMP      2
+#define BYTES_PER_V         2
+#define BYTES_PER_WORD      4
+#define BYTES_PER_MASK      16
+#define BYTES_PER_MASKS_SET 48  // 4 * 4 * 3
+
+#define COUNTER_2_BYTES     2
+#define PARAM_2_BYTES       2
+#define PARAM_4_BYTES       4
+
 typedef struct {
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
 } Packet_TM_LFR_TC_EXE_SUCCESS_t;
 
 typedef struct {
@@ -319,19 +361,19 @@ typedef struct {
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
-    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
+    unsigned char tc_failure_code[BYTES_PER_ERR_CODE];
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char byte_position;
@@ -344,19 +386,19 @@ typedef struct {
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
-    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
+    unsigned char tc_failure_code[BYTES_PER_ERR_CODE];
     unsigned char tc_service;
     unsigned char tc_subtype;
     unsigned char lfr_status_word[2];
@@ -368,19 +410,19 @@ typedef struct {
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
-    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
+    unsigned char tc_failure_code[BYTES_PER_ERR_CODE];
     unsigned char tc_service;
     unsigned char tc_subtype;
 } Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t;
@@ -391,19 +433,19 @@ typedef struct {
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
-    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
+    unsigned char tc_failure_code[BYTES_PER_ERR_CODE];
     unsigned char tc_service;
     unsigned char tc_subtype;
 } Packet_TM_LFR_TC_EXE_ERROR_t;
@@ -414,25 +456,25 @@ typedef struct {
     unsigned char reserved;
     unsigned char userApplication;
     // PACKET HEADER
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     //
-    unsigned char telecommand_pkt_id[2];
-    unsigned char pkt_seq_control[2];
-    unsigned char tc_failure_code[2];
+    unsigned char telecommand_pkt_id[BYTES_PER_PACKETID];
+    unsigned char pkt_seq_control[BYTES_PER_SEQ_CTRL];
+    unsigned char tc_failure_code[BYTES_PER_ERR_CODE];
     unsigned char tc_service;
     unsigned char tc_subtype;
-    unsigned char pkt_len_rcv_value[2];
-    unsigned char pkt_datafieldsize_cnt[2];
-    unsigned char rcv_crc[2];
-    unsigned char computed_crc[2];
+    unsigned char pkt_len_rcv_value[BYTES_PER_PKT_LEN];
+    unsigned char pkt_datafieldsize_cnt[BYTES_PER_PKT_LEN];
+    unsigned char rcv_crc[BYTES_PER_CRC];
+    unsigned char computed_crc[BYTES_PER_CRC];
 } Packet_TM_LFR_TC_EXE_CORRUPTED_t;
 
 typedef struct {
@@ -440,15 +482,15 @@ typedef struct {
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
@@ -456,31 +498,36 @@ typedef struct {
     unsigned char sy_lfr_common_parameters;
     unsigned char pktCnt;
     unsigned char pktNr;
-    unsigned char acquisitionTime[6];
-    unsigned char blkNr[2];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
+    unsigned char blkNr[BYTES_PER_BLKNR];
 } Header_TM_LFR_SCIENCE_SWF_t;
+
+//*******************
+// TM_LFR_SCIENCE_CWF
+
+#define CWF_BLK_SIZE    6
 
 typedef struct {
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY DATA HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
-    unsigned char acquisitionTime[6];
-    unsigned char blkNr[2];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
+    unsigned char blkNr[BYTES_PER_BLKNR];
 } Header_TM_LFR_SCIENCE_CWF_t;
 
 typedef struct {
@@ -488,15 +535,15 @@ typedef struct {
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
@@ -504,8 +551,8 @@ typedef struct {
     unsigned char sy_lfr_common_parameters;
     unsigned char pa_lfr_pkt_cnt_asm;
     unsigned char pa_lfr_pkt_nr_asm;
-    unsigned char acquisitionTime[6];
-    unsigned char pa_lfr_asm_blk_nr[2];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
+    unsigned char pa_lfr_asm_blk_nr[BYTES_PER_BLKNR];
 } Header_TM_LFR_SCIENCE_ASM_t;
 
 typedef struct {
@@ -513,23 +560,23 @@ typedef struct {
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
-    unsigned char acquisitionTime[6];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
     unsigned char source_data_spare;
-    unsigned char pa_lfr_bp_blk_nr[2];
+    unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
 } Header_TM_LFR_SCIENCE_BP_with_spare_t;
 
 typedef struct {
@@ -537,22 +584,22 @@ typedef struct {
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     // AUXILIARY HEADER
     unsigned char sid;
     unsigned char pa_bia_status_info;
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
-    unsigned char acquisitionTime[6];
-    unsigned char pa_lfr_bp_blk_nr[2];
+    unsigned char acquisitionTime[BYTES_PER_TIME];
+    unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
 } Header_TM_LFR_SCIENCE_BP_t;
 
 typedef struct {
@@ -560,9 +607,9 @@ typedef struct {
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char headerFlag_pusVersion_Ack;
     unsigned char serviceType;
@@ -571,26 +618,47 @@ typedef struct {
     unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
 } ccsdsTelecommandPacket_t;
 
+//**********
+//**********
+// TM_LFR_HK
+
+#define STATUS_WORD_SC_POTENTIAL_FLAG_BIT   0x40    // [0100 0000]
+#define STATUS_WORD_SC_POTENTIAL_FLAG_MASK  0xbf    // [1011 1111]
+#define STATUS_WORD_PAS_FILTER_ENABLED_BIT  0x20    // [0010 0000]
+#define STATUS_WORD_PAS_FILTER_ENABLED_MASK 0xdf    // [1101 1111]
+#define STATUS_WORD_WATCHDOG_BIT            0x10    // [0001 0000]
+#define STATUS_WORD_WATCHDOG_MASK           0xef    // [1110 1111]
+#define STATUS_WORD_CALIB_BIT               0x08    // [0000 1000]
+#define STATUS_WORD_CALIB_MASK              0xf7    // [1111 0111]
+#define STATUS_WORD_RESET_CAUSE_BITS        0x07    // [0000 0111]
+#define STATUS_WORD_RESET_CAUSE_MASK        0xf8    // [1111 1000]
+#define STATUS_WORD_LINK_STATE_BITS         0x03    // [0000 0111]
+#define STATUS_WORD_LINK_STATE_MASK         0xf8    // [1111 1000]
+#define STATUS_WORD_LFR_MODE_SHIFT          4
+#define STATUS_WORD_LFR_MODE_BITS           0xf0    // [1111 0000]
+#define STATUS_WORD_LFR_MODE_MASK           0x0f    // [0000 1111]
+#define STATUS_WORD_0_DEFAULT               0x0d    // [0000 1101]
+
 typedef struct {
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     unsigned char sid;
 
     //**************
     // HK PARAMETERS
-    unsigned char lfr_status_word[2];
-    unsigned char lfr_sw_version[4];
-    unsigned char lfr_fpga_version[3];
+    unsigned char lfr_status_word[BYTES_PER_STA_WRD];
+    unsigned char lfr_sw_version[BYTES_PER_SW_VER];
+    unsigned char lfr_fpga_version[BYTES_PER_VHD_VER];
     // ressource statistics
     unsigned char hk_lfr_cpu_load;
     unsigned char hk_lfr_cpu_load_max;
@@ -606,45 +674,45 @@ typedef struct {
     unsigned char hk_lfr_q_p2_fifo_size_max;
     unsigned char hk_lfr_q_p2_fifo_size;
     // tc statistics
-    unsigned char hk_lfr_update_info_tc_cnt[2];
-    unsigned char hk_lfr_update_time_tc_cnt[2];
-    unsigned char hk_lfr_exe_tc_cnt[2];
-    unsigned char hk_lfr_rej_tc_cnt[2];
-    unsigned char hk_lfr_last_exe_tc_id[2];
-    unsigned char hk_lfr_last_exe_tc_type[2];
-    unsigned char hk_lfr_last_exe_tc_subtype[2];
-    unsigned char hk_lfr_last_exe_tc_time[6];
-    unsigned char hk_lfr_last_rej_tc_id[2];
-    unsigned char hk_lfr_last_rej_tc_type[2];
-    unsigned char hk_lfr_last_rej_tc_subtype[2];
-    unsigned char hk_lfr_last_rej_tc_time[6];
+    unsigned char hk_lfr_update_info_tc_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_update_time_tc_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_exe_tc_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_rej_tc_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_last_exe_tc_id[BYTES_PER_PACKETID];
+    unsigned char hk_lfr_last_exe_tc_type[BYTES_PER_TYPE];
+    unsigned char hk_lfr_last_exe_tc_subtype[BYTES_PER_SUBTYPE];
+    unsigned char hk_lfr_last_exe_tc_time[BYTES_PER_TIME];
+    unsigned char hk_lfr_last_rej_tc_id[BYTES_PER_PACKETID];
+    unsigned char hk_lfr_last_rej_tc_type[BYTES_PER_TYPE];
+    unsigned char hk_lfr_last_rej_tc_subtype[BYTES_PER_SUBTYPE];
+    unsigned char hk_lfr_last_rej_tc_time[BYTES_PER_TIME];
     // anomaly statistics
-    unsigned char hk_lfr_le_cnt[2];
-    unsigned char hk_lfr_me_cnt[2];
-    unsigned char hk_lfr_he_cnt[2];
-    unsigned char hk_lfr_last_er_rid[2];
+    unsigned char hk_lfr_le_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_me_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_he_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_last_er_rid[COUNTER_2_BYTES];
     unsigned char hk_lfr_last_er_code;
-    unsigned char hk_lfr_last_er_time[6];
+    unsigned char hk_lfr_last_er_time[BYTES_PER_TIME];
     // vhdl_blk_status
     unsigned char hk_lfr_vhdl_aa_sm;
     unsigned char hk_lfr_vhdl_fft_sr;
     unsigned char hk_lfr_vhdl_cic_hk;
     unsigned char hk_lfr_vhdl_iir_cal;
     // spacewire_if_statistics
-    unsigned char hk_lfr_dpu_spw_pkt_rcv_cnt[2];
-    unsigned char hk_lfr_dpu_spw_pkt_sent_cnt[2];
+    unsigned char hk_lfr_dpu_spw_pkt_rcv_cnt[COUNTER_2_BYTES];
+    unsigned char hk_lfr_dpu_spw_pkt_sent_cnt[COUNTER_2_BYTES];
     unsigned char hk_lfr_dpu_spw_tick_out_cnt;
     unsigned char hk_lfr_dpu_spw_last_timc;
     // ahb error statistics
-    unsigned char hk_lfr_last_fail_addr[4];
+    unsigned char hk_lfr_last_fail_addr[BYTES_PER_ADDR];
     // temperatures
-    unsigned char hk_lfr_temp_scm[2];
-    unsigned char hk_lfr_temp_pcb[2];
-    unsigned char hk_lfr_temp_fpga[2];
+    unsigned char hk_lfr_temp_scm[BYTES_PER_TEMP];
+    unsigned char hk_lfr_temp_pcb[BYTES_PER_TEMP];
+    unsigned char hk_lfr_temp_fpga[BYTES_PER_TEMP];
     // spacecraft potential
-    unsigned char hk_lfr_sc_v_f3[2];
-    unsigned char hk_lfr_sc_e1_f3[2];
-    unsigned char hk_lfr_sc_e2_f3[2];
+    unsigned char hk_lfr_sc_v_f3[BYTES_PER_V];
+    unsigned char hk_lfr_sc_e1_f3[BYTES_PER_V];
+    unsigned char hk_lfr_sc_e2_f3[BYTES_PER_V];
     // lfr common parameters
     unsigned char sy_lfr_common_parameters_spare;
     unsigned char sy_lfr_common_parameters;
@@ -678,20 +746,27 @@ typedef struct {
     unsigned char hk_lfr_sc_rw_f_flags;
 } Packet_TM_LFR_HK_t;
 
+//***************
+//***************
+// PARAMETER_DUMP
+
+#define BIT_PAS_FILTER_ENABLED  0x01
+#define BIT_CWF_LONG_F3         0x01
+
 typedef struct {
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     unsigned char sid;
 
     //******************
@@ -701,9 +776,9 @@ typedef struct {
 
     //******************
     // NORMAL PARAMETERS
-    unsigned char sy_lfr_n_swf_l[2];
-    unsigned char sy_lfr_n_swf_p[2];
-    unsigned char sy_lfr_n_asm_p[2];
+    unsigned char sy_lfr_n_swf_l[PARAM_2_BYTES];
+    unsigned char sy_lfr_n_swf_p[PARAM_2_BYTES];
+    unsigned char sy_lfr_n_asm_p[PARAM_2_BYTES];
     unsigned char sy_lfr_n_bp_p0;
     unsigned char sy_lfr_n_bp_p1;
     unsigned char sy_lfr_n_cwf_long_f3;
@@ -727,72 +802,83 @@ typedef struct {
     // mask F0
     union{
         struct{
-            unsigned char f0_word1[4];
-            unsigned char f0_word2[4];
-            unsigned char f0_word3[4];
-            unsigned char f0_word4[4];
+            unsigned char f0_word1[BYTES_PER_WORD];
+            unsigned char f0_word2[BYTES_PER_WORD];
+            unsigned char f0_word3[BYTES_PER_WORD];
+            unsigned char f0_word4[BYTES_PER_WORD];
             // mask F1
-            unsigned char f1_word1[4];
-            unsigned char f1_word2[4];
-            unsigned char f1_word3[4];
-            unsigned char f1_word4[4];
+            unsigned char f1_word1[BYTES_PER_WORD];
+            unsigned char f1_word2[BYTES_PER_WORD];
+            unsigned char f1_word3[BYTES_PER_WORD];
+            unsigned char f1_word4[BYTES_PER_WORD];
             // mask F2
-            unsigned char f2_word1[4];
-            unsigned char f2_word2[4];
-            unsigned char f2_word3[4];
-            unsigned char f2_word4[4];
+            unsigned char f2_word1[BYTES_PER_WORD];
+            unsigned char f2_word2[BYTES_PER_WORD];
+            unsigned char f2_word3[BYTES_PER_WORD];
+            unsigned char f2_word4[BYTES_PER_WORD];
         } fx;
-        unsigned char raw[ 4 * 4 * 3 ];
+        unsigned char raw[ BYTES_PER_MASKS_SET ];
     } sy_lfr_fbins;
 
     // PAS FILTER PARAMETERS
     unsigned char pa_rpw_spare8_2;
     unsigned char spare_sy_lfr_pas_filter_enabled;
     unsigned char sy_lfr_pas_filter_modulus;
-    unsigned char sy_lfr_pas_filter_tbad[4];
+    unsigned char sy_lfr_pas_filter_tbad[PARAM_4_BYTES];
     unsigned char sy_lfr_pas_filter_offset;
-    unsigned char sy_lfr_pas_filter_shift[4];
-    unsigned char sy_lfr_sc_rw_delta_f[4];
+    unsigned char sy_lfr_pas_filter_shift[PARAM_4_BYTES];
+    unsigned char sy_lfr_sc_rw_delta_f[PARAM_4_BYTES];
 
     // LFR_RW_MASK
     union{
         struct{
-            unsigned char f0_word1[4];
-            unsigned char f0_word2[4];
-            unsigned char f0_word3[4];
-            unsigned char f0_word4[4];
+            unsigned char f0_word1[BYTES_PER_WORD];
+            unsigned char f0_word2[BYTES_PER_WORD];
+            unsigned char f0_word3[BYTES_PER_WORD];
+            unsigned char f0_word4[BYTES_PER_WORD];
             // mask F1
-            unsigned char f1_word1[4];
-            unsigned char f1_word2[4];
-            unsigned char f1_word3[4];
-            unsigned char f1_word4[4];
+            unsigned char f1_word1[BYTES_PER_WORD];
+            unsigned char f1_word2[BYTES_PER_WORD];
+            unsigned char f1_word3[BYTES_PER_WORD];
+            unsigned char f1_word4[BYTES_PER_WORD];
             // mask F2
-            unsigned char f2_word1[4];
-            unsigned char f2_word2[4];
-            unsigned char f2_word3[4];
-            unsigned char f2_word4[4];
+            unsigned char f2_word1[BYTES_PER_WORD];
+            unsigned char f2_word2[BYTES_PER_WORD];
+            unsigned char f2_word3[BYTES_PER_WORD];
+            unsigned char f2_word4[BYTES_PER_WORD];
         } fx;
-        unsigned char raw[ 4 * 4 * 3 ];
+        unsigned char raw[ BYTES_PER_MASKS_SET ];
     } sy_lfr_rw_mask;
 
     // SPARE
     unsigned char pa_rpw_spare8_3;
 } Packet_TM_LFR_PARAMETER_DUMP_t;
 
+//**************************
+//**************************
+// TM_LFR_KCOEFFICIENTS_DUMP
+
+#define KCOEFF_BLK_NR_PKT1  30
+#define KCOEFF_BLK_NR_PKT2  6
+#define KCOEFF_BLK_SIZE     130
+#define KCOEFF_PKTCNT       2
+#define PKTNR_1             1
+#define PKTNR_2             2
+
 typedef struct {
     unsigned char targetLogicalAddress;
     unsigned char protocolIdentifier;
     unsigned char reserved;
     unsigned char userApplication;
-    unsigned char packetID[2];
-    unsigned char packetSequenceControl[2];
-    unsigned char packetLength[2];
+    unsigned char packetID[BYTES_PER_PACKETID];
+    unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
+    unsigned char packetLength[BYTES_PER_PKT_LEN];
     // DATA FIELD HEADER
     unsigned char spare1_pusVersion_spare2;
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char destinationID;
-    unsigned char time[6];
+    unsigned char time[BYTES_PER_TIME];
     unsigned char sid;
     unsigned char pkt_cnt;
     unsigned char pkt_nr;

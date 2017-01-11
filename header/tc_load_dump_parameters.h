@@ -11,7 +11,25 @@
 #include "basic_parameters_params.h"
 #include "avf0_prc0.h"
 
-#define FLOAT_EQUAL_ZERO 0.001
+#define FLOAT_EQUAL_ZERO    0.001
+#define NB_BINS_TO_REMOVE   3
+#define FI_INTERVAL_COEFF   0.285
+#define BIN_MIN             0
+#define BIN_MAX             127
+#define DELTAF_F0           96.
+#define DELTAF_F1           16.
+#define DELTAF_F2           1.
+
+#define BIT_RW1_F1  0x80
+#define BIT_RW1_F2  0x40
+#define BIT_RW2_F1  0x20
+#define BIT_RW2_F2  0x10
+#define BIT_RW3_F1  0x08
+#define BIT_RW3_F2  0x04
+#define BIT_RW4_F1  0x02
+#define BIT_RW4_F2  0x01
+
+#define SBM_KCOEFF_PER_NORM_KCOEFF  2
 
 extern unsigned short sequenceCounterParameterDump;
 extern unsigned short sequenceCounters_TM_DUMP[];

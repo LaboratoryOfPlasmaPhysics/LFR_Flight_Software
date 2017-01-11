@@ -25,7 +25,7 @@ void timer_configure(unsigned char timer, unsigned int clock_divider,
     rtems_status_code status;
     rtems_isr_entry old_isr_handler;
 
-    gptimer_regs->timer[timer].ctrl = 0x00;  // reset the control register
+    gptimer_regs->timer[timer].ctrl = INIT_CHAR;  // reset the control register
 
     status = rtems_interrupt_catch( timer_isr, interrupt_level, &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
     if (status!=RTEMS_SUCCESSFUL)
@@ -45,11 +45,11 @@ void timer_start(unsigned char timer)
      *
      */
 
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000004;  // LD load value from the reload register
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000001;  // EN enable the timer
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000002;  // RS restart
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000008;  // IE interrupt enable
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_CLEAR_IRQ;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_LD;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_EN;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_RS;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_IE;
 }
 
 void timer_stop(unsigned char timer)
@@ -61,9 +61,9 @@ void timer_stop(unsigned char timer)
      *
      */
 
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xfffffffe;  // EN enable the timer
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & 0xffffffef;  // IE interrupt enable
-    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | 0x00000010;  // clear pending IRQ if any
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & GPTIMER_EN_MASK;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl & GPTIMER_IE_MASK;
+    gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_CLEAR_IRQ;
 }
 
 void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider)
@@ -127,7 +127,7 @@ void watchdog_reload(void)
      *
      */
 
-    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000004;  // LD load value from the reload register
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | GPTIMER_LD;
 }
 
 void watchdog_start(void)
@@ -141,10 +141,10 @@ void watchdog_start(void)
 
     LEON_Clear_interrupt( IRQ_GPTIMER_WATCHDOG );
 
-    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000010;  // clear pending IRQ if any
-    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000004;  // LD load value from the reload register
-    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000001;  // EN enable the timer
-    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | 0x00000008;  // IE interrupt enable
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | GPTIMER_CLEAR_IRQ;
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | GPTIMER_LD;
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | GPTIMER_EN;
+    gptimer_regs->timer[TIMER_WATCHDOG].ctrl = gptimer_regs->timer[TIMER_WATCHDOG].ctrl | GPTIMER_IE;
 
     LEON_Unmask_interrupt( IRQ_GPTIMER_WATCHDOG );
 
@@ -210,14 +210,14 @@ rtems_task load_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period( watchdog_period_id, WATCHDOG_PERIOD );
         watchdog_reload();
         i = i + 1;
-        if ( i == 10 )
+        if ( i == WATCHDOG_LOOP_PRINTF )
         {
             i = 0;
             j = j + 1;
             PRINTF1("%d\n", j)
         }
 #ifdef DEBUG_WATCHDOG
-        if (j == 3 )
+        if (j == WATCHDOG_LOOP_DEBUG )
         {
             status = rtems_task_delete(RTEMS_SELF);
         }
@@ -261,15 +261,15 @@ rtems_task hous_task(rtems_task_argument argument)
     DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
     while(period_status.state != RATE_MONOTONIC_EXPIRED )   // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
     {
-        if ((time_management_regs->coarse_time & 0x80000000) == 0x00000000) // check time synchronization
+        if ((time_management_regs->coarse_time & VAL_LFR_SYNCHRONIZED) == INT32_ALL_0) // check time synchronization
         {
             break;  // break if LFR is synchronized
         }
         else
         {
             status = rtems_rate_monotonic_get_status( HK_id, &period_status );
-//            sched_yield();
-            status = rtems_task_wake_after( 10 );        // wait SY_LFR_DPU_CONNECT_TIMEOUT 100 ms = 10 * 10 ms
+
+            status = rtems_task_wake_after( HK_SYNC_WAIT );        // wait HK_SYNCH_WAIT 100 ms = 10 * 10 ms
         }
     }
     status = rtems_rate_monotonic_cancel(HK_id);
@@ -284,16 +284,16 @@ rtems_task hous_task(rtems_task_argument argument)
             spare_status = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_6 );
         }
         else {
-            housekeeping_packet.packetSequenceControl[0] = (unsigned char) (sequenceCounterHK >> 8);
-            housekeeping_packet.packetSequenceControl[1] = (unsigned char) (sequenceCounterHK     );
+            housekeeping_packet.packetSequenceControl[BYTE_0] = (unsigned char) (sequenceCounterHK >> SHIFT_1_BYTE);
+            housekeeping_packet.packetSequenceControl[BYTE_1] = (unsigned char) (sequenceCounterHK     );
             increment_seq_counter( &sequenceCounterHK );
 
-            housekeeping_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-            housekeeping_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-            housekeeping_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-            housekeeping_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
-            housekeeping_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-            housekeeping_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+            housekeeping_packet.time[BYTE_0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+            housekeeping_packet.time[BYTE_1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+            housekeeping_packet.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+            housekeeping_packet.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+            housekeeping_packet.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+            housekeeping_packet.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
 
             spacewire_update_hk_lfr_link_state( &housekeeping_packet.lfr_status_word[0] );
 
@@ -436,22 +436,22 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[15] = {"in DUMB *** default",                                            // RTEMS_EVENT_0
-                        "in DUMB *** timecode_irq_handler",                                     // RTEMS_EVENT_1
-                        "in DUMB *** f3 buffer changed",                                        // RTEMS_EVENT_2
-                        "in DUMB *** in SMIQ *** Error sending event to AVF0",                  // RTEMS_EVENT_3
-                        "in DUMB *** spectral_matrices_isr *** Error sending event to SMIQ",    // RTEMS_EVENT_4
-                        "in DUMB *** waveforms_simulator_isr",                                  // RTEMS_EVENT_5
-                        "VHDL SM *** two buffers f0 ready",                                     // RTEMS_EVENT_6
-                        "ready for dump",                                                       // RTEMS_EVENT_7
-                        "VHDL ERR *** spectral matrix",                                         // RTEMS_EVENT_8
-                        "tick",                                                                 // RTEMS_EVENT_9
-                        "VHDL ERR *** waveform picker",                                         // RTEMS_EVENT_10
-                        "VHDL ERR *** unexpected ready matrix values",                          // RTEMS_EVENT_11
-                        "WATCHDOG timer",                                                       // RTEMS_EVENT_12
-                        "TIMECODE timer",                                                       // RTEMS_EVENT_13
-                        "TIMECODE ISR"                                                          // RTEMS_EVENT_14
-    };
+    char *DumbMessages[DUMB_MESSAGE_NB] = {DUMB_MESSAGE_0,  // RTEMS_EVENT_0
+                                           DUMB_MESSAGE_1,  // RTEMS_EVENT_1
+                                           DUMB_MESSAGE_2,  // RTEMS_EVENT_2
+                                           DUMB_MESSAGE_3,  // RTEMS_EVENT_3
+                                           DUMB_MESSAGE_4,  // RTEMS_EVENT_4
+                                           DUMB_MESSAGE_5,  // RTEMS_EVENT_5
+                                           DUMB_MESSAGE_6,  // RTEMS_EVENT_6
+                                           DUMB_MESSAGE_7,  // RTEMS_EVENT_7
+                                           DUMB_MESSAGE_8,  // RTEMS_EVENT_8
+                                           DUMB_MESSAGE_9,  // RTEMS_EVENT_9
+                                           DUMB_MESSAGE_10, // RTEMS_EVENT_10
+                                           DUMB_MESSAGE_11, // RTEMS_EVENT_11
+                                           DUMB_MESSAGE_12, // RTEMS_EVENT_12
+                                           DUMB_MESSAGE_13, // RTEMS_EVENT_13
+                                           DUMB_MESSAGE_14  // RTEMS_EVENT_14
+                                          };
 
     BOOT_PRINTF("in DUMB *** \n")
 
@@ -462,23 +462,23 @@ rtems_task dumb_task( rtems_task_argument unused )
                             | RTEMS_EVENT_14,
                             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut =  (unsigned int) event_out;
-        for ( i=0; i<32; i++)
+        for ( i=0; i<NB_RTEMS_EVENTS; i++)
         {
-            if ( ((intEventOut >> i) & 0x0001) != 0)
+            if ( ((intEventOut >> i) & 1) != 0)
             {
                 coarse_time = time_management_regs->coarse_time;
                 fine_time = time_management_regs->fine_time;
-                if (i==12)
+                if (i==EVENT_12)
                 {
-                    PRINTF1("%s\n", DumbMessages[12])
+                    PRINTF1("%s\n", DUMB_MESSAGE_12)
                 }
-                if (i==13)
+                if (i==EVENT_13)
                 {
-                    PRINTF1("%s\n", DumbMessages[13])
+                    PRINTF1("%s\n", DUMB_MESSAGE_13)
                 }
-                if (i==14)
+                if (i==EVENT_14)
                 {
-                    PRINTF1("%s\n", DumbMessages[1])
+                    PRINTF1("%s\n", DUMB_MESSAGE_1)
                 }
             }
         }
@@ -504,18 +504,18 @@ void init_housekeeping_parameters( void )
 
     for(i = 0; i< sizeOfHK; i++)
     {
-        parameters[i] = 0x00;
+        parameters[i] = INIT_CHAR;
     }
 
     housekeeping_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
     housekeeping_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     housekeeping_packet.reserved = DEFAULT_RESERVED;
     housekeeping_packet.userApplication = CCSDS_USER_APP;
-    housekeeping_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
+    housekeeping_packet.packetID[0] = (unsigned char) (APID_TM_HK >> SHIFT_1_BYTE);
     housekeeping_packet.packetID[1] = (unsigned char) (APID_TM_HK);
     housekeeping_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
     housekeeping_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
+    housekeeping_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> SHIFT_1_BYTE);
     housekeeping_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
     housekeeping_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     housekeeping_packet.serviceType = TM_TYPE_HK;
@@ -529,13 +529,13 @@ void init_housekeeping_parameters( void )
     // init software version
     housekeeping_packet.lfr_sw_version[0] = SW_VERSION_N1;
     housekeeping_packet.lfr_sw_version[1] = SW_VERSION_N2;
-    housekeeping_packet.lfr_sw_version[2] = SW_VERSION_N3;
-    housekeeping_packet.lfr_sw_version[3] = SW_VERSION_N4;
+    housekeeping_packet.lfr_sw_version[BYTE_2] = SW_VERSION_N3;
+    housekeeping_packet.lfr_sw_version[BYTE_3] = SW_VERSION_N4;
     // init fpga version
     parameters = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
-    housekeeping_packet.lfr_fpga_version[0] = parameters[1]; // n1
-    housekeeping_packet.lfr_fpga_version[1] = parameters[2]; // n2
-    housekeeping_packet.lfr_fpga_version[2] = parameters[3]; // n3
+    housekeeping_packet.lfr_fpga_version[BYTE_0] = parameters[BYTE_1]; // n1
+    housekeeping_packet.lfr_fpga_version[BYTE_1] = parameters[BYTE_2]; // n2
+    housekeeping_packet.lfr_fpga_version[BYTE_2] = parameters[BYTE_3]; // n3
 
     housekeeping_packet.hk_lfr_q_sd_fifo_size = MSG_QUEUE_COUNT_SEND;
     housekeeping_packet.hk_lfr_q_rv_fifo_size = MSG_QUEUE_COUNT_RECV;
@@ -555,8 +555,8 @@ void increment_seq_counter( unsigned short *packetSequenceControl )
     unsigned short segmentation_grouping_flag;
     unsigned short sequence_cnt;
 
-    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << 8;   // keep bits 7 downto 6
-    sequence_cnt                = (*packetSequenceControl) & 0x3fff;    // [0011 1111 1111 1111]
+    segmentation_grouping_flag  = TM_PACKET_SEQ_CTRL_STANDALONE << SHIFT_1_BYTE;   // keep bits 7 downto 6
+    sequence_cnt                = (*packetSequenceControl) & SEQ_CNT_MASK;    // [0011 1111 1111 1111]
 
     if ( sequence_cnt < SEQ_CNT_MAX)
     {
@@ -576,11 +576,11 @@ void getTime( unsigned char *time)
      *
      */
 
-    time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
+    time[0] = (unsigned char) (time_management_regs->coarse_time>>SHIFT_3_BYTES);
+    time[1] = (unsigned char) (time_management_regs->coarse_time>>SHIFT_2_BYTES);
+    time[2] = (unsigned char) (time_management_regs->coarse_time>>SHIFT_1_BYTE);
     time[3] = (unsigned char) (time_management_regs->coarse_time);
-    time[4] = (unsigned char) (time_management_regs->fine_time>>8);
+    time[4] = (unsigned char) (time_management_regs->fine_time>>SHIFT_1_BYTE);
     time[5] = (unsigned char) (time_management_regs->fine_time);
 }
 
@@ -591,7 +591,7 @@ unsigned long long int getTimeAsUnsignedLongLongInt( )
      */
     unsigned long long int time;
 
-    time = ( (unsigned long long int) (time_management_regs->coarse_time & 0x7fffffff) << 16 )
+    time = ( (unsigned long long int) (time_management_regs->coarse_time & COARSE_TIME_MASK) << SHIFT_2_BYTES )
             + time_management_regs->fine_time;
 
     return time;
@@ -608,43 +608,43 @@ void send_dumb_hk( void )
     dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
     dummy_hk_packet.reserved = DEFAULT_RESERVED;
     dummy_hk_packet.userApplication = CCSDS_USER_APP;
-    dummy_hk_packet.packetID[0] = (unsigned char) (APID_TM_HK >> 8);
+    dummy_hk_packet.packetID[0] = (unsigned char) (APID_TM_HK >> SHIFT_1_BYTE);
     dummy_hk_packet.packetID[1] = (unsigned char) (APID_TM_HK);
     dummy_hk_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
     dummy_hk_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> 8);
+    dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> SHIFT_1_BYTE);
     dummy_hk_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
     dummy_hk_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
     dummy_hk_packet.serviceType = TM_TYPE_HK;
     dummy_hk_packet.serviceSubType = TM_SUBTYPE_HK;
     dummy_hk_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    dummy_hk_packet.time[0] = (unsigned char) (time_management_regs->coarse_time>>24);
-    dummy_hk_packet.time[1] = (unsigned char) (time_management_regs->coarse_time>>16);
-    dummy_hk_packet.time[2] = (unsigned char) (time_management_regs->coarse_time>>8);
-    dummy_hk_packet.time[3] = (unsigned char) (time_management_regs->coarse_time);
-    dummy_hk_packet.time[4] = (unsigned char) (time_management_regs->fine_time>>8);
-    dummy_hk_packet.time[5] = (unsigned char) (time_management_regs->fine_time);
+    dummy_hk_packet.time[0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
+    dummy_hk_packet.time[1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
+    dummy_hk_packet.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
+    dummy_hk_packet.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
+    dummy_hk_packet.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
+    dummy_hk_packet.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
     dummy_hk_packet.sid = SID_HK;
 
     // init status word
-    dummy_hk_packet.lfr_status_word[0] = 0xff;
-    dummy_hk_packet.lfr_status_word[1] = 0xff;
+    dummy_hk_packet.lfr_status_word[0] = INT8_ALL_F;
+    dummy_hk_packet.lfr_status_word[1] = INT8_ALL_F;
     // init software version
     dummy_hk_packet.lfr_sw_version[0] = SW_VERSION_N1;
     dummy_hk_packet.lfr_sw_version[1] = SW_VERSION_N2;
-    dummy_hk_packet.lfr_sw_version[2] = SW_VERSION_N3;
-    dummy_hk_packet.lfr_sw_version[3] = SW_VERSION_N4;
+    dummy_hk_packet.lfr_sw_version[BYTE_2] = SW_VERSION_N3;
+    dummy_hk_packet.lfr_sw_version[BYTE_3] = SW_VERSION_N4;
     // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + 0xb0);
-    dummy_hk_packet.lfr_fpga_version[0] = parameters[1]; // n1
-    dummy_hk_packet.lfr_fpga_version[1] = parameters[2]; // n2
-    dummy_hk_packet.lfr_fpga_version[2] = parameters[3]; // n3
+    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + APB_OFFSET_VHDL_REV);
+    dummy_hk_packet.lfr_fpga_version[BYTE_0] = parameters[BYTE_1]; // n1
+    dummy_hk_packet.lfr_fpga_version[BYTE_1] = parameters[BYTE_2]; // n2
+    dummy_hk_packet.lfr_fpga_version[BYTE_2] = parameters[BYTE_3]; // n3
 
     parameters = (unsigned char *) &dummy_hk_packet.hk_lfr_cpu_load;
 
-    for (i=0; i<100; i++)
+    for (i=0; i<(BYTE_POS_HK_REACTION_WHEELS_FREQUENCY - BYTE_POS_HK_LFR_CPU_LOAD); i++)
     {
-        parameters[i] = 0xff;
+        parameters[i] = INT8_ALL_F;
     }
 
     get_message_queue_id_send( &queue_id );
@@ -668,12 +668,12 @@ void get_temperatures( unsigned char *temperatures )
     temp_pcb_ptr =  (unsigned char *) &time_management_regs->temp_pcb;
     temp_fpga_ptr = (unsigned char *) &time_management_regs->temp_fpga;
 
-    temperatures[0] = temp_scm_ptr[2];
-    temperatures[1] = temp_scm_ptr[3];
-    temperatures[2] = temp_pcb_ptr[2];
-    temperatures[3] = temp_pcb_ptr[3];
-    temperatures[4] = temp_fpga_ptr[2];
-    temperatures[5] = temp_fpga_ptr[3];
+    temperatures[ BYTE_0 ] = temp_scm_ptr[ BYTE_2 ];
+    temperatures[ BYTE_1 ] = temp_scm_ptr[ BYTE_3 ];
+    temperatures[ BYTE_2 ] = temp_pcb_ptr[ BYTE_2 ];
+    temperatures[ BYTE_3 ] = temp_pcb_ptr[ BYTE_3 ];
+    temperatures[ BYTE_4 ] = temp_fpga_ptr[ BYTE_2 ];
+    temperatures[ BYTE_5 ] = temp_fpga_ptr[ BYTE_3 ];
 }
 
 void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
@@ -686,12 +686,12 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     e1_ptr = (unsigned char *) &waveform_picker_regs->e1;
     e2_ptr = (unsigned char *) &waveform_picker_regs->e2;
 
-    spacecraft_potential[0] = v_ptr[2];
-    spacecraft_potential[1] = v_ptr[3];
-    spacecraft_potential[2] = e1_ptr[2];
-    spacecraft_potential[3] = e1_ptr[3];
-    spacecraft_potential[4] = e2_ptr[2];
-    spacecraft_potential[5] = e2_ptr[3];
+    spacecraft_potential[ BYTE_0 ] = v_ptr[ BYTE_2 ];
+    spacecraft_potential[ BYTE_1 ] = v_ptr[ BYTE_3 ];
+    spacecraft_potential[ BYTE_2 ] = e1_ptr[ BYTE_2 ];
+    spacecraft_potential[ BYTE_3 ] = e1_ptr[ BYTE_3 ];
+    spacecraft_potential[ BYTE_4 ] = e2_ptr[ BYTE_2 ];
+    spacecraft_potential[ BYTE_5 ] = e2_ptr[ BYTE_3 ];
 }
 
 void get_cpu_load( unsigned char *resource_statistics )
@@ -710,7 +710,7 @@ void get_cpu_load( unsigned char *resource_statistics )
     }
 
     // CPU_LOAD_AVE
-    resource_statistics[2] = 0;
+    resource_statistics[BYTE_2] = 0;
 
 #ifndef PRINT_TASK_STATISTICS
         rtems_cpu_usage_reset();
@@ -722,11 +722,13 @@ void set_hk_lfr_sc_potential_flag( bool state )
 {
     if (state == true)
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x40;   // [0100 0000]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_SC_POTENTIAL_FLAG_BIT;   // [0100 0000]
     }
     else
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xbf;   // [1011 1111]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_SC_POTENTIAL_FLAG_MASK;   // [1011 1111]
     }
 }
 
@@ -734,11 +736,13 @@ void set_sy_lfr_pas_filter_enabled( bool state )
 {
     if (state == true)
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x20;   // [0010 0000]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_SC_POTENTIAL_FLAG_BIT;   // [0010 0000]
     }
     else
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xdf;   // [1101 1111]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_SC_POTENTIAL_FLAG_MASK;   // [1101 1111]
     }
 }
 
@@ -746,11 +750,13 @@ void set_sy_lfr_watchdog_enabled( bool state )
 {
     if (state == true)
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x10;   // [0001 0000]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_WATCHDOG_BIT;   // [0001 0000]
     }
     else
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xef;   // [1110 1111]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_WATCHDOG_MASK;   // [1110 1111]
     }
 }
 
@@ -758,20 +764,23 @@ void set_hk_lfr_calib_enable( bool state )
 {
     if (state == true)
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] | 0x08;   // [0000 1000]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_CALIB_BIT;   // [0000 1000]
     }
     else
     {
-        housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf7;   // [1111 0111]
+        housekeeping_packet.lfr_status_word[1] =
+                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_CALIB_MASK;   // [1111 0111]
     }
 }
 
 void set_hk_lfr_reset_cause( enum lfr_reset_cause_t lfr_reset_cause )
 {
-    housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1] & 0xf8; // [1111 1000]
+    housekeeping_packet.lfr_status_word[1] =
+            housekeeping_packet.lfr_status_word[1] & STATUS_WORD_RESET_CAUSE_MASK; // [1111 1000]
 
     housekeeping_packet.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1]
-            | (lfr_reset_cause & 0x07 );   // [0000 0111]
+            | (lfr_reset_cause & STATUS_WORD_RESET_CAUSE_BITS );   // [0000 0111]
 
 }
 
@@ -799,7 +808,7 @@ void hk_lfr_le_update( void )
     hk_lfr_le_t new_hk_lfr_le;
     unsigned int counter;
 
-    counter = ((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256 + housekeeping_packet.hk_lfr_le_cnt[1];
+    counter = (((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256) + housekeeping_packet.hk_lfr_le_cnt[1];
 
     // DPU
     new_hk_lfr_le.dpu_spw_parity    = housekeeping_packet.hk_lfr_dpu_spw_parity;
@@ -822,21 +831,21 @@ void hk_lfr_le_update( void )
 
     // update the le counter
     // DPU
-    increment_hk_counter( new_hk_lfr_le.dpu_spw_parity,    old_hk_lfr_le.dpu_spw_parity,       counter );
-    increment_hk_counter( new_hk_lfr_le.dpu_spw_disconnect,old_hk_lfr_le.dpu_spw_disconnect,   counter );
-    increment_hk_counter( new_hk_lfr_le.dpu_spw_escape,    old_hk_lfr_le.dpu_spw_escape,       counter );
-    increment_hk_counter( new_hk_lfr_le.dpu_spw_credit,    old_hk_lfr_le.dpu_spw_credit,       counter );
-    increment_hk_counter( new_hk_lfr_le.dpu_spw_write_sync,old_hk_lfr_le.dpu_spw_write_sync,   counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_parity,    old_hk_lfr_le.dpu_spw_parity,       &counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_disconnect,old_hk_lfr_le.dpu_spw_disconnect,   &counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_escape,    old_hk_lfr_le.dpu_spw_escape,       &counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_credit,    old_hk_lfr_le.dpu_spw_credit,       &counter );
+    increment_hk_counter( new_hk_lfr_le.dpu_spw_write_sync,old_hk_lfr_le.dpu_spw_write_sync,   &counter );
     // TIMECODE
-    increment_hk_counter( new_hk_lfr_le.timecode_erroneous,old_hk_lfr_le.timecode_erroneous,   counter );
-    increment_hk_counter( new_hk_lfr_le.timecode_missing,  old_hk_lfr_le.timecode_missing,     counter );
-    increment_hk_counter( new_hk_lfr_le.timecode_invalid,  old_hk_lfr_le.timecode_invalid,     counter );
+    increment_hk_counter( new_hk_lfr_le.timecode_erroneous,old_hk_lfr_le.timecode_erroneous,   &counter );
+    increment_hk_counter( new_hk_lfr_le.timecode_missing,  old_hk_lfr_le.timecode_missing,     &counter );
+    increment_hk_counter( new_hk_lfr_le.timecode_invalid,  old_hk_lfr_le.timecode_invalid,     &counter );
     // TIME
-    increment_hk_counter( new_hk_lfr_le.time_timecode_it,  old_hk_lfr_le.time_timecode_it,     counter );
-    increment_hk_counter( new_hk_lfr_le.time_not_synchro,  old_hk_lfr_le.time_not_synchro,     counter );
-    increment_hk_counter( new_hk_lfr_le.time_timecode_ctr, old_hk_lfr_le.time_timecode_ctr,    counter );
+    increment_hk_counter( new_hk_lfr_le.time_timecode_it,  old_hk_lfr_le.time_timecode_it,     &counter );
+    increment_hk_counter( new_hk_lfr_le.time_not_synchro,  old_hk_lfr_le.time_not_synchro,     &counter );
+    increment_hk_counter( new_hk_lfr_le.time_timecode_ctr, old_hk_lfr_le.time_timecode_ctr,    &counter );
     // AHB
-    increment_hk_counter( new_hk_lfr_le.ahb_correctable,   old_hk_lfr_le.ahb_correctable,      counter );
+    increment_hk_counter( new_hk_lfr_le.ahb_correctable,   old_hk_lfr_le.ahb_correctable,      &counter );
 
     // DPU
     old_hk_lfr_le.dpu_spw_parity    = new_hk_lfr_le.dpu_spw_parity;
@@ -859,8 +868,8 @@ void hk_lfr_le_update( void )
 
     // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // LE
-    housekeeping_packet.hk_lfr_le_cnt[0] = (unsigned char) ((hk_lfr_le_cnt & 0xff00) >> 8);
-    housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (hk_lfr_le_cnt & 0x00ff);
+    housekeeping_packet.hk_lfr_le_cnt[0] = (unsigned char) ((counter & BYTE0_MASK) >> SHIFT_1_BYTE);
+    housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
 void hk_lfr_me_update( void )
@@ -869,7 +878,7 @@ void hk_lfr_me_update( void )
     hk_lfr_me_t new_hk_lfr_me;
     unsigned int counter;
 
-    counter = ((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256 + housekeeping_packet.hk_lfr_me_cnt[1];
+    counter = (((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256) + housekeeping_packet.hk_lfr_me_cnt[1];
 
     // get the current values
     new_hk_lfr_me.dpu_spw_early_eop     = housekeeping_packet.hk_lfr_dpu_spw_early_eop;
@@ -878,10 +887,10 @@ void hk_lfr_me_update( void )
     new_hk_lfr_me.dpu_spw_rx_too_big    = housekeeping_packet.hk_lfr_dpu_spw_rx_too_big;
 
     // update the me counter
-    increment_hk_counter( new_hk_lfr_me.dpu_spw_early_eop,      old_hk_lfr_me.dpu_spw_early_eop,    counter );
-    increment_hk_counter( new_hk_lfr_me.dpu_spw_invalid_addr,   old_hk_lfr_me.dpu_spw_invalid_addr, counter );
-    increment_hk_counter( new_hk_lfr_me.dpu_spw_eep,            old_hk_lfr_me.dpu_spw_eep,          counter );
-    increment_hk_counter( new_hk_lfr_me.dpu_spw_rx_too_big,     old_hk_lfr_me.dpu_spw_rx_too_big,   counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_early_eop,      old_hk_lfr_me.dpu_spw_early_eop,    &counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_invalid_addr,   old_hk_lfr_me.dpu_spw_invalid_addr, &counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_eep,            old_hk_lfr_me.dpu_spw_eep,          &counter );
+    increment_hk_counter( new_hk_lfr_me.dpu_spw_rx_too_big,     old_hk_lfr_me.dpu_spw_rx_too_big,   &counter );
 
     // store the counters for the next time
     old_hk_lfr_me.dpu_spw_early_eop     = new_hk_lfr_me.dpu_spw_early_eop;
@@ -891,8 +900,8 @@ void hk_lfr_me_update( void )
 
     // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // ME
-    housekeeping_packet.hk_lfr_me_cnt[0] = (unsigned char) ((hk_lfr_me_cnt & 0xff00) >> 8);
-    housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (hk_lfr_me_cnt & 0x00ff);
+    housekeeping_packet.hk_lfr_me_cnt[0] = (unsigned char) ((counter & BYTE0_MASK) >> SHIFT_1_BYTE);
+    housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
 void hk_lfr_le_me_he_update()
@@ -913,8 +922,8 @@ void hk_lfr_le_me_he_update()
 
     // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
     // HE
-    housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & 0xff00) >> 8);
-    housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & 0x00ff);
+    housekeeping_packet.hk_lfr_he_cnt[0] = (unsigned char) ((hk_lfr_he_cnt & BYTE0_MASK) >> SHIFT_1_BYTE);
+    housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)  (hk_lfr_he_cnt & BYTE1_MASK);
 
 }
 
@@ -924,7 +933,8 @@ void set_hk_lfr_time_not_synchro()
     int synchronizationBit;
 
     // get the synchronization bit
-    synchronizationBit = (time_management_regs->coarse_time & 0x80000000) >> 31;    // 1000 0000 0000 0000
+    synchronizationBit =
+            (time_management_regs->coarse_time & VAL_LFR_SYNCHRONIZED) >> BIT_SYNCHRONIZATION;    // 1000 0000 0000 0000
 
     switch (synchronizationBit)
     {
@@ -978,6 +988,6 @@ void set_hk_lfr_ahb_correctable()   // CRITICITY L
             + iurfErrorCounter
             + housekeeping_packet.hk_lfr_ahb_correctable;
 
-    housekeeping_packet.hk_lfr_ahb_correctable = (unsigned char) (ahb_correctable & 0xff);  // [1111 1111]
+    housekeeping_packet.hk_lfr_ahb_correctable = (unsigned char) (ahb_correctable & INT8_ALL_F);  // [1111 1111]
 
 }

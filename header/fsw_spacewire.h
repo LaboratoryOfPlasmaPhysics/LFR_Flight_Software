@@ -13,6 +13,15 @@
 #include "tc_handler.h"
 #include "fsw_init.h"
 
+#define SPW_LINK_OK 5
+#define CONF_TCODE_CTRL 0x0909      // [Time Rx : Time Tx : Link error : Tick-out IRQ]
+#define SPW_BIT_NP      0x00100000  // [NP] set the No port force bit
+#define SPW_BIT_NP_MASK 0xffdfffff
+#define SPW_BIT_RE      0x00010000  // [RE] set the RMAP Enable bit
+#define SPW_BIT_RE_MASK 0xfffdffff
+#define SPW_LINK_STAT_POS   21
+#define SPW_TIMECODE_MAX    63
+
 extern spw_stats grspw_stats;
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;

@@ -4,7 +4,30 @@
 #define CHANNELF0 0
 #define CHANNELF1 1
 #define CHANNELF2 2
+#define CHANNELF3 3
 
+#define NB_SM_PER_S_F0      96
+#define NB_SM_PER_S_F1      16
+#define NB_SM_PER_S_F2      1
+#define NB_SM_PER_S1_BP_P0  24
+
+#define ASM_COMP_B1B2 1
+#define ASM_COMP_B1B3 3
+#define ASM_COMP_B1E1 5
+#define ASM_COMP_B1E2 7
+#define ASM_COMP_B2B3 10
+#define ASM_COMP_B2E1 12
+#define ASM_COMP_B2E2 14
+#define ASM_COMP_B3E1 17
+#define ASM_COMP_B3E2 19
+#define ASM_COMP_E1E2 22
+#define ASM_COMP_B1B1 0
+#define ASM_COMP_B2B2 9
+#define ASM_COMP_B3B3 16
+#define ASM_COMP_E1E1 21
+#define ASM_COMP_E2E2 24
+
+#define SM_BYTES_PER_VAL        2
 #define NB_BINS_PER_SM          128
 #define NB_VALUES_PER_SM        25
 #define TOTAL_SIZE_SM           3200    // 25 * 128 = 0xC80
@@ -50,6 +73,7 @@
 #define ASM_F2_INDICE_STOP          101     // 102 - 1, 2 packets of 48 bins
 //
 #define KCOEFF_BLK_SIZE                 130
+#define KCOEFF_FREQ                     2
 #define NB_BINS_COMPRESSED_SM_F0        11
 #define NB_BINS_COMPRESSED_SM_F1        13
 #define NB_BINS_COMPRESSED_SM_F2        12
@@ -77,8 +101,7 @@
 #define TOTAL_SIZE_BP2_NORM_F0              330     // 30 * 11 UNSIGNED CHAR
 #define TOTAL_SIZE_BP1_SBM_F0               198     // 9  * 22 UNSIGNED CHAR
 // GENERAL
-#define NB_SM_BEFORE_AVF0               8   // must be 8 due to the SM_average() function
-#define NB_SM_BEFORE_AVF1               8   // must be 8 due to the SM_average() function
+#define NB_SM_BEFORE_AVF0_F1            8   // must be 8 due to the SM_average() function
 #define NB_SM_BEFORE_AVF2               1   // must be 1 due to the SM_average_f2() function
 
 #endif // FSW_PARAMS_PROCESSING_H

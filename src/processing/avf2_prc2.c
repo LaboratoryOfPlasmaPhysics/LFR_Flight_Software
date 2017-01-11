@@ -23,7 +23,6 @@ int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
 float asm_f2_patched_norm   [ TOTAL_SIZE_SM ];
 float asm_f2_reorganized    [ TOTAL_SIZE_SM ];
 
-char  asm_f2_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
 
 float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ];   // 12 * 32 = 384
@@ -69,11 +68,11 @@ rtems_task avf2_task( rtems_task_argument argument )
         // initialize the mesage for the MATR task
         msgForPRC.norm       = current_ring_node_asm_norm_f2;
         msgForPRC.burst_sbm  = NULL;
-        msgForPRC.event      = 0x00;  // this composite event will be sent to the PRC2 task
+        msgForPRC.event      = EVENT_SETS_NONE_PENDING;  // this composite event will be sent to the PRC2 task
         //
         //****************************************
 
-        nodeForAveraging = getRingNodeForAveraging( 2 );
+        nodeForAveraging = getRingNodeForAveraging( CHANNELF2 );
 
         // compute the average and store it in the averaged_sm_f2 buffer
         SM_average_f2( current_ring_node_asm_norm_f2->matrix,
@@ -120,7 +119,7 @@ rtems_task avf2_task( rtems_task_argument argument )
 
         //*************************
         // send the message to PRC2
-        if (msgForPRC.event != 0x00)
+        if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
             status =  rtems_message_queue_send( queue_id_prc2, (char *) &msgForPRC, MSG_QUEUE_SIZE_PRC2);
         }
@@ -253,7 +252,7 @@ void reset_nb_sm_f2( void )
 {
     nb_sm_before_f2.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0;
     nb_sm_before_f2.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1;
-    nb_sm_before_f2.norm_asm  = parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1];
+    nb_sm_before_f2.norm_asm  = (parameter_dump_packet.sy_lfr_n_asm_p[0] * CONST_256) + parameter_dump_packet.sy_lfr_n_asm_p[1];
 }
 
 void SM_average_f2( float *averaged_spec_mat_f2,
@@ -266,7 +265,7 @@ void SM_average_f2( float *averaged_spec_mat_f2,
     unsigned char keepMatrix;
 
     // test acquisitionTime validity
-    keepMatrix = acquisitionTimeIsValid( ring_node->coarseTime, ring_node->fineTime, 2 );
+    keepMatrix = acquisitionTimeIsValid( ring_node->coarseTime, ring_node->fineTime, CHANNELF2 );
 
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
@@ -279,7 +278,7 @@ void SM_average_f2( float *averaged_spec_mat_f2,
             }
             else                    // drop the matrix and initialize the average
             {
-                averaged_spec_mat_f2[ i ] = 0.;
+                averaged_spec_mat_f2[ i ] = INIT_FLOAT;
             }
             msgForMATR->coarseTimeNORM  = ring_node->coarseTime;
             msgForMATR->fineTimeNORM    = ring_node->fineTime;

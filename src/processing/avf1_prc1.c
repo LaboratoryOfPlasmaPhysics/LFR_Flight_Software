@@ -25,7 +25,6 @@ float asm_f1_patched_norm       [ TOTAL_SIZE_SM ];
 float asm_f1_patched_burst_sbm  [ TOTAL_SIZE_SM ];
 float asm_f1_reorganized        [ TOTAL_SIZE_SM ];
 
-char  asm_f1_char          [ TOTAL_SIZE_SM * 2 ];
 float compressed_sm_norm_f1[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F1];
 float compressed_sm_sbm_f1 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 ];
 
@@ -44,7 +43,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
     rtems_id queue_id_prc1;
     asm_msg msgForPRC;
     ring_node *nodeForAveraging;
-    ring_node *ring_node_tab[NB_SM_BEFORE_AVF0];
+    ring_node *ring_node_tab[NB_SM_BEFORE_AVF0_F1];
     ring_node_asm *current_ring_node_asm_burst_sbm_f1;
     ring_node_asm *current_ring_node_asm_norm_f1;
 
@@ -81,17 +80,17 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         // initialize the mesage for the MATR task
         msgForPRC.norm       = current_ring_node_asm_norm_f1;
         msgForPRC.burst_sbm  = current_ring_node_asm_burst_sbm_f1;
-        msgForPRC.event      = 0x00;  // this composite event will be sent to the PRC1 task
+        msgForPRC.event      = EVENT_SETS_NONE_PENDING;  // this composite event will be sent to the PRC1 task
         //
         //****************************************
 
         nodeForAveraging = getRingNodeForAveraging( 1 );
 
-        ring_node_tab[NB_SM_BEFORE_AVF1-1] = nodeForAveraging;
-        for ( i = 2; i < (NB_SM_BEFORE_AVF1+1); i++ )
+        ring_node_tab[NB_SM_BEFORE_AVF0_F1-1] = nodeForAveraging;
+        for ( i = 1; i < (NB_SM_BEFORE_AVF0_F1); i++ )
         {
             nodeForAveraging = nodeForAveraging->previous;
-            ring_node_tab[NB_SM_BEFORE_AVF1-i] = nodeForAveraging;
+            ring_node_tab[NB_SM_BEFORE_AVF0_F1-i] = nodeForAveraging;
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
@@ -102,11 +101,11 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
                     &msgForPRC, 1 );    // 1 => frequency channel 1
 
         // update nb_average
-        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF1;
-        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF1;
-        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF1;
-        nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF1;
-        nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF1;
+        nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0_F1;
+        nb_norm_bp2 = nb_norm_bp2 + NB_SM_BEFORE_AVF0_F1;
+        nb_norm_asm = nb_norm_asm + NB_SM_BEFORE_AVF0_F1;
+        nb_sbm_bp1  = nb_sbm_bp1  + NB_SM_BEFORE_AVF0_F1;
+        nb_sbm_bp2  = nb_sbm_bp2  + NB_SM_BEFORE_AVF0_F1;
 
         if (nb_sbm_bp1 == nb_sm_before_f1.burst_sbm_bp1)
         {
@@ -170,7 +169,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
 
         //*************************
         // send the message to PRC
-        if (msgForPRC.event != 0x00)
+        if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
             status =  rtems_message_queue_send( queue_id_prc1, (char *) &msgForPRC, MSG_QUEUE_SIZE_PRC1);
         }
@@ -365,13 +364,14 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
 void reset_nb_sm_f1( unsigned char lfrMode )
 {
-    nb_sm_before_f1.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0 * 16;
-    nb_sm_before_f1.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1 * 16;
-    nb_sm_before_f1.norm_asm  = (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256 + parameter_dump_packet.sy_lfr_n_asm_p[1]) * 16;
-    nb_sm_before_f1.sbm2_bp1  =  parameter_dump_packet.sy_lfr_s2_bp_p0 * 16;
-    nb_sm_before_f1.sbm2_bp2  =  parameter_dump_packet.sy_lfr_s2_bp_p1 * 16;
-    nb_sm_before_f1.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * 16;
-    nb_sm_before_f1.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * 16;
+    nb_sm_before_f1.norm_bp1  = parameter_dump_packet.sy_lfr_n_bp_p0 * NB_SM_PER_S_F1;
+    nb_sm_before_f1.norm_bp2  = parameter_dump_packet.sy_lfr_n_bp_p1 * NB_SM_PER_S_F1;
+    nb_sm_before_f1.norm_asm  =
+            ( (parameter_dump_packet.sy_lfr_n_asm_p[0] * 256) + parameter_dump_packet.sy_lfr_n_asm_p[1]) * NB_SM_PER_S_F1;
+    nb_sm_before_f1.sbm2_bp1  =  parameter_dump_packet.sy_lfr_s2_bp_p0 * NB_SM_PER_S_F1;
+    nb_sm_before_f1.sbm2_bp2  =  parameter_dump_packet.sy_lfr_s2_bp_p1 * NB_SM_PER_S_F1;
+    nb_sm_before_f1.burst_bp1 =  parameter_dump_packet.sy_lfr_b_bp_p0 * NB_SM_PER_S_F1;
+    nb_sm_before_f1.burst_bp2 =  parameter_dump_packet.sy_lfr_b_bp_p1 * NB_SM_PER_S_F1;
 
     if (lfrMode == LFR_MODE_SBM2)
     {
