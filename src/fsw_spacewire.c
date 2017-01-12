@@ -39,6 +39,9 @@ rtems_task spiq_task(rtems_task_argument unused)
     rtems_status_code status;
     int linkStatus;
 
+    event_out = EVENT_SETS_NONE_PENDING;
+    linkStatus = 0;
+
     BOOT_PRINTF("in SPIQ *** \n")
 
     while(true){
@@ -130,6 +133,11 @@ rtems_task recv_task( rtems_task_argument unused )
     rtems_status_code status;
     rtems_id queue_recv_id;
     rtems_id queue_send_id;
+
+    memset( &currentTC, 0, sizeof(ccsdsTelecommandPacket_t) );
+    destinationID = 0;
+    queue_recv_id = RTEMS_ID_NONE;
+    queue_send_id = RTEMS_ID_NONE;
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
@@ -230,6 +238,8 @@ rtems_task send_task( rtems_task_argument argument)
     incomingRingNodePtr = NULL;
     ring_node_address = 0;
     charPtr = (char *) &ring_node_address;
+    size = 0;
+    queue_send_id = RTEMS_ID_NONE;
     sid = 0;
     sidAsUnsignedChar = 0;
 
@@ -337,6 +347,9 @@ rtems_task link_task( rtems_task_argument argument )
     rtems_status_code status;
     int linkStatus;
 
+    event_out = EVENT_SETS_NONE_PENDING;
+    linkStatus = 0;
+
     BOOT_PRINTF("in LINK ***\n")
 
     while(1)
@@ -393,6 +406,8 @@ int spacewire_open_link( void )  // by default, the driver resets the core: [SPW
      *
      */
     rtems_status_code status;
+
+    status = RTEMS_SUCCESSFUL;
 
     fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call resets the hardware
     if ( fdSPW < 0 ) {
@@ -508,6 +523,8 @@ int spacewire_several_connect_attemps( void )
     rtems_status_code status;
     int i;
 
+    status_spw = RTEMS_SUCCESSFUL;
+
     i = 0;
     while (i < SY_LFR_DPU_CONNECT_ATTEMPT)
     {
@@ -593,6 +610,8 @@ void spacewire_read_statistics( void )
     rtems_status_code status;
     spw_stats current;
 
+    memset(&current, 0, sizeof(spw_stats));
+
     spacewire_get_last_error();
 
     // read the current statistics
@@ -645,7 +664,7 @@ void spacewire_read_statistics( void )
 
 void spacewire_get_last_error( void )
 {
-    static spw_stats previous;
+    static spw_stats previous = {0};
     spw_stats current;
     rtems_status_code status;
 
@@ -655,6 +674,7 @@ void spacewire_get_last_error( void )
     int fineTime;
     unsigned char update_hk_lfr_last_er;
 
+    memset(&current, 0, sizeof(spw_stats));
     update_hk_lfr_last_er = 0;
 
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current );

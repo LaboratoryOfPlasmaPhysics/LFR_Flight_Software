@@ -57,6 +57,8 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     nb_norm_asm = 0;
     nb_sbm_bp1  = 0;
     nb_sbm_bp2  = 0;
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id_prc0 = RTEMS_ID_NONE;
 
     reset_nb_sm_f0( lfrRequestedMode );   // reset the sm counters that drive the BP and ASM computations / transmissions
     ASM_generic_init_ring( asm_ring_norm_f0,      NB_RING_NODES_ASM_NORM_F0      );
@@ -64,7 +66,7 @@ rtems_task avf0_task( rtems_task_argument lfrRequestedMode )
     current_ring_node_asm_norm_f0      = asm_ring_norm_f0;
     current_ring_node_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
 
-    BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", (int) lfrRequestedMode)
+    BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", (int) lfrRequestedMode);
 
     status = get_message_queue_id_prc0( &queue_id_prc0 );
     if (status != RTEMS_SUCCESSFUL)
@@ -196,6 +198,14 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
     ring_node               *current_ring_node_to_send_asm_f0;
     float nbSMInASMNORM;
     float nbSMInASMSBM;
+
+    size = 0;
+    queue_id = RTEMS_ID_NONE;
+    queue_id_q_p0 = RTEMS_ID_NONE;
+    memset( &packet_norm_bp1,   0, sizeof(bp_packet_with_spare) );
+    memset( &packet_norm_bp2,   0, sizeof(bp_packet) );
+    memset( &packet_sbm_bp1,    0, sizeof(bp_packet) );
+    memset( &packet_sbm_bp2,    0, sizeof(bp_packet) );
 
     // init the ring of the averaged spectral matrices which will be transmitted to the DPU
     init_ring( ring_to_send_asm_f0, NB_RING_NODES_ASM_F0, (volatile int*) buffer_asm_f0, TOTAL_SIZE_SM );

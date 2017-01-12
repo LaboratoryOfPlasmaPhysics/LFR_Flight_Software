@@ -551,6 +551,8 @@ unsigned char getSID( rtems_event_set event )
     rtems_event_set eventSetBURST;
     rtems_event_set eventSetSBM;
 
+    sid = 0;
+
     //******
     // BURST
     eventSetBURST = RTEMS_EVENT_BURST_BP1_F0

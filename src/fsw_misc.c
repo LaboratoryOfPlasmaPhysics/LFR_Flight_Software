@@ -25,6 +25,8 @@ void timer_configure(unsigned char timer, unsigned int clock_divider,
     rtems_status_code status;
     rtems_isr_entry old_isr_handler;
 
+    old_isr_handler = NULL;
+
     gptimer_regs->timer[timer].ctrl = INIT_CHAR;  // reset the control register
 
     status = rtems_interrupt_catch( timer_isr, interrupt_level, &old_isr_handler) ; // see sparcv8.pdf p.76 for interrupt levels
@@ -190,6 +192,8 @@ rtems_task load_task(rtems_task_argument argument)
     rtems_name name_watchdog_rate_monotonic;  // name of the watchdog rate monotonic
     rtems_id watchdog_period_id;              // id of the watchdog rate monotonic period
 
+    watchdog_period_id = RTEMS_ID_NONE;
+
     name_watchdog_rate_monotonic = rtems_build_name( 'L', 'O', 'A', 'D' );
 
     status = rtems_rate_monotonic_create( name_watchdog_rate_monotonic, &watchdog_period_id );
@@ -233,6 +237,8 @@ rtems_task hous_task(rtems_task_argument argument)
     rtems_rate_monotonic_period_status period_status;
     bool isSynchronized;
 
+    queue_id = RTEMS_ID_NONE;
+    memset(&period_status, 0, sizeof(rtems_rate_monotonic_period_status));
     isSynchronized = false;
 
     status =  get_message_queue_id_send( &queue_id );
@@ -440,22 +446,7 @@ rtems_task dumb_task( rtems_task_argument unused )
     unsigned int fine_time = 0;
     rtems_event_set event_out;
 
-    char *DumbMessages[DUMB_MESSAGE_NB] = {DUMB_MESSAGE_0,  // RTEMS_EVENT_0
-                                           DUMB_MESSAGE_1,  // RTEMS_EVENT_1
-                                           DUMB_MESSAGE_2,  // RTEMS_EVENT_2
-                                           DUMB_MESSAGE_3,  // RTEMS_EVENT_3
-                                           DUMB_MESSAGE_4,  // RTEMS_EVENT_4
-                                           DUMB_MESSAGE_5,  // RTEMS_EVENT_5
-                                           DUMB_MESSAGE_6,  // RTEMS_EVENT_6
-                                           DUMB_MESSAGE_7,  // RTEMS_EVENT_7
-                                           DUMB_MESSAGE_8,  // RTEMS_EVENT_8
-                                           DUMB_MESSAGE_9,  // RTEMS_EVENT_9
-                                           DUMB_MESSAGE_10, // RTEMS_EVENT_10
-                                           DUMB_MESSAGE_11, // RTEMS_EVENT_11
-                                           DUMB_MESSAGE_12, // RTEMS_EVENT_12
-                                           DUMB_MESSAGE_13, // RTEMS_EVENT_13
-                                           DUMB_MESSAGE_14  // RTEMS_EVENT_14
-                                          };
+    event_out = EVENT_SETS_NONE_PENDING;
 
     BOOT_PRINTF("in DUMB *** \n")
 
@@ -607,6 +598,8 @@ void send_dumb_hk( void )
     unsigned char *parameters;
     unsigned int i;
     rtems_id queue_id;
+
+    queue_id = RTEMS_ID_NONE;
 
     dummy_hk_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
     dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -982,6 +975,11 @@ void set_hk_lfr_ahb_correctable()   // CRITICITY L
     unsigned int dataErrorCounter;
     unsigned int fprfErrorCounter;
     unsigned int iurfErrorCounter;
+
+    instructionErrorCounter = 0;
+    dataErrorCounter = 0;
+    fprfErrorCounter = 0;
+    iurfErrorCounter = 0;
 
     CCR_getInstructionAndDataErrorCounters( &instructionErrorCounter, &dataErrorCounter);
     ASR16_get_FPRF_IURF_ErrorCounters( &fprfErrorCounter, &iurfErrorCounter);

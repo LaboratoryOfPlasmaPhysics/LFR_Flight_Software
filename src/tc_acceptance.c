@@ -193,6 +193,8 @@ int tc_check_type( unsigned char packetType )
 
     int status;
 
+    status = ILL_TYPE;
+
     if ( (packetType == TC_TYPE_GEN) || (packetType == TC_TYPE_TIME))
     {
         status = CCSDS_TM_VALID;
@@ -271,6 +273,8 @@ int tc_check_sid( unsigned char sid )
      */
 
     int status;
+
+    status = WRONG_SRC_ID;
 
     if ( (sid == SID_TC_MISSION_TIMELINE) || (sid == SID_TC_TC_SEQUENCES)   || (sid == SID_TC_RECOVERY_ACTION_CMD)
          || (sid == SID_TC_BACKUP_MISSION_TIMELINE)
@@ -454,6 +458,8 @@ int tc_check_crc( ccsdsTelecommandPacket_t * TCPacket, unsigned int length, unsi
 
     int status;
     unsigned char * CCSDSContent;
+
+    status = INCOR_CHECKSUM;
 
     CCSDSContent = (unsigned char*) TCPacket->packetID;
     GetCRCAsTwoBytes(CCSDSContent, computed_CRC, length + CCSDS_TC_TM_PACKET_OFFSET - BYTES_PER_CRC); // 2 CRC bytes removed from the calculation of the CRC

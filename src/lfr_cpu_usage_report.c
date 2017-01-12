@@ -29,6 +29,8 @@ unsigned char lfr_rtems_cpu_usage_report( void )
 #endif
 
     unsigned char cpu_load;
+
+    ival = 0;
     cpu_load = 0;
 
     /*

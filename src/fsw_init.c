@@ -130,6 +130,8 @@ rtems_task Init( rtems_task_argument ignored )
     rtems_status_code status_spw;
     rtems_isr_entry  old_isr_handler;
 
+    old_isr_handler = NULL;
+
     // UART settings
     enable_apbuart_transmitter();
     set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
@@ -736,6 +738,9 @@ rtems_status_code create_message_queues( void ) // create the two message queues
     rtems_status_code ret;
     rtems_id queue_id;
 
+    ret = RTEMS_SUCCESSFUL;
+    queue_id = RTEMS_ID_NONE;
+
     //****************************************
     // create the queue for handling valid TCs
     status_recv = rtems_message_queue_create( misc_name[QUEUE_RECV],
@@ -887,6 +892,8 @@ void update_queue_max_count( rtems_id queue_id, unsigned char*fifo_size_max )
 {
     u_int32_t count;
     rtems_status_code status;
+
+    count = 0;
 
     status = rtems_message_queue_get_number_pending( queue_id, &count );
 

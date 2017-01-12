@@ -53,6 +53,9 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
     unsigned int nb_sbm_bp1;
     unsigned int nb_sbm_bp2;
 
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id_prc1 = RTEMS_ID_NONE;
+
     nb_norm_bp1 = 0;
     nb_norm_bp2 = 0;
     nb_norm_asm = 0;
@@ -197,6 +200,14 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
     ring_node               *current_ring_node_to_send_asm_f1;
     float nbSMInASMNORM;
     float nbSMInASMSBM;
+
+    size = 0;
+    queue_id_send = RTEMS_ID_NONE;
+    queue_id_q_p1 = RTEMS_ID_NONE;
+    memset( &packet_norm_bp1,   0, sizeof(bp_packet_with_spare) );
+    memset( &packet_norm_bp2,   0, sizeof(bp_packet) );
+    memset( &packet_sbm_bp1,    0, sizeof(bp_packet) );
+    memset( &packet_sbm_bp2,    0, sizeof(bp_packet) );
 
     // init the ring of the averaged spectral matrices which will be transmitted to the DPU
     init_ring( ring_to_send_asm_f1, NB_RING_NODES_ASM_F1, (volatile int*) buffer_asm_f1, TOTAL_SIZE_SM );

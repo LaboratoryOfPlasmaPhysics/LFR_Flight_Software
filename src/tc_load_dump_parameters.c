@@ -877,6 +877,8 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode )
 {
     unsigned int status;
 
+    status = LFR_DEFAULT;
+
     if ( (mode == LFR_MODE_STANDBY) || (mode == LFR_MODE_NORMAL)
          || (mode == LFR_MODE_BURST)
          || (mode == LFR_MODE_SBM1) || (mode == LFR_MODE_SBM2))
@@ -894,6 +896,8 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode )
 unsigned int check_update_info_hk_tds_mode( unsigned char mode )
 {
     unsigned int status;
+
+    status = LFR_DEFAULT;
 
     if ( (mode == TDS_MODE_STANDBY) || (mode == TDS_MODE_NORMAL)
          || (mode == TDS_MODE_BURST)
@@ -913,6 +917,8 @@ unsigned int check_update_info_hk_tds_mode( unsigned char mode )
 unsigned int check_update_info_hk_thr_mode( unsigned char mode )
 {
     unsigned int status;
+
+    status = LFR_DEFAULT;
 
     if ( (mode == THR_MODE_STANDBY) || (mode == THR_MODE_NORMAL)
          || (mode == THR_MODE_BURST))
@@ -1001,6 +1007,7 @@ void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq
     int binToRemove[NB_BINS_TO_REMOVE];
     int k;
 
+    closestBin = 0;
     whichByte = 0;
     bin = 0;
 

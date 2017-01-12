@@ -336,6 +336,9 @@ rtems_task wfrm_task(rtems_task_argument argument) //used with the waveform pick
     ring_node *ring_node_swf1_extracted_ptr;
     ring_node *ring_node_swf2_extracted_ptr;
 
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id = RTEMS_ID_NONE;
+
     ring_node_swf1_extracted_ptr = (ring_node *) &ring_node_swf1_extracted;
     ring_node_swf2_extracted_ptr = (ring_node *) &ring_node_swf2_extracted;
 
@@ -385,6 +388,9 @@ rtems_task cwf3_task(rtems_task_argument argument) //used with the waveform pick
     rtems_status_code status;
     ring_node ring_node_cwf3_light;
     ring_node *ring_node_to_send_cwf;
+
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id = RTEMS_ID_NONE;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -450,6 +456,9 @@ rtems_task cwf2_task(rtems_task_argument argument)  // ONLY USED IN BURST AND SB
     rtems_status_code status;
     ring_node *ring_node_to_send;
     unsigned long long int acquisitionTimeF0_asLong;
+
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id = RTEMS_ID_NONE;
 
     acquisitionTimeF0_asLong = INIT_CHAR;
 
@@ -519,6 +528,9 @@ rtems_task cwf1_task(rtems_task_argument argument)  // ONLY USED IN SBM1
 
     ring_node *ring_node_to_send_cwf;
 
+    event_out = EVENT_SETS_NONE_PENDING;
+    queue_id = RTEMS_ID_NONE;
+
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -574,6 +586,7 @@ rtems_task swbd_task(rtems_task_argument argument)
     rtems_event_set event_out;
     unsigned long long int acquisitionTimeF0_asLong;
 
+    event_out = EVENT_SETS_NONE_PENDING;
     acquisitionTimeF0_asLong = INIT_CHAR;
 
     BOOT_PRINTF("in SWBD ***\n")
@@ -796,6 +809,9 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
 
     // (2) compute the central reference time
     centerTime_asLong = acquisitionTimeF0_asLong + deltaT_F0;
+    acquisitionTime_asLong = centerTime_asLong;         //set to default value (Don_Initialisation_P2)
+    bufferAcquisitionTime_asLong = centerTime_asLong;   //set to default value (Don_Initialisation_P2)
+    nbTicksPerSample_asLong = TICKS_PER_T2;             //set to default value (Don_Initialisation_P2)
 
     // (3) compute the acquisition time of the current snapshot
     switch(frequencyChannel)
@@ -896,6 +912,8 @@ double computeCorrection( unsigned char *timePtr )
     double deltaNext_ms;
     double correctionInF2;
 
+    correctionInF2 = 0; //set to default value (Don_Initialisation_P2)
+
     // get acquisition time in fine time ticks
     acquisitionTime = get_acquisition_time( timePtr );
 
@@ -932,6 +950,8 @@ double computeCorrection( unsigned char *timePtr )
 void applyCorrection( double correction )
 {
     int correctionInt;
+
+    correctionInt = 0;
 
     if (correction >= 0.)
     {
@@ -1263,6 +1283,10 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     rtems_mode initial_mode_set;
     rtems_mode current_mode_set;
     rtems_status_code status;
+
+    initial_mode_set = RTEMS_DEFAULT_MODES;
+    current_mode_set = RTEMS_DEFAULT_MODES;
+    sequence_cnt = NULL;
 
     //******************************************
     // CHANGE THE MODE OF THE CALLING RTEMS TASK

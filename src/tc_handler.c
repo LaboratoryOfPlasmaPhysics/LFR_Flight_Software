@@ -36,6 +36,11 @@ rtems_task actn_task( rtems_task_argument unused )
     rtems_id queue_rcv_id;
     rtems_id queue_snd_id;
 
+    memset(&TC, 0, sizeof(ccsdsTelecommandPacket_t));
+    size = 0;
+    queue_rcv_id = RTEMS_ID_NONE;
+    queue_snd_id = RTEMS_ID_NONE;
+
     status =  get_message_queue_id_recv( &queue_rcv_id );
     if (status != RTEMS_SUCCESSFUL)
     {
@@ -382,6 +387,8 @@ int action_update_time(ccsdsTelecommandPacket_t *TC)
 int check_mode_value( unsigned char requestedMode )
 {
     int status;
+
+    status = LFR_DEFAULT;
 
     if ( (requestedMode != LFR_MODE_STANDBY)
          && (requestedMode != LFR_MODE_NORMAL) && (requestedMode != LFR_MODE_BURST)
