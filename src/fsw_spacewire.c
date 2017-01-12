@@ -19,7 +19,7 @@ rtems_id semq_id        = RTEMS_ID_NONE;
 //*****************
 // waveform headers
 Header_TM_LFR_SCIENCE_CWF_t headerCWF = {0};
-Header_TM_LFR_SCIENCE_SWF_t headerSW  = {0};
+Header_TM_LFR_SCIENCE_SWF_t headerSWF = {0};
 Header_TM_LFR_SCIENCE_ASM_t headerASM = {0};
 
 unsigned char previousTimecodeCtr = 0;

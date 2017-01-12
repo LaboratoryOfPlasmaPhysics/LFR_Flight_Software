@@ -1382,6 +1382,8 @@ void setCalibrationData( void )
 
     time_management_regs->calDataPtr = INIT_CHAR;
 
+    Ts = 1 / CAL_FS;
+
     // build the signal for the SCM calibration
     for (k = 0; k < CAL_NB_PTS; k++)
     {
@@ -1414,7 +1416,7 @@ void setCalibrationDataInterleaved( void )
     unsigned short data[CAL_NB_PTS_INTER];
     unsigned char *dataPtr;
 
-    Ts = 1. / CAL_FS_INTER;
+    Ts = 1 / CAL_FS_INTER;
 
     time_management_regs->calDataPtr = INIT_CHAR;
 

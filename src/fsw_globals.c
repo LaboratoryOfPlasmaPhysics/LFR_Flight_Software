@@ -29,8 +29,12 @@
 rtems_name  misc_name[NB_OF_MISC_NAMES] = {0};
 rtems_name  Task_name[NB_OF_TASKS]      = {0};     /* array of task names */
 rtems_id    Task_id[NB_OF_TASKS]        = {0};         /* array of task ids */
-rtems_name timecode_timer_name          = {0};
-rtems_id timecode_timer_id              = {0};
+rtems_name timecode_timer_name          = 0;
+rtems_id timecode_timer_id              = RTEMS_ID_NONE;
+rtems_name name_hk_rate_monotonic       = 0;            // name of the HK rate monotonic
+rtems_id HK_id                          = RTEMS_ID_NONE;// id of the HK rate monotonic period
+rtems_name name_avgv_rate_monotonic     = 0;            // name of the AVGV rate monotonic
+rtems_id AVGV_id                        = RTEMS_ID_NONE;// id of the AVGV rate monotonic period
 int fdSPW = 0;
 int fdUART = 0;
 unsigned char lfrCurrentMode = 0;
