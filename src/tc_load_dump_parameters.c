@@ -14,10 +14,10 @@
 
 #include "tc_load_dump_parameters.h"
 
-Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1;
-Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2;
-ring_node kcoefficient_node_1;
-ring_node kcoefficient_node_2;
+Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1 = {0};
+Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2 = {0};
+ring_node kcoefficient_node_1 = {0};
+ring_node kcoefficient_node_2 = {0};
 
 int action_load_common_par(ccsdsTelecommandPacket_t *TC)
 {

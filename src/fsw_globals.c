@@ -26,15 +26,15 @@
 #define NB_OF_MISC_NAMES 5
 
 // RTEMS GLOBAL VARIABLES
-rtems_name  misc_name[NB_OF_MISC_NAMES];
-rtems_name  Task_name[NB_OF_TASKS];       /* array of task names */
-rtems_id    Task_id[NB_OF_TASKS];         /* array of task ids */
-rtems_name timecode_timer_name;
-rtems_id timecode_timer_id;
+rtems_name  misc_name[NB_OF_MISC_NAMES] = {0};
+rtems_name  Task_name[NB_OF_TASKS]      = {0};     /* array of task names */
+rtems_id    Task_id[NB_OF_TASKS]        = {0};         /* array of task ids */
+rtems_name timecode_timer_name          = {0};
+rtems_id timecode_timer_id              = {0};
 int fdSPW = 0;
 int fdUART = 0;
-unsigned char lfrCurrentMode;
-unsigned char pa_bia_status_info;
+unsigned char lfrCurrentMode = 0;
+unsigned char pa_bia_status_info = 0;
 unsigned char thisIsAnASMRestart = 0;
 unsigned char oneTcLfrUpdateTimeReceived = 0;
 
@@ -43,18 +43,18 @@ unsigned char oneTcLfrUpdateTimeReceived = 0;
 // WAVEFORMS GLOBAL VARIABLES   // 2688 * 3 * 4 + 2 * 4 = 32256 + 8 bytes = 32264
                                 // 127 * 256 = 32512 => delta = 248 bytes = 62 words
 // F0 F1 F2 F3
-volatile int wf_buffer_f0[ NB_RING_NODES_F0 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
-volatile int wf_buffer_f1[ NB_RING_NODES_F1 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
-volatile int wf_buffer_f2[ NB_RING_NODES_F2 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
-volatile int wf_buffer_f3[ NB_RING_NODES_F3 * WFRM_BUFFER ] __attribute__((aligned(0x100)));
+volatile int wf_buffer_f0[ NB_RING_NODES_F0 * WFRM_BUFFER ] __attribute__((aligned(0x100))) = {0};
+volatile int wf_buffer_f1[ NB_RING_NODES_F1 * WFRM_BUFFER ] __attribute__((aligned(0x100))) = {0};
+volatile int wf_buffer_f2[ NB_RING_NODES_F2 * WFRM_BUFFER ] __attribute__((aligned(0x100))) = {0};
+volatile int wf_buffer_f3[ NB_RING_NODES_F3 * WFRM_BUFFER ] __attribute__((aligned(0x100))) = {0};
 
 //***********************************
 // SPECTRAL MATRICES GLOBAL VARIABLES
 
 // alignment constraints for the spectral matrices buffers => the first data after the time (8 bytes) shall be aligned on 0x00
-volatile int sm_f0[ NB_RING_NODES_SM_F0 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
-volatile int sm_f1[ NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
-volatile int sm_f2[ NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100)));
+volatile int sm_f0[ NB_RING_NODES_SM_F0 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100))) = {0};
+volatile int sm_f1[ NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100))) = {0};
+volatile int sm_f2[ NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM ] __attribute__((aligned(0x100))) = {0};
 
 // APB CONFIGURATION REGISTERS
 time_management_regs_t          *time_management_regs   = (time_management_regs_t*)         REGS_ADDR_TIME_MANAGEMENT;
@@ -63,40 +63,40 @@ waveform_picker_regs_0_1_18_t   *waveform_picker_regs   = (waveform_picker_regs_
 spectral_matrix_regs_t          *spectral_matrix_regs   = (spectral_matrix_regs_t*)         REGS_ADDR_SPECTRAL_MATRIX;
 
 // MODE PARAMETERS
-Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
-struct param_local_str param_local;
-unsigned int lastValidEnterModeTime;
+Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet    = {0};
+struct param_local_str param_local                      = {0};
+unsigned int lastValidEnterModeTime                     = {0};
 
 // HK PACKETS
-Packet_TM_LFR_HK_t housekeeping_packet;
-unsigned char cp_rpw_sc_rw_f_flags;
+Packet_TM_LFR_HK_t housekeeping_packet                  = {0};
+unsigned char cp_rpw_sc_rw_f_flags                      = 0;
 // message queues occupancy
-unsigned char hk_lfr_q_sd_fifo_size_max;
-unsigned char hk_lfr_q_rv_fifo_size_max;
-unsigned char hk_lfr_q_p0_fifo_size_max;
-unsigned char hk_lfr_q_p1_fifo_size_max;
-unsigned char hk_lfr_q_p2_fifo_size_max;
+unsigned char hk_lfr_q_sd_fifo_size_max = 0;
+unsigned char hk_lfr_q_rv_fifo_size_max = 0;
+unsigned char hk_lfr_q_p0_fifo_size_max = 0;
+unsigned char hk_lfr_q_p1_fifo_size_max = 0;
+unsigned char hk_lfr_q_p2_fifo_size_max = 0;
 // sequence counters are incremented by APID (PID + CAT) and destination ID
-unsigned short sequenceCounters_SCIENCE_NORMAL_BURST;
-unsigned short sequenceCounters_SCIENCE_SBM1_SBM2;
-unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID];
-unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID];
+unsigned short sequenceCounters_SCIENCE_NORMAL_BURST        = 0;
+unsigned short sequenceCounters_SCIENCE_SBM1_SBM2           = 0;
+unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID]  = {0};
+unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID] = {0};
 unsigned short sequenceCounterHK;
-spw_stats grspw_stats;
+spw_stats grspw_stats                                       = {0};
 
 // TC_LFR_UPDATE_INFO
-float cp_rpw_sc_rw1_f1;
-float cp_rpw_sc_rw1_f2;
-float cp_rpw_sc_rw2_f1;
-float cp_rpw_sc_rw2_f2;
-float cp_rpw_sc_rw3_f1;
-float cp_rpw_sc_rw3_f2;
-float cp_rpw_sc_rw4_f1;
-float cp_rpw_sc_rw4_f2;
+float cp_rpw_sc_rw1_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw1_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw2_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw2_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw3_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw3_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw4_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw4_f2 = INIT_FLOAT;
 
 // TC_LFR_LOAD_FILTER_PAR
-filterPar_t filterPar;
+filterPar_t filterPar = {0};
 
-fbins_masks_t fbins_masks;
+fbins_masks_t fbins_masks = {0};
 unsigned int acquisitionDurations[NB_ACQUISITION_DURATION]
 = {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};

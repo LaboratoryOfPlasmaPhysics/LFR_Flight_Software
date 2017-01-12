@@ -11,10 +11,10 @@
 #include "fsw_processing_globals.c"
 #include "fsw_init.h"
 
-unsigned int nb_sm_f0;
-unsigned int nb_sm_f0_aux_f1;
-unsigned int nb_sm_f1;
-unsigned int nb_sm_f0_aux_f2;
+unsigned int nb_sm_f0       = 0;
+unsigned int nb_sm_f0_aux_f1= 0;
+unsigned int nb_sm_f1       = 0;
+unsigned int nb_sm_f0_aux_f2= 0;
 
 typedef enum restartState_t
 {
@@ -25,15 +25,15 @@ typedef enum restartState_t
 
 //************************
 // spectral matrices rings
-ring_node sm_ring_f0[ NB_RING_NODES_SM_F0 ];
-ring_node sm_ring_f1[ NB_RING_NODES_SM_F1 ];
-ring_node sm_ring_f2[ NB_RING_NODES_SM_F2 ];
-ring_node *current_ring_node_sm_f0;
-ring_node *current_ring_node_sm_f1;
-ring_node *current_ring_node_sm_f2;
-ring_node *ring_node_for_averaging_sm_f0;
-ring_node *ring_node_for_averaging_sm_f1;
-ring_node *ring_node_for_averaging_sm_f2;
+ring_node sm_ring_f0[ NB_RING_NODES_SM_F0 ] = {0};
+ring_node sm_ring_f1[ NB_RING_NODES_SM_F1 ] = {0};
+ring_node sm_ring_f2[ NB_RING_NODES_SM_F2 ] = {0};
+ring_node *current_ring_node_sm_f0      = NULL;
+ring_node *current_ring_node_sm_f1      = NULL;
+ring_node *current_ring_node_sm_f2      = NULL;
+ring_node *ring_node_for_averaging_sm_f0= NULL;
+ring_node *ring_node_for_averaging_sm_f1= NULL;
+ring_node *ring_node_for_averaging_sm_f2= NULL;
 
 //
 ring_node * getRingNodeForAveraging( unsigned char frequencyChannel)

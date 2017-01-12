@@ -12,24 +12,24 @@
 //***************
 // waveform rings
 // F0
-ring_node waveform_ring_f0[NB_RING_NODES_F0];
-ring_node *current_ring_node_f0;
-ring_node *ring_node_to_send_swf_f0;
+ring_node waveform_ring_f0[NB_RING_NODES_F0]= {0};
+ring_node *current_ring_node_f0             = NULL;
+ring_node *ring_node_to_send_swf_f0         = NULL;
 // F1
-ring_node waveform_ring_f1[NB_RING_NODES_F1];
-ring_node *current_ring_node_f1;
-ring_node *ring_node_to_send_swf_f1;
-ring_node *ring_node_to_send_cwf_f1;
+ring_node waveform_ring_f1[NB_RING_NODES_F1] = {0};
+ring_node *current_ring_node_f1             = NULL;
+ring_node *ring_node_to_send_swf_f1         = NULL;
+ring_node *ring_node_to_send_cwf_f1         = NULL;
 // F2
-ring_node waveform_ring_f2[NB_RING_NODES_F2];
-ring_node *current_ring_node_f2;
-ring_node *ring_node_to_send_swf_f2;
-ring_node *ring_node_to_send_cwf_f2;
+ring_node waveform_ring_f2[NB_RING_NODES_F2] = {0};
+ring_node *current_ring_node_f2             = NULL;
+ring_node *ring_node_to_send_swf_f2         = NULL;
+ring_node *ring_node_to_send_cwf_f2         = NULL;
 // F3
-ring_node waveform_ring_f3[NB_RING_NODES_F3];
-ring_node *current_ring_node_f3;
-ring_node *ring_node_to_send_cwf_f3;
-char wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK ];
+ring_node waveform_ring_f3[NB_RING_NODES_F3] = {0};
+ring_node *current_ring_node_f3             = NULL;
+ring_node *ring_node_to_send_cwf_f3         = NULL;
+char wf_cont_f3_light[ (NB_SAMPLES_PER_SNAPSHOT) * NB_BYTES_CWF3_LIGHT_BLK ] = {0};
 
 bool extractSWF1 = false;
 bool extractSWF2 = false;
@@ -38,10 +38,10 @@ bool swf0_ready_flag_f2 = false;
 bool swf1_ready = false;
 bool swf2_ready = false;
 
-int swf1_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
-int swf2_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ];
-ring_node ring_node_swf1_extracted;
-ring_node ring_node_swf2_extracted;
+int swf1_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ] = {0};
+int swf2_extracted[ (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK) ] = {0};
+ring_node ring_node_swf1_extracted = {0};
+ring_node ring_node_swf2_extracted = {0};
 
 typedef enum resynchro_state_t
 {

@@ -13,14 +13,14 @@
 
 #include "fsw_spacewire.h"
 
-rtems_name semq_name;
-rtems_id semq_id;
+rtems_name semq_name    = 0;
+rtems_id semq_id        = RTEMS_ID_NONE;
 
 //*****************
 // waveform headers
-Header_TM_LFR_SCIENCE_CWF_t headerCWF;
-Header_TM_LFR_SCIENCE_SWF_t headerSWF;
-Header_TM_LFR_SCIENCE_ASM_t headerASM;
+Header_TM_LFR_SCIENCE_CWF_t headerCWF = {0};
+Header_TM_LFR_SCIENCE_SWF_t headerSW  = {0};
+Header_TM_LFR_SCIENCE_ASM_t headerASM = {0};
 
 unsigned char previousTimecodeCtr = 0;
 unsigned int *grspwPtr = (unsigned int *) (REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME_REGISTER);

@@ -8,27 +8,26 @@
  */
 
 #include "avf0_prc0.h"
-#include "fsw_processing.h"
 
-nb_sm_before_bp_asm_f0 nb_sm_before_f0;
+nb_sm_before_bp_asm_f0 nb_sm_before_f0 = {0};
 
 //***
 // F0
-ring_node_asm asm_ring_norm_f0      [ NB_RING_NODES_ASM_NORM_F0      ];
-ring_node_asm asm_ring_burst_sbm_f0 [ NB_RING_NODES_ASM_BURST_SBM_F0 ];
+ring_node_asm asm_ring_norm_f0      [ NB_RING_NODES_ASM_NORM_F0      ] = {0};
+ring_node_asm asm_ring_burst_sbm_f0 [ NB_RING_NODES_ASM_BURST_SBM_F0 ] = {0};
 
-ring_node ring_to_send_asm_f0       [ NB_RING_NODES_ASM_F0 ];
-int buffer_asm_f0                   [ NB_RING_NODES_ASM_F0 * TOTAL_SIZE_SM ];
+ring_node ring_to_send_asm_f0       [ NB_RING_NODES_ASM_F0 ] = {0};
+int buffer_asm_f0                   [ NB_RING_NODES_ASM_F0 * TOTAL_SIZE_SM ] = {0};
 
-float asm_f0_patched_norm       [ TOTAL_SIZE_SM ];
-float asm_f0_patched_burst_sbm  [ TOTAL_SIZE_SM ];
-float asm_f0_reorganized        [ TOTAL_SIZE_SM ];
+float asm_f0_patched_norm       [ TOTAL_SIZE_SM ] = {0};
+float asm_f0_patched_burst_sbm  [ TOTAL_SIZE_SM ] = {0};
+float asm_f0_reorganized        [ TOTAL_SIZE_SM ] = {0};
 
-float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F0];
-float compressed_sm_sbm_f0 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 ];
+float compressed_sm_norm_f0[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F0] = {0};
+float compressed_sm_sbm_f0 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F0 ] = {0};
 
-float k_coeff_intercalib_f0_norm[ NB_BINS_COMPRESSED_SM_F0     * NB_K_COEFF_PER_BIN ];  // 11 * 32 = 352
-float k_coeff_intercalib_f0_sbm[  NB_BINS_COMPRESSED_SM_SBM_F0 * NB_K_COEFF_PER_BIN ];  // 22 * 32 = 704
+float k_coeff_intercalib_f0_norm[ NB_BINS_COMPRESSED_SM_F0     * NB_K_COEFF_PER_BIN ] = {0}; // 11 * 32 = 352
+float k_coeff_intercalib_f0_sbm[  NB_BINS_COMPRESSED_SM_SBM_F0 * NB_K_COEFF_PER_BIN ] = {0}; // 22 * 32 = 704
 
 //************
 // RTEMS TASKS

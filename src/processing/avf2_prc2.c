@@ -9,23 +9,21 @@
 
 #include "avf2_prc2.h"
 
-nb_sm_before_bp_asm_f2 nb_sm_before_f2;
-
-extern ring_node sm_ring_f2[ ];
+nb_sm_before_bp_asm_f2 nb_sm_before_f2 = {0};
 
 //***
 // F2
-ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ];
+ring_node_asm asm_ring_norm_f2     [ NB_RING_NODES_ASM_NORM_F2      ] = {0};
 
-ring_node ring_to_send_asm_f2      [ NB_RING_NODES_ASM_F2 ];
-int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ];
+ring_node ring_to_send_asm_f2      [ NB_RING_NODES_ASM_F2 ] = {0};
+int buffer_asm_f2                  [ NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM ] = {0};
 
-float asm_f2_patched_norm   [ TOTAL_SIZE_SM ];
-float asm_f2_reorganized    [ TOTAL_SIZE_SM ];
+float asm_f2_patched_norm   [ TOTAL_SIZE_SM ] = {0};
+float asm_f2_reorganized    [ TOTAL_SIZE_SM ] = {0};
 
-float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2];
+float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2] = {0};
 
-float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ];   // 12 * 32 = 384
+float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ] = {0}; // 12 * 32 = 384
 
 //************
 // RTEMS TASKS

@@ -70,10 +70,10 @@ extern gptimer_regs_t *gptimer_regs;
 extern void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int*, unsigned int* );
 extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int* );
 
-rtems_name name_hk_rate_monotonic;  // name of the HK rate monotonic
-rtems_id HK_id;                     // id of the HK rate monotonic period
-rtems_name name_avgv_rate_monotonic;  // name of the AVGV rate monotonic
-rtems_id AVGV_id;                     // id of the AVGV rate monotonic period
+rtems_name name_hk_rate_monotonic   = 0;            // name of the HK rate monotonic
+rtems_id HK_id                      = RTEMS_ID_NONE;// id of the HK rate monotonic period
+rtems_name name_avgv_rate_monotonic = 0;            // name of the AVGV rate monotonic
+rtems_id AVGV_id                    = RTEMS_ID_NONE;// id of the AVGV rate monotonic period
 
 void timer_configure( unsigned char timer, unsigned int clock_divider,
                     unsigned char interrupt_level, rtems_isr (*timer_isr)() );

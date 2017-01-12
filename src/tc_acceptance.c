@@ -10,7 +10,7 @@
 #include "tc_acceptance.h"
 #include <stdio.h>
 
-unsigned int lookUpTableForCRC[CONST_256];
+unsigned int lookUpTableForCRC[CONST_256] = {0};
 
 //**********************
 // GENERAL USE FUNCTIONS
