@@ -231,6 +231,9 @@ rtems_task hous_task(rtems_task_argument argument)
     rtems_status_code spare_status;
     rtems_id queue_id;
     rtems_rate_monotonic_period_status period_status;
+    bool isSynchronized;
+
+    isSynchronized = false;
 
     status =  get_message_queue_id_send( &queue_id );
     if (status != RTEMS_SUCCESSFUL)
@@ -259,11 +262,12 @@ rtems_task hous_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_period( HK_id, SY_LFR_TIME_SYN_TIMEOUT_in_ticks );
     status = rtems_rate_monotonic_get_status( HK_id, &period_status );
     DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
-    while(period_status.state != RATE_MONOTONIC_EXPIRED )   // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
+    while( (period_status.state != RATE_MONOTONIC_EXPIRED)
+           && (isSynchronized == false) )   // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
     {
         if ((time_management_regs->coarse_time & VAL_LFR_SYNCHRONIZED) == INT32_ALL_0) // check time synchronization
         {
-            break;  // break if LFR is synchronized
+            isSynchronized = true;
         }
         else
         {

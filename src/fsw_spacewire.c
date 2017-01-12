@@ -508,7 +508,8 @@ int spacewire_several_connect_attemps( void )
     rtems_status_code status;
     int i;
 
-    for ( i=0; i<SY_LFR_DPU_CONNECT_ATTEMPT; i++ )
+    i = 0;
+    while (i < SY_LFR_DPU_CONNECT_ATTEMPT)
     {
         PRINTF1("in spacewire_reset_link *** link recovery, try %d\n", i);
 
@@ -520,12 +521,12 @@ int spacewire_several_connect_attemps( void )
 
         if (  status_spw != RTEMS_SUCCESSFUL )
         {
-            PRINTF1("in spacewire_reset_link *** ERR spacewire_start_link code %d\n",  status_spw)
+            i = i + 1;
+            PRINTF1("in spacewire_reset_link *** ERR spacewire_start_link code %d\n",  status_spw);
         }
-
-        if ( status_spw == RTEMS_SUCCESSFUL)
+        else
         {
-            break;
+            i = SY_LFR_DPU_CONNECT_ATTEMPT;
         }
     }
 

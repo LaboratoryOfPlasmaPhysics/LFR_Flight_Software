@@ -116,6 +116,8 @@ void spectral_matrices_isr_f0( int statusReg )
         }
         spectral_matrix_regs->status = BIT_READY_1;   // [0000 0010]
         break;
+    default:
+        break;
     }
 }
 
@@ -174,6 +176,8 @@ void spectral_matrices_isr_f1( int statusReg )
         }
         spectral_matrix_regs->status = BIT_STATUS_F1_1;   // [1000 0000]
         break;
+    default:
+        break;
     }
 }
 
@@ -216,6 +220,8 @@ void spectral_matrices_isr_f2( int statusReg )
         {
             status_code = rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_3 );
         }
+        break;
+    default:
         break;
     }
 }

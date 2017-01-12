@@ -585,7 +585,7 @@ rtems_task swbd_task(rtems_task_argument argument)
         if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
             acquisitionTimeF0_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send_swf_f0->coarseTime );
-            build_snapshot_from_ring( ring_node_to_send_swf_f1, 1, acquisitionTimeF0_asLong,
+            build_snapshot_from_ring( ring_node_to_send_swf_f1, CHANNELF1, acquisitionTimeF0_asLong,
                                       &ring_node_swf1_extracted, swf1_extracted );
             swf1_ready = true;    // the snapshot has been extracted and is ready to be sent
         }
@@ -770,6 +770,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
                                int *swf_extracted)
 {
     unsigned int i;
+    unsigned int node;
     unsigned long long int centerTime_asLong;
     unsigned long long int acquisitionTime_asLong;
     unsigned long long int bufferAcquisitionTime_asLong;
@@ -813,23 +814,29 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
         break;
     default:
         acquisitionTime_asLong = centerTime_asLong;
+        nb_ring_nodes = 0;
         frequency_asLong = FREQ_F2;
         nbTicksPerSample_asLong = TICKS_PER_T2;
         break;
     }
 
-    //****************************************************************************
+    //*****************************************************************************
     // (4) search the ring_node with the acquisition time <= acquisitionTime_asLong
-    for (i=0; i<nb_ring_nodes; i++)
+    node = 0;
+    while ( node < nb_ring_nodes)
     {
-        //PRINTF1("%d ... ", i);
-                bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
+        //PRINTF1("%d ... ", node);
+        bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
             //PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong);
-                    break;
+            node = nb_ring_nodes;
         }
-        ring_node_to_send = ring_node_to_send->previous;
+        else
+        {
+            node = node + 1;
+            ring_node_to_send = ring_node_to_send->previous;
+        }
     }
 
     // (5) compute the number of samples to take in the current buffer
