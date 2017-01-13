@@ -9,7 +9,7 @@
 
 #define SPW_RXSIZE  228
 #define SPW_TXDSIZE 4096
-#define SPW_TXHSIZE 34
+#define SPW_TXHSIZE 64
 
 #define BITS_PID_0  0x07
 #define BITS_PID_1  0x0f
@@ -21,7 +21,7 @@
 #define CCSDS_TELEMETRY_HEADER_LENGTH (16+4)
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH (10+4)
-#define CCSDS_TC_PKT_MAX_SIZE (228+3) // => 3 is for Prot ID, Reserved and User App bytes
+#define CCSDS_TC_PKT_MAX_SIZE 232   // (228+3) with 3 for Prot ID, Reserved and User App bytes, SHALL BE A MULTIPLE OF 4
 #define CCSDS_TC_PKT_MIN_SIZE 16
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12

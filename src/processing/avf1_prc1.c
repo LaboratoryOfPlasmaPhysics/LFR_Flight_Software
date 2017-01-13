@@ -91,7 +91,7 @@ rtems_task avf1_task( rtems_task_argument lfrRequestedMode )
         for ( i = 1; i < (NB_SM_BEFORE_AVF0_F1); i++ )
         {
             nodeForAveraging = nodeForAveraging->previous;
-            ring_node_tab[NB_SM_BEFORE_AVF0_F1-i] = nodeForAveraging;
+            ring_node_tab[NB_SM_BEFORE_AVF0_F1 - i - 1] = nodeForAveraging;
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer
