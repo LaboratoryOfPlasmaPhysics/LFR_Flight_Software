@@ -19,6 +19,7 @@
 #define CCSDS_TC_TM_PACKET_OFFSET   7
 #define PROTID_RES_APP              3
 #define CCSDS_TELEMETRY_HEADER_LENGTH (16+4)
+#define CCSDS_TC_HEADER_LENGTH      10
 #define CCSDS_TM_PKT_MAX_SIZE 4412
 #define CCSDS_TELECOMMAND_HEADER_LENGTH (10+4)
 #define CCSDS_TC_PKT_MAX_SIZE 232   // (228+3) with 3 for Prot ID, Reserved and User App bytes, SHALL BE A MULTIPLE OF 4
@@ -615,7 +616,7 @@ typedef struct {
     unsigned char serviceType;
     unsigned char serviceSubType;
     unsigned char sourceID;
-    unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-10];
+    unsigned char dataAndCRC[CCSDS_TC_PKT_MAX_SIZE-CCSDS_TC_HEADER_LENGTH];
 } ccsdsTelecommandPacket_t;
 
 //**********
@@ -800,25 +801,20 @@ typedef struct {
     unsigned char sy_lfr_s2_bp_p1;
 
     // mask F0
-    union{
-        struct{
-            unsigned char f0_word1[BYTES_PER_WORD];
-            unsigned char f0_word2[BYTES_PER_WORD];
-            unsigned char f0_word3[BYTES_PER_WORD];
-            unsigned char f0_word4[BYTES_PER_WORD];
-            // mask F1
-            unsigned char f1_word1[BYTES_PER_WORD];
-            unsigned char f1_word2[BYTES_PER_WORD];
-            unsigned char f1_word3[BYTES_PER_WORD];
-            unsigned char f1_word4[BYTES_PER_WORD];
-            // mask F2
-            unsigned char f2_word1[BYTES_PER_WORD];
-            unsigned char f2_word2[BYTES_PER_WORD];
-            unsigned char f2_word3[BYTES_PER_WORD];
-            unsigned char f2_word4[BYTES_PER_WORD];
-        } fx;
-        unsigned char raw[ BYTES_PER_MASKS_SET ];
-    } sy_lfr_fbins;
+    unsigned char sy_lfr_fbins_f0_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f0_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f0_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f0_word4[BYTES_PER_WORD];
+    // mask F1
+    unsigned char sy_lfr_fbins_f1_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f1_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f1_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f1_word4[BYTES_PER_WORD];
+    // mask F2
+    unsigned char sy_lfr_fbins_f2_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f2_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f2_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_fbins_f2_word4[BYTES_PER_WORD];
 
     // PAS FILTER PARAMETERS
     unsigned char pa_rpw_spare8_2;
@@ -830,25 +826,20 @@ typedef struct {
     unsigned char sy_lfr_sc_rw_delta_f[PARAM_4_BYTES];
 
     // LFR_RW_MASK
-    union{
-        struct{
-            unsigned char f0_word1[BYTES_PER_WORD];
-            unsigned char f0_word2[BYTES_PER_WORD];
-            unsigned char f0_word3[BYTES_PER_WORD];
-            unsigned char f0_word4[BYTES_PER_WORD];
-            // mask F1
-            unsigned char f1_word1[BYTES_PER_WORD];
-            unsigned char f1_word2[BYTES_PER_WORD];
-            unsigned char f1_word3[BYTES_PER_WORD];
-            unsigned char f1_word4[BYTES_PER_WORD];
-            // mask F2
-            unsigned char f2_word1[BYTES_PER_WORD];
-            unsigned char f2_word2[BYTES_PER_WORD];
-            unsigned char f2_word3[BYTES_PER_WORD];
-            unsigned char f2_word4[BYTES_PER_WORD];
-        } fx;
-        unsigned char raw[ BYTES_PER_MASKS_SET ];
-    } sy_lfr_rw_mask;
+    unsigned char sy_lfr_rw_mask_f0_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f0_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f0_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f0_word4[BYTES_PER_WORD];
+    // mask F1
+    unsigned char sy_lfr_rw_mask_f1_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f1_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f1_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f1_word4[BYTES_PER_WORD];
+    // mask F2
+    unsigned char sy_lfr_rw_mask_f2_word1[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f2_word2[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f2_word3[BYTES_PER_WORD];
+    unsigned char sy_lfr_rw_mask_f2_word4[BYTES_PER_WORD];
 
     // SPARE
     unsigned char pa_rpw_spare8_3;
@@ -886,7 +877,8 @@ typedef struct {
 
     //******************
     // SOURCE DATA repeated N times with N in [0 .. PA_LFR_KCOEFF_BLK_NR]
-    unsigned char kcoeff_blks[3900]; // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 = 3900)
+    // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 = 3900)
+    unsigned char kcoeff_blks[KCOEFF_BLK_SIZE * KCOEFF_BLK_NR_PKT1];
 
 } Packet_TM_LFR_KCOEFFICIENTS_DUMP_t;
 

@@ -43,4 +43,6 @@ float K55_pe = 1;
 float K45_pe_re = 1;
 float K45_pe_im = 1;
 
-float Alpha_M = M_PI/4;
+#define ALPHA_M (M_PI / 4)
+
+float Alpha_M = ALPHA_M;

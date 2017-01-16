@@ -85,7 +85,7 @@ unsigned short sequenceCounters_SCIENCE_NORMAL_BURST        = 0;
 unsigned short sequenceCounters_SCIENCE_SBM1_SBM2           = 0;
 unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID]  = {0};
 unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID] = {0};
-unsigned short sequenceCounterHK;
+unsigned short sequenceCounterHK                            = {0};
 spw_stats grspw_stats                                       = {0};
 
 // TC_LFR_UPDATE_INFO

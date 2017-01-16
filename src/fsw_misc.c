@@ -349,9 +349,9 @@ rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
     rtems_status_code status;
-    unsigned int v[MOVING_AVERAGE];
-    unsigned int e1[MOVING_AVERAGE];
-    unsigned int e2[MOVING_AVERAGE];
+    static unsigned int v[MOVING_AVERAGE] = {0};
+    static unsigned int e1[MOVING_AVERAGE] = {0};
+    static unsigned int e2[MOVING_AVERAGE] = {0};
     float average_v;
     float average_e1;
     float average_e2;
@@ -376,17 +376,10 @@ rtems_task avgv_task(rtems_task_argument argument)
     }
 
     // initialize values
-    k = 0;
     indexOfOldValue = MOVING_AVERAGE - 1;
-    for (k = 0; k < MOVING_AVERAGE; k++)
-    {
-        v[k] = 0;
-        e1[k] = 0;
-        e2[k] = 0;
-        average_v = 0.;
-        average_e1 = 0.;
-        average_e2 = 0.;
-    }
+    average_v = 0.;
+    average_e1 = 0.;
+    average_e2 = 0.;
 
     k = 0;
 
@@ -793,7 +786,7 @@ void increment_hk_counter( unsigned char newValue, unsigned char oldValue, unsig
     }
     else
     {
-        delta = 255 - oldValue + newValue;
+        delta = (255 - oldValue) + newValue;
     }
 
     *counter = *counter + delta;
@@ -906,7 +899,7 @@ void hk_lfr_le_me_he_update()
 
     unsigned int hk_lfr_he_cnt;
 
-    hk_lfr_he_cnt = ((unsigned int) housekeeping_packet.hk_lfr_he_cnt[0]) * 256 + housekeeping_packet.hk_lfr_he_cnt[1];
+    hk_lfr_he_cnt = (((unsigned int) housekeeping_packet.hk_lfr_he_cnt[0]) * 256) + housekeeping_packet.hk_lfr_he_cnt[1];
 
     //update the low severity error counter
     hk_lfr_le_update( );

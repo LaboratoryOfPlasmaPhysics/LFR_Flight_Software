@@ -208,7 +208,7 @@ inline void waveform_isr_normal_sbm1_sbm2( void )
 
     //***
     // F1
-    if ( (waveform_picker_regs->status & 0x0c) != INIT_CHAR ) {  // [0000 1100] check the f1 full bits
+    if ( (waveform_picker_regs->status & BITS_WFP_STATUS_F1) != INIT_CHAR ) {  // [0000 1100] check the f1 full bits
         // (1) change the receiving buffer for the waveform picker
         ring_node_to_send_cwf_f1    = current_ring_node_f1->previous;
         current_ring_node_f1        = current_ring_node_f1->next;
@@ -1167,11 +1167,11 @@ void set_wfp_burst_enable_register( unsigned char mode )
     case LFR_MODE_SBM1:
     case LFR_MODE_SBM2:
         waveform_picker_regs->run_burst_enable = RUN_BURST_ENABLE_SBM2;  // [0110 0000] enable f2 and f1 burst
-        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x0f; // [1111] enable f3 f2 f1 f0
+        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | BITS_WFP_ENABLE_ALL; // [1111] enable f3 f2 f1 f0
         break;
     case LFR_MODE_BURST:
         waveform_picker_regs->run_burst_enable = RUN_BURST_ENABLE_BURST;  // [0100 0000] f2 burst enabled
-        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | 0x0c; // [1100] enable f3 and f2
+        waveform_picker_regs->run_burst_enable = waveform_picker_regs->run_burst_enable | BITS_WFP_ENABLE_BURST; // [1100] enable f3 and f2
         break;
     default:
         waveform_picker_regs->run_burst_enable = INIT_CHAR;  // [0000 0000] no burst enabled, no waveform enabled

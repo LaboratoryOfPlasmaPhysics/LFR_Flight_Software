@@ -675,7 +675,9 @@ void spacewire_get_last_error( void )
     unsigned char update_hk_lfr_last_er;
 
     memset(&current, 0, sizeof(spw_stats));
-    update_hk_lfr_last_er = 0;
+    hk_lfr_last_er_rid  = INIT_CHAR;
+    hk_lfr_last_er_code = INIT_CHAR;
+    update_hk_lfr_last_er = INIT_CHAR;
 
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current );
 

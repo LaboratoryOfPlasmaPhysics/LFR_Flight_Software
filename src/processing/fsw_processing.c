@@ -693,7 +693,7 @@ int getFBinMask( int index, unsigned char channel )
     int fbin;
     unsigned char *sy_lfr_fbins_fx_word1;
 
-    sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins.fx.f0_word1;
+    sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
 
     switch(channel)
     {
@@ -793,9 +793,9 @@ void init_kcoeff_sbm_from_kcoeff_norm(float *input_kcoeff, float *output_kcoeff,
     {
         for (kcoeff=0; kcoeff<NB_K_COEFF_PER_BIN; kcoeff++)
         {
-            output_kcoeff[ ( ( bin * NB_K_COEFF_PER_BIN ) + kcoeff ) * SBM_COEFF_PER_NORM_COEFF     ]
+            output_kcoeff[   ( (bin * NB_K_COEFF_PER_BIN) + kcoeff ) * SBM_COEFF_PER_NORM_COEFF       ]
                     = input_kcoeff[ (bin*NB_K_COEFF_PER_BIN) + kcoeff ];
-            output_kcoeff[ ( ( bin * NB_K_COEFF_PER_BIN ) + kcoeff ) * SBM_COEFF_PER_NORM_COEFF + 1 ]
+            output_kcoeff[ ( ( (bin * NB_K_COEFF_PER_BIN ) + kcoeff) * SBM_COEFF_PER_NORM_COEFF ) + 1 ]
                     = input_kcoeff[ (bin*NB_K_COEFF_PER_BIN) + kcoeff ];
         }
     }

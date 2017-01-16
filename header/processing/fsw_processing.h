@@ -15,6 +15,15 @@
 #define MAX_SRC_DATA                780     // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
 #define MAX_SRC_DATA_WITH_SPARE     143     // 13 bins  * 11 Bytes
 
+#define NODE_0  0
+#define NODE_1  1
+#define NODE_2  2
+#define NODE_3  3
+#define NODE_4  4
+#define NODE_5  5
+#define NODE_6  6
+#define NODE_7  7
+
 typedef struct ring_node_asm
 {
     struct ring_node_asm *next;
@@ -205,14 +214,14 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
 //                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
 //                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
 
-        sum = ( incomingSMIsValid[0] * ((int *)(ring_node_tab[0]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[1] * ((int *)(ring_node_tab[1]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[2] * ((int *)(ring_node_tab[2]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[3] * ((int *)(ring_node_tab[3]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[4] * ((int *)(ring_node_tab[4]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[5] * ((int *)(ring_node_tab[5]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[6] * ((int *)(ring_node_tab[6]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[7] * ((int *)(ring_node_tab[7]->buffer_address) )[ i ] );
+        sum = ( incomingSMIsValid[BYTE_0] * ((int *)(ring_node_tab[NODE_0]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_1] * ((int *)(ring_node_tab[NODE_1]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_2] * ((int *)(ring_node_tab[NODE_2]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_3] * ((int *)(ring_node_tab[NODE_3]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_4] * ((int *)(ring_node_tab[NODE_4]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_5] * ((int *)(ring_node_tab[NODE_5]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_6] * ((int *)(ring_node_tab[NODE_6]->buffer_address) )[ i ] )
+                + ( incomingSMIsValid[BYTE_7] * ((int *)(ring_node_tab[NODE_7]->buffer_address) )[ i ] );
 
         if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
         {

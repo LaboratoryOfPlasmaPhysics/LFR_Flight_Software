@@ -1096,15 +1096,15 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     switch (channel)
     {
     case CHANNELF0:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
         deltaF = DELTAF_F0;
         break;
     case CHANNELF1:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
         deltaF = DELTAF_F1;
         break;
     case CHANNELF2:
-        maskPtr = parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1;
+        maskPtr = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
         deltaF = DELTAF_F2;
         break;
     default:
@@ -1168,12 +1168,12 @@ void merge_fbins_masks( void )
     unsigned char *rw_mask_f1;
     unsigned char *rw_mask_f2;
 
-    fbins_f0 = parameter_dump_packet.sy_lfr_fbins.fx.f0_word1;
-    fbins_f1 = parameter_dump_packet.sy_lfr_fbins.fx.f1_word1;
-    fbins_f2 = parameter_dump_packet.sy_lfr_fbins.fx.f2_word1;
-    rw_mask_f0 = parameter_dump_packet.sy_lfr_rw_mask.fx.f0_word1;
-    rw_mask_f1 = parameter_dump_packet.sy_lfr_rw_mask.fx.f1_word1;
-    rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask.fx.f2_word1;
+    fbins_f0 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
+    fbins_f1 = parameter_dump_packet.sy_lfr_fbins_f1_word1;
+    fbins_f2 = parameter_dump_packet.sy_lfr_fbins_f2_word1;
+    rw_mask_f0 = parameter_dump_packet.sy_lfr_rw_mask_f0_word1;
+    rw_mask_f1 = parameter_dump_packet.sy_lfr_rw_mask_f1_word1;
+    rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
 
     for( k=0; k < BYTES_PER_MASK; k++ )
     {
@@ -1195,7 +1195,7 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 
     status = LFR_SUCCESSFUL;
 
-    fbins_mask_dump = parameter_dump_packet.sy_lfr_fbins.raw;
+    fbins_mask_dump = parameter_dump_packet.sy_lfr_fbins_f0_word1;
     fbins_mask_TC = TC->dataAndCRC;
 
     for (k=0; k < BYTES_PER_MASKS_SET; k++)
@@ -1490,7 +1490,7 @@ void init_parameter_dump( void )
     // FBINS MASKS
     for (k=0; k < BYTES_PER_MASKS_SET; k++)
     {
-        parameter_dump_packet.sy_lfr_fbins.raw[k] = INT8_ALL_F;
+        parameter_dump_packet.sy_lfr_fbins_f0_word1[k] = INT8_ALL_F;
     }
 
     // PAS FILTER PARAMETERS
@@ -1505,7 +1505,7 @@ void init_parameter_dump( void )
     // LFR_RW_MASK
     for (k=0; k < BYTES_PER_MASKS_SET; k++)
     {
-        parameter_dump_packet.sy_lfr_rw_mask.raw[k] = INT8_ALL_F;
+        parameter_dump_packet.sy_lfr_rw_mask_f0_word1[k] = INT8_ALL_F;
     }
 
     // once the reaction wheels masks have been initialized, they have to be merged with the fbins masks

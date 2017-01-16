@@ -119,6 +119,8 @@ typedef struct {
 #define BIT_WFP_BUFFER_1    0x02
 
 #define RST_BITS_RUN_BURST_EN   0x80    // [1000 0000] burst f2, f1, f0     enable f3, f2, f1, f0
+#define BITS_WFP_ENABLE_ALL     0x0f    // [0000 1111] enable f3, f2, f1, f0
+#define BITS_WFP_ENABLE_BURST   0x0c    // [0000 1100] enable f3, f2
 #define RUN_BURST_ENABLE_SBM2   0x60    // [0110 0000] enable f2 and f1 burst
 #define RUN_BURST_ENABLE_BURST  0x40    // [0100 0000] f2 burst enabled
 
