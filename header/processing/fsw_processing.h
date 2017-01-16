@@ -205,23 +205,14 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
     // AVERAGE SPECTRAL MATRIX
     for(i=0; i<TOTAL_SIZE_SM; i++)
     {
-//        sum = ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[1]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[2]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[3]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[4]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[5]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[6]->buffer_address) ) [ i ]
-//                + ( (int *) (ring_node_tab[7]->buffer_address) ) [ i ];
-
-        sum = ( incomingSMIsValid[BYTE_0] * ((int *)(ring_node_tab[NODE_0]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_1] * ((int *)(ring_node_tab[NODE_1]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_2] * ((int *)(ring_node_tab[NODE_2]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_3] * ((int *)(ring_node_tab[NODE_3]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_4] * ((int *)(ring_node_tab[NODE_4]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_5] * ((int *)(ring_node_tab[NODE_5]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_6] * ((int *)(ring_node_tab[NODE_6]->buffer_address) )[ i ] )
-                + ( incomingSMIsValid[BYTE_7] * ((int *)(ring_node_tab[NODE_7]->buffer_address) )[ i ] );
+        sum = INIT_FLOAT;
+        for ( k = 0; k < NB_SM_BEFORE_AVF0_F1; k++ )
+        {
+            if (incomingSMIsValid[k] == 1)
+            {
+                sum = sum + ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ] ;
+            }
+        }
 
         if ( (nbAverageNORM == 0) && (nbAverageSBM == 0) )
         {

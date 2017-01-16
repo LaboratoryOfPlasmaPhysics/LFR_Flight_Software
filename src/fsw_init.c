@@ -153,8 +153,8 @@ rtems_task Init( rtems_task_argument ignored )
 
     vhdlVersion = (unsigned char *) (REGS_ADDR_VHDL_VERSION);
     PRINTF("** VHDL                **\n")
-    PRINTF1("** %d.", vhdlVersion[1])
-    PRINTF1("%d."   , vhdlVersion[2])
+    PRINTF1("** %d-", vhdlVersion[1])
+    PRINTF1("%d-"   , vhdlVersion[2])
     PRINTF1("%d              **\n", vhdlVersion[3])
     PRINTF("*************************\n")
     PRINTF("\n\n")

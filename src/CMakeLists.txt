@@ -64,8 +64,7 @@ option(FSW_debug_tch "?" OFF)
 set(SW_VERSION_N1 "3" CACHE STRING  "Choose N1 FSW Version." FORCE)
 set(SW_VERSION_N2 "1" CACHE STRING  "Choose N2 FSW Version." FORCE)
 set(SW_VERSION_N3 "0" CACHE STRING  "Choose N3 FSW Version." FORCE)
-set(SW_VERSION_N4 "4" CACHE STRING  "Choose N4 FSW Version." FORCE)
-
+set(SW_VERSION_N4 "5" CACHE STRING  "Choose N4 FSW Version." FORCE)
 
 if(FSW_verbose)
 	add_definitions(-DPRINT_MESSAGES_ON_CONSOLE)
@@ -103,6 +102,6 @@ add_definitions(-DSW_VERSION_N2=${SW_VERSION_N2})
 add_definitions(-DSW_VERSION_N3=${SW_VERSION_N3})
 add_definitions(-DSW_VERSION_N4=${SW_VERSION_N4})
 
-add_executable(FSW ${SOURCES})
-add_test_cppcheck(FSW STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
+add_executable(fsw ${SOURCES})
+add_test_cppcheck(fsw STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
 
