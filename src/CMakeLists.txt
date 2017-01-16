@@ -51,9 +51,9 @@ set(SOURCES    wf_handler.c
 )
 
 
-option(FSW_verbose "Enable verbose LFR" ON)
-option(FSW_boot_messages "Enable LFR boot messages" ON)
-option(FSW_debug_messages "Enable LFR debug messages" ON)
+option(FSW_verbose "Enable verbose LFR" OFF)
+option(FSW_boot_messages "Enable LFR boot messages" OFF)
+option(FSW_debug_messages "Enable LFR debug messages" OFF)
 option(FSW_cpu_usage_report "Enable LFR cpu usage report" OFF)
 option(FSW_stack_report "Enable LFR stack report" OFF)
 option(FSW_vhdl_dev "?" OFF)
