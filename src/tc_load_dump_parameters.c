@@ -1080,7 +1080,7 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
 
 }
 
-void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float k )
+void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float kcoeff )
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
      *
@@ -1122,8 +1122,8 @@ void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq,
     {
 
         // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
-        f_RW_min = rw_f - (filterPar.sy_lfr_sc_rw_delta_f / 2.);
-        f_RW_MAX = rw_f + (filterPar.sy_lfr_sc_rw_delta_f / 2.);
+        f_RW_min = rw_f - ( (filterPar.sy_lfr_sc_rw_delta_f * kcoeff) / DELTAF_DIV);
+        f_RW_MAX = rw_f + ( (filterPar.sy_lfr_sc_rw_delta_f * kcoeff) / DELTAF_DIV);
 
         // compute the index of the frequency bin immediately below rw_f
         binBelow = (int) ( floor( ((double) rw_f) / ((double) deltaFreq)) );
@@ -1191,8 +1191,6 @@ void build_sy_lfr_rw_mask( unsigned int channel )
     unsigned char *maskPtr;
     double deltaF;
     unsigned k;
-
-    k = 0;
 
     maskPtr = NULL;
     deltaF = DELTAF_F2;
