@@ -167,7 +167,6 @@ rtems_task Init( rtems_task_argument ignored )
     init_k_coefficients_prc1();
     init_k_coefficients_prc2();
     pa_bia_status_info = INIT_CHAR;
-    cp_rpw_sc_rw_f_flags = INIT_CHAR;
 
     // initialize all reaction wheels frequencies to NaN
     rw_f.cp_rpw_sc_rw1_f1 = NAN;
