@@ -29,6 +29,20 @@
 #define BIT_RW4_F1  0x02
 #define BIT_RW4_F2  0x01
 
+#define WHEEL_1 1
+#define WHEEL_2 2
+#define WHEEL_3 3
+#define WHEEL_4 4
+#define FREQ_1 1
+#define FREQ_2 2
+#define FREQ_3 3
+#define FREQ_4 4
+#define FLAG_OFFSET_WHEELS_1_3 8
+#define FLAG_OFFSET_WHEELS_2_4 4
+
+#define FLAG_NAN    0   // Not A NUMBER
+#define FLAG_IAN    1   // Is A Number
+
 #define SBM_KCOEFF_PER_NORM_KCOEFF  2
 
 extern unsigned short sequenceCounterParameterDump;
@@ -76,6 +90,8 @@ int set_sy_lfr_s2_bp_p1( ccsdsTelecommandPacket_t *TC );
 unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
+void set_hk_lfr_sc_rw_f_flag( unsigned char wheel, unsigned char freq, float value );
+void set_hk_lfr_sc_rw_f_flags( void );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
 void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag );
 void build_sy_lfr_rw_mask( unsigned int channel );
