@@ -177,17 +177,11 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
 
-    printf("(0)\n");
     bytePosPtr = (unsigned char *) &TC->packetID;
-    printf("(1)\n");
     requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
-    printf("(2)\n");
     copyInt32ByChar( (char*) &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
-    printf("(3)\n");
     transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
-    printf("(4)\n");
     status = check_mode_value( requestedMode );
-    printf("(5)\n");
 
     if ( status != LFR_SUCCESSFUL )     // the mode value is inconsistent
     {
@@ -683,8 +677,6 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
 #endif
 
     status = RTEMS_UNSATISFIED;
-
-    printf("hop\n");
 
     switch( lfrCurrentMode )
     {
