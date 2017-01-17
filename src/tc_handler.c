@@ -174,7 +174,6 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
     rtems_status_code status;
     unsigned char requestedMode;
-    unsigned int *transitionCoarseTime_ptr;
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
 
@@ -183,7 +182,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     printf("(1)\n");
     requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
     printf("(2)\n");
-    copyInt32ByChar( &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
+    copyInt32ByChar( (char*) &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
     printf("(3)\n");
     transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
     printf("(4)\n");
@@ -1393,8 +1392,8 @@ void setCalibrationData( void )
     // build the signal for the SCM calibration
     for (k = 0; k < CAL_NB_PTS; k++)
     {
-        val = sin( 2 * pi * CAL_F0 * k * Ts )
-                + sin(  2 * pi * CAL_F1 * k * Ts );
+        val = CAL_A0 *  sin( CAL_W0 * k * Ts )
+                + CAL_A1 * sin(  CAL_W1 * k * Ts );
         data = (unsigned short) ((val * CAL_SCALE_FACTOR) + CONST_2048);
         time_management_regs->calData = data & CAL_DATA_MASK;
     }
