@@ -139,8 +139,8 @@ rtems_task prc2_task( rtems_task_argument argument )
     rtems_status_code status;
     rtems_id queue_id_send;
     rtems_id queue_id_q_p2;
-    bp_packet                   packet_norm_bp1;
-    bp_packet                   packet_norm_bp2;
+    bp_packet                   __attribute__((aligned(4))) packet_norm_bp1;
+    bp_packet                   __attribute__((aligned(4))) packet_norm_bp2;
     ring_node                   *current_ring_node_to_send_asm_f2;
     float nbSMInASMNORM;
 

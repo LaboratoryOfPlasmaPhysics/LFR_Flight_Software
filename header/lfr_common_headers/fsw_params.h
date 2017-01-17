@@ -355,11 +355,7 @@ typedef struct {
 #define DEFAULT_SY_LFR_PAS_FILTER_TBAD      1.0
 #define DEFAULT_SY_LFR_PAS_FILTER_OFFSET    0
 #define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5
-#define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.045
-#define DEFAULT_SY_LFR_RW_K1                1.
-#define DEFAULT_SY_LFR_RW_K2                8.
-#define DEFAULT_SY_LFR_RW_K3                24.
-#define DEFAULT_SY_LFR_RW_K4                48.
+#define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.025
 
 typedef struct{
     unsigned char spare_sy_lfr_pas_filter_enabled;
@@ -368,50 +364,7 @@ typedef struct{
     unsigned char sy_lfr_pas_filter_offset;
     float sy_lfr_pas_filter_shift;
     float sy_lfr_sc_rw_delta_f;
-    // rw1_k
-    float sy_lfr_rw1_k1;
-    float sy_lfr_rw1_k2;
-    float sy_lfr_rw1_k3;
-    float sy_lfr_rw1_k4;
-    // rw2_k
-    float sy_lfr_rw2_k1;
-    float sy_lfr_rw2_k2;
-    float sy_lfr_rw2_k3;
-    float sy_lfr_rw2_k4;
-    // rw3_k
-    float sy_lfr_rw3_k1;
-    float sy_lfr_rw3_k2;
-    float sy_lfr_rw3_k3;
-    float sy_lfr_rw3_k4;
-    // rw4_k
-    float sy_lfr_rw4_k1;
-    float sy_lfr_rw4_k2;
-    float sy_lfr_rw4_k3;
-    float sy_lfr_rw4_k4;
 } filterPar_t;
-
-typedef struct{
-    // rw1_f
-    float cp_rpw_sc_rw1_f1;
-    float cp_rpw_sc_rw1_f2;
-    float cp_rpw_sc_rw1_f3;
-    float cp_rpw_sc_rw1_f4;
-    // rw2_f
-    float cp_rpw_sc_rw2_f1;
-    float cp_rpw_sc_rw2_f2;
-    float cp_rpw_sc_rw2_f3;
-    float cp_rpw_sc_rw2_f4;
-    // rw3_f
-    float cp_rpw_sc_rw3_f1;
-    float cp_rpw_sc_rw3_f2;
-    float cp_rpw_sc_rw3_f3;
-    float cp_rpw_sc_rw3_f4;
-    // rw4_f
-    float cp_rpw_sc_rw4_f1;
-    float cp_rpw_sc_rw4_f2;
-    float cp_rpw_sc_rw4_f3;
-    float cp_rpw_sc_rw4_f4;
-} rw_f_t;
 
 #define NB_ACQUISITION_DURATION 3
 #define ACQUISITION_DURATION_F0 683     // 256 / 24576 * 65536

@@ -29,7 +29,7 @@ rtems_task actn_task( rtems_task_argument unused )
 
     int result;
     rtems_status_code status;       // RTEMS status code
-    ccsdsTelecommandPacket_t TC;    // TC sent to the ACTN task
+    ccsdsTelecommandPacket_t __attribute__((aligned(4))) TC;    // TC sent to the ACTN task
     size_t size;                    // size of the incoming TC packet
     unsigned char subtype;          // subtype of the current TC packet
     unsigned char time[BYTES_PER_TIME];
@@ -178,13 +178,17 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
 
+    printf("(0)\n");
     bytePosPtr = (unsigned char *) &TC->packetID;
-
+    printf("(1)\n");
     requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
-    transitionCoarseTime_ptr = (unsigned int *) ( &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
-    transitionCoarseTime = (*transitionCoarseTime_ptr) & COARSE_TIME_MASK;
-
+    printf("(2)\n");
+    copyInt32ByChar( &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
+    printf("(3)\n");
+    transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
+    printf("(4)\n");
     status = check_mode_value( requestedMode );
+    printf("(5)\n");
 
     if ( status != LFR_SUCCESSFUL )     // the mode value is inconsistent
     {
@@ -301,9 +305,8 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
 
-    //cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
+    cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
     getReactionWheelsFrequencies( TC );
-    set_hk_lfr_sc_rw_f_flags();
     build_sy_lfr_rw_masks();
 
     // once the masks are built, they have to be merged with the fbins_mask
@@ -681,6 +684,8 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
 #endif
 
     status = RTEMS_UNSATISFIED;
+
+    printf("hop\n");
 
     switch( lfrCurrentMode )
     {

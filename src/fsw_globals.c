@@ -73,8 +73,7 @@ unsigned int lastValidEnterModeTime                     = {0};
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet                  = {0};
-unsigned char cp_rpw_sc_rw1_rw2_f_flags = 0;
-unsigned char cp_rpw_sc_rw3_rw4_f_flags = 0;
+unsigned char cp_rpw_sc_rw_f_flags                      = 0;
 // message queues occupancy
 unsigned char hk_lfr_q_sd_fifo_size_max = 0;
 unsigned char hk_lfr_q_rv_fifo_size_max = 0;
@@ -90,7 +89,14 @@ unsigned short sequenceCounterHK                            = {0};
 spw_stats grspw_stats                                       = {0};
 
 // TC_LFR_UPDATE_INFO
-rw_f_t rw_f;
+float cp_rpw_sc_rw1_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw1_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw2_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw2_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw3_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw3_f2 = INIT_FLOAT;
+float cp_rpw_sc_rw4_f1 = INIT_FLOAT;
+float cp_rpw_sc_rw4_f2 = INIT_FLOAT;
 
 // TC_LFR_LOAD_FILTER_PAR
 filterPar_t filterPar = {0};

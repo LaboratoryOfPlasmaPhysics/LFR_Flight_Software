@@ -190,10 +190,10 @@ rtems_task prc0_task( rtems_task_argument lfrRequestedMode )
     rtems_status_code status;
     rtems_id queue_id;
     rtems_id queue_id_q_p0;
-    bp_packet_with_spare    packet_norm_bp1;
-    bp_packet               packet_norm_bp2;
-    bp_packet               packet_sbm_bp1;
-    bp_packet               packet_sbm_bp2;
+    bp_packet_with_spare    __attribute__((aligned(4))) packet_norm_bp1;
+    bp_packet               __attribute__((aligned(4))) packet_norm_bp2;
+    bp_packet               __attribute__((aligned(4))) packet_sbm_bp1;
+    bp_packet               __attribute__((aligned(4))) packet_sbm_bp2;
     ring_node               *current_ring_node_to_send_asm_f0;
     float nbSMInASMNORM;
     float nbSMInASMSBM;

@@ -124,7 +124,7 @@ rtems_task recv_task( rtems_task_argument unused )
      */
 
     int len;
-    ccsdsTelecommandPacket_t currentTC;
+    ccsdsTelecommandPacket_t __attribute__((aligned(4))) currentTC;
     unsigned char computed_CRC[ BYTES_PER_CRC ];
     unsigned char currentTC_LEN_RCV[ BYTES_PER_PKT_LEN ];
     unsigned char destinationID;
@@ -167,7 +167,7 @@ rtems_task recv_task( rtems_task_argument unused )
             }
             else {
                 estimatedPacketLength = (unsigned int) (len - CCSDS_TC_TM_PACKET_OFFSET - PROTID_RES_APP); // => -3 is for Prot ID, Reserved and User App bytes
-                //PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
+//                PRINTF1("incoming TC with Length (byte): %d\n", len - 3);
                 currentTC_LEN_RCV[ 0 ] = (unsigned char) (estimatedPacketLength >> SHIFT_1_BYTE);
                 currentTC_LEN_RCV[ 1 ] = (unsigned char) (estimatedPacketLength     );
                 // CHECK THE TC
