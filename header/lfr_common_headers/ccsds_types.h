@@ -633,7 +633,7 @@ typedef struct {
 #define STATUS_WORD_CALIB_MASK              0xf7    // [1111 0111]
 #define STATUS_WORD_RESET_CAUSE_BITS        0x07    // [0000 0111]
 #define STATUS_WORD_RESET_CAUSE_MASK        0xf8    // [1111 1000]
-#define STATUS_WORD_LINK_STATE_BITS         0x03    // [0000 0111]
+#define STATUS_WORD_LINK_STATE_BITS         0x07    // [0000 0111]
 #define STATUS_WORD_LINK_STATE_MASK         0xf8    // [1111 1000]
 #define STATUS_WORD_LFR_MODE_SHIFT          4
 #define STATUS_WORD_LFR_MODE_BITS           0xf0    // [1111 0000]

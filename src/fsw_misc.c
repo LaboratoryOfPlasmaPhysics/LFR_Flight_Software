@@ -727,12 +727,12 @@ void set_sy_lfr_pas_filter_enabled( bool state )
     if (state == true)
     {
         housekeeping_packet.lfr_status_word[1] =
-                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_SC_POTENTIAL_FLAG_BIT;   // [0010 0000]
+                housekeeping_packet.lfr_status_word[1] | STATUS_WORD_PAS_FILTER_ENABLED_BIT;   // [0010 0000]
     }
     else
     {
         housekeeping_packet.lfr_status_word[1] =
-                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_SC_POTENTIAL_FLAG_MASK;   // [1101 1111]
+                housekeeping_packet.lfr_status_word[1] & STATUS_WORD_PAS_FILTER_ENABLED_MASK;   // [1101 1111]
     }
 }
 
