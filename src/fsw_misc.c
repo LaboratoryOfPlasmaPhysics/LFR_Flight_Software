@@ -786,7 +786,7 @@ void increment_hk_counter( unsigned char newValue, unsigned char oldValue, unsig
     }
     else
     {
-        delta = (255 - oldValue) + newValue;
+        delta = (CONST_256 - oldValue) + newValue;
     }
 
     *counter = *counter + delta;
@@ -798,7 +798,7 @@ void hk_lfr_le_update( void )
     hk_lfr_le_t new_hk_lfr_le;
     unsigned int counter;
 
-    counter = (((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * 256) + housekeeping_packet.hk_lfr_le_cnt[1];
+    counter = (((unsigned int) housekeeping_packet.hk_lfr_le_cnt[0]) * CONST_256) + housekeeping_packet.hk_lfr_le_cnt[1];
 
     // DPU
     new_hk_lfr_le.dpu_spw_parity    = housekeeping_packet.hk_lfr_dpu_spw_parity;
@@ -868,7 +868,7 @@ void hk_lfr_me_update( void )
     hk_lfr_me_t new_hk_lfr_me;
     unsigned int counter;
 
-    counter = (((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * 256) + housekeeping_packet.hk_lfr_me_cnt[1];
+    counter = (((unsigned int) housekeeping_packet.hk_lfr_me_cnt[0]) * CONST_256) + housekeeping_packet.hk_lfr_me_cnt[1];
 
     // get the current values
     new_hk_lfr_me.dpu_spw_early_eop     = housekeeping_packet.hk_lfr_dpu_spw_early_eop;
