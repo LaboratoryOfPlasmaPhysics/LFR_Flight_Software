@@ -77,7 +77,7 @@ unsigned int check_update_info_hk_lfr_mode( unsigned char mode );
 unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
-void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag );
+void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, unsigned char flag, float sy_lfr_rw_k );
 void build_sy_lfr_rw_mask( unsigned int channel );
 void build_sy_lfr_rw_masks();
 void merge_fbins_masks( void );
