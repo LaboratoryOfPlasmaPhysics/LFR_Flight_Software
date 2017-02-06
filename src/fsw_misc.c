@@ -421,7 +421,7 @@ rtems_task avgv_task(rtems_task_argument argument)
         if (k == (MOVING_AVERAGE-1))
         {
             k = 0;
-            printf("tick\n");
+            PRINTF("tick\n");
         }
         else
         {

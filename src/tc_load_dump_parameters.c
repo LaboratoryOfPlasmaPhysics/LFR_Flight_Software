@@ -1420,7 +1420,6 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
     unsigned int kcoeff;
     unsigned short sy_lfr_kcoeff_frequency;
     unsigned short bin;
-    unsigned short *freqPtr;
     float *kcoeffPtr_norm;
     float *kcoeffPtr_sbm;
     int status;
@@ -1429,14 +1428,15 @@ int set_sy_lfr_kcoeff( ccsdsTelecommandPacket_t *TC,rtems_id queue_id )
     unsigned char *kcoeffSbmPtr_a;
     unsigned char *kcoeffSbmPtr_b;
 
-    status = LFR_SUCCESSFUL;
-
+    sy_lfr_kcoeff_frequency = 0;
+    bin = 0;
     kcoeffPtr_norm = NULL;
     kcoeffPtr_sbm  = NULL;
-    bin = 0;
+    status = LFR_SUCCESSFUL;
 
-    freqPtr = (unsigned short *) &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY];
-    sy_lfr_kcoeff_frequency = *freqPtr;
+    // copy the value of the frequency byte by byte DO NOT USE A SHORT* POINTER
+    copyInt16ByChar( (unsigned char*) &sy_lfr_kcoeff_frequency, &TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY] );
+
 
     if ( sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM )
     {
@@ -1517,6 +1517,12 @@ void copyInt32ByChar( unsigned char *destination, unsigned char *source )
     destination[BYTE_1] = source[BYTE_1];
     destination[BYTE_2] = source[BYTE_2];
     destination[BYTE_3] = source[BYTE_3];
+}
+
+void copyInt16ByChar( unsigned char *destination, unsigned char *source )
+{
+    destination[BYTE_0] = source[BYTE_0];
+    destination[BYTE_1] = source[BYTE_1];
 }
 
 void floatToChar( float value, unsigned char* ptr)
