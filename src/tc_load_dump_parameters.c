@@ -1535,23 +1535,6 @@ void floatToChar( float value, unsigned char* ptr)
     ptr[BYTE_1] = valuePtr[BYTE_1];
     ptr[BYTE_2] = valuePtr[BYTE_2];
     ptr[BYTE_3] = valuePtr[BYTE_3];
-
-    // <TEST>
-    printf("\n\n<TEST>\n");
-
-    float aux = NAN;
-    unsigned char* auxPtr;
-    auxPtr = (unsigned char*) &aux;
-
-    printf("aux  = %f, value = %f\n", aux, value);
-
-    auxPtr[BYTE_0] = valuePtr[BYTE_0];
-    auxPtr[BYTE_1] = valuePtr[BYTE_1];
-    auxPtr[BYTE_2] = valuePtr[BYTE_2];
-    auxPtr[BYTE_3] = valuePtr[BYTE_3];
-
-    printf("aux  = %f\n", aux);
-    // </TEST>
 }
 
 //**********
