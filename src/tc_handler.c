@@ -174,14 +174,21 @@ int action_enter_mode(ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 
     rtems_status_code status;
     unsigned char requestedMode;
+    unsigned int *transitionCoarseTime_ptr;
     unsigned int transitionCoarseTime;
     unsigned char * bytePosPtr;
 
+    printf("(0)\n");
     bytePosPtr = (unsigned char *) &TC->packetID;
+    printf("(1)\n");
     requestedMode = bytePosPtr[ BYTE_POS_CP_MODE_LFR_SET ];
-    copyInt32ByChar( (char*) &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
+    printf("(2)\n");
+    copyInt32ByChar( &transitionCoarseTime, &bytePosPtr[ BYTE_POS_CP_LFR_ENTER_MODE_TIME ] );
+    printf("(3)\n");
     transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
+    printf("(4)\n");
     status = check_mode_value( requestedMode );
+    printf("(5)\n");
 
     if ( status != LFR_SUCCESSFUL )     // the mode value is inconsistent
     {
@@ -298,8 +305,9 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
 
     // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
 
-    cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
+    //cp_rpw_sc_rw_f_flags = bytePosPtr[ BYTE_POS_UPDATE_INFO_CP_RPW_SC_RW_F_FLAGS ];
     getReactionWheelsFrequencies( TC );
+    set_hk_lfr_sc_rw_f_flags();
     build_sy_lfr_rw_masks();
 
     // once the masks are built, they have to be merged with the fbins_mask
@@ -677,6 +685,8 @@ int enter_mode_normal( unsigned int transitionCoarseTime )
 #endif
 
     status = RTEMS_UNSATISFIED;
+
+    printf("hop\n");
 
     switch( lfrCurrentMode )
     {
@@ -1384,8 +1394,8 @@ void setCalibrationData( void )
     // build the signal for the SCM calibration
     for (k = 0; k < CAL_NB_PTS; k++)
     {
-        val = CAL_A0 *  sin( CAL_W0 * k * Ts )
-                + CAL_A1 * sin(  CAL_W1 * k * Ts );
+        val = sin( 2 * pi * CAL_F0 * k * Ts )
+                + sin(  2 * pi * CAL_F1 * k * Ts );
         data = (unsigned short) ((val * CAL_SCALE_FACTOR) + CONST_2048);
         time_management_regs->calData = data & CAL_DATA_MASK;
     }

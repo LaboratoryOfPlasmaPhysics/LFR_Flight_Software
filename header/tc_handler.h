@@ -26,12 +26,8 @@
 #define STATUS_8    8
 #define STATUS_9    9
 
-#define CAL_F0              625.
-#define CAL_F1              10000.
-#define CAL_W0              (2. * pi * CAL_F0)
-#define CAL_W1              (2. * pi * CAL_F1)
-#define CAL_A0              1.
-#define CAL_A1              2.
+#define CAL_F0              625
+#define CAL_F1              10000
 #define CAL_FS              160256.410
 #define CAL_SCALE_FACTOR    (0.250 / 0.000654) // 191, 500 mVpp, 2 sinus waves => 500 mVpp each, amplitude = 250 mV
 #define CAL_NB_PTS          256

@@ -126,7 +126,7 @@
 #define TC_LEN_LOAD_K               142
 #define TC_LEN_DUMP_K               12
 #define TC_LEN_LOAD_FBINS           60
-#define TC_LEN_LOAD_FILTER_PAR      28
+#define TC_LEN_LOAD_FILTER_PAR      92
 #define TC_LEN_UPDT_TIME            18
 
 // PACKET CODES
@@ -263,7 +263,7 @@ enum apid_destid{
 #define PACKET_LENGTH_TC_EXE_ERROR                  (24   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_TC_EXE_CORRUPTED              (32   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_HK                            (136  - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_PARAMETER_DUMP                (148  - CCSDS_TC_TM_PACKET_OFFSET)
+#define PACKET_LENGTH_PARAMETER_DUMP                (212  - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_K_DUMP                        (3920 - CCSDS_TC_TM_PACKET_OFFSET)
 // SCIENCE ASM
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1       (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 32 bins  (32 + 32 + 24 ), 3 packets
@@ -633,7 +633,7 @@ typedef struct {
 #define STATUS_WORD_CALIB_MASK              0xf7    // [1111 0111]
 #define STATUS_WORD_RESET_CAUSE_BITS        0x07    // [0000 0111]
 #define STATUS_WORD_RESET_CAUSE_MASK        0xf8    // [1111 1000]
-#define STATUS_WORD_LINK_STATE_BITS         0x07    // [0000 0111]
+#define STATUS_WORD_LINK_STATE_BITS         0x03    // [0000 0111]
 #define STATUS_WORD_LINK_STATE_MASK         0xf8    // [1111 1000]
 #define STATUS_WORD_LFR_MODE_SHIFT          4
 #define STATUS_WORD_LFR_MODE_BITS           0xf0    // [1111 0000]
@@ -742,9 +742,9 @@ typedef struct {
     unsigned char hk_lfr_buffer_dpu_tm_fifo;
     // hk_lfr_ahb_
     unsigned char hk_lfr_ahb_correctable;
-    unsigned char hk_lfr_ahb_uncorrectable;
     // reaction wheel frequency
-    unsigned char hk_lfr_sc_rw_f_flags;
+    unsigned char hk_lfr_sc_rw1_rw2_f_flags;
+    unsigned char hk_lfr_sc_rw3_rw4_f_flags;
 } Packet_TM_LFR_HK_t;
 
 //***************
@@ -825,7 +825,29 @@ typedef struct {
     unsigned char sy_lfr_pas_filter_shift[PARAM_4_BYTES];
     unsigned char sy_lfr_sc_rw_delta_f[PARAM_4_BYTES];
 
-    // LFR_RW_MASK
+    // SY_LFR_RWi_Kj REACTION WHEELS K COEFFICIENTS
+    // RW1_K
+    unsigned char sy_lfr_rw1_k1[4];
+    unsigned char sy_lfr_rw1_k2[4];
+    unsigned char sy_lfr_rw1_k3[4];
+    unsigned char sy_lfr_rw1_k4[4];
+    // RW2_K
+    unsigned char sy_lfr_rw2_k1[4];
+    unsigned char sy_lfr_rw2_k2[4];
+    unsigned char sy_lfr_rw2_k3[4];
+    unsigned char sy_lfr_rw2_k4[4];
+    // RW3_K
+    unsigned char sy_lfr_rw3_k1[4];
+    unsigned char sy_lfr_rw3_k2[4];
+    unsigned char sy_lfr_rw3_k3[4];
+    unsigned char sy_lfr_rw3_k4[4];
+    // RW4_K
+    unsigned char sy_lfr_rw4_k1[4];
+    unsigned char sy_lfr_rw4_k2[4];
+    unsigned char sy_lfr_rw4_k3[4];
+    unsigned char sy_lfr_rw4_k4[4];
+
+    // LFR_RW_MASK REACTION WHEELS MASKS
     unsigned char sy_lfr_rw_mask_f0_word1[BYTES_PER_WORD];
     unsigned char sy_lfr_rw_mask_f0_word2[BYTES_PER_WORD];
     unsigned char sy_lfr_rw_mask_f0_word3[BYTES_PER_WORD];
