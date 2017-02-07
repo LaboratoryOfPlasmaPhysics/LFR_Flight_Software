@@ -1080,7 +1080,7 @@ void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC )
 
 }
 
-void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float kcoeff )
+void setFBinMask( unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float sy_lfr_rw_k )
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been received.
      *
@@ -1100,6 +1100,7 @@ void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq,
     float fi;
     float deltaBelow;
     float deltaAbove;
+    float freqToFilterOut;
     int binBelow;
     int binAbove;
     int closestBin;
@@ -1107,79 +1108,99 @@ void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq,
     int selectedByte;
     int bin;
     int binToRemove[NB_BINS_TO_REMOVE];
-    int i;
+    int k;
+    bool filteringSet;
 
     closestBin = 0;
     whichByte = 0;
     bin = 0;
+    filteringSet = false;
 
-    for (i = 0; i < NB_BINS_TO_REMOVE; i++)
+    for (k = 0; k < NB_BINS_TO_REMOVE; k++)
     {
-        binToRemove[i] = -1;
+        binToRemove[k] = -1;
     }
 
     if (!isnan(rw_f))
     {
+        // compute the frequency range to filter [ rw_f - delta_f; rw_f + delta_f ]
+        f_RW_min = rw_f - ((filterPar.sy_lfr_sc_rw_delta_f) * sy_lfr_rw_k);
+        f_RW_MAX = rw_f + ((filterPar.sy_lfr_sc_rw_delta_f) * sy_lfr_rw_k);
 
-        // compute the frequency range to filter [ rw_f - delta_f/2; rw_f + delta_f/2 ]
-        f_RW_min = rw_f - ( (filterPar.sy_lfr_sc_rw_delta_f * kcoeff) / DELTAF_DIV);
-        f_RW_MAX = rw_f + ( (filterPar.sy_lfr_sc_rw_delta_f * kcoeff) / DELTAF_DIV);
-
-        // compute the index of the frequency bin immediately below rw_f
-        binBelow = (int) ( floor( ((double) rw_f) / ((double) deltaFreq)) );
-        deltaBelow = rw_f - binBelow * deltaFreq;
-
-        // compute the index of the frequency bin immediately above rw_f
-        binAbove = (int) ( ceil(  ((double) rw_f) / ((double) deltaFreq)) );
-        deltaAbove = binAbove * deltaFreq - rw_f;
-
-        // search the closest bin
-        if (deltaAbove > deltaBelow)
+        freqToFilterOut = f_RW_min;
+        while ( filteringSet == false )
         {
-            closestBin = binBelow;
-        }
-        else
-        {
-            closestBin = binAbove;
-        }
+            // compute the index of the frequency bin immediately below rw_f
+            binBelow = (int) ( floor( ((double) freqToFilterOut) / ((double) deltaFreq)) );
+            deltaBelow = freqToFilterOut - binBelow * deltaFreq;
 
-        // compute the fi interval [fi - deltaFreq * 0.285, fi + deltaFreq * 0.285]
-        fi = closestBin * deltaFreq;
-        fi_min = fi - (deltaFreq * FI_INTERVAL_COEFF);
-        fi_MAX = fi + (deltaFreq * FI_INTERVAL_COEFF);
+            // compute the index of the frequency bin immediately above rw_f
+            binAbove = (int) ( ceil(  ((double) freqToFilterOut) / ((double) deltaFreq)) );
+            deltaAbove = binAbove * deltaFreq - freqToFilterOut;
 
-        //**************************************************************************************
-        // be careful here, one shall take into account that the bin 0 IS DROPPED in the spectra
-        // thus, the index 0 in a mask corresponds to the bin 1 of the spectrum
-        //**************************************************************************************
-
-        // 1. IF [ f_RW_min, f_RW_MAX] is included in [ fi_min; fi_MAX ]
-        // => remove f_(i), f_(i-1) and f_(i+1)
-        if ( ( f_RW_min > fi_min ) && ( f_RW_MAX < fi_MAX ) )
-        {
-            binToRemove[0] = (closestBin - 1) - 1;
-            binToRemove[1] = (closestBin)     - 1;
-            binToRemove[2] = (closestBin + 1) - 1;
-        }
-        // 2. ELSE
-        // => remove the two f_(i) which are around f_RW
-        else
-        {
-            binToRemove[0] = (binBelow) - 1;
-            binToRemove[1] = (binAbove) - 1;
-            binToRemove[2] = (-1);
-        }
-
-        for (i = 0; i < NB_BINS_TO_REMOVE; i++)
-        {
-            bin = binToRemove[i];
-            if ( (bin >= BIN_MIN) && (bin <= BIN_MAX) )
+            // search the closest bin
+            if (deltaAbove > deltaBelow)
             {
+                closestBin = binBelow;
+            }
+            else
+            {
+                closestBin = binAbove;
+            }
 
-                whichByte = (bin >> SHIFT_3_BITS);    // division by 8
-                selectedByte = ( 1 << (bin - (whichByte * BITS_PER_BYTE)) );
-                fbins_mask[BYTES_PER_MASK - 1 - whichByte] =
-                        fbins_mask[BYTES_PER_MASK - 1 - whichByte] & ((unsigned char) (~selectedByte)); // bytes are ordered MSB first in the packets
+            // compute the fi interval [fi - deltaFreq * 0.285, fi + deltaFreq * 0.285]
+            fi = closestBin * deltaFreq;
+            fi_min = fi - (deltaFreq * FI_INTERVAL_COEFF);
+            fi_MAX = fi + (deltaFreq * FI_INTERVAL_COEFF);
+
+            //**************************************************************************************
+            // be careful here, one shall take into account that the bin 0 IS DROPPED in the spectra
+            // thus, the index 0 in a mask corresponds to the bin 1 of the spectrum
+            //**************************************************************************************
+
+            // 1. IF freqToFilterOut is included in [ fi_min; fi_MAX ]
+            // => remove f_(i), f_(i-1) and f_(i+1)
+            if ( ( freqToFilterOut > fi_min ) && ( freqToFilterOut < fi_MAX ) )
+            {
+                binToRemove[0] = (closestBin - 1) - 1;
+                binToRemove[1] = (closestBin)     - 1;
+                binToRemove[2] = (closestBin + 1) - 1;
+            }
+            // 2. ELSE
+            // => remove the two f_(i) which are around f_RW
+            else
+            {
+                binToRemove[0] = (binBelow) - 1;
+                binToRemove[1] = (binAbove) - 1;
+                binToRemove[2] = (-1);
+            }
+
+            for (k = 0; k < NB_BINS_TO_REMOVE; k++)
+            {
+                bin = binToRemove[k];
+                if ( (bin >= BIN_MIN) && (bin <= BIN_MAX) )
+                {
+                    whichByte = (bin >> SHIFT_3_BITS);    // division by 8
+                    selectedByte = ( 1 << (bin - (whichByte * BITS_PER_BYTE)) );
+                    fbins_mask[BYTES_PER_MASK - 1 - whichByte] =
+                            fbins_mask[BYTES_PER_MASK - 1 - whichByte] & ((unsigned char) (~selectedByte)); // bytes are ordered MSB first in the packets
+
+                }
+            }
+
+            // update freqToFilterOut
+            if ( freqToFilterOut == f_RW_MAX )
+            {
+                filteringSet = true;    // end of the loop
+            }
+            else
+            {
+                freqToFilterOut = freqToFilterOut + deltaFreq;
+            }
+
+            if ( freqToFilterOut > f_RW_MAX)
+            {
+                freqToFilterOut = f_RW_MAX;
             }
         }
     }
