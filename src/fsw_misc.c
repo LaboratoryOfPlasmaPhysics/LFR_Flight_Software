@@ -331,9 +331,6 @@ rtems_task hous_task(rtems_task_argument argument)
 
             hk_lfr_le_me_he_update();
 
-            housekeeping_packet.hk_lfr_sc_rw1_rw2_f_flags = cp_rpw_sc_rw1_rw2_f_flags;
-            housekeeping_packet.hk_lfr_sc_rw3_rw4_f_flags = cp_rpw_sc_rw3_rw4_f_flags;
-
             // SEND PACKET
             status =  rtems_message_queue_send( queue_id, &housekeeping_packet,
                                                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);

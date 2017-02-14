@@ -21,8 +21,6 @@ extern rtems_id    Task_id[];         /* array of task ids */
 extern rtems_name timecode_timer_name;
 extern rtems_id timecode_timer_id;
 extern unsigned char pa_bia_status_info;
-extern unsigned char cp_rpw_sc_rw1_rw2_f_flags;
-extern unsigned char cp_rpw_sc_rw3_rw4_f_flags;
 
 extern filterPar_t filterPar;
 extern rw_f_t rw_f;
