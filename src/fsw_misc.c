@@ -351,21 +351,21 @@ rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
     rtems_status_code status;
-    static unsigned int v[MOVING_AVERAGE] = {0};
-    static unsigned int e1[MOVING_AVERAGE] = {0};
-    static unsigned int e2[MOVING_AVERAGE] = {0};
-    float average_v;
-    float average_e1;
-    float average_e2;
-    float newValue_v;
-    float newValue_e1;
-    float newValue_e2;
+    static int32_t v[MOVING_AVERAGE] = {0};
+    static int32_t e1[MOVING_AVERAGE] = {0};
+    static int32_t e2[MOVING_AVERAGE] = {0};
+    int32_t average_v;
+    int32_t average_e1;
+    int32_t average_e2;
+    int32_t newValue_v;
+    int32_t newValue_e1;
+    int32_t newValue_e2;
     unsigned char k;
     unsigned char indexOfOldValue;
 
     BOOT_PRINTF("in AVGV ***\n");
 
-    if (rtems_rate_monotonic_ident( name_avgv_rate_monotonic, &HK_id) != RTEMS_SUCCESSFUL) {
+    if (rtems_rate_monotonic_ident( name_avgv_rate_monotonic, &AVGV_id) != RTEMS_SUCCESSFUL) {
         status = rtems_rate_monotonic_create( name_avgv_rate_monotonic, &AVGV_id );
         if( status != RTEMS_SUCCESSFUL ) {
             PRINTF1( "rtems_rate_monotonic_create failed with status of %d\n", status );
@@ -382,12 +382,12 @@ rtems_task avgv_task(rtems_task_argument argument)
 
     // initialize values
     indexOfOldValue = MOVING_AVERAGE - 1;
-    average_v   = INIT_FLOAT;
-    average_e1  = INIT_FLOAT;
-    average_e2  = INIT_FLOAT;
-    newValue_v  = INIT_FLOAT;
-    newValue_e1 = INIT_FLOAT;
-    newValue_e2 = INIT_FLOAT;
+    average_v   = 0;
+    average_e1  = 0;
+    average_e2  = 0;
+    newValue_v  = 0;
+    newValue_e1 = 0;
+    newValue_e2 = 0;
 
     k = INIT_CHAR;
 
@@ -401,9 +401,9 @@ rtems_task avgv_task(rtems_task_argument argument)
         else
         {
             // get new values
-            newValue_v = waveform_picker_regs->v;
-            newValue_e1 = waveform_picker_regs->e1;
-            newValue_e2 = waveform_picker_regs->e2;
+            newValue_v =  (int32_t) waveform_picker_regs->v;
+            newValue_e1 = (int32_t) waveform_picker_regs->e1;
+            newValue_e2 = (int32_t) waveform_picker_regs->e2;
 
             // compute the moving average
             average_v = average_v + newValue_v - v[k];
@@ -424,9 +424,9 @@ rtems_task avgv_task(rtems_task_argument argument)
             k++;
         }
         //update int16 values
-        hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / ((float) MOVING_AVERAGE) );
-        hk_lfr_sc_e1_f3_as_int16 =  (int16_t) (average_e1 / ((float) MOVING_AVERAGE) );
-        hk_lfr_sc_e2_f3_as_int16 =  (int16_t) (average_e2 / ((float) MOVING_AVERAGE) );
+        hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
+        hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
+        hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
     }
 
     PRINTF("in AVGV *** deleting task\n");
