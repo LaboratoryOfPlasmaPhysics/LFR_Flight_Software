@@ -720,7 +720,8 @@ int getFBinMask( int index, unsigned char channel )
 
 unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
 {
-    u_int64_t acquisitionTime;
+    u_int64_t acquisitionTimeStart;
+    u_int64_t acquisitionTimeStop;
     u_int64_t timecodeReference;
     u_int64_t offsetInFineTime;
     u_int64_t shiftInFineTime;
@@ -734,8 +735,20 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     ret = 1;
 
     // compute acquisition time from caoarseTime and fineTime
-    acquisitionTime = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
+    acquisitionTimeStart = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
             + (u_int64_t) fineTime;
+    switch(channel)
+    {
+    case CHANNELF0:
+        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F0;
+        break;
+    case CHANNELF1:
+        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F1;
+        break;
+    case CHANNELF2:
+        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F2;
+        break;
+    }
 
     // compute the timecode reference
     timecodeReference = (u_int64_t) ( (floor( ((double) coarseTime) / ((double) filterPar.sy_lfr_pas_filter_modulus) )
@@ -757,8 +770,8 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
             + shiftInFineTime
             + tBadInFineTime;
 
-    if ( (acquisitionTime >= acquisitionTimeRangeMin)
-         && (acquisitionTime <= acquisitionTimeRangeMax)
+    if ( (acquisitionTimeStart >= acquisitionTimeRangeMin)
+         && (acquisitionTimeStart <= acquisitionTimeRangeMax)
          && (pasFilteringIsEnabled == 1) )
     {
         ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
@@ -766,6 +779,21 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     else
     {
         ret = 1;    // the acquisition time is OUTSIDE the range, the matrix can be used for the averaging
+    }
+
+    // the last sample of the data used to compute the matrix shall not be INSIDE the range, test it now, it depends on the channel
+    if (ret == 1)
+    {
+        if ( (acquisitionTimeStop >= acquisitionTimeRangeMin)
+             && (acquisitionTimeStop <= acquisitionTimeRangeMax)
+             && (pasFilteringIsEnabled == 1) )
+        {
+            ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
+        }
+        else
+        {
+            ret = 1;    // the acquisition time is OUTSIDE the range, the matrix can be used for the averaging
+        }
     }
 
 //    printf("coarseTime = %x, fineTime = %x\n",
