@@ -213,6 +213,8 @@ typedef struct ring_node
 #define MAX_PAS_FILTER_OFFSET   7
 #define MIN_PAS_FILTER_SHIFT    0.0
 #define MAX_PAS_FILTER_SHIFT    1.0
+#define MIN_SY_LFR_SC_RW_DELTA_F    0
+#define MIN_SY_LFR_RW_K             0
 //
 #define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
 #define SY_LFR_DPU_CONNECT_ATTEMPT 3
@@ -266,6 +268,7 @@ typedef struct ring_node
 #define LFR_SUCCESSFUL  0
 #define LFR_DEFAULT     1
 #define LFR_EXE_ERROR   2
+#define LFR_DEFAULT_ALT -1
 
 //******
 // RTEMS

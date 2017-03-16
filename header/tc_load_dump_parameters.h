@@ -103,6 +103,8 @@ void merge_fbins_masks( void );
 int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC );
 
 // TC_LFR_LOAD_PARS_FILTER_PAR
+int check_sy_lfr_rw_k( ccsdsTelecommandPacket_t *TC, int offset, int* pos, float* value );
+int check_all_sy_lfr_rw_k( ccsdsTelecommandPacket_t *TC, int *pos, float*value );
 int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id );
 
 // KCOEFFICIENTS

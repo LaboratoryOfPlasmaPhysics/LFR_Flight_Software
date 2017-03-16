@@ -1332,6 +1332,115 @@ int set_sy_lfr_fbins( ccsdsTelecommandPacket_t *TC )
 //***************************
 // TC_LFR_LOAD_PAS_FILTER_PAR
 
+int check_sy_lfr_rw_k( ccsdsTelecommandPacket_t *TC, int offset, int* pos, float* value )
+{
+    float rw_k;
+    int ret;
+
+    ret = LFR_SUCCESSFUL;
+    rw_k = INIT_FLOAT;
+
+    copyFloatByChar( (unsigned char*) &rw_k, (unsigned char*) &TC->dataAndCRC[ offset ] );
+
+    *pos = offset;
+    *value = rw_k;
+
+    if (rw_k < MIN_SY_LFR_RW_K)
+    {
+        ret = WRONG_APP_DATA;
+    }
+
+    return ret;
+}
+
+int check_all_sy_lfr_rw_k( ccsdsTelecommandPacket_t *TC, int *pos, float*value )
+{
+    int ret;
+
+    ret = LFR_SUCCESSFUL;
+
+    //****
+    //****
+    // RW1
+    ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW1_K1, pos, value );  // K1
+    if (ret == LFR_SUCCESSFUL)  // K2
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW1_K2, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K3
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW1_K3, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K4
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW1_K4, pos, value  );
+    }
+
+    //****
+    //****
+    // RW2
+    if (ret == LFR_SUCCESSFUL)  // K1
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW2_K1, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K2
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW2_K2, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K3
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW2_K3, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K4
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW2_K4, pos, value  );
+    }
+
+    //****
+    //****
+    // RW3
+    if (ret == LFR_SUCCESSFUL)  // K1
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW3_K1, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K2
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW3_K2, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K3
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW3_K3, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K4
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW3_K4, pos, value  );
+    }
+
+    //****
+    //****
+    // RW4
+    if (ret == LFR_SUCCESSFUL)  // K1
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW4_K1, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K2
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW4_K2, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K3
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW4_K3, pos, value  );
+    }
+    if (ret == LFR_SUCCESSFUL)  // K4
+    {
+        ret = check_sy_lfr_rw_k( TC, DATAFIELD_POS_SY_LFR_RW4_K4, pos, value  );
+    }
+
+
+
+    return ret;
+}
+
 int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
     int flag;
@@ -1344,12 +1453,19 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
     float sy_lfr_pas_filter_shift;
     float sy_lfr_sc_rw_delta_f;
     char *parPtr;
+    int *datafield_pos;
+    float *rw_k;
 
     flag = LFR_SUCCESSFUL;
     sy_lfr_pas_filter_tbad  = INIT_FLOAT;
     sy_lfr_pas_filter_shift = INIT_FLOAT;
     sy_lfr_sc_rw_delta_f    = INIT_FLOAT;
     parPtr = NULL;
+    datafield_pos = NULL;
+    rw_k = NULL;
+
+    *datafield_pos = LFR_DEFAULT_ALT;
+    *rw_k = INIT_FLOAT;
 
     //***************
     // get parameters
@@ -1429,7 +1545,26 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
 
     //*********************
     // sy_lfr_sc_rw_delta_f
-    // nothing to check, no default value in the ICD
+    if (flag == LFR_SUCCESSFUL)
+    {
+        if ( sy_lfr_sc_rw_delta_f < MIN_SY_LFR_SC_RW_DELTA_F )
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, sy_lfr_sc_rw_delta_f );
+            flag = WRONG_APP_DATA;
+        }
+    }
+
+    //************
+    // sy_lfr_rw_k
+    if (flag == LFR_SUCCESSFUL)
+    {
+        flag = check_all_sy_lfr_rw_k( TC, datafield_pos, rw_k );
+        if (flag  != LFR_SUCCESSFUL)
+        {
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, *datafield_pos + DATAFIELD_OFFSET, *rw_k );
+        }
+    }
+
 
     return flag;
 }

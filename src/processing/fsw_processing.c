@@ -796,19 +796,6 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
         }
     }
 
-//    printf("coarseTime = %x, fineTime = %x\n",
-//           coarseTime,
-//           fineTime);
-
-//    printf("[ret = %d] *** acquisitionTime = %f, Reference = %f",
-//           ret,
-//           acquisitionTime / 65536.,
-//           timecodeReference / 65536.);
-
-//    printf(", Min = %f, Max = %f\n",
-//           acquisitionTimeRangeMin / 65536.,
-//           acquisitionTimeRangeMax / 65536.);
-
     return ret;
 }
 
