@@ -764,6 +764,7 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
             + offsetInFineTime
             + shiftInFineTime
             - acquisitionDurations[channel];
+
     acquisitionTimeRangeMax =
             timecodeReference
             + offsetInFineTime

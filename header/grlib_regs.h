@@ -175,12 +175,9 @@ typedef struct{
     //
     unsigned int buffer_length;             // 0x8c = buffer length in burst 2688 / 16 = 168
     //
-    volatile int16_t v_dummy;          // 0x90
-    volatile int16_t v;                // 0x90
-    volatile int16_t e1_dummy;         // 0x94
-    volatile int16_t e1;               // 0x94
-    volatile int16_t e2_dummy;         // 0x98
-    volatile int16_t e2;               // 0x98
+    volatile int v;     // 0x90
+    volatile int e1;    // 0x94
+    volatile int e2;    // 0x98
 } waveform_picker_regs_0_1_18_t;
 
 //*********************

@@ -347,6 +347,24 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
+int32_t getIntFromShort( int reg )
+{
+    int16_t ret_as_int16;
+    int32_t ret_as_int32;
+    char *regPtr;
+    char *ret_as_int16_ptr;
+
+    regPtr = (char*) &reg;
+    ret_as_int16_ptr = (char*) &ret_as_int16;
+
+    ret_as_int16_ptr[BYTE_0] = regPtr[BYTE_3];
+    ret_as_int16_ptr[BYTE_1] = regPtr[BYTE_4];
+
+    ret_as_int32 = (int32_t) ret_as_int16;
+
+    return ret_as_int32;
+}
+
 rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
@@ -401,9 +419,9 @@ rtems_task avgv_task(rtems_task_argument argument)
         else
         {
             // get new values
-            newValue_v =  (int32_t) waveform_picker_regs->v;
-            newValue_e1 = (int32_t) waveform_picker_regs->e1;
-            newValue_e2 = (int32_t) waveform_picker_regs->e2;
+            newValue_v =  getIntFromShort( waveform_picker_regs->v );
+            newValue_e1 = getIntFromShort( waveform_picker_regs->e1 );
+            newValue_e2 = getIntFromShort( waveform_picker_regs->e2 );
 
             // compute the moving average
             average_v = average_v + newValue_v - v[k];

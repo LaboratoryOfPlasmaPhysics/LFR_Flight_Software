@@ -256,10 +256,16 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
      */
 
     unsigned int val;
-    int result;
     unsigned int status;
     unsigned char mode;
     unsigned char * bytePosPtr;
+    int pos;
+    float value;
+
+    pos = INIT_CHAR;
+    value = INIT_FLOAT;
+
+    status = LFR_DEFAULT;
 
     bytePosPtr = (unsigned char *) &TC->packetID;
 
@@ -276,37 +282,45 @@ int action_update_info(ccsdsTelecommandPacket_t *TC, rtems_id queue_id)
         mode = (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET6 ] & BITS_THR_MODE);
         status = check_update_info_hk_thr_mode( mode );
     }
-    if (status == LFR_SUCCESSFUL)  // if the parameter check is successful
+    if (status == LFR_SUCCESSFUL) // check reaction wheels frequencies
     {
-        val = (housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * CONST_256)
-                + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
-        val++;
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
-        housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
+        status = check_all_sy_lfr_rw_f(TC, &pos, &value);
     }
 
-    // pa_bia_status_info
-    // => pa_bia_mode_mux_set       3 bits
-    // => pa_bia_mode_hv_enabled    1 bit
-    // => pa_bia_mode_bias1_enabled 1 bit
-    // => pa_bia_mode_bias2_enabled 1 bit
-    // => pa_bia_mode_bias3_enabled 1 bit
-    // => pa_bia_on_off (cp_dpu_bias_on_off)
-    pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & BITS_BIA; // [1111 1110]
-    pa_bia_status_info = pa_bia_status_info
-            | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 1);
+    // if the parameters checking succeeds, udpate all parameters
+    if (status == LFR_SUCCESSFUL)
+    {
+        // pa_bia_status_info
+        // => pa_bia_mode_mux_set       3 bits
+        // => pa_bia_mode_hv_enabled    1 bit
+        // => pa_bia_mode_bias1_enabled 1 bit
+        // => pa_bia_mode_bias2_enabled 1 bit
+        // => pa_bia_mode_bias3_enabled 1 bit
+        // => pa_bia_on_off (cp_dpu_bias_on_off)
+        pa_bia_status_info = bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET2 ] & BITS_BIA; // [1111 1110]
+        pa_bia_status_info = pa_bia_status_info
+                | (bytePosPtr[ BYTE_POS_UPDATE_INFO_PARAMETERS_SET1 ] & 1);
 
-    // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
-    getReactionWheelsFrequencies( TC );
-    set_hk_lfr_sc_rw_f_flags();
-    build_sy_lfr_rw_masks();
+        // REACTION_WHEELS_FREQUENCY, copy the incoming parameters in the local variable (to be copied in HK packets)
+        getReactionWheelsFrequencies( TC );
+        set_hk_lfr_sc_rw_f_flags();
+        build_sy_lfr_rw_masks();
 
-    // once the masks are built, they have to be merged with the fbins_mask
-    merge_fbins_masks();
+        // once the masks are built, they have to be merged with the fbins_mask
+        merge_fbins_masks();
 
-    result = status;
+        // increase the TC_LFR_UPDATE_INFO counter
+        if (status == LFR_SUCCESSFUL)  // if the parameter check is successful
+        {
+            val = (housekeeping_packet.hk_lfr_update_info_tc_cnt[0] * CONST_256)
+                    + housekeeping_packet.hk_lfr_update_info_tc_cnt[1];
+            val++;
+            housekeeping_packet.hk_lfr_update_info_tc_cnt[0] = (unsigned char) (val >> SHIFT_1_BYTE);
+            housekeeping_packet.hk_lfr_update_info_tc_cnt[1] = (unsigned char) (val);
+        }
+    }
 
-    return result;
+    return status;
 }
 
 int action_enable_calibration(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time)

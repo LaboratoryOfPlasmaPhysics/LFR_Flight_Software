@@ -93,6 +93,8 @@ unsigned int check_update_info_hk_tds_mode( unsigned char mode );
 unsigned int check_update_info_hk_thr_mode( unsigned char mode );
 void set_hk_lfr_sc_rw_f_flag( unsigned char wheel, unsigned char freq, float value );
 void set_hk_lfr_sc_rw_f_flags( void );
+int check_sy_lfr_rw_f( ccsdsTelecommandPacket_t *TC, int offset, int* pos, float* value );
+int check_all_sy_lfr_rw_f( ccsdsTelecommandPacket_t *TC, int *pos, float*value );
 void getReactionWheelsFrequencies( ccsdsTelecommandPacket_t *TC );
 void setFBinMask(unsigned char *fbins_mask, float rw_f, unsigned char deltaFreq, float sy_lfr_rw_k );
 void build_sy_lfr_rw_mask( unsigned int channel );

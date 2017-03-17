@@ -53,6 +53,7 @@
 #define BITS_PER_BYTE   8
 #define INIT_FLOAT      0.
 #define INIT_CHAR       0x00
+#define INIT_INT        0
 #define INT8_ALL_F      0xff
 #define INT16_ALL_F     0xffff
 #define INT32_ALL_F     0xffffffff
@@ -215,6 +216,7 @@ typedef struct ring_node
 #define MAX_PAS_FILTER_SHIFT    1.0
 #define MIN_SY_LFR_SC_RW_DELTA_F    0
 #define MIN_SY_LFR_RW_K             0
+#define MIN_SY_LFR_RW_F             0
 //
 #define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
 #define SY_LFR_DPU_CONNECT_ATTEMPT 3

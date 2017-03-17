@@ -80,12 +80,12 @@ unsigned char hk_lfr_q_p0_fifo_size_max = 0;
 unsigned char hk_lfr_q_p1_fifo_size_max = 0;
 unsigned char hk_lfr_q_p2_fifo_size_max = 0;
 // sequence counters are incremented by APID (PID + CAT) and destination ID
-unsigned short sequenceCounters_SCIENCE_NORMAL_BURST        = 0;
-unsigned short sequenceCounters_SCIENCE_SBM1_SBM2           = 0;
-unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID]  = {0};
-unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID] = {0};
-unsigned short sequenceCounterHK                            = {0};
-spw_stats grspw_stats                                       = {0};
+unsigned short sequenceCounters_SCIENCE_NORMAL_BURST        __attribute__((aligned(0x4))) = 0;
+unsigned short sequenceCounters_SCIENCE_SBM1_SBM2           __attribute__((aligned(0x4))) = 0;
+unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID]  __attribute__((aligned(0x4))) = {0};
+unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID] __attribute__((aligned(0x4))) = {0};
+unsigned short sequenceCounterHK                            __attribute__((aligned(0x4))) = {0};
+spw_stats grspw_stats                                       __attribute__((aligned(0x4))) = {0};
 
 // TC_LFR_UPDATE_INFO
 rw_f_t rw_f;
