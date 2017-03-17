@@ -94,5 +94,3 @@ rw_f_t rw_f;
 filterPar_t filterPar = {0};
 
 fbins_masks_t fbins_masks = {0};
-unsigned int acquisitionDurations[NB_ACQUISITION_DURATION]
-= {ACQUISITION_DURATION_F0, ACQUISITION_DURATION_F1, ACQUISITION_DURATION_F2};

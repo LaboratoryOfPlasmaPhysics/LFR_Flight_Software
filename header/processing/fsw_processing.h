@@ -176,6 +176,8 @@ static inline void ASM_compress_reorganize_and_divide(float *averaged_spec_mat, 
 
 static inline void ASM_convert(volatile float *input_matrix, char *output_matrix);
 
+unsigned char isPolluted( u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t tbad1 );
+
 unsigned char acquisitionTimeIsValid(unsigned int coarseTime, unsigned int fineTime, unsigned char channel);
 
 void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
@@ -208,7 +210,7 @@ void SM_average( float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
         sum = INIT_FLOAT;
         for ( k = 0; k < NB_SM_BEFORE_AVF0_F1; k++ )
         {
-            if (incomingSMIsValid[k] == 1)
+            if (incomingSMIsValid[k] == MATRIX_IS_NOT_POLLUTED)
             {
                 sum = sum + ( (int *) (ring_node_tab[0]->buffer_address) ) [ i ] ;
             }

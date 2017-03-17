@@ -718,82 +718,95 @@ int getFBinMask( int index, unsigned char channel )
     return fbin;
 }
 
+unsigned char isPolluted( u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t tbad1 )
+{
+    unsigned char polluted;
+
+    polluted = MATRIX_IS_NOT_POLLUTED;
+
+    if ( ((tbad0 < t0) && (t0 < tbad1))     // t0 is inside the polluted range
+         || ((tbad0 < t1) && (t1 < tbad1))  // t1 is inside the polluted range
+         || ((t0 < tbad0) && (tbad1 < t1))  // the polluted range is inside the signal range
+         || ((tbad0 < t0) && (t1 < tbad1))) // the signal range is inside the polluted range
+    {
+        polluted = MATRIX_IS_POLLUTED;
+    }
+
+    return polluted;
+}
+
 unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
 {
-    u_int64_t acquisitionTStart;
-    u_int64_t acquisitionTStop;
-    u_int64_t timecodeReference;
+    u_int64_t t0;
+    u_int64_t t1;
+    u_int64_t tc;
+    u_int64_t tbad0;
+    u_int64_t tbad1;
+
+    u_int64_t modulusInFineTime;
     u_int64_t offsetInFineTime;
     u_int64_t shiftInFineTime;
-    u_int64_t tBadInFineTime;
-    u_int64_t perturbationTStart;
-    u_int64_t perturbationTStop;
+    u_int64_t tbadInFineTime;
+
+    u_int64_t timecodeReference;
+
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
 
     pasFilteringIsEnabled = (filterPar.spare_sy_lfr_pas_filter_enabled & 1); // [0000 0001]
-    ret = 1;
+    ret = MATRIX_IS_NOT_POLLUTED;
+
+    // compute the acquitionTime range
+    modulusInFineTime   = ((u_int64_t) filterPar.sy_lfr_pas_filter_modulus) * CONST_65536;
+    offsetInFineTime    = ((u_int64_t) filterPar.sy_lfr_pas_filter_offset)  * CONST_65536;
+    shiftInFineTime     = ((u_int64_t) filterPar.sy_lfr_pas_filter_shift)   * CONST_65536;
+    tbadInFineTime      = ((u_int64_t) filterPar.sy_lfr_pas_filter_tbad)    * CONST_65536;
 
     // compute acquisition time from caoarseTime and fineTime
-    acquisitionTStart = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
-            + (u_int64_t) fineTime;
+    t0 = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES ) + (u_int64_t) fineTime;
     switch(channel)
     {
     case CHANNELF0:
-        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F0;
+        t1 = t0 + ACQUISITION_DURATION_F0;
+        tc = t0 + HALF_ACQUISITION_DURATION_F0;
         break;
     case CHANNELF1:
-        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F1;
+        t1 = t0 + ACQUISITION_DURATION_F1;
+        tc = t0 + HALF_ACQUISITION_DURATION_F1;
         break;
     case CHANNELF2:
-        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F2;
+        t1 = t0 + ACQUISITION_DURATION_F2;
+        tc = t0 + HALF_ACQUISITION_DURATION_F2;
         break;
     }
 
-    // compute the timecode reference
-    timecodeReference = (u_int64_t) ( (floor( ((double) coarseTime) / ((double) filterPar.sy_lfr_pas_filter_modulus) )
-            * ((double) filterPar.sy_lfr_pas_filter_modulus)) * CONST_65536 );
+    // INTERSECTION TEST #1
+    timecodeReference = (tc - (tc % modulusInFineTime)) - modulusInFineTime ;
+    tbad0 = timecodeReference + offsetInFineTime + shiftInFineTime;
+    tbad1 = timecodeReference + offsetInFineTime + shiftInFineTime + tbadInFineTime;
+    ret = isPolluted( t0, t1, tbad0, tbad1 );
 
-    // compute the acquitionTime range
-    offsetInFineTime    = ((double) filterPar.sy_lfr_pas_filter_offset)   * CONST_65536;
-    shiftInFineTime     = ((double) filterPar.sy_lfr_pas_filter_shift)    * CONST_65536;
-    tBadInFineTime      = ((double) filterPar.sy_lfr_pas_filter_tbad)     * CONST_65536;
-
-    perturbationTStart =
-            timecodeReference
-            + offsetInFineTime
-            + shiftInFineTime;
-
-    perturbationTStop =
-            timecodeReference
-            + offsetInFineTime
-            + shiftInFineTime
-            + tBadInFineTime;
-
-    if ( (acquisitionTStart >= perturbationTStart)
-         && (acquisitionTStart <= perturbationTStop)
-         && (pasFilteringIsEnabled == 1) )
+    // INTERSECTION TEST #2
+    timecodeReference = (tc - (tc % modulusInFineTime)) ;
+    tbad0 = timecodeReference + offsetInFineTime + shiftInFineTime;
+    tbad1 = timecodeReference + offsetInFineTime + shiftInFineTime + tbadInFineTime;
+    if (ret == MATRIX_IS_NOT_POLLUTED)
     {
-        ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
-    }
-    else
-    {
-        ret = 1;    // the acquisition time is OUTSIDE the range, the matrix can be used for the averaging
+        ret = isPolluted( t0, t1, tbad0, tbad1 );
     }
 
-    // the last sample of the data used to compute the matrix shall not be INSIDE the range, test it now, it depends on the channel
-    if (ret == 1)
+    // INTERSECTION TEST #3
+    timecodeReference = (tc - (tc % modulusInFineTime)) + modulusInFineTime ;
+    tbad0 = timecodeReference + offsetInFineTime + shiftInFineTime;
+    tbad1 = timecodeReference + offsetInFineTime + shiftInFineTime + tbadInFineTime;
+    if (ret == MATRIX_IS_NOT_POLLUTED)
     {
-        if ( (acquisitionTStop >= perturbationTStart)
-             && (acquisitionTStop <= perturbationTStop)
-             && (pasFilteringIsEnabled == 1) )
-        {
-            ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
-        }
-        else
-        {
-            ret = 1;    // the acquisition time is OUTSIDE the range, the matrix can be used for the averaging
-        }
+        ret = isPolluted( t0, t1, tbad0, tbad1 );
+    }
+
+    if (pasFilteringIsEnabled == 0)
+    {
+        ret = MATRIX_IS_NOT_POLLUTED;
     }
 
     return ret;

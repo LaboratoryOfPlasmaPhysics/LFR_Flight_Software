@@ -278,7 +278,7 @@ void SM_average_f2( float *averaged_spec_mat_f2,
         sum = ( (int *) (ring_node->buffer_address) ) [ i ];
         if ( (nbAverageNormF2 == 0) )   // average initialization
         {
-            if (keepMatrix == 1)    // keep the matrix and add it to the average
+            if (keepMatrix == MATRIX_IS_NOT_POLLUTED)   // keep the matrix and add it to the average
             {
                 averaged_spec_mat_f2[ i ] = sum;
             }
@@ -291,7 +291,7 @@ void SM_average_f2( float *averaged_spec_mat_f2,
         }
         else
         {
-            if (keepMatrix == 1)    // keep the matrix and add it to the average
+            if (keepMatrix == MATRIX_IS_NOT_POLLUTED)   // keep the matrix and add it to the average
             {
                 averaged_spec_mat_f2[ i ] = ( averaged_spec_mat_f2[  i ] + sum );
             }
