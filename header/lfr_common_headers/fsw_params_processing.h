@@ -6,9 +6,6 @@
 #define CHANNELF2 2
 #define CHANNELF3 3
 
-#define FINETIME_PER_SM_F0   683     // 65536 / 96 = 682.6667
-#define FINETIME_PER_SM_F1   4096    // 65536 / 16
-#define FINETIME_PER_SM_F2   65536   // 65536 / 1
 #define NB_SM_PER_S_F0      96
 #define NB_SM_PER_S_F1      16
 #define NB_SM_PER_S_F2      1

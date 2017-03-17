@@ -720,14 +720,14 @@ int getFBinMask( int index, unsigned char channel )
 
 unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
 {
-    u_int64_t acquisitionTimeStart;
-    u_int64_t acquisitionTimeStop;
+    u_int64_t acquisitionTStart;
+    u_int64_t acquisitionTStop;
     u_int64_t timecodeReference;
     u_int64_t offsetInFineTime;
     u_int64_t shiftInFineTime;
     u_int64_t tBadInFineTime;
-    u_int64_t acquisitionTimeRangeMin;
-    u_int64_t acquisitionTimeRangeMax;
+    u_int64_t perturbationTStart;
+    u_int64_t perturbationTStop;
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
 
@@ -735,18 +735,18 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     ret = 1;
 
     // compute acquisition time from caoarseTime and fineTime
-    acquisitionTimeStart = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
+    acquisitionTStart = ( ((u_int64_t)coarseTime) <<  SHIFT_2_BYTES )
             + (u_int64_t) fineTime;
     switch(channel)
     {
     case CHANNELF0:
-        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F0;
+        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F0;
         break;
     case CHANNELF1:
-        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F1;
+        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F1;
         break;
     case CHANNELF2:
-        acquisitionTimeStop = acquisitionTimeStart + FINETIME_PER_SM_F2;
+        acquisitionTStop = acquisitionTStart + ACQUISITION_DURATION_F2;
         break;
     }
 
@@ -759,20 +759,19 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     shiftInFineTime     = ((double) filterPar.sy_lfr_pas_filter_shift)    * CONST_65536;
     tBadInFineTime      = ((double) filterPar.sy_lfr_pas_filter_tbad)     * CONST_65536;
 
-    acquisitionTimeRangeMin =
+    perturbationTStart =
             timecodeReference
             + offsetInFineTime
-            + shiftInFineTime
-            - acquisitionDurations[channel];
+            + shiftInFineTime;
 
-    acquisitionTimeRangeMax =
+    perturbationTStop =
             timecodeReference
             + offsetInFineTime
             + shiftInFineTime
             + tBadInFineTime;
 
-    if ( (acquisitionTimeStart >= acquisitionTimeRangeMin)
-         && (acquisitionTimeStart <= acquisitionTimeRangeMax)
+    if ( (acquisitionTStart >= perturbationTStart)
+         && (acquisitionTStart <= perturbationTStop)
          && (pasFilteringIsEnabled == 1) )
     {
         ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
@@ -785,8 +784,8 @@ unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fine
     // the last sample of the data used to compute the matrix shall not be INSIDE the range, test it now, it depends on the channel
     if (ret == 1)
     {
-        if ( (acquisitionTimeStop >= acquisitionTimeRangeMin)
-             && (acquisitionTimeStop <= acquisitionTimeRangeMax)
+        if ( (acquisitionTStop >= perturbationTStart)
+             && (acquisitionTStop <= perturbationTStop)
              && (pasFilteringIsEnabled == 1) )
         {
             ret = 0;    // the acquisition time is INSIDE the range, the matrix shall be ignored
