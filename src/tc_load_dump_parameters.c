@@ -351,19 +351,26 @@ int action_load_filter_par(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsi
 
         //****************************
         // store PAS filter parameters
+
         // sy_lfr_pas_filter_enabled
         filterPar.spare_sy_lfr_pas_filter_enabled   = parameter_dump_packet.spare_sy_lfr_pas_filter_enabled;
         set_sy_lfr_pas_filter_enabled( parameter_dump_packet.spare_sy_lfr_pas_filter_enabled & BIT_PAS_FILTER_ENABLED );
+
         // sy_lfr_pas_filter_modulus
-        filterPar.sy_lfr_pas_filter_modulus         = parameter_dump_packet.sy_lfr_pas_filter_modulus;
+        filterPar.modulus_in_finetime = ((uint64_t) parameter_dump_packet.sy_lfr_pas_filter_modulus) * CONST_65536;
+
         // sy_lfr_pas_filter_tbad
         copyFloatByChar( (unsigned char*) &filterPar.sy_lfr_pas_filter_tbad,
                          parameter_dump_packet.sy_lfr_pas_filter_tbad );
+        filterPar.tbad_in_finetime = (uint64_t) (filterPar.sy_lfr_pas_filter_tbad * CONST_65536);
+
         // sy_lfr_pas_filter_offset
-        filterPar.sy_lfr_pas_filter_offset          = parameter_dump_packet.sy_lfr_pas_filter_offset;
+        filterPar.offset_in_finetime = ((uint64_t) parameter_dump_packet.sy_lfr_pas_filter_offset) * CONST_65536;
+
         // sy_lfr_pas_filter_shift
         copyFloatByChar( (unsigned char*) &filterPar.sy_lfr_pas_filter_shift,
                          parameter_dump_packet.sy_lfr_pas_filter_shift );
+        filterPar.shift_in_finetime = (uint64_t) (filterPar.sy_lfr_pas_filter_shift * CONST_65536);
 
         //****************************************************
         // store the parameter sy_lfr_sc_rw_delta_f as a float

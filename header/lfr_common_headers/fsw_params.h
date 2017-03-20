@@ -5,6 +5,7 @@
 #include "fsw_params_nb_bytes.h"
 #include "tm_byte_positions.h"
 #include "ccsds_types.h"
+#include "stdint.h"
 
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
 #define UART_DEVICE_NAME "/dev/console"
@@ -360,6 +361,10 @@ typedef struct {
 #define DEFAULT_SY_LFR_PAS_FILTER_TBAD      1.0
 #define DEFAULT_SY_LFR_PAS_FILTER_OFFSET    0
 #define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5
+#define DEFAULT_MODULUS   262144    // 65536 * 4
+#define DEFAULT_TBAD      65536     // 65536
+#define DEFAULT_OFFSET    0         // 65536 * 0
+#define DEFAULT_SHIFT     32768     // 65536 / 2
 #define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.045
 #define DEFAULT_SY_LFR_RW_K1                1.
 #define DEFAULT_SY_LFR_RW_K2                8.
@@ -368,10 +373,12 @@ typedef struct {
 
 typedef struct{
     unsigned char spare_sy_lfr_pas_filter_enabled;
-    unsigned char sy_lfr_pas_filter_modulus;
     float sy_lfr_pas_filter_tbad;
-    unsigned char sy_lfr_pas_filter_offset;
     float sy_lfr_pas_filter_shift;
+    uint64_t modulus_in_finetime;
+    uint64_t tbad_in_finetime;
+    uint64_t offset_in_finetime;
+    uint64_t shift_in_finetime;
     float sy_lfr_sc_rw_delta_f;
     // rw1_k
     float sy_lfr_rw1_k1;

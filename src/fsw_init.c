@@ -188,11 +188,13 @@ rtems_task Init( rtems_task_argument ignored )
 
     // initialize filtering parameters
     filterPar.spare_sy_lfr_pas_filter_enabled   = DEFAULT_SY_LFR_PAS_FILTER_ENABLED;
-    filterPar.sy_lfr_pas_filter_modulus         = DEFAULT_SY_LFR_PAS_FILTER_MODULUS;
-    filterPar.sy_lfr_pas_filter_tbad            = DEFAULT_SY_LFR_PAS_FILTER_TBAD;
-    filterPar.sy_lfr_pas_filter_offset          = DEFAULT_SY_LFR_PAS_FILTER_OFFSET;
-    filterPar.sy_lfr_pas_filter_shift           = DEFAULT_SY_LFR_PAS_FILTER_SHIFT;
     filterPar.sy_lfr_sc_rw_delta_f              = DEFAULT_SY_LFR_SC_RW_DELTA_F;
+    filterPar.sy_lfr_pas_filter_tbad            = DEFAULT_SY_LFR_PAS_FILTER_TBAD;
+    filterPar.sy_lfr_pas_filter_shift           = DEFAULT_SY_LFR_PAS_FILTER_SHIFT;
+    filterPar.modulus_in_finetime               = DEFAULT_MODULUS;
+    filterPar.tbad_in_finetime                  = DEFAULT_TBAD;
+    filterPar.offset_in_finetime                = DEFAULT_OFFSET;
+    filterPar.shift_in_finetime                 = DEFAULT_SHIFT;
     update_last_valid_transition_date( DEFAULT_LAST_VALID_TRANSITION_DATE  );
 
     // waveform picker initialization
