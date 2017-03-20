@@ -1652,7 +1652,7 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
     // check global coherency of the values
     if (flag == LFR_SUCCESSFUL)
     {
-        if ( (sy_lfr_pas_filter_tbad + sy_lfr_pas_filter_offset + sy_lfr_pas_filter_shift) > sy_lfr_pas_filter_modulus )
+        if ( (sy_lfr_pas_filter_offset + sy_lfr_pas_filter_shift) >= sy_lfr_pas_filter_modulus )
         {
             status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS + DATAFIELD_OFFSET, sy_lfr_pas_filter_modulus );
             flag = WRONG_APP_DATA;
