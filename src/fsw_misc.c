@@ -372,6 +372,12 @@ rtems_task avgv_task(rtems_task_argument argument)
     static int32_t v[MOVING_AVERAGE] = {0};
     static int32_t e1[MOVING_AVERAGE] = {0};
     static int32_t e2[MOVING_AVERAGE] = {0};
+    static int old_v = 0;
+    static int old_e1 = 0;
+    static int old_e2 = 0;
+    int current_v;
+    int current_e1;
+    int current_e2;
     int32_t average_v;
     int32_t average_e1;
     int32_t average_e2;
@@ -400,6 +406,9 @@ rtems_task avgv_task(rtems_task_argument argument)
 
     // initialize values
     indexOfOldValue = MOVING_AVERAGE - 1;
+    current_v = 0;
+    current_e1 = 0;
+    current_e2 = 0;
     average_v   = 0;
     average_e1  = 0;
     average_e2  = 0;
@@ -418,33 +427,45 @@ rtems_task avgv_task(rtems_task_argument argument)
         }
         else
         {
-            // get new values
-            newValue_v =  getIntFromShort( waveform_picker_regs->v );
-            newValue_e1 = getIntFromShort( waveform_picker_regs->e1 );
-            newValue_e2 = getIntFromShort( waveform_picker_regs->e2 );
+            current_v = waveform_picker_regs->v;
+            current_e1 = waveform_picker_regs->e1;
+            current_e2 = waveform_picker_regs->e2;
+            if ( (current_v != old_v)
+                 && (current_e1 != old_e1)
+                 && (current_e2 != old_e2))
+            {
+                // get new values
+                newValue_v =  getIntFromShort( current_v );
+                newValue_e1 = getIntFromShort( current_e1 );
+                newValue_e2 = getIntFromShort( current_e2 );
 
-            // compute the moving average
-            average_v = average_v + newValue_v - v[k];
-            average_e1 = average_e1 + newValue_e1 - e1[k];
-            average_e2 = average_e2 + newValue_e2 - e2[k];
+                // compute the moving average
+                average_v = average_v + newValue_v - v[k];
+                average_e1 = average_e1 + newValue_e1 - e1[k];
+                average_e2 = average_e2 + newValue_e2 - e2[k];
 
-            // store new values in buffers
-            v[k] = newValue_v;
-            e1[k] = newValue_e1;
-            e2[k] = newValue_e2;
+                // store new values in buffers
+                v[k] = newValue_v;
+                e1[k] = newValue_e1;
+                e2[k] = newValue_e2;
+
+                if (k == (MOVING_AVERAGE-1))
+                {
+                    k = 0;
+                }
+                else
+                {
+                    k++;
+                }
+                //update int16 values
+                hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
+                hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
+                hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
+            }
+            old_v = current_v;
+            old_e1 = current_e1;
+            old_e2 = current_e2;
         }
-        if (k == (MOVING_AVERAGE-1))
-        {
-            k = 0;
-        }
-        else
-        {
-            k++;
-        }
-        //update int16 values
-        hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
-        hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
-        hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
     }
 
     PRINTF("in AVGV *** deleting task\n");
