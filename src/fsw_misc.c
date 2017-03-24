@@ -430,10 +430,10 @@ rtems_task avgv_task(rtems_task_argument argument)
             current_v = waveform_picker_regs->v;
             current_e1 = waveform_picker_regs->e1;
             current_e2 = waveform_picker_regs->e2;
-            if ( (current_v != old_v)
-                 && (current_e1 != old_e1)
-                 && (current_e2 != old_e2))
-            {
+//            if ( (current_v != old_v)
+//                 && (current_e1 != old_e1)
+//                 && (current_e2 != old_e2))
+//            {
                 // get new values
                 newValue_v =  getIntFromShort( current_v );
                 newValue_e1 = getIntFromShort( current_e1 );
@@ -461,7 +461,7 @@ rtems_task avgv_task(rtems_task_argument argument)
                 hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
                 hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
                 hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
-            }
+//            }
             old_v = current_v;
             old_e1 = current_e1;
             old_e2 = current_e2;
