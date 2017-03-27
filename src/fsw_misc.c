@@ -347,24 +347,6 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
-int32_t getIntFromShort( int reg )
-{
-    int16_t ret_as_int16;
-    int32_t ret_as_int32;
-    char *regPtr;
-    char *ret_as_int16_ptr;
-
-    regPtr = (char*) &reg;
-    ret_as_int16_ptr = (char*) &ret_as_int16;
-
-    ret_as_int16_ptr[BYTE_0] = regPtr[BYTE_3];
-    ret_as_int16_ptr[BYTE_1] = regPtr[BYTE_4];
-
-    ret_as_int32 = (int32_t) ret_as_int16;
-
-    return ret_as_int32;
-}
-
 rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
@@ -375,9 +357,9 @@ rtems_task avgv_task(rtems_task_argument argument)
     static int old_v = 0;
     static int old_e1 = 0;
     static int old_e2 = 0;
-    int current_v;
-    int current_e1;
-    int current_e2;
+    int32_t current_v;
+    int32_t current_e1;
+    int32_t current_e2;
     int32_t average_v;
     int32_t average_e1;
     int32_t average_e2;
@@ -430,14 +412,14 @@ rtems_task avgv_task(rtems_task_argument argument)
             current_v = waveform_picker_regs->v;
             current_e1 = waveform_picker_regs->e1;
             current_e2 = waveform_picker_regs->e2;
-//            if ( (current_v != old_v)
-//                 && (current_e1 != old_e1)
-//                 && (current_e2 != old_e2))
-//            {
+            if ( (current_v != old_v)
+                 || (current_e1 != old_e1)
+                 || (current_e2 != old_e2))
+            {
                 // get new values
-                newValue_v =  getIntFromShort( current_v );
-                newValue_e1 = getIntFromShort( current_e1 );
-                newValue_e2 = getIntFromShort( current_e2 );
+                newValue_v =  current_v;
+                newValue_e1 = current_e1;
+                newValue_e2 = current_e2;
 
                 // compute the moving average
                 average_v = average_v + newValue_v - v[k];
@@ -457,11 +439,12 @@ rtems_task avgv_task(rtems_task_argument argument)
                 {
                     k++;
                 }
+
                 //update int16 values
                 hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
                 hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
                 hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
-//            }
+            }
             old_v = current_v;
             old_e1 = current_e1;
             old_e2 = current_e2;
