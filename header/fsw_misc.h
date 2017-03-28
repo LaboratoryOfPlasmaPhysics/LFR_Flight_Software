@@ -66,29 +66,33 @@ typedef struct{
     unsigned char dpu_spw_rx_too_big;
 } hk_lfr_me_t;
 
-#define B00 23
-#define B01 23
+#define B00 65
+#define B01 65
 #define B02 0
-#define B10 1024
-#define B11 -1771
-#define B12 1024
-#define B20 1024
-#define B21 -1937
-#define B22 1024
+#define B10 2048
+#define B11 -3817
+#define B12 2048
+#define B20 2048
+#define B21 -3987
+#define B22 2048
 
 #define A00 1
-#define A01 -28324
+#define A01 -1850
 #define A02 0
 #define A10 1
-#define A11 -1828
-#define A12 822
+#define A11 -3787
+#define A12 1758
 #define A20 1
-#define A21 -1956
-#define A22 950
+#define A21 -3974
+#define A22 1943
 
-#define G0  15
-#define G1  10
-#define G2  10
+#define GAIN_B0  17
+#define GAIN_B1  11
+#define GAIN_B2  11
+
+#define GAIN_A0  11
+#define GAIN_A1  11
+#define GAIN_A2  11
 
 #define NB_COEFFS   3
 #define COEFF0  0

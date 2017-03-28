@@ -351,9 +351,10 @@ int filter( int x, filter_ctx* ctx )
 {
     static const int b[NB_COEFFS][NB_COEFFS]={ {B00, B01, B02}, {B10, B11, B12}, {B20, B21, B22} };
     static const int a[NB_COEFFS][NB_COEFFS]={ {A00, A01, A02}, {A10, A11, A12}, {A20, A21, A22} };
-    static const int g_pow2[NB_COEFFS]={G0, G1, G2};
+    static const int b_gain[NB_COEFFS]={GAIN_B0, GAIN_B1, GAIN_B2};
+    static const int a_gain[NB_COEFFS]={GAIN_A0, GAIN_A1, GAIN_A2};
 
-    int W;
+    int_fast32_t W;
     int i;
 
     W = INIT_INT;
@@ -362,15 +363,15 @@ int filter( int x, filter_ctx* ctx )
     //Direct-Form-II
     for ( i = 0; i < NB_COEFFS; i++ )
     {
-        x = x << g_pow2[ i ];
-        W = ( x - ( a[i][COEFF1] * ctx->W[i][COEFF0] )
-                - ( a[i][COEFF2] * ctx->W[i][COEFF1] ) ) >> g_pow2[ i ];
+        x = x << a_gain[i];
+        W = (x - ( a[i][COEFF1] * ctx->W[i][COEFF0] )
+               - ( a[i][COEFF2] * ctx->W[i][COEFF1] ) ) >> a_gain[i];
         x = ( b[i][COEFF0] * W )
                 + ( b[i][COEFF1] * ctx->W[i][COEFF0] )
                 + ( b[i][COEFF2] * ctx->W[i][COEFF1] );
-        x =- ( x >> g_pow2[i] );
-        ctx->W[i][COEFF1] = ctx->W[i][COEFF0];
-        ctx->W[i][COEFF0] = W;
+        x = x >> b_gain[i];
+        ctx->W[i][1] = ctx->W[i][0];
+        ctx->W[i][0] = W;
     }
     return x;
 }
