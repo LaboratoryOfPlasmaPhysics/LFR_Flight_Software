@@ -347,6 +347,34 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
+int filter( int x, filter_ctx* ctx )
+{
+    static const int b[NB_COEFFS][NB_COEFFS]={ {B00, B01, B02}, {B10, B11, B12}, {B20, B21, B22} };
+    static const int a[NB_COEFFS][NB_COEFFS]={ {A00, A01, A02}, {A10, A11, A12}, {A20, A21, A22} };
+    static const int g_pow2[NB_COEFFS]={G0, G1, G2};
+
+    int W;
+    int i;
+
+    W = INIT_INT;
+    i = INIT_INT;
+
+    //Direct-Form-II
+    for ( i = 0; i < NB_COEFFS; i++ )
+    {
+        x = x << g_pow2[ i ];
+        W = ( x - ( a[i][COEFF1] * ctx->W[i][COEFF0] )
+                - ( a[i][COEFF2] * ctx->W[i][COEFF1] ) ) >> g_pow2[ i ];
+        x = ( b[i][COEFF0] * W )
+                + ( b[i][COEFF1] * ctx->W[i][COEFF0] )
+                + ( b[i][COEFF2] * ctx->W[i][COEFF1] );
+        x =- ( x >> g_pow2[i] );
+        ctx->W[i][COEFF1] = ctx->W[i][COEFF0];
+        ctx->W[i][COEFF0] = W;
+    }
+    return x;
+}
+
 rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
@@ -368,6 +396,10 @@ rtems_task avgv_task(rtems_task_argument argument)
     int32_t newValue_e2;
     unsigned char k;
     unsigned char indexOfOldValue;
+
+    static filter_ctx ctx_v = { { {0,0,0}, {0,0,0}, {0,0,0} } };
+    static filter_ctx ctx_e1 = { { {0,0,0}, {0,0,0}, {0,0,0} } };
+    static filter_ctx ctx_e2 = { { {0,0,0}, {0,0,0}, {0,0,0} } };
 
     BOOT_PRINTF("in AVGV ***\n");
 
@@ -416,29 +448,9 @@ rtems_task avgv_task(rtems_task_argument argument)
                  || (current_e1 != old_e1)
                  || (current_e2 != old_e2))
             {
-                // get new values
-                newValue_v =  current_v;
-                newValue_e1 = current_e1;
-                newValue_e2 = current_e2;
-
-                // compute the moving average
-                average_v = average_v + newValue_v - v[k];
-                average_e1 = average_e1 + newValue_e1 - e1[k];
-                average_e2 = average_e2 + newValue_e2 - e2[k];
-
-                // store new values in buffers
-                v[k] = newValue_v;
-                e1[k] = newValue_e1;
-                e2[k] = newValue_e2;
-
-                if (k == (MOVING_AVERAGE-1))
-                {
-                    k = 0;
-                }
-                else
-                {
-                    k++;
-                }
+                average_v = filter( current_v, &ctx_v );
+                average_e1 = filter( current_e1, &ctx_e1 );
+                average_e2 = filter( current_e2, &ctx_e2 );
 
                 //update int16 values
                 hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );

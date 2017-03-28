@@ -66,6 +66,40 @@ typedef struct{
     unsigned char dpu_spw_rx_too_big;
 } hk_lfr_me_t;
 
+#define B00 23
+#define B01 23
+#define B02 0
+#define B10 1024
+#define B11 -1771
+#define B12 1024
+#define B20 1024
+#define B21 -1937
+#define B22 1024
+
+#define A00 1
+#define A01 -28324
+#define A02 0
+#define A10 1
+#define A11 -1828
+#define A12 822
+#define A20 1
+#define A21 -1956
+#define A22 950
+
+#define G0  15
+#define G1  10
+#define G2  10
+
+#define NB_COEFFS   3
+#define COEFF0  0
+#define COEFF1  1
+#define COEFF2  2
+
+typedef struct filter_ctx
+{
+    int W[NB_COEFFS][NB_COEFFS];
+}filter_ctx;
+
 extern gptimer_regs_t *gptimer_regs;
 extern void ASR16_get_FPRF_IURF_ErrorCounters( unsigned int*, unsigned int* );
 extern void CCR_getInstructionAndDataErrorCounters( unsigned int*, unsigned int* );
