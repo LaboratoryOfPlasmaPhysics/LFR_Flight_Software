@@ -454,9 +454,9 @@ rtems_task avgv_task(rtems_task_argument argument)
                 average_e2 = filter( current_e2, &ctx_e2 );
 
                 //update int16 values
-                hk_lfr_sc_v_f3_as_int16 =  (int16_t) (average_v / MOVING_AVERAGE );
-                hk_lfr_sc_e1_f3_as_int16 = (int16_t) (average_e1 / MOVING_AVERAGE );
-                hk_lfr_sc_e2_f3_as_int16 = (int16_t) (average_e2 / MOVING_AVERAGE );
+                hk_lfr_sc_v_f3_as_int16 =  (int16_t) average_v;
+                hk_lfr_sc_e1_f3_as_int16 = (int16_t) average_e1;
+                hk_lfr_sc_e2_f3_as_int16 = (int16_t) average_e2;
             }
             old_v = current_v;
             old_e1 = current_e1;
