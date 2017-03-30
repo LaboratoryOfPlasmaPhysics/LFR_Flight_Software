@@ -801,8 +801,8 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     unsigned long long int deltaT_F2;
 
     deltaT_F0 = DELTAT_F0;
-    deltaT_F1 = DELTAF_F1;
-    deltaT_F2 = DELTAF_F2;
+    deltaT_F1 = DELTAT_F1;
+    deltaT_F2 = DELTAT_F2;
     sampleOffset_asLong = INIT_CHAR;
 
     // (1) get the f0 acquisition time => the value is passed in argument
