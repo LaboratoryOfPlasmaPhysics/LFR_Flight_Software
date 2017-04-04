@@ -57,7 +57,7 @@ option(FSW_debug_messages "Enable LFR debug messages" OFF)
 option(FSW_cpu_usage_report "Enable LFR cpu usage report" OFF)
 option(FSW_stack_report "Enable LFR stack report" OFF)
 option(FSW_vhdl_dev "?" OFF)
-option(FSW_lpp_dpu_destid "Set to debug at LPP" ON)
+option(FSW_lpp_dpu_destid "Set to debug at LPP" OFF)
 option(FSW_debug_watchdog "Enable debug watchdog" OFF)
 option(FSW_debug_tch "?" OFF)
 
