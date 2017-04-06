@@ -64,7 +64,7 @@ option(FSW_debug_tch "?" OFF)
 set(SW_VERSION_N1 "3" CACHE STRING  "Choose N1 FSW Version." FORCE)
 set(SW_VERSION_N2 "2" CACHE STRING  "Choose N2 FSW Version." FORCE)
 set(SW_VERSION_N3 "0" CACHE STRING  "Choose N3 FSW Version." FORCE)
-set(SW_VERSION_N4 "14" CACHE STRING  "Choose N4 FSW Version." FORCE)
+set(SW_VERSION_N4 "15" CACHE STRING  "Choose N4 FSW Version." FORCE)
 
 if(FSW_verbose)
 	add_definitions(-DPRINT_MESSAGES_ON_CONSOLE)
@@ -103,5 +103,10 @@ add_definitions(-DSW_VERSION_N3=${SW_VERSION_N3})
 add_definitions(-DSW_VERSION_N4=${SW_VERSION_N4})
 
 add_executable(fsw ${SOURCES})
+
+if(fix-b2bst)
+    check_b2bst(fsw ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
 add_test_cppcheck(fsw STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
 
