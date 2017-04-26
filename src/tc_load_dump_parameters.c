@@ -1665,8 +1665,8 @@ int check_sy_lfr_filter_parameters( ccsdsTelecommandPacket_t *TC, rtems_id queue
     {
         if ( sy_lfr_sc_rw_delta_f < MIN_SY_LFR_SC_RW_DELTA_F )
         {
-            parPtr = (char*) &sy_lfr_pas_filter_shift;
-            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, sy_lfr_sc_rw_delta_f );
+            parPtr = (char*) &sy_lfr_sc_rw_delta_f;
+            status = send_tm_lfr_tc_exe_inconsistent( TC, queue_id, DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE] );
             flag = WRONG_APP_DATA;
         }
     }
