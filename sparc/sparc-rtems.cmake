@@ -13,7 +13,7 @@ else()
     set(CMAKE_C_FLAGS_RELEASE "-O3")
 endif()
 
-set(CMAKE_C_LINK_EXECUTABLE  "<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+set(CMAKE_C_LINK_EXECUTABLE  "<CMAKE_LINKER> <FLAGS> -Xlinker -Map=<TARGET>.map <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
 include_directories("${rtems_dir}/sparc-rtems/leon3/lib/include")
 
