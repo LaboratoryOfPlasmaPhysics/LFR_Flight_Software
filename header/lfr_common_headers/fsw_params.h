@@ -297,6 +297,7 @@ typedef struct ring_node
 #define TASKID_PRC1 17
 #define TASKID_AVF2 18
 #define TASKID_PRC2 19
+#define TASKID_SCRB 20
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_LINK 20
@@ -318,6 +319,7 @@ typedef struct ring_node
 #define TASK_PRIORITY_PRC2 110
 #define TASK_PRIORITY_LOAD 190
 #define TASK_PRIORITY_DUMB 200
+#define TASK_PRIORITY_SCRB 210
 
 #define MSG_QUEUE_COUNT_RECV  10
 #define MSG_QUEUE_COUNT_SEND  50
@@ -358,18 +360,18 @@ typedef struct {
 
 #define DEFAULT_SY_LFR_PAS_FILTER_ENABLED   0
 #define DEFAULT_SY_LFR_PAS_FILTER_MODULUS   4
-#define DEFAULT_SY_LFR_PAS_FILTER_TBAD      1.0
+#define DEFAULT_SY_LFR_PAS_FILTER_TBAD      1.0f
 #define DEFAULT_SY_LFR_PAS_FILTER_OFFSET    0
-#define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5
+#define DEFAULT_SY_LFR_PAS_FILTER_SHIFT     0.5f
 #define DEFAULT_MODULUS   262144    // 65536 * 4
 #define DEFAULT_TBAD      65536     // 65536
 #define DEFAULT_OFFSET    0         // 65536 * 0
 #define DEFAULT_SHIFT     32768     // 65536 / 2
-#define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.045
-#define DEFAULT_SY_LFR_RW_K1                1.
-#define DEFAULT_SY_LFR_RW_K2                8.
-#define DEFAULT_SY_LFR_RW_K3                24.
-#define DEFAULT_SY_LFR_RW_K4                48.
+#define DEFAULT_SY_LFR_SC_RW_DELTA_F        0.045f
+#define DEFAULT_SY_LFR_RW_K1                1.f
+#define DEFAULT_SY_LFR_RW_K2                8.f
+#define DEFAULT_SY_LFR_RW_K3                24.f
+#define DEFAULT_SY_LFR_RW_K4                48.f
 
 typedef struct{
     unsigned char spare_sy_lfr_pas_filter_enabled;

@@ -15,6 +15,7 @@
 
 #include <rtems.h>
 
+
 /* configuration information */
 
 #define CONFIGURE_INIT
@@ -26,7 +27,7 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS 21 // number of tasks concurrently active including INIT
+#define CONFIGURE_MAXIMUM_TASKS 22 // number of tasks concurrently active including INIT
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
@@ -376,6 +377,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_PRC1] = rtems_build_name( 'P', 'R', 'C', '1' );
     Task_name[TASKID_AVF2] = rtems_build_name( 'A', 'V', 'F', '2' );
     Task_name[TASKID_PRC2] = rtems_build_name( 'P', 'R', 'C', '2' );
+    Task_name[TASKID_SCRB] = rtems_build_name( 'S', 'C', 'R', 'B' );
 
     // rate monotonic period names
     name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -561,6 +563,14 @@ int create_all_tasks( void ) // create all tasks which run in the software
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_DUMB]
         );
     }
+    if (status == RTEMS_SUCCESSFUL) // SCRUBBING TASK
+    {
+        status = rtems_task_create(
+            Task_name[TASKID_SCRB], TASK_PRIORITY_SCRB, RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SCRB]
+        );
+    }
     if (status == RTEMS_SUCCESSFUL) // HOUS
     {
         status = rtems_task_create(
@@ -742,6 +752,13 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
     if (status == RTEMS_SUCCESSFUL)     // DUMB
     {
         status = rtems_task_start( Task_id[TASKID_DUMB], dumb_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)     // SCRUBBING
+    {
+        status = rtems_task_start( Task_id[TASKID_SCRB], scrubbing_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
         }

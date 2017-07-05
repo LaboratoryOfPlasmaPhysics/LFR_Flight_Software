@@ -521,6 +521,26 @@ rtems_task dumb_task( rtems_task_argument unused )
     }
 }
 
+rtems_task scrubbing_task( rtems_task_argument unused )
+{
+    /** This RTEMS taks is to avoid entering IDLE task and also scrub memory to increase scubbing frequency.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * The scrubbing reads continuously memory when no other tasks are ready.
+     *
+     */
+
+    BOOT_PRINTF("in SCRUBBING *** \n");
+    volatile int i=0;
+    volatile uint32_t* RAM=(uint32_t*)0x40000000;
+    volatile uint32_t value;
+    while(1){
+        i=(i+1)%(1024*1024);
+        value += RAM[i];
+    }
+}
+
 //*****************************
 // init housekeeping parameters
 
