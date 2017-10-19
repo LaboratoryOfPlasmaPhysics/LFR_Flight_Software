@@ -533,11 +533,12 @@ rtems_task scrubbing_task( rtems_task_argument unused )
 
     BOOT_PRINTF("in SCRUBBING *** \n");
     volatile int i=0;
+    volatile float valuef = 1.;
     volatile uint32_t* RAM=(uint32_t*)0x40000000;
     volatile uint32_t value;
     while(1){
         i=(i+1)%(1024*1024);
-        value += RAM[i];
+        valuef += 10.f*(float)RAM[i];
     }
 }
 

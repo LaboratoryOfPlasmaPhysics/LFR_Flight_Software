@@ -568,7 +568,7 @@ int create_all_tasks( void ) // create all tasks which run in the software
         status = rtems_task_create(
             Task_name[TASKID_SCRB], TASK_PRIORITY_SCRB, RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SCRB]
+            RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SCRB]
         );
     }
     if (status == RTEMS_SUCCESSFUL) // HOUS
