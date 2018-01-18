@@ -204,6 +204,7 @@ inline void waveform_isr_normal_sbm1_sbm2( void )
         }
         // send an event to the WFRM task for resynchro activities
         status = rtems_event_send( Task_id[TASKID_WFRM], RTEMS_EVENT_SWF_RESYNCH );
+        status = rtems_event_send( Task_id[TASKID_CALI], RTEMS_EVENT_CAL_SWEEP_WAKE );
     }
 
     //***

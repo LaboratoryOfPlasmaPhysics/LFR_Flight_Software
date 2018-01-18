@@ -27,7 +27,7 @@
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 
-#define CONFIGURE_MAXIMUM_TASKS 22 // number of tasks concurrently active including INIT
+#define CONFIGURE_MAXIMUM_TASKS 23 // number of tasks concurrently active including INIT
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 #define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
@@ -378,6 +378,7 @@ void create_names( void ) // create all names for tasks and queues
     Task_name[TASKID_AVF2] = rtems_build_name( 'A', 'V', 'F', '2' );
     Task_name[TASKID_PRC2] = rtems_build_name( 'P', 'R', 'C', '2' );
     Task_name[TASKID_SCRB] = rtems_build_name( 'S', 'C', 'R', 'B' );
+    Task_name[TASKID_CALI] = rtems_build_name( 'C', 'A', 'L', 'I' );
 
     // rate monotonic period names
     name_hk_rate_monotonic = rtems_build_name( 'H', 'O', 'U', 'S' );
@@ -587,6 +588,14 @@ int create_all_tasks( void ) // create all tasks which run in the software
                     RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVGV]
                     );
     }
+    if (status == RTEMS_SUCCESSFUL) // CALI
+    {
+        status = rtems_task_create(
+                    Task_name[TASKID_CALI], TASK_PRIORITY_CALI, RTEMS_MINIMUM_STACK_SIZE,
+                    RTEMS_DEFAULT_MODES,
+                    RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CALI]
+                    );
+    }
 
     return status;
 }
@@ -766,6 +775,13 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
     if (status == RTEMS_SUCCESSFUL)     // LOAD
     {
         status = rtems_task_start( Task_id[TASKID_LOAD], load_task, 1 );
+        if (status!=RTEMS_SUCCESSFUL) {
+            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n")
+        }
+    }
+    if (status == RTEMS_SUCCESSFUL)     // CALI
+    {
+        status = rtems_task_start( Task_id[TASKID_CALI], calibration_sweep_task, 1 );
         if (status!=RTEMS_SUCCESSFUL) {
             BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n")
         }

@@ -164,6 +164,7 @@ typedef struct ring_node
 #define RTEMS_EVENT_BURST_BP1_F1    RTEMS_EVENT_21
 #define RTEMS_EVENT_BURST_BP2_F1    RTEMS_EVENT_22
 #define RTEMS_EVENT_SWF_RESYNCH     RTEMS_EVENT_23
+#define RTEMS_EVENT_CAL_SWEEP_WAKE  RTEMS_EVENT_24
 
 //********************************************
 //********************************************
@@ -298,6 +299,7 @@ typedef struct ring_node
 #define TASKID_AVF2 18
 #define TASKID_PRC2 19
 #define TASKID_SCRB 20
+#define TASKID_CALI 21
 
 #define TASK_PRIORITY_SPIQ 5
 #define TASK_PRIORITY_LINK 20
@@ -310,6 +312,7 @@ typedef struct ring_node
 #define TASK_PRIORITY_CWF3 40   // there is a printf in this function, be careful with its priority wrt CWF1
 #define TASK_PRIORITY_SEND 45
 #define TASK_PRIORITY_RECV 50
+#define TASK_PRIORITY_CALI 50
 #define TASK_PRIORITY_ACTN 50
 #define TASK_PRIORITY_AVF0 60
 #define TASK_PRIORITY_AVF1 70
@@ -337,6 +340,7 @@ typedef struct ring_node
 #define QUEUE_PRC0 2
 #define QUEUE_PRC1 3
 #define QUEUE_PRC2 4
+#define QUEUE_CALI 5
 
 #define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 

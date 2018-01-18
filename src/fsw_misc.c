@@ -523,7 +523,7 @@ rtems_task dumb_task( rtems_task_argument unused )
 
 rtems_task scrubbing_task( rtems_task_argument unused )
 {
-    /** This RTEMS taks is to avoid entering IDLE task and also scrub memory to increase scubbing frequency.
+    /** This RTEMS taks is used to avoid entering IDLE task and also scrub memory to increase scubbing frequency.
      *
      * @param unused is the starting argument of the RTEMS task
      *
@@ -541,6 +541,44 @@ rtems_task scrubbing_task( rtems_task_argument unused )
         valuef += 10.f*(float)RAM[i];
     }
 }
+
+rtems_task calibration_sweep_task( rtems_task_argument unused )
+{
+    /** This RTEMS taks is used to change calibration signal smapling frequency between snapshots.
+     *
+     * @param unused is the starting argument of the RTEMS task
+     *
+     * If calibration is enabled, this task will divide by two the calibration signal smapling frequency between snapshots.
+     * When minimum sampling frequency is reach it will jump to maximum sampling frequency to loop indefinitely.
+     *
+     */
+    rtems_event_set event_out;
+    BOOT_PRINTF("in calibration sweep *** \n");
+    rtems_interval ticks_per_seconds = rtems_clock_get_ticks_per_second();
+    while(1){
+        // Waiting for next F0 snapshot
+        rtems_event_receive(RTEMS_EVENT_CAL_SWEEP_WAKE, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out);
+        if(time_management_regs->calDACCtrl & BIT_CAL_ENABLE)
+        {
+            unsigned int delta_snapshot;
+            delta_snapshot = (parameter_dump_packet.sy_lfr_n_swf_p[0] * CONST_256)
+                    + parameter_dump_packet.sy_lfr_n_swf_p[1];
+            // We are woken almost in the center of a snapshot -> let's wait for sy_lfr_n_swf_p / 2
+            rtems_task_wake_after( ticks_per_seconds * delta_snapshot / 2);
+            if(time_management_regs->calDivisor >= CAL_F_DIVISOR_MAX){
+                time_management_regs->calDivisor = CAL_F_DIVISOR_MIN;
+            }
+            else{
+                time_management_regs->calDivisor *= 2;
+            }
+        }
+
+
+
+    }
+
+}
+
 
 //*****************************
 // init housekeeping parameters

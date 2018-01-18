@@ -37,6 +37,8 @@
 #define CAL_NB_PTS          256
 #define CAL_DATA_MASK       0xfff
 #define CAL_F_DIVISOR       38  // 25 MHz => 160 256 (39 - 1)
+#define CAL_F_DIVISOR_MIN       38
+#define CAL_F_DIVISOR_MAX       (38*2*2*2*2)
 // INTERLEAVED MODE
 #define CAL_FS_INTER          240384.615
 #define CAL_NB_PTS_INTER      384

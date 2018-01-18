@@ -137,6 +137,7 @@ rtems_task hous_task( rtems_task_argument argument );
 rtems_task avgv_task( rtems_task_argument argument );
 rtems_task dumb_task( rtems_task_argument unused );
 rtems_task scrubbing_task( rtems_task_argument unused );
+rtems_task calibration_sweep_task( rtems_task_argument unused );
 
 void init_housekeeping_parameters( void );
 void increment_seq_counter(unsigned short *packetSequenceControl);
