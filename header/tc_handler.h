@@ -51,6 +51,11 @@
 extern unsigned int lastValidEnterModeTime;
 extern unsigned char oneTcLfrUpdateTimeReceived;
 
+//****
+// ISR
+rtems_isr commutation_isr1( rtems_vector_number vector );
+rtems_isr commutation_isr2( rtems_vector_number vector );
+
 //***********
 // RTEMS TASK
 rtems_task actn_task( rtems_task_argument unused );

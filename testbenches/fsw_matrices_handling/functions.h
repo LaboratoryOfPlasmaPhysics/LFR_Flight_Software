@@ -1,32 +1,9 @@
-/*------------------------------------------------------------------------------
---  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
---  This file is a part of the LFR FSW
---  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
---
---  This program is free software; you can redistribute it and/or modify
---  it under the terms of the GNU General Public License as published by
---  the Free Software Foundation; either version 2 of the License, or
---  (at your option) any later version.
---
---  This program is distributed in the hope that it will be useful,
---  but WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
---  GNU General Public License for more details.
---
---  You should have received a copy of the GNU General Public License
---  along with this program; if not, write to the Free Software
---  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
--------------------------------------------------------------------------------*/
-/*--                  Author : Paul Leroy
---                   Contact : Alexis Jeandet
---                      Mail : alexis.jeandet@lpp.polytechnique.fr
-----------------------------------------------------------------------------*/
-
 #define NB_VALUES_PER_SM 25
 #define NB_BINS_PER_SM   128
 
 #define NB_BINS_COMPRESSED_SM_F0    11
 #define ASM_F0_INDICE_START         17      // 88 bins
+#define ASM_F0_INDICE_STOP          104     // 2 packets of 44 bins
 #define NB_BINS_TO_AVERAGE_ASM_F0   8
 
 void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )

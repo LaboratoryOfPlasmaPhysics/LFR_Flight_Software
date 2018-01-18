@@ -24,6 +24,7 @@
 #define FREQ_F0     24576.
 #define FREQ_F1     4096.
 #define FREQ_F2     256.
+#define FREQ_F3     16.
 
 #define DELTAT_F0   2731    // (2048. / 24576. / 2.) * 65536. = 2730.667;
 #define DELTAT_F1   16384   // (2048. / 4096.  / 2.) * 65536. = 16384;
