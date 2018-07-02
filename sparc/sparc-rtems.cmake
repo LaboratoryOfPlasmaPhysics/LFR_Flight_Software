@@ -23,3 +23,10 @@ function (check_b2bst target bin)
         COMMAND  ${rtems_dir}/bin/sparc-rtems-objdump -d ${bin}/${target} | ${CMAKE_SOURCE_DIR}/sparc/leon3ft-b2bst-scan.tcl
         )
 endfunction()
+
+function (build_srec target bin rev)
+    add_custom_command(TARGET ${target}
+        POST_BUILD
+        COMMAND ${rtems_dir}/bin/sparc-rtems-objcopy -j .data -F srec ${bin}/${target} RpwLfrApp_XXXX_data_rev-${rev}.srec && ${rtems_dir}/bin/sparc-rtems-objcopy -j .text -F srec ${bin}/${target} RpwLfrApp_XXXX_text_rev-${rev}.srec
+        )
+endfunction()
