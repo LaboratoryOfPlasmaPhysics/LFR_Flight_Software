@@ -414,8 +414,6 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.pkt_len_rcv_value[1] = TC->packetLength[1];
     TM.pkt_datafieldsize_cnt[0] = currentTC_LEN_RCV[0];
     TM.pkt_datafieldsize_cnt[1] = currentTC_LEN_RCV[1];
-//    TM.rcv_crc[0] = packetDataField[ packetLength - 1 ];
-//    TM.rcv_crc[1] = packetDataField[ packetLength ];
     TM.rcv_crc[0] = packetDataField[ estimatedPacketLength - 1 ];
     TM.rcv_crc[1] = packetDataField[ estimatedPacketLength     ];
     TM.computed_crc[0] = computed_CRC[0];

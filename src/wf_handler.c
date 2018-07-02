@@ -842,11 +842,9 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     node = 0;
     while ( node < nb_ring_nodes)
     {
-        //PRINTF1("%d ... ", node);
         bufferAcquisitionTime_asLong = get_acquisition_time( (unsigned char *) &ring_node_to_send->coarseTime );
         if (bufferAcquisitionTime_asLong <= acquisitionTime_asLong)
         {
-            //PRINTF1("buffer found with acquisition time = %llx\n", bufferAcquisitionTime_asLong);
             node = nb_ring_nodes;
         }
         else
@@ -859,7 +857,6 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     // (5) compute the number of samples to take in the current buffer
     sampleOffset_asLong = ((acquisitionTime_asLong - bufferAcquisitionTime_asLong) * frequency_asLong ) >> SHIFT_2_BYTES;
     nbSamplesPart1_asLong = NB_SAMPLES_PER_SNAPSHOT - sampleOffset_asLong;
-    //PRINTF2("sampleOffset_asLong = %lld, nbSamplesPart1_asLong = %lld\n", sampleOffset_asLong, nbSamplesPart1_asLong);
 
     // (6) compute the final acquisition time
     acquisitionTime_asLong = bufferAcquisitionTime_asLong +
@@ -882,7 +879,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     timeCharPtr = (unsigned char*) &ring_node_to_send->coarseTime;
     ptr2[0] = ptr2[0] | (timeCharPtr[0] & SYNC_BIT); // [1000 0000]
 
-    if ( (nbSamplesPart1_asLong >= NB_SAMPLES_PER_SNAPSHOT) | (nbSamplesPart1_asLong < 0) )
+    if ( (nbSamplesPart1_asLong > NB_SAMPLES_PER_SNAPSHOT) | (nbSamplesPart1_asLong < 0) )
     {
         nbSamplesPart1_asLong = 0;
     }
@@ -1342,3 +1339,4 @@ void increment_seq_counter_source_id( unsigned char *packet_sequence_control, un
     // RESTORE THE MODE OF THE CALLING TASK
     status =  rtems_task_mode( initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set );
 }
+
