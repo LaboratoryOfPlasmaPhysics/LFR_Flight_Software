@@ -793,6 +793,10 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
 
 void get_cpu_load( unsigned char *resource_statistics )
 {
+#define LOAD_AVG_SIZE 60
+    static unsigned char cpu_load_hist[LOAD_AVG_SIZE]={0};
+    static char old_avg_pos=0;
+    static unsigned int cpu_load_avg;
     unsigned char cpu_load;
 
     cpu_load = lfr_rtems_cpu_usage_report();
@@ -806,8 +810,12 @@ void get_cpu_load( unsigned char *resource_statistics )
          resource_statistics[1] = cpu_load;
     }
 
+    cpu_load_avg = cpu_load_avg - (unsigned int)cpu_load_hist[(int)old_avg_pos] + (unsigned int)cpu_load;
+    cpu_load_hist[(int)old_avg_pos] = cpu_load;
+    old_avg_pos += 1;
+    old_avg_pos %= LOAD_AVG_SIZE;
     // CPU_LOAD_AVE
-    resource_statistics[BYTE_2] = 0;
+    resource_statistics[BYTE_2] = (unsigned char)(cpu_load_avg / LOAD_AVG_SIZE);
 
 #ifndef PRINT_TASK_STATISTICS
         rtems_cpu_usage_reset();
