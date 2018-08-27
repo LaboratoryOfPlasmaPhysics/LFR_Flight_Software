@@ -816,7 +816,7 @@ void get_cpu_load( unsigned char *resource_statistics )
     old_avg_pos %= LOAD_AVG_SIZE;
     // CPU_LOAD_AVE
     resource_statistics[BYTE_2] = (unsigned char)(cpu_load_avg / LOAD_AVG_SIZE);
-
+// this will change the way LFR compute usage
 #ifndef PRINT_TASK_STATISTICS
         rtems_cpu_usage_reset();
 #endif

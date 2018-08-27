@@ -28,11 +28,7 @@ unsigned char lfr_rtems_cpu_usage_report( void )
     Timestamp_Control  uptime;
     Timestamp_Control  total;
     Timestamp_Control  ran;
-    Timestamp_Control  abs_total;
-    Timestamp_Control  abs_ran;
 
-    static Timestamp_Control  last_total={0,0};
-    static Timestamp_Control  last_ran={0,0};
 #else
     #error "Can't compute CPU usage using ticks on LFR"
 #endif
@@ -42,8 +38,6 @@ unsigned char lfr_rtems_cpu_usage_report( void )
     ival = 0;
     cpu_load = 0;
 
-    _TOD_Get_uptime( &uptime );
-    _Timestamp_Subtract( &CPU_usage_Uptime_at_last_reset, &uptime, &abs_total );
     for ( api_index = 1 ; api_index <= OBJECTS_APIS_LAST ; api_index++ )
     {
         if ( !_Objects_Information_table[ api_index ] ) { }
@@ -59,30 +53,11 @@ unsigned char lfr_rtems_cpu_usage_report( void )
                     if ( the_thread == NULL) { }
                     else if(the_thread->Object.id == Task_id[TASKID_SCRB]) // Only measure scrubbing task load, CPU load is 100%-Scrubbing
                     {
-                        /*
-                        * If this is the currently executing thread, account for time
-                        * since the last context switch.
-                        */
-                        abs_ran = the_thread->cpu_time_used;
-                        if ( _Thread_Executing->Object.id == the_thread->Object.id )
-                        {
-                            Timestamp_Control used;
-                            _Timestamp_Subtract(
-                                        &_Thread_Time_of_last_context_switch, &uptime, &used
-                                        );
-                            _Timestamp_Add_to( &abs_ran, &used );
-                        }
-                        /*
-                         * Only consider the time since last call
-                         */
-                        _Timespec_Subtract(&last_ran, &abs_ran, &ran);
-                        _Timespec_Subtract(&last_total, &abs_total, &total);
-
-                        last_ran = abs_ran;
-                        last_total = abs_total;
-
+                        _TOD_Get_uptime( &uptime );
+                        _Timestamp_Subtract( &CPU_usage_Uptime_at_last_reset, &uptime, &total );
+                        ran = the_thread->cpu_time_used;
                         _Timestamp_Divide( &ran, &total, &ival, &fval);
-                        cpu_load = (unsigned char)(CONST_100 - ival);
+                        cpu_load = (unsigned char)(CONST_255 - ((ival*CONST_10+fval/CONST_100)*CONST_256/CONST_1000));
                     }
                 }
             }
