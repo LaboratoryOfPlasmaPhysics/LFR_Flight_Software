@@ -11,4 +11,3 @@ set(LFR_BP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/LFR_basic-parameters/basic_parameters
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/sparc")
 
 add_subdirectory(src)
-#add_subdirectory(timegen)
