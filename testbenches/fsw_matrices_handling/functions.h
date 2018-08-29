@@ -3,7 +3,6 @@
 
 #define NB_BINS_COMPRESSED_SM_F0    11
 #define ASM_F0_INDICE_START         17      // 88 bins
-#define ASM_F0_INDICE_STOP          104     // 2 packets of 44 bins
 #define NB_BINS_TO_AVERAGE_ASM_F0   8
 
 void ASM_reorganize_and_divide( float *averaged_spec_mat, float *averaged_spec_mat_reorganized, float divider )

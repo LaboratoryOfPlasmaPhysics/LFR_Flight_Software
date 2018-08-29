@@ -19,16 +19,6 @@
 #define DELTAF_F0           96.
 #define DELTAF_F1           16.
 #define DELTAF_F2           1.
-#define DELTAF_DIV          2.
-
-#define BIT_RW1_F1  0x80
-#define BIT_RW1_F2  0x40
-#define BIT_RW2_F1  0x20
-#define BIT_RW2_F2  0x10
-#define BIT_RW3_F1  0x08
-#define BIT_RW3_F2  0x04
-#define BIT_RW4_F1  0x02
-#define BIT_RW4_F2  0x01
 
 #define WHEEL_1 1
 #define WHEEL_2 2

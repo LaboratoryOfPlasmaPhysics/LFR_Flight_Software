@@ -8,7 +8,6 @@
 #include "stdint.h"
 
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
-#define UART_DEVICE_NAME "/dev/console"
 
 //*******
 // MACROS
@@ -46,10 +45,10 @@
 #define CONST_2048  2048    // 2^11
 #define CONST_512   512     // 2^9
 #define CONST_256   256     // 2^8
-#define CONST_128   128     // 2^7
-#define UINT8_MAX   255
+#ifndef UINT8_MAX
+    #define UINT8_MAX   255
+#endif
 
-#define FLOAT_MSBYTE    0
 #define FLOAT_LSBYTE    3
 #define BITS_PER_BYTE   8
 #define INIT_FLOAT      0.
@@ -68,7 +67,6 @@
 #define SHIFT_3_BITS    3
 #define SHIFT_4_BITS    4
 #define SHIFT_5_BITS    5
-#define SHIFT_6_BITS    6
 #define SHIFT_7_BITS    7
 #define BYTE_0  0
 #define BYTE_1  1
@@ -110,7 +108,6 @@ typedef struct ring_node
 #define NB_PACKETS_PER_GROUP_OF_CWF_LIGHT   4   // 4 packets containing 672 blk
 #define NB_SAMPLES_PER_SNAPSHOT 2688    // 336 * 8 = 672 * 4 = 2688
 #define TIME_OFFSET 2
-#define TIME_OFFSET_IN_BYTES 8
 #define NB_BYTES_SWF_BLK (2 * 6)
 #define NB_WORDS_SWF_BLK 3
 #define NB_BYTES_CWF3_LIGHT_BLK 6
@@ -138,10 +135,8 @@ typedef struct ring_node
 #define THR_MODE_NORMAL     1
 #define THR_MODE_BURST      2
 
-#define RTEMS_EVENT_MODE_STANDBY    RTEMS_EVENT_0
 #define RTEMS_EVENT_MODE_NORMAL     RTEMS_EVENT_1
 #define RTEMS_EVENT_MODE_BURST      RTEMS_EVENT_2
-#define RTEMS_EVENT_MODE_SBM1       RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2       RTEMS_EVENT_4
 #define RTEMS_EVENT_MODE_NORM_S1_S2 RTEMS_EVENT_5
 #define RTEMS_EVENT_NORM_BP1_F0     RTEMS_EVENT_6
@@ -182,7 +177,6 @@ typedef struct ring_node
 #define DFLT_SY_LFR_N_BP_P0 4    // sec
 #define DFLT_SY_LFR_N_BP_P1 20   // sec
 #define DFLT_SY_LFR_N_CWF_LONG_F3 0      // 0 => production of light continuous waveforms at f3
-#define MIN_DELTA_SNAPSHOT 16       // sec
 
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
@@ -196,10 +190,6 @@ typedef struct ring_node
 // SBM2
 #define DEFAULT_SY_LFR_S2_BP_P0 1   // sec
 #define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
-
-// ADDITIONAL PARAMETERS
-#define TIME_BETWEEN_TWO_SWF_PACKETS 30     // nb x 10 ms => 300 ms
-#define TIME_BETWEEN_TWO_CWF3_PACKETS 1000  // nb x 10 ms => 10 s
 
 // STATUS WORD
 #define DEFAULT_STATUS_WORD_BYTE0 0x0d  // [0000] [1] [101] mode 4 bits / SPW enabled 1 bit / state is run 3 bits
@@ -215,7 +205,6 @@ typedef struct ring_node
 #define MIN_PAS_FILTER_SHIFT    0.0
 #define MAX_PAS_FILTER_SHIFT    1.0
 #define MIN_SY_LFR_SC_RW_DELTA_F    0
-#define MIN_SY_LFR_RW_K             0
 #define MIN_SY_LFR_RW_F             0
 //
 #define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
@@ -230,7 +219,6 @@ typedef struct ring_node
 #define APB_OFFSET_GRSPW_STATUS_REGISTER    0x04
 #define APB_OFFSET_GRSPW_TIME_REGISTER      0x14
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
-#define REGS_ADDR_GRGPIO            0x80000b00
 
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f54  // PDB >= 0.1.28
@@ -269,7 +257,6 @@ typedef struct ring_node
 #define LFR_SUCCESSFUL  0
 #define LFR_DEFAULT     1
 #define LFR_EXE_ERROR   2
-#define LFR_DEFAULT_ALT -1
 
 //******
 // RTEMS
@@ -336,9 +323,6 @@ typedef struct ring_node
 #define QUEUE_PRC0 2
 #define QUEUE_PRC1 3
 #define QUEUE_PRC2 4
-#define QUEUE_CALI 5
-
-#define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 
 struct param_local_str{
     unsigned int local_sbm1_nb_cwf_sent;

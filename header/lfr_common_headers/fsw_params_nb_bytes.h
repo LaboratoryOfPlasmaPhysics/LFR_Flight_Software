@@ -71,7 +71,6 @@
 // TC_LFR_LOAD_FILTER_PAR
 #define NB_RW_K_COEFFS                          16
 #define NB_BYTES_PER_RW_K_COEFF                 4
-#define DATAFIELD_POS_PA_RPW_SPARE8_2           0   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_ENABLED 1   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS 2   // 8  bits
 #define DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD    3   // 32 bits
