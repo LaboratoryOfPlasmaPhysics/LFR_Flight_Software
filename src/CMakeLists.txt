@@ -104,8 +104,12 @@ add_definitions(-DSW_VERSION_N2=${SW_VERSION_N2})
 add_definitions(-DSW_VERSION_N3=${SW_VERSION_N3})
 add_definitions(-DSW_VERSION_N4=${SW_VERSION_N4})
 
-
 add_executable(fsw ${SOURCES})
+
+if(Coverage)
+    target_link_libraries(fsw gcov)
+endif()
+
 
 if(fix-b2bst)
     check_b2bst(fsw ${CMAKE_CURRENT_BINARY_DIR})

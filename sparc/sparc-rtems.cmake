@@ -7,11 +7,23 @@ set(CMAKE_LINKER  ${rtems_dir}/bin/sparc-rtems-g++)
 SET(CMAKE_EXE_LINKER_FLAGS "-static")
 option(fix-b2bst "Activate -mfix-b2bst switch to mitigate \"LEON3FT Stale Cache Entry After Store with Data Tag Parity Error\" errata, GRLIB-TN-0009" ON)
 
+option(Coverage "Enables code coverage" OFF)
+
+
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_C_FLAGS_DEBUG "-O0")
+
+
 if(fix-b2bst)
-    set(CMAKE_C_FLAGS_RELEASE "-O3 -mfix-b2bst")
-else()
-    set(CMAKE_C_FLAGS_RELEASE "-O3")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mfix-b2bst")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mfix-b2bst")
 endif()
+
+if(Coverage)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
+endif()
+
 
 set(CMAKE_C_LINK_EXECUTABLE  "<CMAKE_LINKER> <FLAGS> -Xlinker -Map=<TARGET>.map <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
