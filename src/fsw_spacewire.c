@@ -281,11 +281,11 @@ rtems_task send_task( rtems_task_argument argument)
                 {
                     spw_send_waveform_CWF( incomingRingNodePtr, &headerCWF );
                 }
-                else if ( (sid==SID_NORM_SWF_F0) || (sid== SID_NORM_SWF_F1) || (sid==SID_NORM_SWF_F2) )
+                else if ( (sid==SID_NORM_SWF_F0) || (sid==SID_NORM_SWF_F1) || (sid==SID_NORM_SWF_F2) )
                 {
                     spw_send_waveform_SWF( incomingRingNodePtr, &headerSWF );
                 }
-                else if ( (sid==SID_NORM_CWF_F3) )
+                else if (sid==SID_NORM_CWF_F3)
                 {
                     spw_send_waveform_CWF3_light( incomingRingNodePtr, &headerCWF );
                 }
@@ -301,7 +301,7 @@ rtems_task send_task( rtems_task_argument argument)
                 {
                     spw_send_asm_f2( incomingRingNodePtr, &headerASM );
                 }
-                else if ( sid==TM_CODE_K_DUMP )
+                else if (sid==TM_CODE_K_DUMP)
                 {
                     spw_send_k_dump( incomingRingNodePtr );
                 }
@@ -620,23 +620,6 @@ void spacewire_read_statistics( void )
     // clear the counters
     status = ioctl( fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS );
 
-//    typedef struct {
-//        unsigned int tx_link_err;             // NOT IN HK
-//        unsigned int rx_rmap_header_crc_err;  // NOT IN HK
-//        unsigned int rx_rmap_data_crc_err;    // NOT IN HK
-//        unsigned int rx_eep_err;
-//        unsigned int rx_truncated;
-//        unsigned int parity_err;
-//        unsigned int escape_err;
-//        unsigned int credit_err;
-//        unsigned int write_sync_err;
-//        unsigned int disconnect_err;
-//        unsigned int early_ep;
-//        unsigned int invalid_address;
-//        unsigned int packets_sent;
-//        unsigned int packets_received;
-//    } spw_stats;
-
     // rx_eep_err
     grspw_stats.rx_eep_err      = grspw_stats.rx_eep_err        + current.rx_eep_err;
     // rx_truncated
@@ -684,23 +667,6 @@ void spacewire_get_last_error( void )
     // get current time
     coarseTime = time_management_regs->coarse_time;
     fineTime   = time_management_regs->fine_time;
-
-    //    typedef struct {
-    //        unsigned int tx_link_err;             // NOT IN HK
-    //        unsigned int rx_rmap_header_crc_err;  // NOT IN HK
-    //        unsigned int rx_rmap_data_crc_err;    // NOT IN HK
-    //        unsigned int rx_eep_err;
-    //        unsigned int rx_truncated;
-    //        unsigned int parity_err;
-    //        unsigned int escape_err;
-    //        unsigned int credit_err;
-    //        unsigned int write_sync_err;
-    //        unsigned int disconnect_err;
-    //        unsigned int early_ep;
-    //        unsigned int invalid_address;
-    //        unsigned int packets_sent;
-    //        unsigned int packets_received;
-    //    } spw_stats;
 
     // tx_link_err *** no code associated to this field
     // rx_rmap_header_crc_err ***  LE *** in HK
@@ -1539,6 +1505,11 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
     }
 }
 
+/**
+ * @brief spw_send_asm_f2 Sends an ASM packet at F2 over spacewire
+ * @param ring_node_to_send node pointing to the actual buffer to send
+ * @param header
+ */
 void spw_send_asm_f2( ring_node *ring_node_to_send,
                    Header_TM_LFR_SCIENCE_ASM_t *header )
 {
@@ -1606,6 +1577,10 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
     }
 }
 
+/**
+ * @brief spw_send_k_dump Sends k coefficients dump packet over spacewire
+ * @param ring_node_to_send node pointing to the actual buffer to send
+ */
 void spw_send_k_dump( ring_node *ring_node_to_send )
 {
     rtems_status_code status;

@@ -24,43 +24,26 @@
 
 /* configuration information */
 
-#define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
-#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
-
-#define CONFIGURE_MAXIMUM_TASKS 23 // number of tasks concurrently active including INIT
-#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
-#define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
-#define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
-#define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
-#define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
-#define CONFIGURE_MAXIMUM_DRIVERS 16
-#define CONFIGURE_MAXIMUM_PERIODS 6 // [hous] [load] [avgv]
-#define CONFIGURE_MAXIMUM_TIMERS 6 // [spiq] [link] [spacewire_reset_link]
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
-#ifdef PRINT_STACK_REPORT
-    #define CONFIGURE_STACK_CHECKER_ENABLED
-#endif
+#include <fsw_params.h>
 
 #include <rtems/confdefs.h>
 
 /* If --drvmgr was enabled during the configuration of the RTEMS kernel */
 #ifdef RTEMS_DRVMGR_STARTUP
-#ifdef LEON3
-/* Add Timer and UART Driver */
+    #ifdef LEON3
+    /* Add Timer and UART Driver */
 
-#ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
-#endif
+        #ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
+        #endif
 
-#ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
-#endif
+        #ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
+        #endif
 
-#endif
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW   /* GRSPW Driver */
-
-#include <drvmgr/drvmgr_confdefs.h>
+    #endif
+    #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW   /* GRSPW Driver */
+    #include <drvmgr/drvmgr_confdefs.h>
 #endif
 
 #include "fsw_init.h"
@@ -790,7 +773,7 @@ int start_all_tasks( void ) // start all tasks except SEND RECV and HOUS
     return status;
 }
 
-rtems_status_code create_message_queues( void ) // create the two message queues used in the software
+rtems_status_code create_message_queues( void ) // create the five message queues used in the software
 {
     rtems_status_code status_recv;
     rtems_status_code status_send;
@@ -950,6 +933,11 @@ rtems_status_code get_message_queue_id_prc2( rtems_id *queue_id )
     return status;
 }
 
+/**
+ * @brief update_queue_max_count returns max(fifo_size_max, pending_messages + 1)
+ * @param queue_id
+ * @param fifo_size_max
+ */
 void update_queue_max_count( rtems_id queue_id, unsigned char*fifo_size_max )
 {
     u_int32_t count;
@@ -974,6 +962,20 @@ void update_queue_max_count( rtems_id queue_id, unsigned char*fifo_size_max )
     }
 }
 
+/**
+ * @brief init_ring initializes given ring buffer
+ * @param ring array of nodes to initialize
+ * @param nbNodes number of node in the ring buffer
+ * @param buffer memory space given to the ring buffer
+ * @param bufferSize size of the whole ring buffer memory space
+ *
+ * @details This function creates a circular buffer from a given number of nodes and a given memory space. It first sets all nodes attributes to thier defaults values
+ * and associates a portion of the given memory space with each node. Then it connects each nodes to build a circular buffer.
+ *
+ * Each node capacity will be bufferSize/nbNodes.
+ *
+ * https://en.wikipedia.org/wiki/Circular_buffer
+ */
 void init_ring(ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize )
 {
     unsigned char i;

@@ -445,7 +445,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1] = freq;
         bin = freq;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f0_norm);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -461,7 +460,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1 ] = freq;
         bin = freq - NB_BINS_COMPRESSED_SM_F0;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f1_norm);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -477,7 +475,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq * KCOEFF_BLK_SIZE) + 1 ] = freq;
         bin = freq - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
         for ( coeff = 0; coeff <NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -512,7 +509,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_2.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1 ] = KCOEFF_BLK_NR_PKT1 + freq;
         bin = freq + KCOEFF_BLK_NR_PKT2;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_2.kcoeff_blks[
