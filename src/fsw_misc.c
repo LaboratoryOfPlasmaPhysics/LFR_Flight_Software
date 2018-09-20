@@ -536,9 +536,18 @@ rtems_task scrubbing_task( rtems_task_argument unused )
     volatile float valuef = 1.;
     volatile uint32_t* RAM=(uint32_t*)0x40000000;
     volatile uint32_t value;
+#ifdef ENABLE_SCRUBBING_COUNTER
+    housekeeping_packet.lfr_fpga_version[BYTE_0] = 0;
+#endif
     while(1){
         i=(i+1)%(1024*1024);
         valuef += 10.f*(float)RAM[i];
+#ifdef ENABLE_SCRUBBING_COUNTER
+        if(i==0)
+        {
+            housekeeping_packet.lfr_fpga_version[BYTE_0] += 1;
+        }
+#endif
     }
 }
 
@@ -690,64 +699,6 @@ unsigned long long int getTimeAsUnsignedLongLongInt( )
             + time_management_regs->fine_time;
 
     return time;
-}
-
-void send_dumb_hk( void )
-{
-    Packet_TM_LFR_HK_t dummy_hk_packet;
-    unsigned char *parameters;
-    unsigned int i;
-    rtems_id queue_id;
-
-    queue_id = RTEMS_ID_NONE;
-
-    dummy_hk_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    dummy_hk_packet.reserved = DEFAULT_RESERVED;
-    dummy_hk_packet.userApplication = CCSDS_USER_APP;
-    dummy_hk_packet.packetID[0] = (unsigned char) (APID_TM_HK >> SHIFT_1_BYTE);
-    dummy_hk_packet.packetID[1] = (unsigned char) (APID_TM_HK);
-    dummy_hk_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    dummy_hk_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> SHIFT_1_BYTE);
-    dummy_hk_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
-    dummy_hk_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-    dummy_hk_packet.serviceType = TM_TYPE_HK;
-    dummy_hk_packet.serviceSubType = TM_SUBTYPE_HK;
-    dummy_hk_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    dummy_hk_packet.time[0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
-    dummy_hk_packet.time[1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
-    dummy_hk_packet.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
-    dummy_hk_packet.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
-    dummy_hk_packet.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
-    dummy_hk_packet.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
-    dummy_hk_packet.sid = SID_HK;
-
-    // init status word
-    dummy_hk_packet.lfr_status_word[0] = INT8_ALL_F;
-    dummy_hk_packet.lfr_status_word[1] = INT8_ALL_F;
-    // init software version
-    dummy_hk_packet.lfr_sw_version[0] = SW_VERSION_N1;
-    dummy_hk_packet.lfr_sw_version[1] = SW_VERSION_N2;
-    dummy_hk_packet.lfr_sw_version[BYTE_2] = SW_VERSION_N3;
-    dummy_hk_packet.lfr_sw_version[BYTE_3] = SW_VERSION_N4;
-    // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + APB_OFFSET_VHDL_REV);
-    dummy_hk_packet.lfr_fpga_version[BYTE_0] = parameters[BYTE_1]; // n1
-    dummy_hk_packet.lfr_fpga_version[BYTE_1] = parameters[BYTE_2]; // n2
-    dummy_hk_packet.lfr_fpga_version[BYTE_2] = parameters[BYTE_3]; // n3
-
-    parameters = (unsigned char *) &dummy_hk_packet.hk_lfr_cpu_load;
-
-    for (i=0; i<(BYTE_POS_HK_REACTION_WHEELS_FREQUENCY - BYTE_POS_HK_LFR_CPU_LOAD); i++)
-    {
-        parameters[i] = INT8_ALL_F;
-    }
-
-    get_message_queue_id_send( &queue_id );
-
-    rtems_message_queue_send( queue_id, &dummy_hk_packet,
-                                PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
 }
 
 void get_temperatures( unsigned char *temperatures )

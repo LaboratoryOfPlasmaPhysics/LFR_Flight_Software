@@ -60,6 +60,7 @@ option(FSW_vhdl_dev "?" OFF)
 option(FSW_lpp_dpu_destid "Set to debug at LPP" OFF)
 option(FSW_debug_watchdog "Enable debug watchdog" OFF)
 option(FSW_debug_tch "?" OFF)
+option(FSW_Instrument_Scrubbing "Enable scrubbing counter" OFF)
 
 set(SW_VERSION_N1 "3" CACHE STRING  "Choose N1 FSW Version." FORCE)
 set(SW_VERSION_N2 "2" CACHE STRING  "Choose N2 FSW Version." FORCE)
@@ -105,6 +106,10 @@ add_definitions(-DSW_VERSION_N3=${SW_VERSION_N3})
 add_definitions(-DSW_VERSION_N4=${SW_VERSION_N4})
 
 add_executable(fsw ${SOURCES})
+
+if(FSW_Instrument_Scrubbing)
+    add_definitions(-DENABLE_SCRUBBING_COUNTER)
+endif()
 
 if(Coverage)
     target_link_libraries(fsw gcov)
