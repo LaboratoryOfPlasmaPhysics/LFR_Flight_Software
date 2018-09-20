@@ -1,10 +1,11 @@
 /* Test for GCC >= 3.4.4 && <= 4.4.6 */
-#if ( ( __GNUC__ >  3 ) || \
+/*#if ( ( __GNUC__ >  3 ) || \
       ( __GNUC__ == 3 && __GNUC_MINOR__ > 4 )|| \
       ( __GNUC__ == 3 && __GNUC_MINOR__ == 4 && __GNUC_PATCHLEVEL__ >= 4 ) ) && \
     ( ( __GNUC__ <  4 ) || \
       ( __GNUC__ == 4 && __GNUC_MINOR__ < 4 )|| \
       ( __GNUC__ == 4 && __GNUC_MINOR__ == 4 && __GNUC_PATCHLEVEL__ <= 6 ) )
+      */
 /* Routines required for instrumenting a program.  */
 /* Compile this one with gcc.  */
 /* Copyright (C) 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
@@ -130,4 +131,4 @@ __gcov_merge_delta (gcov_type *counters, unsigned n_counters)
       counters[3] += all;
     }
 }
-#endif /* __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ */
+//#endif /* __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ */

@@ -108,6 +108,7 @@ add_executable(fsw ${SOURCES})
 
 if(Coverage)
     target_link_libraries(fsw gcov)
+    SET_TARGET_PROPERTIES(fsw PROPERTIES COMPILE_FLAGS  "-fprofile-arcs -ftest-coverage")
 endif()
 
 

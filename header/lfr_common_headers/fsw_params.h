@@ -250,7 +250,7 @@ typedef struct ring_node
 
 #define APBUART_CTRL_REG_MASK_TE    0x00000002
 // scaler value = system_clock_frequency / ( baud_rate * 8 ) - 1
-#define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400
+#define APBUART_SCALER_RELOAD_VALUE 0x0000001B      // 25 MHz => about 115200
 
 //**********
 // IRQ LINES

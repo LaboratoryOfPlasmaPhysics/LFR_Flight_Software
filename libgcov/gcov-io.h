@@ -420,7 +420,7 @@ extern void __gcov_merge_delta (gcov_type *, unsigned) ATTRIBUTE_HIDDEN;
 // We limit GCOV_BLOCK_SIZE to 512 unsigned long because post processing with
 // DOS batch cannot handle command lines bigger than 8191 characters, knowing
 // that for each char, we print 4 characters (e.g "\x00")
-#define GCOV_BLOCK_SIZE (1 << 8)
+#define GCOV_BLOCK_SIZE (1 << 11)
 #define MAXFILENAME     (1024)
 
 GCOV_LINKAGE struct gcov_var
@@ -480,52 +480,6 @@ GCOV_LINKAGE void gcov_write_unsigned (gcov_unsigned_t) ATTRIBUTE_HIDDEN;
 #endif
 #define GCOV_CHECK_READING() GCOV_CHECK(gcov_var.mode > 0)
 #define GCOV_CHECK_WRITING() GCOV_CHECK(gcov_var.mode < 0)
-#if 0
-/* Save the current position in the gcov file.  */
 
-    static inline gcov_position_t
-gcov_position (void)
-{
-    GCOV_CHECK_READING ();
-    return gcov_var.start + gcov_var.offset;
-}
-
-/* Return nonzero if we read to end of file.  */
-
-    static inline int
-gcov_is_eof (void)
-{
-    return !gcov_var.overread;
-}
-
-/* Return nonzero if the error flag is set.  */
-
-    static inline int
-gcov_is_error (void)
-{
-    return gcov_var.file ? gcov_var.error : 1;
-}
-
-/* Move to beginning of file and initialize for writing.  */
-
-    static inline void
-gcov_rewrite (void)
-{
-    GCOV_CHECK_READING ();
-    gcov_var.mode = -1;
-    gcov_var.start = 0;
-    gcov_var.offset = 0;
-    fseek (gcov_var.file, 0L, SEEK_SET);
-}
-
-#ifdef __MINGW32__
-#define ftruncate _chsize
-#endif
-    static inline void
-gcov_truncate (void)
-{
-    ftruncate (fileno (gcov_var.file), 0L);
-}
-#endif
 #endif /* GCC_GCOV_IO_H */
 //#endif /* __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ */

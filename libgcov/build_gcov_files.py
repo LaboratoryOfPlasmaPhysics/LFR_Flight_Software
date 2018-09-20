@@ -24,14 +24,17 @@ args = parser.parse_args()
 
 def main():
     with open(args.gcov_file,'r') as gcov:
+        files = []
         for line in gcov.readlines():
             head,dest_file,data = line.split(',')
-            if head == '_GCOV_':
-                print(f"Writing {dest_file}\n")
-                with open(dest_file,'wb') as gcda_file:
-                    gcda_file.write(bytes([int(''.join(value),16) for value in zip(data[::2],data[1::2]) ]))
-            else:
-                raise
+            if dest_file not in files:
+                files.append(dest_file)
+                if head == '_GCOV_':
+                    print(f"Writing {dest_file}\n")
+                    with open(dest_file,'wb') as gcda_file:
+                        gcda_file.write(bytes([int(''.join(value),16) for value in zip(data[::2],data[1::2]) ]))
+                else:
+                    raise
 
 
 if __name__ == "__main__":
