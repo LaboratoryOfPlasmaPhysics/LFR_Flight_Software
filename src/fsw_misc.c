@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 /** General usage functions and RTEMS tasks.
  *
  * @file
@@ -85,7 +109,7 @@ void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider)
     gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
 }
 
-// WATCHDOG
+// WATCHDOG, this ISR should never be triggered.
 
 rtems_isr watchdog_isr( rtems_vector_number vector )
 {
@@ -183,8 +207,11 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
     BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
 }
 
-//************
-// RTEMS TASKS
+/**
+ * @brief load_task starts and keeps the watchdog alive.
+ * @param argument
+ * @return
+ */
 
 rtems_task load_task(rtems_task_argument argument)
 {
@@ -233,6 +260,11 @@ rtems_task load_task(rtems_task_argument argument)
     }
 }
 
+/**
+ * @brief hous_task produces and sends HK each seconds
+ * @param argument
+ * @return
+ */
 rtems_task hous_task(rtems_task_argument argument)
 {
     rtems_status_code status;
@@ -347,6 +379,12 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
+/**
+ * @brief filter is a Direct-Form-II filter implementation, mostly used to filter electric field for HK
+ * @param x, new sample
+ * @param ctx, filter context, used to store previous input and output samples
+ * @return a new filtered sample
+ */
 int filter( int x, filter_ctx* ctx )
 {
     static const int b[NB_COEFFS][NB_COEFFS]={ {B00, B01, B02}, {B10, B11, B12}, {B20, B21, B22} };
@@ -376,6 +414,11 @@ int filter( int x, filter_ctx* ctx )
     return x;
 }
 
+/**
+ * @brief avgv_task pruduces HK rate elctrical field from F3 data
+ * @param argument
+ * @return
+ */
 rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
@@ -742,6 +785,15 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     spacecraft_potential[BYTE_5] = e2_ptr[1];
 }
 
+/**
+ * @brief get_cpu_load, computes CPU load, CPU load average and CPU load max
+ * @param resource_statistics stores:
+ *          - CPU load at index 0
+ *          - CPU load max at index 1
+ *          - CPU load average at index 2
+ *
+ * The CPU load average is computed on the last 60 values with a simple moving average.
+ */
 void get_cpu_load( unsigned char *resource_statistics )
 {
 #define LOAD_AVG_SIZE 60
@@ -753,12 +805,12 @@ void get_cpu_load( unsigned char *resource_statistics )
     cpu_load = lfr_rtems_cpu_usage_report();
 
     // HK_LFR_CPU_LOAD
-    resource_statistics[0] = cpu_load;
+    resource_statistics[BYTE_0] = cpu_load;
 
     // HK_LFR_CPU_LOAD_MAX
-    if (cpu_load > resource_statistics[1])
+    if (cpu_load > resource_statistics[BYTE_1])
     {
-         resource_statistics[1] = cpu_load;
+         resource_statistics[BYTE_1] = cpu_load;
     }
 
     cpu_load_avg = cpu_load_avg - (unsigned int)cpu_load_hist[(int)old_avg_pos] + (unsigned int)cpu_load;
@@ -858,6 +910,7 @@ void increment_hk_counter( unsigned char newValue, unsigned char oldValue, unsig
     *counter = *counter + delta;
 }
 
+// Low severity error counters update
 void hk_lfr_le_update( void )
 {
     static hk_lfr_le_t old_hk_lfr_le = {0};
@@ -928,6 +981,7 @@ void hk_lfr_le_update( void )
     housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
+// Medium severity error counters update
 void hk_lfr_me_update( void )
 {
     static hk_lfr_me_t old_hk_lfr_me = {0};
@@ -960,6 +1014,7 @@ void hk_lfr_me_update( void )
     housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
+// High severity error counters update
 void hk_lfr_le_me_he_update()
 {
 

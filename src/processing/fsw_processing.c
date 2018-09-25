@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 /** Functions related to data processing.
  *
  * @file
@@ -583,6 +607,12 @@ unsigned char getSID( rtems_event_set event )
     return sid;
 }
 
+/**
+ * @brief extractReImVectors converts a given ASM component from interleaved to split representation
+ * @param inputASM
+ * @param outputASM
+ * @param asmComponent
+ */
 void extractReImVectors( float *inputASM, float *outputASM, unsigned int asmComponent )
 {
     unsigned int i;
@@ -597,6 +627,12 @@ void extractReImVectors( float *inputASM, float *outputASM, unsigned int asmComp
     }
 }
 
+/**
+ * @brief copyReVectors copies real part of a given ASM from inputASM to outputASM
+ * @param inputASM
+ * @param outputASM
+ * @param asmComponent
+ */
 void copyReVectors( float *inputASM, float *outputASM, unsigned int asmComponent )
 {
     unsigned int i;
@@ -608,6 +644,13 @@ void copyReVectors( float *inputASM, float *outputASM, unsigned int asmComponent
     }
 }
 
+/**
+ * @brief ASM_patch, converts ASM from interleaved to split representation
+ * @param inputASM
+ * @param outputASM
+ * @note inputASM and outputASM must be different, in other words this function can't do in place convertion
+ * @see extractReImVectors
+ */
 void ASM_patch( float *inputASM, float *outputASM )
 {
     extractReImVectors( inputASM, outputASM, ASM_COMP_B1B2);    // b1b2
@@ -718,6 +761,14 @@ int getFBinMask( int index, unsigned char channel )
     return fbin;
 }
 
+/**
+ * @brief isPolluted returns MATRIX_IS_POLLUTED if there is any overlap between t0:t1 and tbad0:tbad1 ranges
+ * @param t0 Start acquisition time
+ * @param t1 End of acquisition time
+ * @param tbad0 Start time of poluting signal
+ * @param tbad1 End time of poluting signal
+ * @return
+ */
 unsigned char isPolluted( u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t tbad1 )
 {
     unsigned char polluted;
@@ -735,6 +786,13 @@ unsigned char isPolluted( u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t
     return polluted;
 }
 
+/**
+ * @brief acquisitionTimeIsValid checks if the given acquisition time is poluted by PAS
+ * @param coarseTime Coarse acquisition time of the given SM
+ * @param fineTime Fine acquisition time of the given ASM
+ * @param channel Frequency channel to check, will impact SM time footprint
+ * @return MATRIX_IS_POLLUTED if there is any time overlap between SM and PAS poluting signal
+ */
 unsigned char acquisitionTimeIsValid( unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
 {
     u_int64_t t0;
