@@ -57,7 +57,7 @@ unsigned char lfr_rtems_cpu_usage_report( void )
                         _Timestamp_Subtract( &CPU_usage_Uptime_at_last_reset, &uptime, &total );
                         ran = the_thread->cpu_time_used;
                         _Timestamp_Divide( &ran, &total, &ival, &fval);
-                        cpu_load = (unsigned char)(CONST_255 - ((ival*CONST_10+fval/CONST_100)*CONST_256/CONST_1000));
+                        cpu_load = (unsigned char) (CONST_255 - ((((ival*CONST_10) + (fval/CONST_100))*CONST_256)/CONST_1000));
                     }
                 }
             }
