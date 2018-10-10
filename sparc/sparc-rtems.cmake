@@ -10,8 +10,8 @@ option(fix-b2bst "Activate -mfix-b2bst switch to mitigate \"LEON3FT Stale Cache 
 option(Coverage "Enables code coverage" OFF)
 
 
-set(CMAKE_C_FLAGS_RELEASE "-O3")
-set(CMAKE_C_FLAGS_DEBUG "-O3 -fno-inline")
+set(CMAKE_C_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS_DEBUG "-O2 -g -fno-inline")
 
 
 if(fix-b2bst)

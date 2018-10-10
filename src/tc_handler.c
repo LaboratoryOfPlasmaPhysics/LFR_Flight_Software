@@ -179,6 +179,12 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      */
 
     PRINTF("this is the end!!!\n");
+#ifdef GCOV_ENABLED
+#ifndef GCOV_USE_EXIT
+    extern void gcov_exit (void);
+    gcov_exit();
+#endif
+#endif
     exit(0);
 
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );

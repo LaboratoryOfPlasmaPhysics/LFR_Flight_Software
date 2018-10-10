@@ -475,8 +475,10 @@ __gcov_init (struct gcov_info *info)
 
         gcov_crc32 = crc32;
 
+#ifdef GCOV_USE_EXIT
                 if (!gcov_list)
                     atexit (gcov_exit);
+#endif
 
         info->next = gcov_list;
         gcov_list = info;

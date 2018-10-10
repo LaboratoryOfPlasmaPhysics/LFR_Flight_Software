@@ -9,7 +9,10 @@ set(LIB_GCOV_SOURCES
     gcov-iov.h
     libgcov.c
 )
-
+if(Coverage)
+#    add_definitions(-DGCOV_USE_EXIT)
+    add_definitions(-DGCOV_ENABLED)
+endif()
 add_library(gcov STATIC ${LIB_GCOV_SOURCES})
 
 add_custom_target(gcovr

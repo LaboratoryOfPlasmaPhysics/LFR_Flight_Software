@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.6)
 project (fsw)
 
 include(sparc-rtems)
@@ -65,7 +65,7 @@ option(FSW_Instrument_Scrubbing "Enable scrubbing counter" OFF)
 set(SW_VERSION_N1 "3" CACHE STRING  "Choose N1 FSW Version." FORCE)
 set(SW_VERSION_N2 "2" CACHE STRING  "Choose N2 FSW Version." FORCE)
 set(SW_VERSION_N3 "0" CACHE STRING  "Choose N3 FSW Version." FORCE)
-set(SW_VERSION_N4 "21" CACHE STRING  "Choose N4 FSW Version." FORCE)
+set(SW_VERSION_N4 "22" CACHE STRING  "Choose N4 FSW Version." FORCE)
 
 if(FSW_verbose)
 	add_definitions(-DPRINT_MESSAGES_ON_CONSOLE)
@@ -126,5 +126,5 @@ if(NOT FSW_lpp_dpu_destid)
 endif()
 
 
-add_test_cppcheck(fsw STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
+#add_test_cppcheck(fsw STYLE UNUSED_FUNCTIONS POSSIBLE_ERROR MISSING_INCLUDE)
 
