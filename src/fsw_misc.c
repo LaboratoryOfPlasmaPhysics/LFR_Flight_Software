@@ -66,6 +66,7 @@ void timer_configure(unsigned char timer, unsigned int clock_divider,
     timer_set_clock_divider( timer, clock_divider);
 }
 
+#ifdef ENABLE_DEAD_CODE
 void timer_start(unsigned char timer)
 {
     /** This function starts a GPTIMER timer.
@@ -81,6 +82,7 @@ void timer_start(unsigned char timer)
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_RS;
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_IE;
 }
+#endif
 
 void timer_stop(unsigned char timer)
 {

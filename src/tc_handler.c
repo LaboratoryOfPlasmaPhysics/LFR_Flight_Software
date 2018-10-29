@@ -1433,6 +1433,7 @@ void setCalibrationData( void )
     }
 }
 
+#ifdef ENABLE_DEAD_CODE
 void setCalibrationDataInterleaved( void )
 {
     /** This function is used to store the values used to drive the DAC in order to generate the SCM calibration signal
@@ -1477,6 +1478,7 @@ void setCalibrationDataInterleaved( void )
                 + ( (dataPtr[1] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
     }
 }
+#endif
 
 void setCalibrationReload( bool state)
 {
@@ -1503,6 +1505,7 @@ void setCalibrationEnable( bool state )
     }
 }
 
+#ifdef ENABLE_DEAD_CODE
 void setCalibrationInterleaved( bool state )
 {
     // this bit drives the multiplexer
@@ -1515,6 +1518,7 @@ void setCalibrationInterleaved( bool state )
         time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & MASK_SET_INTERLEAVED; // [1101 1111]
     }
 }
+#endif
 
 void setCalibration( bool state )
 {
@@ -1535,6 +1539,7 @@ void setCalibration( bool state )
 void configureCalibration( bool interleaved )
 {
     setCalibration( false );
+#ifdef ENABLE_DEAD_CODE
     if ( interleaved == true )
     {
         setCalibrationInterleaved( true );
@@ -1543,6 +1548,7 @@ void configureCalibration( bool interleaved )
         setCalibrationDataInterleaved();
     }
     else
+#endif
     {
         setCalibrationPrescaler( 0 );           // 25 MHz   => 25 000 000
         setCalibrationDivisor( CAL_F_DIVISOR ); //          => 160 256 (39 - 1)
@@ -1645,22 +1651,6 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
     else if (result == LFR_EXE_ERROR)
     {
         send_tm_lfr_tc_exe_error( TC, queue_id );
-    }
-}
-
-//***************************
-// Interrupt Service Routines
-rtems_isr commutation_isr1( rtems_vector_number vector )
-{
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        PRINTF("In commutation_isr1 *** Error sending event to DUMB\n")
-    }
-}
-
-rtems_isr commutation_isr2( rtems_vector_number vector )
-{
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        PRINTF("In commutation_isr2 *** Error sending event to DUMB\n")
     }
 }
 

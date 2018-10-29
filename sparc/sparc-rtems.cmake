@@ -11,7 +11,7 @@ option(Coverage "Enables code coverage" OFF)
 
 
 set(CMAKE_C_FLAGS_RELEASE "-O2")
-set(CMAKE_C_FLAGS_DEBUG "-O2 -g -fno-inline")
+set(CMAKE_C_FLAGS_DEBUG "-O2 -g3 -fno-inline")
 
 
 if(fix-b2bst)

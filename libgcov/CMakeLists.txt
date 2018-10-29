@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.5)
 project(libgcov C)
 include(sparc-rtems)
 include(cppcheck)
@@ -10,7 +10,7 @@ set(LIB_GCOV_SOURCES
     libgcov.c
 )
 if(Coverage)
-#    add_definitions(-DGCOV_USE_EXIT)
+    add_definitions(-DGCOV_USE_EXIT)
     add_definitions(-DGCOV_ENABLED)
 endif()
 add_library(gcov STATIC ${LIB_GCOV_SOURCES})

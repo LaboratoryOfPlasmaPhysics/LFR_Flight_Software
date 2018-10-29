@@ -222,10 +222,6 @@ int tc_check_type( unsigned char packetType )
     {
         status = CCSDS_TM_VALID;
     }
-    else
-    {
-        status = ILL_TYPE;
-    }
 
     return status;
 }

@@ -240,6 +240,7 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     return status;
 }
 
+#ifdef DENABLE_DEAD_CODE
 int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
 {
     /** This function sends a TM_LFR_TC_EXE_NOT_IMPLEMENTED packet in the dedicated RTEMS message queue.
@@ -305,6 +306,7 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
 
     return status;
 }
+#endif
 
 int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
