@@ -44,7 +44,7 @@
 #define COUNTER_MASK_IURF   0xffffc7ff      // 1111 1111 1111 1111 1100 0111 1111 1111
 
 volatile unsigned int *asr16Ptr = (volatile unsigned int *) ASR16_REG_ADDRESS;
-
+#ifdef ENABLE_DEAD_CODE
 static inline void flushCache()
 {
     /**
@@ -57,6 +57,7 @@ static inline void flushCache()
 
     asm("flush");
 }
+#endif
 
 //***************************
 // CCR Cache control register

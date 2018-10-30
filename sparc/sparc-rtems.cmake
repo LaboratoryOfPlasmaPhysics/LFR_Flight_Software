@@ -7,11 +7,18 @@ set(CMAKE_LINKER  ${rtems_dir}/bin/sparc-rtems-g++)
 SET(CMAKE_EXE_LINKER_FLAGS "-static")
 option(fix-b2bst "Activate -mfix-b2bst switch to mitigate \"LEON3FT Stale Cache Entry After Store with Data Tag Parity Error\" errata, GRLIB-TN-0009" ON)
 
+option(Coverage "Enables code coverage" OFF)
+
+
+set(CMAKE_C_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS_DEBUG "-O2 -g3 -fno-inline")
+
+
 if(fix-b2bst)
-    set(CMAKE_C_FLAGS_RELEASE "-O3 -mfix-b2bst")
-else()
-    set(CMAKE_C_FLAGS_RELEASE "-O3")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mfix-b2bst")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mfix-b2bst")
 endif()
+
 
 set(CMAKE_C_LINK_EXECUTABLE  "<CMAKE_LINKER> <FLAGS> -Xlinker -Map=<TARGET>.map <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
@@ -21,5 +28,12 @@ function (check_b2bst target bin)
     add_custom_command(TARGET ${target}
         POST_BUILD
         COMMAND  ${rtems_dir}/bin/sparc-rtems-objdump -d ${bin}/${target} | ${CMAKE_SOURCE_DIR}/sparc/leon3ft-b2bst-scan.tcl
+        )
+endfunction()
+
+function (build_srec target bin rev)
+    add_custom_command(TARGET ${target}
+        POST_BUILD
+        COMMAND ${rtems_dir}/bin/sparc-rtems-objcopy -j .data -F srec ${bin}/${target} RpwLfrApp_XXXX_data_rev-${rev}.srec && ${rtems_dir}/bin/sparc-rtems-objcopy -j .text -F srec ${bin}/${target} RpwLfrApp_XXXX_text_rev-${rev}.srec
         )
 endfunction()

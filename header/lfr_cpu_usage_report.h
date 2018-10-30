@@ -29,8 +29,9 @@
 
 unsigned char lfr_rtems_cpu_usage_report( void );
 
+#define CONST_10        10
 #define CONST_100       100
+#define CONST_255       255
 #define CONST_1000      1000
-#define CONST_100000    100000
 
 #endif // LFR_CPU_USAGE_REPORT_H

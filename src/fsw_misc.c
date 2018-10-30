@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 /** General usage functions and RTEMS tasks.
  *
  * @file
@@ -42,6 +66,7 @@ void timer_configure(unsigned char timer, unsigned int clock_divider,
     timer_set_clock_divider( timer, clock_divider);
 }
 
+#ifdef ENABLE_DEAD_CODE
 void timer_start(unsigned char timer)
 {
     /** This function starts a GPTIMER timer.
@@ -57,6 +82,7 @@ void timer_start(unsigned char timer)
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_RS;
     gptimer_regs->timer[timer].ctrl = gptimer_regs->timer[timer].ctrl | GPTIMER_IE;
 }
+#endif
 
 void timer_stop(unsigned char timer)
 {
@@ -85,7 +111,7 @@ void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider)
     gptimer_regs->timer[timer].reload = clock_divider; // base clock frequency is 1 MHz
 }
 
-// WATCHDOG
+// WATCHDOG, this ISR should never be triggered.
 
 rtems_isr watchdog_isr( rtems_vector_number vector )
 {
@@ -183,8 +209,11 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
     BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
 }
 
-//************
-// RTEMS TASKS
+/**
+ * @brief load_task starts and keeps the watchdog alive.
+ * @param argument
+ * @return
+ */
 
 rtems_task load_task(rtems_task_argument argument)
 {
@@ -233,6 +262,11 @@ rtems_task load_task(rtems_task_argument argument)
     }
 }
 
+/**
+ * @brief hous_task produces and sends HK each seconds
+ * @param argument
+ * @return
+ */
 rtems_task hous_task(rtems_task_argument argument)
 {
     rtems_status_code status;
@@ -347,6 +381,12 @@ rtems_task hous_task(rtems_task_argument argument)
     return;
 }
 
+/**
+ * @brief filter is a Direct-Form-II filter implementation, mostly used to filter electric field for HK
+ * @param x, new sample
+ * @param ctx, filter context, used to store previous input and output samples
+ * @return a new filtered sample
+ */
 int filter( int x, filter_ctx* ctx )
 {
     static const int b[NB_COEFFS][NB_COEFFS]={ {B00, B01, B02}, {B10, B11, B12}, {B20, B21, B22} };
@@ -376,6 +416,11 @@ int filter( int x, filter_ctx* ctx )
     return x;
 }
 
+/**
+ * @brief avgv_task pruduces HK rate elctrical field from F3 data
+ * @param argument
+ * @return
+ */
 rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
@@ -536,9 +581,18 @@ rtems_task scrubbing_task( rtems_task_argument unused )
     volatile float valuef = 1.;
     volatile uint32_t* RAM=(uint32_t*)0x40000000;
     volatile uint32_t value;
+#ifdef ENABLE_SCRUBBING_COUNTER
+    housekeeping_packet.lfr_fpga_version[BYTE_0] = 0;
+#endif
     while(1){
         i=(i+1)%(1024*1024);
         valuef += 10.f*(float)RAM[i];
+#ifdef ENABLE_SCRUBBING_COUNTER
+        if(i==0)
+        {
+            housekeeping_packet.lfr_fpga_version[BYTE_0] += 1;
+        }
+#endif
     }
 }
 
@@ -692,64 +746,6 @@ unsigned long long int getTimeAsUnsignedLongLongInt( )
     return time;
 }
 
-void send_dumb_hk( void )
-{
-    Packet_TM_LFR_HK_t dummy_hk_packet;
-    unsigned char *parameters;
-    unsigned int i;
-    rtems_id queue_id;
-
-    queue_id = RTEMS_ID_NONE;
-
-    dummy_hk_packet.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    dummy_hk_packet.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    dummy_hk_packet.reserved = DEFAULT_RESERVED;
-    dummy_hk_packet.userApplication = CCSDS_USER_APP;
-    dummy_hk_packet.packetID[0] = (unsigned char) (APID_TM_HK >> SHIFT_1_BYTE);
-    dummy_hk_packet.packetID[1] = (unsigned char) (APID_TM_HK);
-    dummy_hk_packet.packetSequenceControl[0] = TM_PACKET_SEQ_CTRL_STANDALONE;
-    dummy_hk_packet.packetSequenceControl[1] = TM_PACKET_SEQ_CNT_DEFAULT;
-    dummy_hk_packet.packetLength[0] = (unsigned char) (PACKET_LENGTH_HK >> SHIFT_1_BYTE);
-    dummy_hk_packet.packetLength[1] = (unsigned char) (PACKET_LENGTH_HK     );
-    dummy_hk_packet.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-    dummy_hk_packet.serviceType = TM_TYPE_HK;
-    dummy_hk_packet.serviceSubType = TM_SUBTYPE_HK;
-    dummy_hk_packet.destinationID = TM_DESTINATION_ID_GROUND;
-    dummy_hk_packet.time[0] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_3_BYTES);
-    dummy_hk_packet.time[1] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_2_BYTES);
-    dummy_hk_packet.time[BYTE_2] = (unsigned char) (time_management_regs->coarse_time >> SHIFT_1_BYTE);
-    dummy_hk_packet.time[BYTE_3] = (unsigned char) (time_management_regs->coarse_time);
-    dummy_hk_packet.time[BYTE_4] = (unsigned char) (time_management_regs->fine_time >> SHIFT_1_BYTE);
-    dummy_hk_packet.time[BYTE_5] = (unsigned char) (time_management_regs->fine_time);
-    dummy_hk_packet.sid = SID_HK;
-
-    // init status word
-    dummy_hk_packet.lfr_status_word[0] = INT8_ALL_F;
-    dummy_hk_packet.lfr_status_word[1] = INT8_ALL_F;
-    // init software version
-    dummy_hk_packet.lfr_sw_version[0] = SW_VERSION_N1;
-    dummy_hk_packet.lfr_sw_version[1] = SW_VERSION_N2;
-    dummy_hk_packet.lfr_sw_version[BYTE_2] = SW_VERSION_N3;
-    dummy_hk_packet.lfr_sw_version[BYTE_3] = SW_VERSION_N4;
-    // init fpga version
-    parameters = (unsigned char *) (REGS_ADDR_WAVEFORM_PICKER + APB_OFFSET_VHDL_REV);
-    dummy_hk_packet.lfr_fpga_version[BYTE_0] = parameters[BYTE_1]; // n1
-    dummy_hk_packet.lfr_fpga_version[BYTE_1] = parameters[BYTE_2]; // n2
-    dummy_hk_packet.lfr_fpga_version[BYTE_2] = parameters[BYTE_3]; // n3
-
-    parameters = (unsigned char *) &dummy_hk_packet.hk_lfr_cpu_load;
-
-    for (i=0; i<(BYTE_POS_HK_REACTION_WHEELS_FREQUENCY - BYTE_POS_HK_LFR_CPU_LOAD); i++)
-    {
-        parameters[i] = INT8_ALL_F;
-    }
-
-    get_message_queue_id_send( &queue_id );
-
-    rtems_message_queue_send( queue_id, &dummy_hk_packet,
-                                PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
-}
-
 void get_temperatures( unsigned char *temperatures )
 {
     unsigned char* temp_scm_ptr;
@@ -791,24 +787,41 @@ void get_v_e1_e2_f3( unsigned char *spacecraft_potential )
     spacecraft_potential[BYTE_5] = e2_ptr[1];
 }
 
+/**
+ * @brief get_cpu_load, computes CPU load, CPU load average and CPU load max
+ * @param resource_statistics stores:
+ *          - CPU load at index 0
+ *          - CPU load max at index 1
+ *          - CPU load average at index 2
+ *
+ * The CPU load average is computed on the last 60 values with a simple moving average.
+ */
 void get_cpu_load( unsigned char *resource_statistics )
 {
+#define LOAD_AVG_SIZE 60
+    static unsigned char cpu_load_hist[LOAD_AVG_SIZE]={0};
+    static char old_avg_pos=0;
+    static unsigned int cpu_load_avg;
     unsigned char cpu_load;
 
     cpu_load = lfr_rtems_cpu_usage_report();
 
     // HK_LFR_CPU_LOAD
-    resource_statistics[0] = cpu_load;
+    resource_statistics[BYTE_0] = cpu_load;
 
     // HK_LFR_CPU_LOAD_MAX
-    if (cpu_load > resource_statistics[1])
+    if (cpu_load > resource_statistics[BYTE_1])
     {
-         resource_statistics[1] = cpu_load;
+         resource_statistics[BYTE_1] = cpu_load;
     }
 
+    cpu_load_avg = cpu_load_avg - (unsigned int)cpu_load_hist[(int)old_avg_pos] + (unsigned int)cpu_load;
+    cpu_load_hist[(int)old_avg_pos] = cpu_load;
+    old_avg_pos += 1;
+    old_avg_pos %= LOAD_AVG_SIZE;
     // CPU_LOAD_AVE
-    resource_statistics[BYTE_2] = 0;
-
+    resource_statistics[BYTE_2] = (unsigned char)(cpu_load_avg / LOAD_AVG_SIZE);
+// this will change the way LFR compute usage
 #ifndef PRINT_TASK_STATISTICS
         rtems_cpu_usage_reset();
 #endif
@@ -899,6 +912,7 @@ void increment_hk_counter( unsigned char newValue, unsigned char oldValue, unsig
     *counter = *counter + delta;
 }
 
+// Low severity error counters update
 void hk_lfr_le_update( void )
 {
     static hk_lfr_le_t old_hk_lfr_le = {0};
@@ -969,6 +983,7 @@ void hk_lfr_le_update( void )
     housekeeping_packet.hk_lfr_le_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
+// Medium severity error counters update
 void hk_lfr_me_update( void )
 {
     static hk_lfr_me_t old_hk_lfr_me = {0};
@@ -1001,6 +1016,7 @@ void hk_lfr_me_update( void )
     housekeeping_packet.hk_lfr_me_cnt[1] = (unsigned char)  (counter & BYTE1_MASK);
 }
 
+// High severity error counters update
 void hk_lfr_le_me_he_update()
 {
 

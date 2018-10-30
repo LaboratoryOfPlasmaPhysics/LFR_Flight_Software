@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 #ifndef FSW_PARAMS_H_INCLUDED
 #define FSW_PARAMS_H_INCLUDED
 
@@ -7,8 +31,30 @@
 #include "ccsds_types.h"
 #include "stdint.h"
 
+/*
+ * RTEMS CONFIG
+ *
+*/
 #define GRSPW_DEVICE_NAME "/dev/grspw0"
-#define UART_DEVICE_NAME "/dev/console"
+
+#define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+
+#define CONFIGURE_MAXIMUM_TASKS 23 // number of tasks concurrently active including INIT
+#define CONFIGURE_RTEMS_INIT_TASKS_TABLE
+#define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
+#define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
+#define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
+#define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
+#define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
+#define CONFIGURE_MAXIMUM_DRIVERS 16
+#define CONFIGURE_MAXIMUM_PERIODS 6 // [hous] [load] [avgv]
+#define CONFIGURE_MAXIMUM_TIMERS 6 // [spiq] [link] [spacewire_reset_link]
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
+#ifdef PRINT_STACK_REPORT
+    #define CONFIGURE_STACK_CHECKER_ENABLED
+#endif
+
 
 //*******
 // MACROS
@@ -46,10 +92,10 @@
 #define CONST_2048  2048    // 2^11
 #define CONST_512   512     // 2^9
 #define CONST_256   256     // 2^8
-#define CONST_128   128     // 2^7
-#define UINT8_MAX   255
+#ifndef UINT8_MAX
+    #define UINT8_MAX   255
+#endif
 
-#define FLOAT_MSBYTE    0
 #define FLOAT_LSBYTE    3
 #define BITS_PER_BYTE   8
 #define INIT_FLOAT      0.
@@ -68,7 +114,6 @@
 #define SHIFT_3_BITS    3
 #define SHIFT_4_BITS    4
 #define SHIFT_5_BITS    5
-#define SHIFT_6_BITS    6
 #define SHIFT_7_BITS    7
 #define BYTE_0  0
 #define BYTE_1  1
@@ -110,12 +155,9 @@ typedef struct ring_node
 #define NB_PACKETS_PER_GROUP_OF_CWF_LIGHT   4   // 4 packets containing 672 blk
 #define NB_SAMPLES_PER_SNAPSHOT 2688    // 336 * 8 = 672 * 4 = 2688
 #define TIME_OFFSET 2
-#define TIME_OFFSET_IN_BYTES 8
-//#define WAVEFORM_EXTENDED_HEADER_OFFSET 22
 #define NB_BYTES_SWF_BLK (2 * 6)
 #define NB_WORDS_SWF_BLK 3
 #define NB_BYTES_CWF3_LIGHT_BLK 6
-//#define WFRM_INDEX_OF_LAST_PACKET 6  // waveforms are transmitted in groups of 2048 blocks, 6 packets of 340 and 1 of 8
 #define NB_RING_NODES_F0 3      // AT LEAST 3
 #define NB_RING_NODES_F1 5      // AT LEAST 3
 #define NB_RING_NODES_F2 5      // AT LEAST 3
@@ -140,10 +182,8 @@ typedef struct ring_node
 #define THR_MODE_NORMAL     1
 #define THR_MODE_BURST      2
 
-#define RTEMS_EVENT_MODE_STANDBY    RTEMS_EVENT_0
 #define RTEMS_EVENT_MODE_NORMAL     RTEMS_EVENT_1
 #define RTEMS_EVENT_MODE_BURST      RTEMS_EVENT_2
-#define RTEMS_EVENT_MODE_SBM1       RTEMS_EVENT_3
 #define RTEMS_EVENT_MODE_SBM2       RTEMS_EVENT_4
 #define RTEMS_EVENT_MODE_NORM_S1_S2 RTEMS_EVENT_5
 #define RTEMS_EVENT_NORM_BP1_F0     RTEMS_EVENT_6
@@ -184,7 +224,6 @@ typedef struct ring_node
 #define DFLT_SY_LFR_N_BP_P0 4    // sec
 #define DFLT_SY_LFR_N_BP_P1 20   // sec
 #define DFLT_SY_LFR_N_CWF_LONG_F3 0      // 0 => production of light continuous waveforms at f3
-#define MIN_DELTA_SNAPSHOT 16       // sec
 
 // BURST
 #define DEFAULT_SY_LFR_B_BP_P0 1    // sec
@@ -198,10 +237,6 @@ typedef struct ring_node
 // SBM2
 #define DEFAULT_SY_LFR_S2_BP_P0 1   // sec
 #define DEFAULT_SY_LFR_S2_BP_P1 5   // sec
-
-// ADDITIONAL PARAMETERS
-#define TIME_BETWEEN_TWO_SWF_PACKETS 30     // nb x 10 ms => 300 ms
-#define TIME_BETWEEN_TWO_CWF3_PACKETS 1000  // nb x 10 ms => 10 s
 
 // STATUS WORD
 #define DEFAULT_STATUS_WORD_BYTE0 0x0d  // [0000] [1] [101] mode 4 bits / SPW enabled 1 bit / state is run 3 bits
@@ -217,7 +252,6 @@ typedef struct ring_node
 #define MIN_PAS_FILTER_SHIFT    0.0
 #define MAX_PAS_FILTER_SHIFT    1.0
 #define MIN_SY_LFR_SC_RW_DELTA_F    0
-#define MIN_SY_LFR_RW_K             0
 #define MIN_SY_LFR_RW_F             0
 //
 #define SY_LFR_DPU_CONNECT_TIMEOUT 100  // 100 * 10 ms = 1 s
@@ -232,17 +266,15 @@ typedef struct ring_node
 #define APB_OFFSET_GRSPW_STATUS_REGISTER    0x04
 #define APB_OFFSET_GRSPW_TIME_REGISTER      0x14
 #define REGS_ADDR_TIME_MANAGEMENT   0x80000600
-#define REGS_ADDR_GRGPIO            0x80000b00
 
 #define REGS_ADDR_SPECTRAL_MATRIX   0x80000f00
 #define REGS_ADDR_WAVEFORM_PICKER   0x80000f54  // PDB >= 0.1.28
 #define APB_OFFSET_VHDL_REV         0xb0
 #define REGS_ADDR_VHDL_VERSION      0x80000ff0
 
-#define APBUART_CTRL_REG_MASK_DB    0xfffff7ff
 #define APBUART_CTRL_REG_MASK_TE    0x00000002
 // scaler value = system_clock_frequency / ( baud_rate * 8 ) - 1
-#define APBUART_SCALER_RELOAD_VALUE 0x00000050      // 25 MHz => about 38400
+#define APBUART_SCALER_RELOAD_VALUE 0x0000001B      // 25 MHz => about 115200
 
 //**********
 // IRQ LINES
@@ -272,7 +304,6 @@ typedef struct ring_node
 #define LFR_SUCCESSFUL  0
 #define LFR_DEFAULT     1
 #define LFR_EXE_ERROR   2
-#define LFR_DEFAULT_ALT -1
 
 //******
 // RTEMS
@@ -330,7 +361,6 @@ typedef struct ring_node
 #define MSG_QUEUE_COUNT_PRC1  10
 #define MSG_QUEUE_COUNT_PRC2  5
 #define MSG_QUEUE_SIZE_SEND             812 // 808 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
-#define ACTION_MSG_SPW_IOCTL_SEND_SIZE  24  // hlen *hdr dlen *data sent options
 #define MSG_QUEUE_SIZE_PRC0             36  // two pointers, one rtems_event + 6 integers
 #define MSG_QUEUE_SIZE_PRC1             36  // two pointers, one rtems_event + 6 integers
 #define MSG_QUEUE_SIZE_PRC2             36  // two pointers, one rtems_event + 6 integers
@@ -340,9 +370,6 @@ typedef struct ring_node
 #define QUEUE_PRC0 2
 #define QUEUE_PRC1 3
 #define QUEUE_PRC2 4
-#define QUEUE_CALI 5
-
-#define CPU_USAGE_REPORT_PERIOD 6   // * 10 s = period
 
 struct param_local_str{
     unsigned int local_sbm1_nb_cwf_sent;

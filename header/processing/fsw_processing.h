@@ -15,15 +15,6 @@
 #define MAX_SRC_DATA                780     // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
 #define MAX_SRC_DATA_WITH_SPARE     143     // 13 bins  * 11 Bytes
 
-#define NODE_0  0
-#define NODE_1  1
-#define NODE_2  2
-#define NODE_3  3
-#define NODE_4  4
-#define NODE_5  5
-#define NODE_6  6
-#define NODE_7  7
-
 typedef struct ring_node_asm
 {
     struct ring_node_asm *next;

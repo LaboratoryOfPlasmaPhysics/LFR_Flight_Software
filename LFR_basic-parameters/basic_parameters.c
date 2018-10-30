@@ -13,6 +13,33 @@
 // version 2.1: 22/06/2015 (modifs de Paul)
 // version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
 // version 2.3: 01/07/2015 (affectation initiale des octets 7 et 9 dans les BP1 corrigée ...)
+// version 2.4: 05/10/2018 (added GPL headers)
+// version 2.5: 09/10/2018 (dans main.c #include "basic_parameters_utilities.h" est changé par les déclarations extern correspondantes ...!
+//                          + delta mise en conformité LOGISCOPE)
+
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Thomas Chust
+--                   Contact : Thomas Chust
+--                      Mail : thomas.chust@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <stdint.h>

@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 /** Functions to load and dump parameters in the LFR registers.
  *
  * @file
@@ -445,7 +469,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1] = freq;
         bin = freq;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f0_norm);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -461,7 +484,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1 ] = freq;
         bin = freq - NB_BINS_COMPRESSED_SM_F0;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f1_norm);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -477,7 +499,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_1.kcoeff_blks[ (freq * KCOEFF_BLK_SIZE) + 1 ] = freq;
         bin = freq - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
         for ( coeff = 0; coeff <NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_1.kcoeff_blks[
@@ -512,7 +533,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, u
     {
         kcoefficients_dump_2.kcoeff_blks[ (freq*KCOEFF_BLK_SIZE) + 1 ] = KCOEFF_BLK_NR_PKT1 + freq;
         bin = freq + KCOEFF_BLK_NR_PKT2;
-//        printKCoefficients( freq, bin, k_coeff_intercalib_f2);
         for ( coeff=0; coeff<NB_K_COEFF_PER_BIN; coeff++ )
         {
             kCoeffDumpPtr = (unsigned char*) &kcoefficients_dump_2.kcoeff_blks[

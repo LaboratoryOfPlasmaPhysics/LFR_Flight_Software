@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 #ifndef CCSDS_TYPES_H_INCLUDED
 #define CCSDS_TYPES_H_INCLUDED
 
@@ -18,15 +42,11 @@
 #define CCSDS_PROTOCOLE_EXTRA_BYTES 4
 #define CCSDS_TC_TM_PACKET_OFFSET   7
 #define PROTID_RES_APP              3
-#define CCSDS_TELEMETRY_HEADER_LENGTH (16+4)
 #define CCSDS_TC_HEADER_LENGTH      10
-#define CCSDS_TM_PKT_MAX_SIZE 4412
-#define CCSDS_TELECOMMAND_HEADER_LENGTH (10+4)
 #define CCSDS_TC_PKT_MAX_SIZE 232   // (228+3) with 3 for Prot ID, Reserved and User App bytes, SHALL BE A MULTIPLE OF 4
 #define CCSDS_TC_PKT_MIN_SIZE 16
 #define CCSDS_PROCESS_ID 76
 #define CCSDS_PACKET_CATEGORY 12
-#define CCSDS_NODE_ADDRESS 0xfe
 #define CCSDS_USER_APP 0x00
 
 #define DEFAULT_SPARE1_PUSVERSION_SPARE2 0x10
@@ -34,25 +54,13 @@
 #define DEFAULT_HKBIA 0x1e  // 0001 1110
 
 // PACKET ID
-#define TM_PACKET_PID_DEFAULT           76
-#define TM_PACKET_PID_BURST_SBM1_SBM2   79
 #define APID_TM_TC_EXE                  0x0cc1 // PID 76 CAT 1
 #define APID_TM_HK                      0x0cc4 // PID 76 CAT 4
 #define APID_TM_SCIENCE_NORMAL_BURST    0x0ccc // PID 76 CAT 12
 #define APID_TM_SCIENCE_SBM1_SBM2       0x0cfc // PID 79 CAT 12
 #define APID_TM_PARAMETER_DUMP          0x0cc6 // PID 76 CAT 6
-#define APID_TM_KCOEFFICIENTS_DUMP      0x0cc6 // PID 76 CAT 6
-
-// PACKET CAT
-#define TM_PACKET_CAT_TC_EXE    1
-#define TM_PACKET_CAT_HK        4
-#define TM_PACKET_CAT_SCIENCE   12
-#define TM_PACKET_CAT_DUMP      6
 
 // PACKET SEQUENCE CONTROL
-#define TM_PACKET_SEQ_CTRL_CONTINUATION 0x00    // [0000 0000]
-#define TM_PACKET_SEQ_CTRL_FIRST        0x40    // [0100 0000]
-#define TM_PACKET_SEQ_CTRL_LAST         0x80    // [1000 0000]
 #define TM_PACKET_SEQ_CTRL_STANDALONE   0xc0    // [1100 0000]
 #define TM_PACKET_SEQ_CNT_DEFAULT       0x00    // [0000 0000]         
 #define TM_PACKET_SEQ_SHIFT             8
@@ -62,16 +70,6 @@
 
 // DESTINATION ID
 #define TM_DESTINATION_ID_GROUND                    0
-#define TM_DESTINATION_ID_MISSION_TIMELINE          110
-#define TM_DESTINATION_ID_TC_SEQUENCES              111
-#define TM_DESTINATION_ID_RECOVERY_ACTION_COMMAND   112
-#define TM_DESTINATION_ID_BACKUP_MISSION_TIMELINE   113
-#define TM_DESTINATION_ID_DIRECT_CMD                120
-#define TM_DESTINATION_ID_SPARE_GRD_SRC1            121
-#define TM_DESTINATION_ID_SPARE_GRD_SRC2            122
-#define TM_DESTINATION_ID_OBCP                      15
-#define TM_DESTINATION_ID_SYSTEM_CONTROL            14
-#define TM_DESTINATION_ID_AOCS                      11
 
 //*********************************************************
 //*** /!\ change CCSDS_DESTINATION_ID before flight /!\ ***
@@ -84,10 +82,6 @@
 #define CCSDS_PROTOCOLE_ID 0x02
 #define CCSDS_RESERVED 0x00
 #define CCSDS_USER_APP 0x00
-
-#define SIZE_TM_LFR_TC_EXE_NOT_IMPLEMENTED 24
-#define SIZE_TM_LFR_TC_EXE_CORRUPTED 32
-#define SIZE_HK_PARAMETERS 112
 
 // TC TYPES
 #define TC_TYPE_GEN     181
@@ -159,7 +153,6 @@
 #define WRONG_SRC_ID        42001   // 0xa4 0x11
 #define FUNCT_NOT_IMPL      42002   // 0xa4 0x12
 #define FAIL_DETECTED       42003   // 0xa4 0x13
-#define NOT_ALLOWED         42004   // 0xa4 0x14
 #define CORRUPTED           42005   // 0xa4 0x15
 #define CCSDS_TM_VALID      7
 
@@ -251,7 +244,6 @@ enum apid_destid{
 #define SID_K_DUMP          11
 
 // HEADER_LENGTH
-//#define TM_HEADER_LEN 16
 #define HEADER_LENGTH_TM_LFR_SCIENCE_CWF 32
 #define HEADER_LENGTH_TM_LFR_SCIENCE_SWF 34
 #define HEADER_LENGTH_TM_LFR_SCIENCE_ASM 34
@@ -264,7 +256,6 @@ enum apid_destid{
 #define PACKET_LENGTH_TC_EXE_CORRUPTED              (32   - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_HK                            (136  - CCSDS_TC_TM_PACKET_OFFSET)
 #define PACKET_LENGTH_PARAMETER_DUMP                (212  - CCSDS_TC_TM_PACKET_OFFSET)
-#define PACKET_LENGTH_K_DUMP                        (3920 - CCSDS_TC_TM_PACKET_OFFSET)
 // SCIENCE ASM
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1       (3230 - CCSDS_TC_TM_PACKET_OFFSET)  // 32 * 25 * 4 + 30 => 32 bins  (32 + 32 + 24 ), 3 packets
 #define PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_2       (2430 - CCSDS_TC_TM_PACKET_OFFSET)  // 24 * 25 * 4 + 30 => 24 bins  (32 + 32 + 24 ), 3 packets
@@ -636,9 +627,7 @@ typedef struct {
 #define STATUS_WORD_LINK_STATE_BITS         0x07    // [0000 0111]
 #define STATUS_WORD_LINK_STATE_MASK         0xf8    // [1111 1000]
 #define STATUS_WORD_LFR_MODE_SHIFT          4
-#define STATUS_WORD_LFR_MODE_BITS           0xf0    // [1111 0000]
 #define STATUS_WORD_LFR_MODE_MASK           0x0f    // [0000 1111]
-#define STATUS_WORD_0_DEFAULT               0x0d    // [0000 1101]
 
 typedef struct {
     unsigned char targetLogicalAddress;

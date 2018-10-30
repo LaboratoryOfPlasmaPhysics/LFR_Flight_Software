@@ -1,3 +1,26 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
 /** Functions and tasks related to TeleCommand handling.
  *
  * @file
@@ -156,9 +179,17 @@ int action_reset(ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char 
      */
 
     PRINTF("this is the end!!!\n");
+#ifdef GCOV_ENABLED
+#ifndef GCOV_USE_EXIT
+    extern void gcov_exit (void);
+    gcov_exit();
+#endif
+#endif
     exit(0);
 
+#ifdef ENABLE_DEAD_CODE
     send_tm_lfr_tc_exe_not_implemented( TC, queue_id, time );
+#endif
 
     return LFR_DEFAULT;
 }
@@ -1404,6 +1435,7 @@ void setCalibrationData( void )
     }
 }
 
+#ifdef ENABLE_DEAD_CODE
 void setCalibrationDataInterleaved( void )
 {
     /** This function is used to store the values used to drive the DAC in order to generate the SCM calibration signal
@@ -1448,6 +1480,7 @@ void setCalibrationDataInterleaved( void )
                 + ( (dataPtr[1] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
     }
 }
+#endif
 
 void setCalibrationReload( bool state)
 {
@@ -1474,6 +1507,7 @@ void setCalibrationEnable( bool state )
     }
 }
 
+#ifdef ENABLE_DEAD_CODE
 void setCalibrationInterleaved( bool state )
 {
     // this bit drives the multiplexer
@@ -1486,6 +1520,7 @@ void setCalibrationInterleaved( bool state )
         time_management_regs->calDACCtrl = time_management_regs->calDACCtrl & MASK_SET_INTERLEAVED; // [1101 1111]
     }
 }
+#endif
 
 void setCalibration( bool state )
 {
@@ -1506,6 +1541,7 @@ void setCalibration( bool state )
 void configureCalibration( bool interleaved )
 {
     setCalibration( false );
+#ifdef ENABLE_DEAD_CODE
     if ( interleaved == true )
     {
         setCalibrationInterleaved( true );
@@ -1514,6 +1550,7 @@ void configureCalibration( bool interleaved )
         setCalibrationDataInterleaved();
     }
     else
+#endif
     {
         setCalibrationPrescaler( 0 );           // 25 MHz   => 25 000 000
         setCalibrationDivisor( CAL_F_DIVISOR ); //          => 160 256 (39 - 1)
@@ -1616,22 +1653,6 @@ void close_action(ccsdsTelecommandPacket_t *TC, int result, rtems_id queue_id )
     else if (result == LFR_EXE_ERROR)
     {
         send_tm_lfr_tc_exe_error( TC, queue_id );
-    }
-}
-
-//***************************
-// Interrupt Service Routines
-rtems_isr commutation_isr1( rtems_vector_number vector )
-{
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        PRINTF("In commutation_isr1 *** Error sending event to DUMB\n")
-    }
-}
-
-rtems_isr commutation_isr2( rtems_vector_number vector )
-{
-    if (rtems_event_send( Task_id[TASKID_DUMB], RTEMS_EVENT_0 ) != RTEMS_SUCCESSFUL) {
-        PRINTF("In commutation_isr2 *** Error sending event to DUMB\n")
     }
 }
 

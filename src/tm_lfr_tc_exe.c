@@ -1,3 +1,27 @@
+/*------------------------------------------------------------------------------
+--  Solar Orbiter's Low Frequency Receiver Flight Software (LFR FSW),
+--  This file is a part of the LFR FSW
+--  Copyright (C) 2012-2018, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Paul Leroy
+--                   Contact : Alexis Jeandet
+--                      Mail : alexis.jeandet@lpp.polytechnique.fr
+----------------------------------------------------------------------------*/
+
 /** Functions to send TM packets related to TC parsing and execution.
  *
  * @file
@@ -216,6 +240,7 @@ int send_tm_lfr_tc_exe_not_executable( ccsdsTelecommandPacket_t *TC, rtems_id qu
     return status;
 }
 
+#ifdef DENABLE_DEAD_CODE
 int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id queue_id, unsigned char *time )
 {
     /** This function sends a TM_LFR_TC_EXE_NOT_IMPLEMENTED packet in the dedicated RTEMS message queue.
@@ -281,6 +306,7 @@ int send_tm_lfr_tc_exe_not_implemented( ccsdsTelecommandPacket_t *TC, rtems_id q
 
     return status;
 }
+#endif
 
 int send_tm_lfr_tc_exe_error( ccsdsTelecommandPacket_t *TC, rtems_id queue_id )
 {
@@ -414,8 +440,6 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t *TC, rtems_id queue_id
     TM.pkt_len_rcv_value[1] = TC->packetLength[1];
     TM.pkt_datafieldsize_cnt[0] = currentTC_LEN_RCV[0];
     TM.pkt_datafieldsize_cnt[1] = currentTC_LEN_RCV[1];
-//    TM.rcv_crc[0] = packetDataField[ packetLength - 1 ];
-//    TM.rcv_crc[1] = packetDataField[ packetLength ];
     TM.rcv_crc[0] = packetDataField[ estimatedPacketLength - 1 ];
     TM.rcv_crc[1] = packetDataField[ estimatedPacketLength     ];
     TM.computed_crc[0] = computed_CRC[0];
