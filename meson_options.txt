@@ -1,0 +1,4 @@
+option('SW_VERSION_N1', type : 'string', value : '3', description : 'N1 FSW Version.')
+option('SW_VERSION_N2', type : 'string', value : '2', description : 'N2 FSW Version.')
+option('SW_VERSION_N3', type : 'string', value : '0', description : 'N3 FSW Version.')
+option('SW_VERSION_N4', type : 'string', value : '24', description : 'N4 FSW Version.')
