@@ -23,6 +23,7 @@ set(SOURCES    wf_handler.c
     processing/avf0_prc0.c
     processing/avf1_prc1.c
     processing/avf2_prc2.c
+    processing/ASM/spectralmatrices.c
     lfr_cpu_usage_report.c
     ${LFR_BP_SRC}
     ../header/wf_handler.h
@@ -38,6 +39,7 @@ set(SOURCES    wf_handler.c
     ../header/processing/avf0_prc0.h
     ../header/processing/avf1_prc1.h
     ../header/processing/avf2_prc2.h
+    ../header/processing/ASM/spectralmatrices.h
     ../header/fsw_params_wf_handler.h
     ../header/lfr_cpu_usage_report.h
     ../header/lfr_common_headers/ccsds_types.h
