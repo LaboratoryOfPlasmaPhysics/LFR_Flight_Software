@@ -1,4 +1,4 @@
-project('LFR_FSW', 'c', 'cpp')
+project('LFR_FSW', 'c', 'cpp', license : 'GPL-2.0-or-later')
 add_global_arguments(
             '-DSW_VERSION_N1=@0@'.format(get_option('SW_VERSION_N1')),
             '-DSW_VERSION_N2=@0@'.format(get_option('SW_VERSION_N2')),

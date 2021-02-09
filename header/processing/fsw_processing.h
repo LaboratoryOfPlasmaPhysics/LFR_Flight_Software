@@ -13,61 +13,6 @@
 #include "fsw_params.h"
 
 #define SBM_COEFF_PER_NORM_COEFF 2
-#define MAX_SRC_DATA                                                           \
-  780 // MAX size is 26 bins * 30 Bytes [TM_LFR_SCIENCE_BURST_BP2_F1]
-#define MAX_SRC_DATA_WITH_SPARE 143 // 13 bins  * 11 Bytes
-
-typedef struct {
-  unsigned char targetLogicalAddress;
-  unsigned char protocolIdentifier;
-  unsigned char reserved;
-  unsigned char userApplication;
-  unsigned char packetID[BYTES_PER_PACKETID];
-  unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
-  unsigned char packetLength[BYTES_PER_PKT_LEN];
-  // DATA FIELD HEADER
-  unsigned char spare1_pusVersion_spare2;
-  unsigned char serviceType;
-  unsigned char serviceSubType;
-  unsigned char destinationID;
-  unsigned char time[BYTES_PER_TIME];
-  // AUXILIARY HEADER
-  unsigned char sid;
-  unsigned char pa_bia_status_info;
-  unsigned char sy_lfr_common_parameters_spare;
-  unsigned char sy_lfr_common_parameters;
-  unsigned char acquisitionTime[BYTES_PER_TIME];
-  unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
-  // SOURCE DATA
-  unsigned char data[MAX_SRC_DATA]; // MAX size is 26 bins * 30 Bytes
-                                    // [TM_LFR_SCIENCE_BURST_BP2_F1]
-} bp_packet;
-
-typedef struct {
-  unsigned char targetLogicalAddress;
-  unsigned char protocolIdentifier;
-  unsigned char reserved;
-  unsigned char userApplication;
-  unsigned char packetID[BYTES_PER_PACKETID];
-  unsigned char packetSequenceControl[BYTES_PER_SEQ_CTRL];
-  unsigned char packetLength[BYTES_PER_PKT_LEN];
-  // DATA FIELD HEADER
-  unsigned char spare1_pusVersion_spare2;
-  unsigned char serviceType;
-  unsigned char serviceSubType;
-  unsigned char destinationID;
-  unsigned char time[BYTES_PER_TIME];
-  // AUXILIARY HEADER
-  unsigned char sid;
-  unsigned char pa_bia_status_info;
-  unsigned char sy_lfr_common_parameters_spare;
-  unsigned char sy_lfr_common_parameters;
-  unsigned char acquisitionTime[BYTES_PER_TIME];
-  unsigned char source_data_spare;
-  unsigned char pa_lfr_bp_blk_nr[BYTES_PER_BLKNR];
-  // SOURCE DATA
-  unsigned char data[MAX_SRC_DATA_WITH_SPARE]; // 13 bins  * 11 Bytes
-} bp_packet_with_spare; // only for TM_LFR_SCIENCE_NORMAL_BP1_F0 and F1
 
 extern unsigned char thisIsAnASMRestart;
 

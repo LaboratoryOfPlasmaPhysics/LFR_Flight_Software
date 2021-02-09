@@ -3,7 +3,7 @@ fsw_inc = include_directories(
     '../header/lfr_common_headers',
     '../header/processing',
     '../LFR_basic-parameters',
-    '../src'
+    '.'
     )
 
 fsw_srcs = files(

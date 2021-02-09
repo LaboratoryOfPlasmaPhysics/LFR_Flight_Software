@@ -22,7 +22,7 @@
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
 #pragma once
-#include "fsw_params.h"
+#include "lfr_common_headers/fsw_params.h"
 #include <rtems.h>
 
 typedef struct ring_node_asm {
@@ -42,6 +42,8 @@ typedef struct asm_msg {
   unsigned int numberOfSMInASMNORM;
   unsigned int numberOfSMInASMSBM;
 } asm_msg;
+
+void SM_calibrate(float *spectral_matrix, float *calibration_matrix);
 
 void ASM_patch(float *inputASM, float *outputASM);
 

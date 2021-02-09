@@ -4,3 +4,5 @@ option('SW_VERSION_N3', type : 'string', value : '0', description : 'N3 FSW Vers
 option('SW_VERSION_N4', type : 'string', value : '24', description : 'N4 FSW Version.')
 
 option('fix-b2bst', type : 'boolean', value : true, description : 'Activate -mfix-b2bst switch to mitigate \"LEON3FT Stale Cache Entry After Store with Data Tag Parity Error\" errata, GRLIB-TN-0009')
+
+option('with-tests', type : 'boolean', value : true, description : 'Enables native tests.')

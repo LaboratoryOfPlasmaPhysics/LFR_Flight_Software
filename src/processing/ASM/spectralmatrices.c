@@ -21,7 +21,7 @@
 --                   Contact : Alexis Jeandet
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
-#include "ASM/spectralmatrices.h"
+#include "processing/ASM/spectralmatrices.h"
 
 void SM_average(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM, ring_node *ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM, asm_msg *msgForMATR, unsigned char channel)
 {
@@ -307,4 +307,8 @@ void ASM_patch( float *inputASM, float *outputASM )
     copyReVectors(inputASM, outputASM, ASM_COMP_B3B3);      // b3b3
     copyReVectors(inputASM, outputASM, ASM_COMP_E1E1);      // e1e1
     copyReVectors(inputASM, outputASM, ASM_COMP_E2E2);      // e2e2
+}
+
+void SM_calibrate(float *spectral_matrix, float *calibration_matrix) {
+
 }
