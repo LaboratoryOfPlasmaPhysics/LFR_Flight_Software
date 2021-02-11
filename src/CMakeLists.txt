@@ -19,6 +19,8 @@ set(SOURCES    wf_handler.c
     tc_load_dump_parameters.c
     tm_lfr_tc_exe.c
     tc_acceptance.c
+    mitigations/PAS_filtering.c
+    mitigations/reaction_wheel_filtering.c
     processing/fsw_processing.c
     processing/avf0_prc0.c
     processing/avf1_prc1.c
@@ -26,6 +28,8 @@ set(SOURCES    wf_handler.c
     processing/ASM/spectralmatrices.c
     lfr_cpu_usage_report.c
     ${LFR_BP_SRC}
+    ../header/mitigations/PAS_filtering.h
+    ../header/mitigations/reaction_wheel_filtering.h
     ../header/wf_handler.h
     ../header/tc_handler.h
     ../header/grlib_regs.h

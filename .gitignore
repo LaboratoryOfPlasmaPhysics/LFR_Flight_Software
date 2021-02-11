@@ -15,4 +15,5 @@
 */bin/fsw*
 */bin/timegen
 Makefile
-        
+subprojects/Catch2-*
+subprojects/packagecache/*        

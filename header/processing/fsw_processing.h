@@ -70,15 +70,6 @@ unsigned char getSID(rtems_event_set event);
 extern rtems_status_code get_message_queue_id_prc1(rtems_id *queue_id);
 extern rtems_status_code get_message_queue_id_prc2(rtems_id *queue_id);
 
-unsigned char isPolluted(u_int64_t t0, u_int64_t t1, u_int64_t tbad0,
-                         u_int64_t tbad1);
-
-unsigned char acquisitionTimeIsValid(unsigned int coarseTime,
-                                     unsigned int fineTime,
-                                     unsigned char channel);
-
-int getFBinMask(int k, unsigned char channel);
-
 void init_kcoeff_sbm_from_kcoeff_norm(float *input_kcoeff, float *output_kcoeff,
                                       unsigned char nb_bins_norm);
 

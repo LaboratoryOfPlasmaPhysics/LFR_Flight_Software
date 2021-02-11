@@ -25,6 +25,10 @@
 #include "lfr_common_headers/fsw_params.h"
 #include <rtems.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct ring_node_asm {
   struct ring_node_asm *next;
   float matrix[TOTAL_SIZE_SM];
@@ -69,3 +73,7 @@ void ASM_compress_reorganize_and_divide(float *averaged_spec_mat,
                                         unsigned char nbBinsCompressedMatrix,
                                         unsigned char nbBinsToAverage,
                                         unsigned char ASMIndexStart);
+
+#ifdef __cplusplus
+}
+#endif

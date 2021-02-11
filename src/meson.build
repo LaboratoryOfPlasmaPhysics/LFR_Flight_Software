@@ -16,6 +16,8 @@ fsw_srcs = files(
     'tc_load_dump_parameters.c',
     'tm_lfr_tc_exe.c',
     'tc_acceptance.c',
+    'mitigations/PAS_filtering.c',
+    'mitigations/reaction_wheel_filtering.c',
     'processing/fsw_processing.c',
     'processing/avf0_prc0.c',
     'processing/avf1_prc1.c',
@@ -25,6 +27,7 @@ fsw_srcs = files(
 )
 
 fsw_extra_files = files(
+    '../header/fsw_globals.h',
     '../header/wf_handler.h',
     '../header/tc_handler.h',
     '../header/grlib_regs.h',
@@ -34,6 +37,8 @@ fsw_extra_files = files(
     '../header/tc_load_dump_parameters.h',
     '../header/tm_lfr_tc_exe.h',
     '../header/tc_acceptance.h',
+    '../header/mitigations/PAS_filtering.h',
+    '../header/mitigations/reaction_wheel_filtering.h',
     '../header/processing/fsw_processing.h',
     '../header/processing/avf0_prc0.h',
     '../header/processing/avf1_prc1.h',

@@ -6,7 +6,12 @@ rtems_mock_inc = include_directories('common/rtems_mock')
 tests ={
     'SM_calibration':
     {
-        'sources': ['SM_calibration/main.cpp', '../src/processing/ASM/spectralmatrices.c'],
+        'sources': ['SM_calibration/main.cpp',
+                    '../src/processing/ASM/spectralmatrices.c',
+                    '../src/mitigations/PAS_filtering.c',
+                    '../src/mitigations/reaction_wheel_filtering.c',
+                    'common/mock_globals.c'
+                    ],
         'native': true,
         'dependencies': [catch_dep],
         'include_directories': [rtems_mock_inc, '../header']

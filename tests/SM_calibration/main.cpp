@@ -5,4 +5,6 @@
 #include <catch.hpp>
 #endif
 
+#include "processing/ASM/spectralmatrices.h"
+
 SCENARIO("SM calibration", "[]") { REQUIRE(1 == 1); }
