@@ -1,4 +1,7 @@
-project('LFR_FSW', 'c', 'cpp', license : 'GPL-2.0-or-later')
+project('LFR_FSW', 'c', 'cpp',
+        license : 'GPL-2.0-or-later',
+        default_options : ['warning_level=3', 'cpp_std=c++17'])
+
 add_global_arguments(
             '-DSW_VERSION_N1=@0@'.format(get_option('SW_VERSION_N1')),
             '-DSW_VERSION_N2=@0@'.format(get_option('SW_VERSION_N2')),

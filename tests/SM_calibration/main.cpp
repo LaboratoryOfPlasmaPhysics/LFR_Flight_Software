@@ -7,4 +7,10 @@
 
 #include "processing/ASM/spectralmatrices.h"
 
-SCENARIO("SM calibration", "[]") { REQUIRE(1 == 1); }
+SCENARIO("SM calibration", "[]") {
+
+  float SM[256 * 15];
+  float calibration_matrix[256 * 15];
+
+  SM_calibrate(SM, calibration_matrix, SM);
+}

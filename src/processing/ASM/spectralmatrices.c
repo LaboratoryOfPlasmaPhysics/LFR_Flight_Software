@@ -309,6 +309,10 @@ void ASM_patch( float *inputASM, float *outputASM )
     copyReVectors(inputASM, outputASM, ASM_COMP_E2E2);      // e2e2
 }
 
-void SM_calibrate(float *spectral_matrix, float *calibration_matrix) {
+void SM_calibrate(float *input_asm, float *calibration_matrix,float *output_asm) {
+
+}
+
+void Matrix_change_of_basis(float *input_matrix, float *transition_matrix, float *output_matrix) {
 
 }

@@ -16,4 +16,5 @@
 */bin/timegen
 Makefile
 subprojects/Catch2-*
+subprojects/pybind11-*
 subprojects/packagecache/*        

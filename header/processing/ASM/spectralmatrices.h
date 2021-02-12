@@ -47,7 +47,11 @@ typedef struct asm_msg {
   unsigned int numberOfSMInASMSBM;
 } asm_msg;
 
-void SM_calibrate(float *spectral_matrix, float *calibration_matrix);
+void Matrix_change_of_basis(float *input_matrix, float *transition_matrix,
+                            float *output_matrix);
+
+void SM_calibrate(float *input_asm, float *calibration_matrix,
+                  float *output_asm);
 
 void ASM_patch(float *inputASM, float *outputASM);
 
