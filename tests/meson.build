@@ -12,6 +12,7 @@ lfr = library('lfr',
             '../src/mitigations/reaction_wheel_filtering.c',
             'common/mock_globals.c'],
             include_directories: [rtems_mock_inc, '../header'],
+            extra_files: ['common/FSW_helpers.hpp'],
             native: true)
 
 lfr_dep = declare_dependency(link_with: lfr,include_directories: [rtems_mock_inc, '../header'] )
@@ -27,7 +28,15 @@ tests ={
     {
         'sources': ['SM_calibration/main.cpp'],
         'native': true,
-        'dependencies': [catch_dep, lfr_dep]
+        'dependencies': [catch_dep, lfr_dep],
+        'cpp_args': ['-std=c++17']
+    },
+    'helpers':
+    {
+        'sources': ['helpers/main.cpp'],
+        'native': true,
+        'dependencies': [catch_dep, lfr_dep],
+        'cpp_args': ['-std=c++17']
     }
 }
 
