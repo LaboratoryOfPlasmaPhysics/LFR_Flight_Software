@@ -313,6 +313,125 @@ void SM_calibrate(float *input_asm, float *calibration_matrix,float *output_asm)
 
 }
 
-void Matrix_change_of_basis(float *input_matrix, float *transition_matrix, float *output_matrix) {
+static inline float* triangular_matrix_re_element(float* matrix, int line, int column)__attribute__((always_inline));
+float* triangular_matrix_re_element(float* matrix, int line, int column)
+{
+    const  int  indexes[5][5]={{ 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 },
+        { 3, 10, 16, 17, 19 }, { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 }};
+    return matrix+indexes[line][column];
+}
 
+static inline float* triangular_matrix_im_element(float* matrix, int line, int column)__attribute__((always_inline));
+float* triangular_matrix_im_element(float* matrix, int line, int column)
+{
+    return triangular_matrix_re_element(matrix, line,column)+1;
+}
+
+inline float* matrix_re_element(float* matrix, int line, int column)__attribute__((always_inline));
+float* matrix_re_element(float* matrix, int line, int column)
+{
+    return matrix+2*(column+line*5);
+}
+
+static inline float* matrix_im_element(float* matrix, int line, int column)__attribute__((always_inline));
+float* matrix_im_element(float* matrix, int line, int column)
+{
+    return matrix_re_element(matrix, line, column)+1;
+}
+
+
+static inline _Complex float triangular_matrix_element(float* matrix, int line, int column) __attribute__((always_inline));
+_Complex float triangular_matrix_element(float* matrix, int line, int column)
+{
+    _Complex float res;
+    __real__ res = *triangular_matrix_re_element(matrix,line,column);
+    if(line!=column)
+    {
+        if(line>column)
+        {
+            __imag__ res = -*triangular_matrix_im_element(matrix,line,column);
+        }
+        else
+        {
+            __imag__ res = *triangular_matrix_im_element(matrix,line,column);
+        }
+    }
+    else
+        __imag__ res = 0.f;
+    return res;
+}
+
+static inline _Complex float matrix_element(float* matrix, int line, int column) __attribute__((always_inline));
+_Complex float matrix_element(float* matrix, int line, int column)
+{
+    _Complex float res;
+    __real__ res = *matrix_re_element(matrix,line,column);
+    __imag__ res = *matrix_im_element(matrix,line,column);
+    return res;
+}
+
+// TODO -> RM this
+void print_matrix(float *matrix, int is_triangular)
+{
+    printf("\n");
+    for(int line=0;line<5;line++)
+    {
+        for(int column=0;column<5;column++)
+        {
+            _Complex float element;
+            if(is_triangular==1)
+            {
+                element=triangular_matrix_element(matrix,line,column);
+            }
+            else
+            {
+                element=matrix_element(matrix,line,column);
+            }
+            printf("%f %fj,\t",__real__ element, __imag__ element);
+        }
+        printf("\n");
+    }
+}
+
+void Matrix_change_of_basis(float *input_matrix, float *transition_matrix, float *output_matrix) {
+    //does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
+    _Complex float intermediary[5][5]={{0.f}};
+    printf("input_matrix:");
+    print_matrix(input_matrix,1);
+    printf("transition_matrix:");
+    print_matrix(transition_matrix,0);
+    // first part: intermediary = transpose(transition_matrix) x input_matrix
+    for(int line=0;line<5;line++)
+    {
+        for(int column=0;column<5;column++)
+        {
+            _Complex float product=0.f;
+            for(int k=0;k<5;k++)
+            {
+                product +=  matrix_element(transition_matrix,k,line) * triangular_matrix_element(input_matrix,k,column);
+            }
+            intermediary[column][line]=product;
+        }
+    }
+
+    // second part: output_matrix = intermediary x transition_matrix
+    for(int column=0;column<5;column++)
+    {
+        for(int line=column;line<5;line++)
+        {
+            _Complex float product=0.f;
+            for(int k=0;k<5;k++)
+            {
+                product +=  intermediary[k][line] * matrix_element(transition_matrix,k,column);
+            }
+            *triangular_matrix_re_element(output_matrix,line,column) = __real__ product;
+            if(line!=column)
+            {
+                *triangular_matrix_im_element(output_matrix,line,column) = __imag__ product;
+            }
+
+        }
+    }
+    printf("output_matrix:");
+    print_matrix(output_matrix,1);
 }

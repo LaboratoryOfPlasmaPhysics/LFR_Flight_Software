@@ -25,15 +25,15 @@ SCENARIO("SM calibration", "[]")
     GIVEN("A full SM view")
     {
         full_spectral_matrix_t view(reinterpret_cast<float*>(full_matrix));
-        for (int i = 0; i < 5; i++)
+        for (int line = 0; line < 5; line++)
         {
-            for (int j = 0; j < 5; j++)
+            for (int column = 0; column < 5; column++)
             {
-                REQUIRE(view.real(i, j) == float((i + 1) * pow(10, j + 1)));
-                if (i != j)
-                    REQUIRE(view.img(i, j) == float((j + 1) * 10 + i + 1));
+                REQUIRE(view.real(line, column) == float((column + 1) * pow(10, line + 1)));
+                if (line != column)
+                    REQUIRE(view.img(line, column) == float((line + 1) * 10 + column + 1));
                 else
-                    REQUIRE(view.img(i, j) == -1.f);
+                    REQUIRE(view.img(line, column) == -1.f);
             }
         }
     }
@@ -41,15 +41,15 @@ SCENARIO("SM calibration", "[]")
     GIVEN("A Triangular SM view")
     {
         triangular_spectral_matrix_t view(expected_triangular_matrix);
-        for (int j = 0; j < 5; j++)
+        for (int line = 0; line < 5; line++)
         {
-            for (int i = j; i < 5; i++)
+            for (int column = line; column < 5; column++)
             {
-                REQUIRE(view.real(i, j) == float((i + 1) * pow(10, j + 1)));
-                if (i != j)
-                    REQUIRE(view.img(i, j) == float((j + 1) * 10 + i + 1));
+                REQUIRE(view.real(line, column) == float((column + 1) * pow(10, line + 1)));
+                if (line != column)
+                    REQUIRE(view.img(line, column) == float((line + 1) * 10 + column + 1));
                 else
-                    REQUIRE(view.img(i, j) == 0.f);
+                    REQUIRE(view.img(line, column) == 0.f);
             }
         }
     }

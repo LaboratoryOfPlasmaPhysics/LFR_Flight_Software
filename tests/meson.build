@@ -20,6 +20,7 @@ lfr_dep = declare_dependency(link_with: lfr,include_directories: [rtems_mock_inc
 pywrappers = python3.extension_module('lfr',
                     'common/py_wrappers.cpp',
                     native: true,
+                    cpp_args: ['-std=c++17'],
                     dependencies: [lfr_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
 
 

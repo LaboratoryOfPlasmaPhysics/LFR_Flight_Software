@@ -27,12 +27,25 @@
 
 using lfr_asm_t = std::array<float, 25 * 128>;
 
+template <bool transpose = false>
 struct full_spectral_matrix_t
 {
     float* _data;
     full_spectral_matrix_t(float* data) : _data { data } { }
-    float& real(int i, int j) { return _data[(i + j * 5) * 2]; }
-    float& img(int i, int j) { return _data[(i + j * 5) * 2 + 1]; }
+    float& real(int line, int column)
+    {
+        if constexpr (transpose)
+            return _data[(line + column * 5) * 2];
+        else
+            return _data[(column + line * 5) * 2];
+    }
+    float& img(int line, int column)
+    {
+        if constexpr (transpose)
+            return _data[(line + column * 5) * 2 + 1];
+        else
+            return _data[(column + line * 5) * 2 + 1];
+    }
 };
 
 struct triangular_spectral_matrix_t
@@ -42,37 +55,37 @@ struct triangular_spectral_matrix_t
     float _z = 0.f;
     float* _data;
     triangular_spectral_matrix_t(float* data) : _data { data } { }
-    float& real(int i, int j) { return _data[_indexes[i][j]]; }
-    float& img(int i, int j)
+    float& real(int line, int column) { return _data[_indexes[line][column]]; }
+    float& img(int line, int column)
     {
-        if (i == j)
+        if (line == column)
         {
             _z = 0.f;
             return _z;
         }
-        return _data[_indexes[i][j] + 1];
+        return _data[_indexes[line][column] + 1];
     }
 };
 
-
 template <int matrix_size = 5>
-inline std::size_t to_triangular_matrix_offset(int i, int j)
+inline std::size_t to_triangular_matrix_offset(int line, int column)
 {
-    return i + j * matrix_size;
+    return column + line * matrix_size;
 }
 
+template <bool transpose = false>
 inline void extract_upper_triangle(
     std::complex<float>* src_full_matrix, float* dest_triangular_matrix)
 {
     auto triang_m = triangular_spectral_matrix_t { dest_triangular_matrix };
-    auto full_m = full_spectral_matrix_t { reinterpret_cast<float*>(src_full_matrix) };
-    for (int j = 0; j < 5; j++)
+    auto full_m = full_spectral_matrix_t<transpose> { reinterpret_cast<float*>(src_full_matrix) };
+    for (int line = 0; line < 5; line++)
     {
-        for (int i = j; i < 5; i++)
+        for (int column = line; column < 5; column++)
         {
-            triang_m.real(i, j) = full_m.real(i, j);
-            if (i != j)
-                triang_m.img(i, j) = full_m.img(i, j);
+            triang_m.real(line, column) = full_m.real(line, column);
+            if (line != column)
+                triang_m.img(line, column) = full_m.img(line, column);
         }
     }
 }

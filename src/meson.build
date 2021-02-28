@@ -59,7 +59,7 @@ fsw_extra_files = files(
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 
-c_args = []
+c_args = ['-std=gnu99']
 link_args = ['-Xlinker', '-Map=fsw-@0@.map'.format(fsw_version)]
 if get_option('fix-b2bst')
     c_args += '-mfix-b2bst'
@@ -92,6 +92,14 @@ text_srec = custom_target('text_srec',
   output : 'RpwLfrApp_XXXX_text_rev-@0@.srec'.format(fsw_version),
   command : [objcopy, '-j', '.text', '-F', 'srec', '@INPUT@', '@OUTPUT@'
   ],
+  build_by_default: true
+)
+
+assembly_dump = custom_target('fsw_asm_dump',
+  input : fsw,
+  output : 'fsw.S',
+  capture: true,
+  command : [objdump, '-d','-S', '-l', '@INPUT@'],
   build_by_default: true
 )
 

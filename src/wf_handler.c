@@ -130,7 +130,7 @@ void reset_extractSWF( void )
     swf2_ready = false;
 }
 
-inline void waveforms_isr_f3( void )
+void waveforms_isr_f3( void )
 {
     rtems_status_code spare_status;
 
@@ -161,7 +161,7 @@ inline void waveforms_isr_f3( void )
     }
 }
 
-inline void waveforms_isr_burst( void )
+void waveforms_isr_burst( void )
 {
     unsigned char status;
     rtems_status_code spare_status;
@@ -199,7 +199,7 @@ inline void waveforms_isr_burst( void )
     }
 }
 
-inline void waveform_isr_normal_sbm1_sbm2( void )
+void waveform_isr_normal_sbm1_sbm2( void )
 {
     rtems_status_code status;
 
@@ -818,7 +818,7 @@ void build_snapshot_from_ring( ring_node *ring_node_to_send,
     unsigned char nb_ring_nodes;
     unsigned long long int frequency_asLong;
     unsigned long long int nbTicksPerSample_asLong;
-    unsigned long long int nbSamplesPart1_asLong;
+    long long int nbSamplesPart1_asLong;
     unsigned long long int sampleOffset_asLong;
 
     unsigned int deltaT_F0;
