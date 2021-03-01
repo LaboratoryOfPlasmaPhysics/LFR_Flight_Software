@@ -26,57 +26,53 @@
 #include <rtems.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct ring_node_asm {
-  struct ring_node_asm *next;
-  float matrix[TOTAL_SIZE_SM];
-  unsigned int status;
-} ring_node_asm;
+    typedef struct ring_node_asm
+    {
+        struct ring_node_asm* next;
+        float matrix[TOTAL_SIZE_SM];
+        unsigned int status;
+    } ring_node_asm;
 
-typedef struct asm_msg {
-  ring_node_asm *norm;
-  ring_node_asm *burst_sbm;
-  rtems_event_set event;
-  unsigned int coarseTimeNORM;
-  unsigned int fineTimeNORM;
-  unsigned int coarseTimeSBM;
-  unsigned int fineTimeSBM;
-  unsigned int numberOfSMInASMNORM;
-  unsigned int numberOfSMInASMSBM;
-} asm_msg;
+    typedef struct asm_msg
+    {
+        ring_node_asm* norm;
+        ring_node_asm* burst_sbm;
+        rtems_event_set event;
+        unsigned int coarseTimeNORM;
+        unsigned int fineTimeNORM;
+        unsigned int coarseTimeSBM;
+        unsigned int fineTimeSBM;
+        unsigned int numberOfSMInASMNORM;
+        unsigned int numberOfSMInASMSBM;
+    } asm_msg;
 
-void Matrix_change_of_basis(float *input_matrix, float *transition_matrix,
-                            float *output_matrix);
+    void Matrix_change_of_basis(
+        float* input_matrix, float* transition_matrix, float* output_matrix);
 
-void SM_calibrate(float *input_asm, float *calibration_matrix,
-                  float *output_asm);
+    void SM_calibrate(float* input_asm, float* calibration_matrices, float* output_asm);
 
-void ASM_patch(float *inputASM, float *outputASM);
+    void ASM_patch(float* inputASM, float* outputASM);
 
-void SM_average(float *averaged_spec_mat_NORM, float *averaged_spec_mat_SBM,
-                ring_node *ring_node_tab[], unsigned int nbAverageNORM,
-                unsigned int nbAverageSBM, asm_msg *msgForMATR,
-                unsigned char channel);
+    void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
+        ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+        asm_msg* msgForMATR, unsigned char channel);
 
-void ASM_compress_reorganize_and_divide_mask(
-    float *averaged_spec_mat, float *compressed_spec_mat, float divider,
-    unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
-    unsigned char ASMIndexStart, unsigned char channel);
+    void ASM_compress_reorganize_and_divide_mask(float* averaged_spec_mat,
+        float* compressed_spec_mat, float divider, unsigned char nbBinsCompressedMatrix,
+        unsigned char nbBinsToAverage, unsigned char ASMIndexStart, unsigned char channel);
 
-void ASM_convert(volatile float *input_matrix, char *output_matrix);
+    void ASM_convert(volatile float* input_matrix, char* output_matrix);
 
-void ASM_reorganize_and_divide(float *averaged_spec_mat,
-                               float *averaged_spec_mat_reorganized,
-                               const float divider);
+    void ASM_reorganize_and_divide(
+        float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider);
 
-void ASM_compress_reorganize_and_divide(float *averaged_spec_mat,
-                                        float *compressed_spec_mat,
-                                        float divider,
-                                        unsigned char nbBinsCompressedMatrix,
-                                        unsigned char nbBinsToAverage,
-                                        unsigned char ASMIndexStart);
+    void ASM_compress_reorganize_and_divide(float* averaged_spec_mat, float* compressed_spec_mat,
+        float divider, unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
+        unsigned char ASMIndexStart);
 
 #ifdef __cplusplus
 }
