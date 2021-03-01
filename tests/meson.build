@@ -25,13 +25,6 @@ pywrappers = python3.extension_module('lfr',
 
 
 tests ={
-    'SM_calibration':
-    {
-        'sources': ['SM_calibration/main.cpp'],
-        'native': true,
-        'dependencies': [catch_dep, lfr_dep],
-        'cpp_args': ['-std=c++17']
-    },
     'helpers':
     {
         'sources': ['helpers/main.cpp'],
@@ -41,9 +34,25 @@ tests ={
     }
 }
 
+
+test_scripts = {
+    'SM_calibration':'SM_calibration/test.py'
+}
+
 if get_option('with-tests')
     foreach test_name,test_params:tests
         test_exe = executable(test_name, kwargs: test_params)
         test('test-' + test_name, test_exe)
     endforeach
+
+    foreach test_name,test_script:test_scripts
+        test(test_name, python3,
+            args:[meson.current_source_dir()+'/'+test_script, '--verbose'],
+            env:['PYTHONPATH='+meson.current_build_dir()]
+        )
+    endforeach
 endif
+
+library('tests_fake',[],
+        native: true,
+        extra_files:['SM_calibration/test.py'])
