@@ -56,58 +56,62 @@ fsw_extra_files = files(
     '../header/GscMemoryLPP.hpp'
 )
 
-cc = meson.get_compiler('c')
-m_dep = cc.find_library('m', required : false)
+if meson.is_cross_build()
+    cc = meson.get_compiler('c')
+    m_dep = cc.find_library('m', required : false)
 
-c_args = ['-std=gnu99']
-link_args = ['-Xlinker', '-Map=fsw-@0@.map'.format(fsw_version)]
-if get_option('fix-b2bst')
-    c_args += '-mfix-b2bst'
-    link_args += '-mfix-b2bst'
-endif
+    c_args = ['-std=gnu99']
+    link_args = ['-Xlinker', '-Map=fsw-@0@.map'.format(fsw_version)]
+    if get_option('fix-b2bst')
+        c_args += '-mfix-b2bst'
+        link_args += '-mfix-b2bst'
+    endif
 
-fsw = executable('fsw', fsw_srcs,
-                include_directories: fsw_inc,
-                c_args: c_args,
-                link_args: link_args,
-                dependencies:[lfr_bp_dep, m_dep],
-                extra_files: fsw_extra_files)
+    fsw = executable('fsw', fsw_srcs,
+                    include_directories: fsw_inc,
+                    c_args: c_args,
+                    link_args: link_args,
+                    dependencies:[lfr_bp_dep, m_dep],
+                    extra_files: fsw_extra_files)
 
 
-objcopy = find_program('objcopy')
-objdump = find_program('objdump')
-size = find_program('size')
-b2bst_scan = find_program('../sparc/leon3ft-b2bst-scan_wrapper')
+    objcopy = find_program('objcopy')
+    objdump = find_program('objdump')
+    size = find_program('size')
+    b2bst_scan = find_program('../sparc/leon3ft-b2bst-scan_wrapper')
 
-data_srec = custom_target('data_srec',
-  input : fsw,
-  output : 'RpwLfrApp_XXXX_data_rev-@0@.srec'.format(fsw_version),
-  command : [objcopy, '-j', '.data', '-F', 'srec', '@INPUT@', '@OUTPUT@'
-  ],
-  build_by_default: true
-)
-
-text_srec = custom_target('text_srec',
-  input : fsw,
-  output : 'RpwLfrApp_XXXX_text_rev-@0@.srec'.format(fsw_version),
-  command : [objcopy, '-j', '.text', '-F', 'srec', '@INPUT@', '@OUTPUT@'
-  ],
-  build_by_default: true
-)
-
-assembly_dump = custom_target('fsw_asm_dump',
-  input : fsw,
-  output : 'fsw.S',
-  capture: true,
-  command : [objdump, '-d','-S', '-l', '@INPUT@'],
-  build_by_default: true
-)
-
-if get_option('fix-b2bst')
-    check_b2bst = custom_target('check_b2bst',
+    data_srec = custom_target('data_srec',
       input : fsw,
-      output : 'check_b2bst.log',
-      command : [b2bst_scan, objdump, '@INPUT@', '@OUTPUT@'],
+      output : 'RpwLfrApp_XXXX_data_rev-@0@.srec'.format(fsw_version),
+      command : [objcopy, '-j', '.data', '-F', 'srec', '@INPUT@', '@OUTPUT@'
+      ],
       build_by_default: true
     )
+
+    text_srec = custom_target('text_srec',
+      input : fsw,
+      output : 'RpwLfrApp_XXXX_text_rev-@0@.srec'.format(fsw_version),
+      command : [objcopy, '-j', '.text', '-F', 'srec', '@INPUT@', '@OUTPUT@'
+      ],
+      build_by_default: true
+    )
+
+    assembly_dump = custom_target('fsw_asm_dump',
+      input : fsw,
+      output : 'fsw.S',
+      capture: true,
+      command : [objdump, '-d','-S', '-l', '@INPUT@'],
+      build_by_default: true
+    )
+
+    if get_option('fix-b2bst')
+        check_b2bst = custom_target('check_b2bst',
+          input : fsw,
+          output : 'check_b2bst.log',
+          command : [b2bst_scan, objdump, '@INPUT@', '@OUTPUT@'],
+          build_by_default: true
+        )
+    endif
+else
+    warning('You are not using a cross build, no LFR firmware will be built.')
 endif
