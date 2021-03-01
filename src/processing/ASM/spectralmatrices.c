@@ -370,36 +370,9 @@ _Complex float matrix_element(float* matrix, int line, int column)
     return res;
 }
 
-// TODO -> RM this
-void print_matrix(float *matrix, int is_triangular)
-{
-    printf("\n");
-    for(int line=0;line<5;line++)
-    {
-        for(int column=0;column<5;column++)
-        {
-            _Complex float element;
-            if(is_triangular==1)
-            {
-                element=triangular_matrix_element(matrix,line,column);
-            }
-            else
-            {
-                element=matrix_element(matrix,line,column);
-            }
-            printf("%f %fj,\t",__real__ element, __imag__ element);
-        }
-        printf("\n");
-    }
-}
-
 void Matrix_change_of_basis(float *input_matrix, float *transition_matrix, float *output_matrix) {
     //does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
     _Complex float intermediary[5][5]={{0.f}};
-    printf("input_matrix:");
-    print_matrix(input_matrix,1);
-    printf("transition_matrix:");
-    print_matrix(transition_matrix,0);
     // first part: intermediary = transpose(transition_matrix) x input_matrix
     for(int line=0;line<5;line++)
     {
@@ -432,6 +405,4 @@ void Matrix_change_of_basis(float *input_matrix, float *transition_matrix, float
 
         }
     }
-    printf("output_matrix:");
-    print_matrix(output_matrix,1);
 }
