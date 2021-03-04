@@ -179,7 +179,8 @@ PYBIND11_MODULE(lfr, m)
     //                  float *output_asm);
     m.def("SM_calibrate",
         [](py::array_t<std::complex<float>> input_asm,
-            py::array_t<std::complex<float>> calibration_matrix) {
+            py::array_t<std::complex<float>> calibration_matrix)
+        {
             auto output_matrix
                 = py::array_t<std::complex<float>>(py::buffer_info { input_asm.request() }.shape);
             auto _matrix = to_lfr_spectral_matrix_repr<true>(input_asm);
@@ -187,25 +188,24 @@ PYBIND11_MODULE(lfr, m)
                 = extract_spectral_transition_matrix<3, 0>(calibration_matrix);
             auto elec_transition_matrix
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
-            std::vector<float> output(25 * 128);
             SM_calibrate(_matrix.data(), mag_transition_matrix.data(),
-                elec_transition_matrix.data(), output.data());
-            from_lfr_spectral_matrix_repr(output, output_matrix);
+                elec_transition_matrix.data(), _matrix.data());
+            from_lfr_spectral_matrix_repr(_matrix, output_matrix);
             return output_matrix;
         });
 
     m.def("Matrix_change_of_basis",
         [](py::array_t<std::complex<float>> input_matrix,
-            py::array_t<std::complex<float>> transition_matrix) {
+            py::array_t<std::complex<float>> transition_matrix)
+        {
             auto output_matrix = py::array_t<std::complex<float>>(
                 py::buffer_info { input_matrix.request() }.shape);
             auto _matrix = to_lfr_matrix_repr<true>(input_matrix);
             auto mag_transition_matrix = extract_transition_matrix<3, 0>(transition_matrix);
             auto elec_transition_matrix = extract_transition_matrix<2, 3>(transition_matrix);
-            std::vector<float> output(25);
             Matrix_change_of_basis(_matrix.data(), mag_transition_matrix.data(),
-                elec_transition_matrix.data(), output.data());
-            from_lfr_matrix_repr(output, output_matrix);
+                elec_transition_matrix.data(), _matrix.data());
+            from_lfr_matrix_repr(_matrix, output_matrix);
             return output_matrix;
         });
 }

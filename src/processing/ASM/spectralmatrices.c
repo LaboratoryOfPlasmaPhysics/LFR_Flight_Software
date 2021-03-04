@@ -437,7 +437,7 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
                 product += matrix_element(elec_transition_matrix, k, line,2)
                     * triangular_matrix_element(input_matrix, k+3, column);
             }
-            intermediary[line+3][column] += product;
+            intermediary[line+3][column] = product;
         }
     }
 
@@ -467,10 +467,10 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             {
                 product += intermediary[line][k+3] * matrix_element(elec_transition_matrix, k, column-3, 2);
             }
-            *triangular_matrix_re_element(output_matrix, line, column) += __real__ product;
+            *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
             if (line != column)
             {
-                *triangular_matrix_im_element(output_matrix, line, column) += __imag__ product;
+                *triangular_matrix_im_element(output_matrix, line, column) = __imag__ product;
             }
         }
     }
