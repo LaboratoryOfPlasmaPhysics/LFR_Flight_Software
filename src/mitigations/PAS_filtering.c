@@ -24,6 +24,7 @@
 #include "mitigations/PAS_filtering.h"
 #include "lfr_common_headers/fsw_params.h"
 #include "fsw_globals.h"
+#include <sys/types.h>
 
 /**
  * @brief isPolluted returns MATRIX_IS_POLLUTED if there is any overlap between t0:t1 and tbad0:tbad1 ranges

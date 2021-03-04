@@ -50,10 +50,11 @@ extern "C"
         unsigned int numberOfSMInASMSBM;
     } asm_msg;
 
-    void Matrix_change_of_basis(
-        float* input_matrix, float* transition_matrix, float* output_matrix);
+    void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
+        float* elec_transition_matrix, float* output_matrix);
 
-    void SM_calibrate(float* input_asm, float* calibration_matrices, float* output_asm);
+    void SM_calibrate(float* input_asm, float* mag_calibration_matrices,
+        float* elec_calibration_matrices, float* output_asm);
 
     void ASM_patch(float* inputASM, float* outputASM);
 

@@ -5,13 +5,6 @@ import lfr
 import numpy as np
 
 
-
-TRANSITION = np.array([[ 1.+0.j,  0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                       [ 0.+0.j,  1.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                       [ 0.+0.j,  0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
-                       [ 0.+0.j,  0.+0j, 0.+0.j, 1.+0.j, 0.+0.j ],
-                       [ 0.+0.j,  0.+0j, 0.+0.j, 0.+0.j, 1.+0.j ]], dtype=np.csingle)
-
 class AnLFRMatrix(unittest.TestCase):
    def test_can_be_calibrated(self):
        B1=1.+0.j
@@ -23,8 +16,8 @@ class AnLFRMatrix(unittest.TestCase):
        TRANSITION = np.array([[ 0.+0.j,  -1.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
                               [ 1.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
                               [ 0.+0.j,   0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
-                              [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                              [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ]], dtype=np.csingle)
+                              [ 0.+0.j,   0.+0j, 0.+0.j, 9.+0.j, 0.+0.j ],
+                              [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 9.+0.j ]], dtype=np.csingle)
        SM = VECT * np.conjugate(VECT).transpose()
        REF = np.matmul(np.matmul(TRANSITION.transpose(), SM), TRANSITION)
        self.assertTrue(np.all(REF == lfr.Matrix_change_of_basis(SM,TRANSITION)))

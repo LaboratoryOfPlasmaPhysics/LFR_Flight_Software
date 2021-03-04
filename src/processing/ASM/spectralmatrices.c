@@ -339,17 +339,17 @@ float* triangular_matrix_im_element(float* matrix, int line, int column)
     return triangular_matrix_re_element(matrix, line, column) + 1;
 }
 
-inline float* matrix_re_element(float* matrix, int line, int column) __attribute__((always_inline));
-float* matrix_re_element(float* matrix, int line, int column)
+inline float* matrix_re_element(float* matrix, int line, int column, const int size) __attribute__((always_inline));
+float* matrix_re_element(float* matrix, int line, int column,const int size)
 {
-    return matrix + 2 * (column + line * 5);
+    return matrix + 2 * (column + line * size);
 }
 
-static inline float* matrix_im_element(float* matrix, int line, int column)
+static inline float* matrix_im_element(float* matrix, int line, int column, const int size)
     __attribute__((always_inline));
-float* matrix_im_element(float* matrix, int line, int column)
+float* matrix_im_element(float* matrix, int line, int column, const int size)
 {
-    return matrix_re_element(matrix, line, column) + 1;
+    return matrix_re_element(matrix, line, column,size) + 1;
 }
 
 
@@ -375,44 +375,81 @@ _Complex float triangular_matrix_element(float* matrix, int line, int column)
     return res;
 }
 
-static inline _Complex float matrix_element(float* matrix, int line, int column)
+static inline _Complex float matrix_element(float* matrix, int line, int column, const int size)
     __attribute__((always_inline));
-_Complex float matrix_element(float* matrix, int line, int column)
+_Complex float matrix_element(float* matrix, int line, int column,const int size)
 {
     _Complex float res;
-    __real__ res = *matrix_re_element(matrix, line, column);
-    __imag__ res = *matrix_im_element(matrix, line, column);
+    __real__ res = *matrix_re_element(matrix, line, column, size);
+    __imag__ res = *matrix_im_element(matrix, line, column, size);
     return res;
 }
 
-void Matrix_change_of_basis(float* input_matrix, float* transition_matrix, float* output_matrix)
+
+/*
+ *   This function performs a specific 5x5 matrix change of basis with the folowing assumptions
+
+                                                            T
+          output_matrix                mag_transition_matrix               input_matrix                 mag_transition_matrix
+               |                              |                                 |                              |
+               v                              v                                 v                              v
+ | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B21 B31   0   0  |   | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B12 B13   0   0  |
+ |        |SM22| SM23  SM24  SM25  |   | B12 B22 B32   0   0  |   |        |SM22| SM23  SM24  SM25  |   | B21 B22 B23   0   0  |
+ |              |SM33| SM34  SM35  | = | B13 B23 B33   0   0  | X |              |SM33| SM34  SM35  | X | B31 B32 B33   0   0  |
+ |                    |SM44| SM45  |   |  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 |
+ |                          |SM55| |   |  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 |
+                                                         ^                                                                ^
+                                                         |          T                                                     |
+                                              elec_transition_matrix                                             elec_transition_matrix
+
+
+Where each matrix product is done sequencialy for mag and elec transition matrices
+
+*/
+
+void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
 {
+
     // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
     _Complex float intermediary[5][5] = { { 0.f } };
     // first part: intermediary = transpose(transition_matrix) x input_matrix
-    for (int line = 0; line < 5; line++)
+    for (int line = 0; line < 3; line++)
     {
         for (int column = 0; column < 5; column++)
         {
             _Complex float product = 0.f;
-            for (int k = 0; k < 5; k++)
+            for (int k = 0; k < 3; k++)
             {
-                product += matrix_element(transition_matrix, k, line)
+                product += matrix_element(mag_transition_matrix, k, line,3)
                     * triangular_matrix_element(input_matrix, k, column);
             }
-            intermediary[column][line] = product;
+            intermediary[line][column] = product;
+        }
+    }
+
+    for (int line = 0; line < 2; line++)
+    {
+        for (int column = 0; column < 5; column++)
+        {
+            _Complex float product = 0.f;
+            for (int k = 0; k < 2; k++)
+            {
+                product += matrix_element(elec_transition_matrix, k, line,2)
+                    * triangular_matrix_element(input_matrix, k+3, column);
+            }
+            intermediary[line+3][column] += product;
         }
     }
 
     // second part: output_matrix = intermediary x transition_matrix
-    for (int column = 0; column < 5; column++)
+    for (int line = 0; line < 3; line++)
     {
-        for (int line = column; line < 5; line++)
+        for (int column = line; column < 3; column++)
         {
             _Complex float product = 0.f;
-            for (int k = 0; k < 5; k++)
+            for (int k = 0; k < 3; k++)
             {
-                product += intermediary[k][line] * matrix_element(transition_matrix, k, column);
+                product += intermediary[line][k] * matrix_element(mag_transition_matrix, k, column, 3);
             }
             *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
             if (line != column)
@@ -421,16 +458,34 @@ void Matrix_change_of_basis(float* input_matrix, float* transition_matrix, float
             }
         }
     }
+    for (int column = 3; column <5; column++)
+    {
+        for (int line = 0; line <= column; line++)
+        {
+            _Complex float product = 0.f;
+            for (int k = 0; k < 2; k++)
+            {
+                product += intermediary[line][k+3] * matrix_element(elec_transition_matrix, k, column-3, 2);
+            }
+            *triangular_matrix_re_element(output_matrix, line, column) += __real__ product;
+            if (line != column)
+            {
+                *triangular_matrix_im_element(output_matrix, line, column) += __imag__ product;
+            }
+        }
+    }
+
 }
 
 
-void SM_calibrate(float* input_asm, float* calibration_matrices, float* output_asm)
+void SM_calibrate(float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices, float* output_asm)
 {
     for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
     {
         unsigned int asm_offset = frequency_offset * NB_VALUES_PER_SM;
-        unsigned int matrix_offset = frequency_offset * NB_VALUES_PER_SM * 2;
         Matrix_change_of_basis(
-            input_asm + asm_offset, calibration_matrices + matrix_offset, output_asm + asm_offset);
+            input_asm + asm_offset, mag_calibration_matrices, elec_calibration_matrices, output_asm + asm_offset);
+        mag_calibration_matrices += 3*3*2;
+        elec_calibration_matrices += 2*2*2;
     }
 }

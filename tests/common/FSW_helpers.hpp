@@ -27,21 +27,21 @@
 
 using lfr_asm_t = std::array<float, 25 * 128>;
 
-template <bool transpose = false>
+template <bool swap_lines_columns = false>
 struct full_spectral_matrix_t
 {
     float* _data;
     full_spectral_matrix_t(float* data) : _data { data } { }
     float& real(int line, int column)
     {
-        if constexpr (transpose)
+        if constexpr (swap_lines_columns)
             return _data[(line + column * 5) * 2];
         else
             return _data[(column + line * 5) * 2];
     }
     float& img(int line, int column)
     {
-        if constexpr (transpose)
+        if constexpr (swap_lines_columns)
             return _data[(line + column * 5) * 2 + 1];
         else
             return _data[(column + line * 5) * 2 + 1];
@@ -55,13 +55,27 @@ struct triangular_spectral_matrix_t
     float _z = 0.f;
     float* _data;
     triangular_spectral_matrix_t(float* data) : _data { data } { }
-    float& real(int line, int column) { return _data[_indexes[line][column]]; }
-    float& img(int line, int column)
+    void real(int line, int column, float value)
     {
+        if (line > column)
+            throw std::range_error("can't write lower part of triangular matrix");
+        _data[_indexes[line][column]] = value;
+    }
+    void img(int line, int column, float value)
+    {
+        if (line >= column)
+            throw std::range_error("can't write lower part of triangular matrix");
+        _data[_indexes[line][column] + 1] = value;
+    }
+
+    float real(int line, int column) const { return _data[_indexes[line][column]]; }
+    float img(int line, int column) const
+    {
+        if (line > column)
+            return -_data[_indexes[line][column] + 1];
         if (line == column)
         {
-            _z = 0.f;
-            return _z;
+            return 0.f;
         }
         return _data[_indexes[line][column] + 1];
     }
@@ -73,19 +87,20 @@ inline std::size_t to_triangular_matrix_offset(int line, int column)
     return column + line * matrix_size;
 }
 
-template <bool transpose = false>
+template <bool swap_lines_columns = false>
 inline void extract_upper_triangle(
     std::complex<float>* src_full_matrix, float* dest_triangular_matrix)
 {
     auto triang_m = triangular_spectral_matrix_t { dest_triangular_matrix };
-    auto full_m = full_spectral_matrix_t<transpose> { reinterpret_cast<float*>(src_full_matrix) };
+    auto full_m
+        = full_spectral_matrix_t<swap_lines_columns> { reinterpret_cast<float*>(src_full_matrix) };
     for (int line = 0; line < 5; line++)
     {
         for (int column = line; column < 5; column++)
         {
-            triang_m.real(line, column) = full_m.real(line, column);
+            triang_m.real(line, column, full_m.real(line, column));
             if (line != column)
-                triang_m.img(line, column) = full_m.img(line, column);
+                triang_m.img(line, column, full_m.img(line, column));
         }
     }
 }
