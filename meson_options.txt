@@ -6,3 +6,5 @@ option('SW_VERSION_N4', type : 'string', value : '24', description : 'N4 FSW Ver
 option('fix-b2bst', type : 'boolean', value : true, description : 'Activate -mfix-b2bst switch to mitigate \"LEON3FT Stale Cache Entry After Store with Data Tag Parity Error\" errata, GRLIB-TN-0009')
 
 option('with-tests', type : 'boolean', value : true, description : 'Enables native tests.')
+
+option('lpp-destid', type : 'boolean', value : false, description : 'Set DPU dest ID to the one used at LPP.')

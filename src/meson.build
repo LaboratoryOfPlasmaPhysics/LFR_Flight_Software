@@ -67,6 +67,11 @@ if meson.is_cross_build()
         link_args += '-mfix-b2bst'
     endif
 
+    if get_option('lpp-destid')
+        c_args += '-DLPP_DPU_DESTID'
+    endif
+
+
     fsw = executable('fsw', fsw_srcs,
                     include_directories: fsw_inc,
                     c_args: c_args,
