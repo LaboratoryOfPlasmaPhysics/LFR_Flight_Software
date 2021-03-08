@@ -56,18 +56,20 @@ std::vector<float> to_lfr_spectral_matrix_repr(py::array_t<std::complex<float>>&
     if (input_matrix_buff.shape != std::vector<ssize_t> { 128, 5, 5 })
         throw std::runtime_error("Shape must be (128, 5, 5)");
 
-    for (auto i = 0ul; i < 128; i++)
+    auto view = lfr_triangular_spectral_matrix_t { result.data() };
+    for (auto frequency = 0ul; frequency < 128; frequency++)
     {
         if constexpr (is_triangular)
         {
-            auto view = triangular_spectral_matrix_t { result.data() + 25 * i };
             for (int line = 0; line < 5; line++)
             {
                 for (int column = line; column < 5; column++)
                 {
-                    view.real(line, column, input_matrix.data(i, line, column)->real());
+                    view.real(frequency, line, column,
+                        input_matrix.data(frequency, line, column)->real());
                     if (line != column)
-                        view.img(line, column, input_matrix.data(i, line, column)->imag());
+                        view.img(frequency, line, column,
+                            input_matrix.data(frequency, line, column)->imag());
                 }
             }
         }
@@ -79,10 +81,10 @@ std::vector<float> to_lfr_spectral_matrix_repr(py::array_t<std::complex<float>>&
                 for (int column = 0; column < 5; column++)
                 {
 
-                    result[i * offset + 2 * (column + line * 5)]
-                        = input_matrix.data(i, line, column)->real();
-                    result[i * offset + 2 * (column + line * 5) + 1]
-                        = input_matrix.data(i, line, column)->imag();
+                    result[frequency * offset + 2 * (column + line * 5)]
+                        = input_matrix.data(frequency, line, column)->real();
+                    result[frequency * offset + 2 * (column + line * 5) + 1]
+                        = input_matrix.data(frequency, line, column)->imag();
                 }
             }
         }
@@ -158,15 +160,17 @@ void from_lfr_matrix_repr(std::vector<float>& src, py::array_t<std::complex<floa
 
 void from_lfr_spectral_matrix_repr(std::vector<float>& src, py::array_t<std::complex<float>>& dest)
 {
-    for (auto i = 0ul; i < 128; i++)
+    auto triang_m = lfr_triangular_spectral_matrix_t { src.data() };
+    for (auto frequency = 0ul; frequency < 128; frequency++)
     {
-        auto triang_m = triangular_spectral_matrix_t { src.data() + i * 25 };
         for (int line = 0; line < 5; line++)
         {
             for (int column = 0; column < 5; column++)
             {
-                dest.mutable_data(i, line, column)->real(triang_m.real(line, column));
-                dest.mutable_data(i, line, column)->imag(triang_m.img(line, column));
+                dest.mutable_data(frequency, line, column)
+                    ->real(triang_m.real(frequency, line, column));
+                dest.mutable_data(frequency, line, column)
+                    ->imag(triang_m.img(frequency, line, column));
             }
         }
     }
@@ -175,8 +179,7 @@ void from_lfr_spectral_matrix_repr(std::vector<float>& src, py::array_t<std::com
 PYBIND11_MODULE(lfr, m)
 {
     m.doc() = "lfr module";
-    // void SM_calibrate(float *input_asm, float *calibration_matrix,
-    //                  float *output_asm);
+
     m.def("SM_calibrate",
         [](py::array_t<std::complex<float>> input_asm,
             py::array_t<std::complex<float>> calibration_matrix)
@@ -188,7 +191,7 @@ PYBIND11_MODULE(lfr, m)
                 = extract_spectral_transition_matrix<3, 0>(calibration_matrix);
             auto elec_transition_matrix
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
-            SM_calibrate(_matrix.data(), mag_transition_matrix.data(),
+            SM_calibrate_and_reorder(_matrix.data(), mag_transition_matrix.data(),
                 elec_transition_matrix.data(), _matrix.data());
             from_lfr_spectral_matrix_repr(_matrix, output_matrix);
             return output_matrix;

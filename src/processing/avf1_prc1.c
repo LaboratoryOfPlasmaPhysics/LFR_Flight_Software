@@ -53,6 +53,55 @@ float compressed_sm_sbm_f1 [ TOTAL_SIZE_COMPRESSED_ASM_SBM_F1 ] = {0};
 float k_coeff_intercalib_f1_norm[ NB_BINS_COMPRESSED_SM_F1     * NB_K_COEFF_PER_BIN ] = {0};  // 13 * 32 = 416
 float k_coeff_intercalib_f1_sbm[  NB_BINS_COMPRESSED_SM_SBM_F1 * NB_K_COEFF_PER_BIN ] = {0};  // 26 * 32 = 832
 
+#define UNITY_3x3_MATRIX 1.f,0.f, 0.f,0.f, 0.f,0.f,\
+                         0.f,0.f, 1.f,0.f, 0.f,0.f,\
+                         0.f,0.f, 0.f,0.f, 1.f,0.f
+
+#define UNITY_2x2_MATRIX 1.f,0.f, 0.f,0.f,\
+                         0.f,0.f, 1.f,0.f
+
+// 128 * 3x3 float complex matrices
+float mag_calibration_matrices_f1[NB_BINS_PER_SM*3*3*2]=
+    {
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,
+        UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX,UNITY_3x3_MATRIX
+    };
+
+// 128 * 2x2 float complex matrices
+float elec_calibration_matrices_f1[NB_BINS_PER_SM*2*2*2]=
+    {
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,
+        UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX,UNITY_2x2_MATRIX
+    };
+
 //************
 // RTEMS TASKS
 
@@ -288,12 +337,6 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
 
         incomingMsg = (asm_msg*) incomingData;
 
-        ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
-        ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
-
-        nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
-        nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
-
         //***********
         //***********
         // BURST SBM2
@@ -301,9 +344,12 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         //***********
         if ( (incomingMsg->event & RTEMS_EVENT_BURST_BP1_F1) || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F1) )
         {
+            //ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
+            SM_calibrate_and_reorder(incomingMsg->burst_sbm->matrix, mag_calibration_matrices_f1, elec_calibration_matrices_f1, asm_f1_patched_burst_sbm);
+            nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
             sid = getSID( incomingMsg->event );
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide_mask( asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
+            ASM_compress_divide_and_mask( asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
                                          nbSMInASMSBM,
                                          NB_BINS_COMPRESSED_SM_SBM_F1, NB_BINS_TO_AVERAGE_ASM_SBM_F1,
                                          ASM_F1_INDICE_START, CHANNELF1);
@@ -338,10 +384,17 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         // NORM
         //*****
         //*****
+        if ((incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1) || (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1))
+        {
+            //ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
+            SM_calibrate_and_reorder(incomingMsg->norm->matrix, mag_calibration_matrices_f1, elec_calibration_matrices_f1, asm_f1_patched_norm);
+            nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
+        }
+
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
         {
             // 1)  compress the matrix for Basic Parameters calculation
-            ASM_compress_reorganize_and_divide_mask( asm_f1_patched_norm, compressed_sm_norm_f1,
+            ASM_compress_divide_and_mask( asm_f1_patched_norm, compressed_sm_norm_f1,
                                          nbSMInASMNORM,
                                          NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1,
                                          ASM_F1_INDICE_START, CHANNELF1 );
@@ -373,7 +426,7 @@ rtems_task prc1_task( rtems_task_argument lfrRequestedMode )
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1)
         {
             // 1) reorganize the ASM and divide
-            ASM_reorganize_and_divide( asm_f1_patched_norm,
+            ASM_divide( asm_f1_patched_norm,
                                        (float*) current_ring_node_to_send_asm_f1->buffer_address,
                                        nbSMInASMNORM );
             current_ring_node_to_send_asm_f1->coarseTime    = incomingMsg->coarseTimeNORM;

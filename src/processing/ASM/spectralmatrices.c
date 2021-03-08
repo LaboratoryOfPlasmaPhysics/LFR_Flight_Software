@@ -115,142 +115,76 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     }
 }
 
-
-void ASM_compress_reorganize_and_divide_mask(float* averaged_spec_mat, float* compressed_spec_mat,
+// TODO add unit test
+void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_spec_mat,
     float divider, unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
     unsigned char ASMIndexStart, unsigned char channel)
 {
     //*************
     // input format
-    // component0[0 .. 127] component1[0 .. 127] .. component24[0 .. 127]
-    //**************
-    // output format
     // matr0[0 .. 24]      matr1[0 .. 24]       .. matr127[0 .. 24]
     //************
     // compression
     // matr0[0 .. 24]      matr1[0 .. 24]       .. matr11[0 .. 24] => f0 NORM
     // matr0[0 .. 24]      matr1[0 .. 24]       .. matr22[0 .. 24] => f0 BURST, SBM
 
-    int frequencyBin;
-    int asmComponent;
-    int offsetASM;
-    int offsetCompressed;
-    int offsetFBin;
-    int fBinMask;
-    int k;
-
     // BUILD DATA
-    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
+    // Just zero the whole compressed ASM
+    // has to be done either way if divider==0. or to initialize average
     {
-        for (frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++)
+        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_VALUES_PER_SM; _++)
         {
-            offsetCompressed = // NO TIME OFFSET
-                (frequencyBin * NB_VALUES_PER_SM) + asmComponent;
-            offsetASM = // NO TIME OFFSET
-                (asmComponent * NB_BINS_PER_SM) + ASMIndexStart + (frequencyBin * nbBinsToAverage);
-            offsetFBin = ASMIndexStart + (frequencyBin * nbBinsToAverage);
-            compressed_spec_mat[offsetCompressed] = 0;
-            for (k = 0; k < nbBinsToAverage; k++)
+            *compressed_spec_mat = 0.;
+            compressed_spec_mat++;
+        }
+    }
+    if (divider != 0.f)
+    {
+        int freq_offset = ASMIndexStart;
+        float* input_asm_ptr = averaged_spec_mat + (ASMIndexStart * NB_VALUES_PER_SM);
+        float* compressed_asm_ptr = compressed_spec_mat;
+        for (int compressed_frequency_bin = 0; compressed_frequency_bin < nbBinsCompressedMatrix;
+             compressed_frequency_bin++)
+        {
+            for (int frequency_bin = 0; frequency_bin < nbBinsToAverage; frequency_bin++)
             {
-                fBinMask = getFBinMask(offsetFBin + k, channel);
-                compressed_spec_mat[offsetCompressed] = compressed_spec_mat[offsetCompressed]
-                    + (averaged_spec_mat[offsetASM + k] * fBinMask);
+                int fBinMask = getFBinMask(freq_offset, channel);
+                compressed_asm_ptr = compressed_spec_mat+compressed_frequency_bin;
+                for (int asm_component = 0; asm_component < NB_VALUES_PER_SM; asm_component++)
+                {
+                    *compressed_asm_ptr += (*input_asm_ptr * fBinMask);
+                    compressed_asm_ptr++;
+                }
+                freq_offset++;
             }
-            if (divider != 0)
-            {
-                compressed_spec_mat[offsetCompressed]
-                    = compressed_spec_mat[offsetCompressed] / (divider * nbBinsToAverage);
-            }
-            else
-            {
-                compressed_spec_mat[offsetCompressed] = INIT_FLOAT;
-            }
+        }
+        compressed_asm_ptr = compressed_spec_mat;
+        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_VALUES_PER_SM; _++)
+        {
+            *compressed_asm_ptr = *compressed_asm_ptr / (divider * nbBinsToAverage);
         }
     }
 }
 
-void ASM_convert(volatile float* input_matrix, char* output_matrix)
-{
-    unsigned int frequencyBin;
-    unsigned int asmComponent;
-    char* pt_char_input;
-    char* pt_char_output;
-    unsigned int offsetInput;
-    unsigned int offsetOutput;
-
-    pt_char_input = (char*)&input_matrix;
-    pt_char_output = (char*)&output_matrix;
-
-    // convert all other data
-    for (frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++)
-    {
-        for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
-        {
-            offsetInput = (frequencyBin * NB_VALUES_PER_SM) + asmComponent;
-            offsetOutput = SM_BYTES_PER_VAL * ((frequencyBin * NB_VALUES_PER_SM) + asmComponent);
-            pt_char_input = (char*)&input_matrix[offsetInput];
-            pt_char_output = (char*)&output_matrix[offsetOutput];
-            pt_char_output[0] = pt_char_input[0]; // bits 31 downto 24 of the float
-            pt_char_output[1] = pt_char_input[1]; // bits 23 downto 16 of the float
-        }
-    }
-}
-
-void ASM_compress_reorganize_and_divide(float* averaged_spec_mat, float* compressed_spec_mat,
-    float divider, unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
-    unsigned char ASMIndexStart)
-{
-    int frequencyBin;
-    int asmComponent;
-    int offsetASM;
-    int offsetCompressed;
-    int k;
-
-    // BUILD DATA
-    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
-    {
-        for (frequencyBin = 0; frequencyBin < nbBinsCompressedMatrix; frequencyBin++)
-        {
-            offsetCompressed = // NO TIME OFFSET
-                (frequencyBin * NB_VALUES_PER_SM) + asmComponent;
-            offsetASM = // NO TIME OFFSET
-                (asmComponent * NB_BINS_PER_SM) + ASMIndexStart + (frequencyBin * nbBinsToAverage);
-            compressed_spec_mat[offsetCompressed] = 0;
-            for (k = 0; k < nbBinsToAverage; k++)
-            {
-                compressed_spec_mat[offsetCompressed]
-                    = (compressed_spec_mat[offsetCompressed] + averaged_spec_mat[offsetASM + k]);
-            }
-            compressed_spec_mat[offsetCompressed]
-                = compressed_spec_mat[offsetCompressed] / (divider * nbBinsToAverage);
-        }
-    }
-}
-
-void ASM_reorganize_and_divide(
+void ASM_divide(
     float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider)
 {
-    int frequencyBin;
-    int asmComponent;
-    unsigned int offsetASM;
-    unsigned int offsetASMReorganized;
-
     // BUILD DATA
-    for (asmComponent = 0; asmComponent < NB_VALUES_PER_SM; asmComponent++)
+    if (divider == 0.)
     {
-        for (frequencyBin = 0; frequencyBin < NB_BINS_PER_SM; frequencyBin++)
+        for (int _ = 0; _ < NB_VALUES_PER_SM * NB_BINS_PER_SM; _++)
         {
-            offsetASMReorganized = (frequencyBin * NB_VALUES_PER_SM) + asmComponent;
-            offsetASM = (asmComponent * NB_BINS_PER_SM) + frequencyBin;
-            if (divider != INIT_FLOAT)
-            {
-                averaged_spec_mat_reorganized[offsetASMReorganized]
-                    = averaged_spec_mat[offsetASM] / divider;
-            }
-            else
-            {
-                averaged_spec_mat_reorganized[offsetASMReorganized] = INIT_FLOAT;
-            }
+            *averaged_spec_mat_reorganized = 0.;
+            averaged_spec_mat_reorganized++;
+        }
+    }
+    else
+    {
+        for (int _ = 0; _ < NB_VALUES_PER_SM * NB_BINS_PER_SM; _++)
+        {
+            *averaged_spec_mat_reorganized = *averaged_spec_mat / divider;
+            averaged_spec_mat_reorganized++;
+            averaged_spec_mat++;
         }
     }
 }
@@ -270,8 +204,8 @@ void extractReImVectors(float* inputASM, float* outputASM, unsigned int asmCompo
 
     for (i = 0; i < NB_BINS_PER_SM; i++)
     {
-        re = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_BYTES_PER_VAL)];
-        im = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_BYTES_PER_VAL) + 1];
+        re = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_FLOATS_PER_VAL)];
+        im = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_FLOATS_PER_VAL) + 1];
         outputASM[(asmComponent * NB_BINS_PER_SM) + i] = re;
         outputASM[((asmComponent + 1) * NB_BINS_PER_SM) + i] = im;
     }
@@ -323,6 +257,23 @@ void ASM_patch(float* inputASM, float* outputASM)
     copyReVectors(inputASM, outputASM, ASM_COMP_E2E2); // e2e2
 }
 
+static inline float* spectral_matrix_re_element(
+    float* spectral_matrix, int frequency, int line, int column) __attribute__((always_inline));
+float* spectral_matrix_re_element(float* spectral_matrix, int frequency, int line, int column)
+{
+    const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 }, { 3, 10, 16, 17, 19 },
+        { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
+    return spectral_matrix + (indexes[line][column] * NB_BINS_PER_SM)
+        + (frequency * SM_FLOATS_PER_VAL);
+}
+
+static inline float* spectral_matrix_im_element(
+    float* spectral_matrix, int frequency, int line, int column) __attribute__((always_inline));
+float* spectral_matrix_im_element(float* spectral_matrix, int frequency, int line, int column)
+{
+    return spectral_matrix_re_element(spectral_matrix, frequency, line, column) + 1;
+}
+
 static inline float* triangular_matrix_re_element(float* matrix, int line, int column)
     __attribute__((always_inline));
 float* triangular_matrix_re_element(float* matrix, int line, int column)
@@ -339,8 +290,9 @@ float* triangular_matrix_im_element(float* matrix, int line, int column)
     return triangular_matrix_re_element(matrix, line, column) + 1;
 }
 
-inline float* matrix_re_element(float* matrix, int line, int column, const int size) __attribute__((always_inline));
-float* matrix_re_element(float* matrix, int line, int column,const int size)
+inline float* matrix_re_element(float* matrix, int line, int column, const int size)
+    __attribute__((always_inline));
+float* matrix_re_element(float* matrix, int line, int column, const int size)
 {
     return matrix + 2 * (column + line * size);
 }
@@ -349,7 +301,7 @@ static inline float* matrix_im_element(float* matrix, int line, int column, cons
     __attribute__((always_inline));
 float* matrix_im_element(float* matrix, int line, int column, const int size)
 {
-    return matrix_re_element(matrix, line, column,size) + 1;
+    return matrix_re_element(matrix, line, column, size) + 1;
 }
 
 
@@ -377,7 +329,7 @@ _Complex float triangular_matrix_element(float* matrix, int line, int column)
 
 static inline _Complex float matrix_element(float* matrix, int line, int column, const int size)
     __attribute__((always_inline));
-_Complex float matrix_element(float* matrix, int line, int column,const int size)
+_Complex float matrix_element(float* matrix, int line, int column, const int size)
 {
     _Complex float res;
     __real__ res = *matrix_re_element(matrix, line, column, size);
@@ -390,24 +342,23 @@ _Complex float matrix_element(float* matrix, int line, int column,const int size
  *   This function performs a specific 5x5 matrix change of basis with the folowing assumptions
 
                                                             T
-          output_matrix                mag_transition_matrix               input_matrix                 mag_transition_matrix
-               |                              |                                 |                              |
-               v                              v                                 v                              v
- | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B21 B31   0   0  |   | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B12 B13   0   0  |
- |        |SM22| SM23  SM24  SM25  |   | B12 B22 B32   0   0  |   |        |SM22| SM23  SM24  SM25  |   | B21 B22 B23   0   0  |
- |              |SM33| SM34  SM35  | = | B13 B23 B33   0   0  | X |              |SM33| SM34  SM35  | X | B31 B32 B33   0   0  |
- |                    |SM44| SM45  |   |  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 |
- |                          |SM55| |   |  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 |
-                                                         ^                                                                ^
-                                                         |          T                                                     |
-                                              elec_transition_matrix                                             elec_transition_matrix
+          output_matrix                mag_transition_matrix               input_matrix
+mag_transition_matrix |                              |                                 | | v v v v
+ | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B21 B31   0   0  |   | |SM11|  SM12  SM13  SM14  SM15
+|   | B11 B12 B13   0   0  | |        |SM22| SM23  SM24  SM25  |   | B12 B22 B32   0   0  |   |
+|SM22| SM23  SM24  SM25  |   | B21 B22 B23   0   0  | |              |SM33| SM34  SM35  | = | B13
+B23 B33   0   0  | X |              |SM33| SM34  SM35  | X | B31 B32 B33   0   0  | | |SM44| SM45  |
+|  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 | | |SM55| |
+|  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 | ^ ^ | T |
+                                              elec_transition_matrix elec_transition_matrix
 
 
 Where each matrix product is done sequencialy for mag and elec transition matrices
 
 */
 
-void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
+void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
+    float* elec_transition_matrix, float* output_matrix)
 {
 
     // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
@@ -420,7 +371,7 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             _Complex float product = 0.f;
             for (int k = 0; k < 3; k++)
             {
-                product += matrix_element(mag_transition_matrix, k, line,3)
+                product += matrix_element(mag_transition_matrix, k, line, 3)
                     * triangular_matrix_element(input_matrix, k, column);
             }
             intermediary[line][column] = product;
@@ -434,10 +385,10 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             _Complex float product = 0.f;
             for (int k = 0; k < 2; k++)
             {
-                product += matrix_element(elec_transition_matrix, k, line,2)
-                    * triangular_matrix_element(input_matrix, k+3, column);
+                product += matrix_element(elec_transition_matrix, k, line, 2)
+                    * triangular_matrix_element(input_matrix, k + 3, column);
             }
-            intermediary[line+3][column] = product;
+            intermediary[line + 3][column] = product;
         }
     }
 
@@ -449,7 +400,8 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             _Complex float product = 0.f;
             for (int k = 0; k < 3; k++)
             {
-                product += intermediary[line][k] * matrix_element(mag_transition_matrix, k, column, 3);
+                product
+                    += intermediary[line][k] * matrix_element(mag_transition_matrix, k, column, 3);
             }
             *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
             if (line != column)
@@ -458,14 +410,15 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             }
         }
     }
-    for (int column = 3; column <5; column++)
+    for (int column = 3; column < 5; column++)
     {
         for (int line = 0; line <= column; line++)
         {
             _Complex float product = 0.f;
             for (int k = 0; k < 2; k++)
             {
-                product += intermediary[line][k+3] * matrix_element(elec_transition_matrix, k, column-3, 2);
+                product += intermediary[line][k + 3]
+                    * matrix_element(elec_transition_matrix, k, column - 3, 2);
             }
             *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
             if (line != column)
@@ -474,18 +427,34 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix, f
             }
         }
     }
-
 }
 
 
-void SM_calibrate(float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices, float* output_asm)
+void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
+    float* elec_calibration_matrices, float* output_asm)
 {
+    float working_matrix[NB_VALUES_PER_SM];
+    unsigned int asm_offset = 0;
     for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
     {
-        unsigned int asm_offset = frequency_offset * NB_VALUES_PER_SM;
-        Matrix_change_of_basis(
-            input_asm + asm_offset, mag_calibration_matrices, elec_calibration_matrices, output_asm + asm_offset);
-        mag_calibration_matrices += 3*3*2;
-        elec_calibration_matrices += 2*2*2;
+        for (unsigned int line = 0; line < 5; line++)
+        {
+            for (unsigned int column = line; column < 5; column++)
+            {
+                float* out = triangular_matrix_re_element(working_matrix, line, column);
+                float* in = spectral_matrix_re_element(input_asm, frequency_offset, line, column);
+                *out = *in;
+                if (line != column) // imaginary part
+                {
+                    *(out + 1) = *(in + 1);
+                }
+            }
+        }
+
+        Matrix_change_of_basis(working_matrix, mag_calibration_matrices, elec_calibration_matrices,
+            output_asm + asm_offset);
+        mag_calibration_matrices += 3 * 3 * 2;
+        elec_calibration_matrices += 2 * 2 * 2;
+        asm_offset+=NB_VALUES_PER_SM;
     }
 }

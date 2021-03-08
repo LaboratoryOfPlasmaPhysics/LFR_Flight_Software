@@ -81,6 +81,49 @@ struct triangular_spectral_matrix_t
     }
 };
 
+struct lfr_triangular_spectral_matrix_t
+{
+    static constexpr int _indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 },
+        { 3, 10, 16, 17, 19 }, { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
+    float _z = 0.f;
+    float* _data;
+
+    std::size_t index(int frequency, int line, int column) const
+    {
+        return (_indexes[line][column] * 2 * 128) + frequency;
+    }
+
+    lfr_triangular_spectral_matrix_t(float* data) : _data { data } { }
+
+    void real(int frequency, int line, int column, float value)
+    {
+        if (line > column)
+            throw std::range_error("can't write lower part of triangular matrix");
+        _data[index(frequency, line, column)] = value;
+    }
+    void img(int frequency, int line, int column, float value)
+    {
+        if (line >= column)
+            throw std::range_error("can't write lower part of triangular matrix");
+        _data[index(frequency, line, column) + 1] = value;
+    }
+
+    float real(int frequency, int line, int column) const
+    {
+        return _data[index(frequency, line, column)];
+    }
+    float img(int frequency, int line, int column) const
+    {
+        if (line > column)
+            return -_data[index(frequency, line, column) + 1];
+        if (line == column)
+        {
+            return 0.f;
+        }
+        return _data[index(frequency, line, column) + 1];
+    }
+};
+
 template <int matrix_size = 5>
 inline std::size_t to_triangular_matrix_offset(int line, int column)
 {
@@ -103,19 +146,4 @@ inline void extract_upper_triangle(
                 triang_m.img(line, column, full_m.img(line, column));
         }
     }
-}
-
-inline lfr_asm_t to_lfr_asm(float* full_spectral_matrix)
-{
-    constexpr auto full_asm_comp_size = 5 * 5 * 2 * sizeof(float);
-    constexpr auto triangular_asm_comp_size = 25 * sizeof(float);
-    lfr_asm_t trianglular_asm;
-    for (int freq_index = 0; freq_index < 128; freq_index++)
-    {
-        auto full_matrix = reinterpret_cast<std::complex<float>*>(
-            full_spectral_matrix + freq_index * full_asm_comp_size);
-        auto triangular_matrix = trianglular_asm.data() + triangular_asm_comp_size * freq_index;
-        extract_upper_triangle(full_matrix, triangular_matrix);
-    }
-    return trianglular_asm;
 }
