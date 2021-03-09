@@ -49,9 +49,9 @@ float compressed_sm_norm_f2[ TOTAL_SIZE_COMPRESSED_ASM_NORM_F2] = {0};
 
 float k_coeff_intercalib_f2[ NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN ] = {0}; // 12 * 32 = 384
 
-#define UNITY_3x3_MATRIX 1.f,0.f, 0.f,0.f, 0.f,0.f,\
-                         0.f,0.f, 0.f,0.f, 0.f,0.f,\
-                         0.f,0.f, 0.f,0.f, 0.f,0.f
+#define UNITY_3x3_MATRIX 0.f,0.f, -1.f,0.f, 0.f,0.f,\
+                         1.f,0.f, 0.f,0.f, 0.f,0.f,\
+                         0.f,0.f, 0.f,0.f, 1.f,0.f
 
 #define UNITY_2x2_MATRIX 0.f,0.f, 0.f,0.f,\
                          0.f,0.f, 0.f,0.f

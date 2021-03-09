@@ -149,7 +149,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
             for (int frequency_bin = 0; frequency_bin < nbBinsToAverage; frequency_bin++)
             {
                 int fBinMask = getFBinMask(freq_offset, channel);
-                compressed_asm_ptr = compressed_spec_mat+compressed_frequency_bin;
+                compressed_asm_ptr = compressed_spec_mat + compressed_frequency_bin;
                 for (int asm_component = 0; asm_component < NB_VALUES_PER_SM; asm_component++)
                 {
                     *compressed_asm_ptr += (*input_asm_ptr * fBinMask);
@@ -166,8 +166,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
     }
 }
 
-void ASM_divide(
-    float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider)
+void ASM_divide(float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider)
 {
     // BUILD DATA
     if (divider == 0.)
@@ -264,7 +263,7 @@ float* spectral_matrix_re_element(float* spectral_matrix, int frequency, int lin
     const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 }, { 3, 10, 16, 17, 19 },
         { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
     return spectral_matrix + (indexes[line][column] * NB_BINS_PER_SM)
-        + (frequency * SM_FLOATS_PER_VAL);
+        + (frequency * (line == column ? 1 : 2));
 }
 
 static inline float* spectral_matrix_im_element(
@@ -338,24 +337,24 @@ _Complex float matrix_element(float* matrix, int line, int column, const int siz
 }
 
 
+// clang-format off
 /*
  *   This function performs a specific 5x5 matrix change of basis with the folowing assumptions
-
                                                             T
-          output_matrix                mag_transition_matrix               input_matrix
-mag_transition_matrix |                              |                                 | | v v v v
- | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B21 B31   0   0  |   | |SM11|  SM12  SM13  SM14  SM15
-|   | B11 B12 B13   0   0  | |        |SM22| SM23  SM24  SM25  |   | B12 B22 B32   0   0  |   |
-|SM22| SM23  SM24  SM25  |   | B21 B22 B23   0   0  | |              |SM33| SM34  SM35  | = | B13
-B23 B33   0   0  | X |              |SM33| SM34  SM35  | X | B31 B32 B33   0   0  | | |SM44| SM45  |
-|  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 | | |SM55| |
-|  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 | ^ ^ | T |
-                                              elec_transition_matrix elec_transition_matrix
-
-
+          output_matrix                mag_transition_matrix               input_matrix                 mag_transition_matrix
+               |                              |                                 |                              |
+               v                              v                                 v                              v
+ | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B21 B31   0   0  |   | |SM11|  SM12  SM13  SM14  SM15  |   | B11 B12 B13   0   0  |
+ |        |SM22| SM23  SM24  SM25  |   | B12 B22 B32   0   0  |   |        |SM22| SM23  SM24  SM25  |   | B21 B22 B23   0   0  |
+ |              |SM33| SM34  SM35  | = | B13 B23 B33   0   0  | X |              |SM33| SM34  SM35  | X | B31 B32 B33   0   0  |
+ |                    |SM44| SM45  |   |  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 |
+ |                          |SM55| |   |  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 |
+                                                         ^                                                                ^
+                                                         |          T                                                     |
+                                              elec_transition_matrix                                             elec_transition_matrix
 Where each matrix product is done sequencialy for mag and elec transition matrices
-
 */
+// clang-format on
 
 void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
     float* elec_transition_matrix, float* output_matrix)
@@ -433,28 +432,35 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
 void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
     float* elec_calibration_matrices, float* output_asm)
 {
-    float working_matrix[NB_VALUES_PER_SM];
-    unsigned int asm_offset = 0;
+    float work_matrix[NB_VALUES_PER_SM];
     for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
     {
+        float* out_ptr = work_matrix;
+        float* in_ptr = input_asm + frequency_offset;
         for (unsigned int line = 0; line < 5; line++)
         {
             for (unsigned int column = line; column < 5; column++)
             {
-                float* out = triangular_matrix_re_element(working_matrix, line, column);
-                float* in = spectral_matrix_re_element(input_asm, frequency_offset, line, column);
-                *out = *in;
+                *out_ptr = *in_ptr;
+                out_ptr += 1;
                 if (line != column) // imaginary part
                 {
-                    *(out + 1) = *(in + 1);
+                    *out_ptr = *(in_ptr + 1);
+                    in_ptr += 2 * NB_BINS_PER_SM;
+                    out_ptr += 1;
+                }
+                else
+                {
+                    in_ptr += NB_BINS_PER_SM + frequency_offset;
                 }
             }
+            in_ptr -= frequency_offset;
         }
 
-        Matrix_change_of_basis(working_matrix, mag_calibration_matrices, elec_calibration_matrices,
-            output_asm + asm_offset);
+        Matrix_change_of_basis(
+            work_matrix, mag_calibration_matrices, elec_calibration_matrices, output_asm);
         mag_calibration_matrices += 3 * 3 * 2;
         elec_calibration_matrices += 2 * 2 * 2;
-        asm_offset+=NB_VALUES_PER_SM;
+        output_asm += NB_VALUES_PER_SM;
     }
 }

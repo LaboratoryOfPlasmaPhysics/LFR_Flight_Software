@@ -22,9 +22,9 @@ SCENARIO("SM calibration", "[]")
         = { 10.f, 20.f, 12.f, 30.f, 13.f, 40.f, 14.f, 50.f, 15.f, 200.f, 300.f, 23.f, 400.f, 24.f,
               500.f, 25.f, 3000.f, 4000.f, 34.f, 5000.f, 35.f, 40000.f, 50000.f, 45.f, 500000.f };
 
-    GIVEN("A full SM view")
+    GIVEN("A full Matrix view")
     {
-        full_spectral_matrix_t view(reinterpret_cast<float*>(full_matrix));
+        full_matrix_t view(reinterpret_cast<float*>(full_matrix));
         for (int line = 0; line < 5; line++)
         {
             for (int column = 0; column < 5; column++)
@@ -38,9 +38,9 @@ SCENARIO("SM calibration", "[]")
         }
     }
 
-    GIVEN("A Triangular SM view")
+    GIVEN("A Triangular Matrix view")
     {
-        triangular_spectral_matrix_t view(expected_triangular_matrix);
+        triangular_matrix_t view(expected_triangular_matrix);
         for (int line = 0; line < 5; line++)
         {
             for (int column = line; column < 5; column++)
@@ -50,6 +50,49 @@ SCENARIO("SM calibration", "[]")
                     REQUIRE(view.img(line, column) == float((line + 1) * 10 + column + 1));
                 else
                     REQUIRE(view.img(line, column) == 0.f);
+            }
+        }
+    }
+
+    GIVEN("An LFR Spectral Matrix view")
+    {
+        std::vector<float> flat_sm(128 * 25);
+        {
+            auto cursor = flat_sm.begin();
+            for (int line = 0; line < 5; line++)
+            {
+                for (int column = line; column < 5; column++)
+                {
+                    for (int freq = 0; freq < 128; freq++)
+                    {
+                        *cursor = line * 10000 + column * 1000 + freq;
+                        cursor++;
+                        if (line != column)
+                        {
+                            *cursor = -(line * 10000 + column * 1000 + freq);
+                            cursor++;
+                        }
+                    }
+                }
+            }
+        }
+        lfr_triangular_spectral_matrix_t view(flat_sm.data());
+
+        for (int frequency = 0; frequency < 128; frequency++)
+        {
+            for (int line = 0; line < 5; line++)
+            {
+                for (int column = line; column < 5; column++)
+                {
+                    auto expected = (line * 10000 + column * 1000 + frequency);
+                    REQUIRE(view.real(frequency, line, column) == expected);
+                    if (line != column)
+                    {
+                        REQUIRE(view.img(frequency, line, column) == -expected);
+                    }
+                    else
+                        REQUIRE(view.img(frequency, line, column) == 0.f);
+                }
             }
         }
     }

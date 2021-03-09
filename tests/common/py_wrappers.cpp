@@ -21,7 +21,7 @@ std::vector<float> to_lfr_matrix_repr(py::array_t<std::complex<float>>& input_ma
         throw std::runtime_error("Shape must be (5,5)");
     if constexpr (is_triangular)
     {
-        auto view = triangular_spectral_matrix_t { result.data() };
+        auto view = triangular_matrix_t { result.data() };
         for (int line = 0; line < 5; line++)
         {
             for (int column = line; column < 5; column++)
@@ -46,11 +46,10 @@ std::vector<float> to_lfr_matrix_repr(py::array_t<std::complex<float>>& input_ma
     return result;
 }
 
-template <bool is_triangular = true>
 std::vector<float> to_lfr_spectral_matrix_repr(py::array_t<std::complex<float>>& input_matrix)
 {
     py::buffer_info input_matrix_buff = input_matrix.request();
-    auto result = std::vector<float>(is_triangular ? 25 * 128 : 50 * 128);
+    auto result = std::vector<float>(25 * 128);
     if (input_matrix_buff.ndim != 3)
         throw std::runtime_error("Number of dimensions must be 3");
     if (input_matrix_buff.shape != std::vector<ssize_t> { 128, 5, 5 })
@@ -59,38 +58,21 @@ std::vector<float> to_lfr_spectral_matrix_repr(py::array_t<std::complex<float>>&
     auto view = lfr_triangular_spectral_matrix_t { result.data() };
     for (auto frequency = 0ul; frequency < 128; frequency++)
     {
-        if constexpr (is_triangular)
+        for (int line = 0; line < 5; line++)
         {
-            for (int line = 0; line < 5; line++)
+            for (int column = line; column < 5; column++)
             {
-                for (int column = line; column < 5; column++)
-                {
-                    view.real(frequency, line, column,
-                        input_matrix.data(frequency, line, column)->real());
-                    if (line != column)
-                        view.img(frequency, line, column,
-                            input_matrix.data(frequency, line, column)->imag());
-                }
-            }
-        }
-        else
-        {
-            constexpr auto offset = is_triangular ? 25 : 50;
-            for (int line = 0; line < 5; line++)
-            {
-                for (int column = 0; column < 5; column++)
-                {
-
-                    result[frequency * offset + 2 * (column + line * 5)]
-                        = input_matrix.data(frequency, line, column)->real();
-                    result[frequency * offset + 2 * (column + line * 5) + 1]
-                        = input_matrix.data(frequency, line, column)->imag();
-                }
+                view.real(
+                    frequency, line, column, input_matrix.data(frequency, line, column)->real());
+                if (line != column)
+                    view.img(frequency, line, column,
+                        input_matrix.data(frequency, line, column)->imag());
             }
         }
     }
     return result;
 }
+
 
 template <std::size_t size, std::size_t pos>
 std::vector<float> extract_spectral_transition_matrix(
@@ -147,7 +129,7 @@ std::vector<float> extract_transition_matrix(py::array_t<std::complex<float>>& i
 
 void from_lfr_matrix_repr(std::vector<float>& src, py::array_t<std::complex<float>>& dest)
 {
-    auto triang_m = triangular_spectral_matrix_t { src.data() };
+    auto triang_m = triangular_matrix_t { src.data() };
     for (int line = 0; line < 5; line++)
     {
         for (int column = 0; column < 5; column++)
@@ -160,7 +142,7 @@ void from_lfr_matrix_repr(std::vector<float>& src, py::array_t<std::complex<floa
 
 void from_lfr_spectral_matrix_repr(std::vector<float>& src, py::array_t<std::complex<float>>& dest)
 {
-    auto triang_m = lfr_triangular_spectral_matrix_t { src.data() };
+    auto triang_m = lfr_triangular_spectral_matrix_t<false> { src.data() };
     for (auto frequency = 0ul; frequency < 128; frequency++)
     {
         for (int line = 0; line < 5; line++)
@@ -180,20 +162,21 @@ PYBIND11_MODULE(lfr, m)
 {
     m.doc() = "lfr module";
 
-    m.def("SM_calibrate",
+    m.def("SM_calibrate_and_reorder",
         [](py::array_t<std::complex<float>> input_asm,
             py::array_t<std::complex<float>> calibration_matrix)
         {
             auto output_matrix
                 = py::array_t<std::complex<float>>(py::buffer_info { input_asm.request() }.shape);
-            auto _matrix = to_lfr_spectral_matrix_repr<true>(input_asm);
+            auto _matrix = to_lfr_spectral_matrix_repr(input_asm);
             auto mag_transition_matrix
                 = extract_spectral_transition_matrix<3, 0>(calibration_matrix);
             auto elec_transition_matrix
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
+            std::vector<float> _output_matrix(_matrix.size());
             SM_calibrate_and_reorder(_matrix.data(), mag_transition_matrix.data(),
-                elec_transition_matrix.data(), _matrix.data());
-            from_lfr_spectral_matrix_repr(_matrix, output_matrix);
+                elec_transition_matrix.data(), _output_matrix.data());
+            from_lfr_spectral_matrix_repr(_output_matrix, output_matrix);
             return output_matrix;
         });
 

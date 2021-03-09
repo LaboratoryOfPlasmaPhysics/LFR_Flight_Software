@@ -18,7 +18,7 @@ class AnLFRMatrix(unittest.TestCase):
                               [ 0.+0.j,   0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
                               [ 0.+0.j,   0.+0j, 0.+0.j, 9.+0.j, 0.+0.j ],
                               [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 9.+0.j ]], dtype=np.csingle)
-       SM = VECT * np.conjugate(VECT).transpose()
+       SM = VECT.transpose() * np.conjugate(VECT)
        REF = np.matmul(np.matmul(TRANSITION.transpose(), SM), TRANSITION)
        self.assertTrue(np.all(REF == lfr.Matrix_change_of_basis(SM,TRANSITION)))
 
@@ -39,12 +39,12 @@ class AnLFRSpectralMatrix(unittest.TestCase):
                                  [ 0.+0.j,   0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
                                  [ 0.+0.j,   0.+0j, 0.+0.j, f +0.j, 0.+0.j ],
                                  [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, f +0.j ]], dtype=np.csingle)
-          SM = VECT * np.conjugate(VECT).transpose()
+          SM = VECT.transpose() * np.conjugate(VECT)
           REF = np.matmul(np.matmul(TRANSITION.transpose(), SM), TRANSITION)
           ASM[f] = SM
           CAL_MATRICES[f] = TRANSITION
           CALIBRATED_ASM[f] = REF
-      self.assertTrue(np.all(CALIBRATED_ASM == lfr.SM_calibrate(ASM,CAL_MATRICES)))
+      self.assertTrue(np.all(CALIBRATED_ASM == lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES)))
 
 if __name__ == '__main__':
    unittest.main()
