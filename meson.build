@@ -18,6 +18,7 @@ fsw_version = '@0@-@1@-@2@-@3@'.format(get_option('SW_VERSION_N1'),
 subdir('LFR_basic-parameters')
 subdir('src')
 subdir('tests')
+subdir('testbenches/optimization')
 
 cppcheck = find_program('cppcheck', required : false)
 

@@ -353,10 +353,145 @@ _Complex float matrix_element(float* matrix, int line, int column, const int siz
                                                          |          T                                                     |
                                               elec_transition_matrix                                             elec_transition_matrix
 Where each matrix product is done sequencialy for mag and elec transition matrices
+For a more readable but equivalent impl jump bellow to Matrix_change_of_basis_old
 */
 // clang-format on
 
 void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
+    float* elec_transition_matrix, float* output_matrix)
+{
+
+    // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
+    _Complex float intermediary[25] = { 0.f };
+    _Complex float* intermediary_ptr = intermediary;
+    // first part: intermediary = transpose(transition_matrix) x input_matrix
+    for (int line = 0; line < 3; line++)
+    {
+        for (int column = 0; column < 5; column++)
+        {
+            float* mag_ptr = mag_transition_matrix + (line * 2);
+            _Complex float product = 0.f;
+            for (int k = 0; k < 3; k++)
+            {
+                _Complex float mag;
+                __real__ mag = *mag_ptr;
+                __imag__ mag = *(mag_ptr + 1);
+                mag_ptr += 6;
+                product += mag * triangular_matrix_element(input_matrix, k, column);
+            }
+            *intermediary_ptr = product;
+            intermediary_ptr++;
+        }
+    }
+    intermediary_ptr = intermediary + 3 * 5;
+    for (int line = 0; line < 2; line++)
+    {
+        for (int column = 0; column < 5; column++)
+        {
+            float* elec_ptr = elec_transition_matrix + (line * 2);
+            _Complex float product = 0.f;
+            for (int k = 0; k < 2; k++)
+            {
+                _Complex float elec;
+                __real__ elec = *elec_ptr;
+                __imag__ elec = *(elec_ptr + 1);
+                elec_ptr += 4;
+                product += elec * triangular_matrix_element(input_matrix, k + 3, column);
+            }
+            *intermediary_ptr = product;
+            intermediary_ptr++;
+        }
+    }
+
+    // second part: output_matrix = intermediary x transition_matrix
+    for (int line = 0; line < 3; line++)
+    {
+        for (int column = line; column < 3; column++)
+        {
+            intermediary_ptr = intermediary + line * 5;
+            float* mag_ptr = mag_transition_matrix + (column * 2);
+            _Complex float product = 0.f;
+            for (int k = 0; k < 3; k++)
+            {
+                _Complex float mag;
+                __real__ mag = *mag_ptr;
+                __imag__ mag = *(mag_ptr + 1);
+                mag_ptr += 6;
+                product += *intermediary_ptr * mag;
+                intermediary_ptr++;
+            }
+            *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
+            if (line != column)
+            {
+                *triangular_matrix_im_element(output_matrix, line, column) = __imag__ product;
+            }
+        }
+    }
+    for (int column = 3; column < 5; column++)
+    {
+        for (int line = 0; line <= column; line++)
+        {
+            intermediary_ptr = intermediary + line * 5 + 3;
+            float* elec_ptr = elec_transition_matrix + ((column - 3) * 2);
+            _Complex float product = 0.f;
+            for (int k = 0; k < 2; k++)
+            {
+                _Complex float elec;
+                __real__ elec = *elec_ptr;
+                __imag__ elec = *(elec_ptr + 1);
+                elec_ptr += 4;
+                product += *intermediary_ptr * elec;
+                intermediary_ptr++;
+            }
+            *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
+            if (line != column)
+            {
+                *triangular_matrix_im_element(output_matrix, line, column) = __imag__ product;
+            }
+        }
+    }
+}
+
+void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
+    float* elec_calibration_matrices, float* output_asm)
+{
+    float work_matrix[NB_VALUES_PER_SM];
+    for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
+    {
+        float* out_ptr = work_matrix;
+        float* in_ptr = input_asm + frequency_offset;
+        for (unsigned int line = 0; line < 5; line++)
+        {
+            for (unsigned int column = line; column < 5; column++)
+            {
+                *out_ptr = *in_ptr;
+                out_ptr += 1;
+                if (line != column) // imaginary part
+                {
+                    *out_ptr = *(in_ptr + 1);
+                    in_ptr += 2 * NB_BINS_PER_SM;
+                    out_ptr += 1;
+                }
+                else
+                {
+                    in_ptr += NB_BINS_PER_SM + frequency_offset;
+                }
+            }
+            in_ptr -= frequency_offset;
+        }
+
+        Matrix_change_of_basis(
+            work_matrix, mag_calibration_matrices, elec_calibration_matrices, output_asm);
+        mag_calibration_matrices += 3 * 3 * 2;
+        elec_calibration_matrices += 2 * 2 * 2;
+        output_asm += NB_VALUES_PER_SM;
+    }
+}
+
+
+#ifdef ENABLE_BENCHMARKS
+
+void Matrix_change_of_basis_old(float* input_matrix, float* mag_transition_matrix,
     float* elec_transition_matrix, float* output_matrix)
 {
 
@@ -428,39 +563,4 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
     }
 }
 
-
-void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
-    float* elec_calibration_matrices, float* output_asm)
-{
-    float work_matrix[NB_VALUES_PER_SM];
-    for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
-    {
-        float* out_ptr = work_matrix;
-        float* in_ptr = input_asm + frequency_offset;
-        for (unsigned int line = 0; line < 5; line++)
-        {
-            for (unsigned int column = line; column < 5; column++)
-            {
-                *out_ptr = *in_ptr;
-                out_ptr += 1;
-                if (line != column) // imaginary part
-                {
-                    *out_ptr = *(in_ptr + 1);
-                    in_ptr += 2 * NB_BINS_PER_SM;
-                    out_ptr += 1;
-                }
-                else
-                {
-                    in_ptr += NB_BINS_PER_SM + frequency_offset;
-                }
-            }
-            in_ptr -= frequency_offset;
-        }
-
-        Matrix_change_of_basis(
-            work_matrix, mag_calibration_matrices, elec_calibration_matrices, output_asm);
-        mag_calibration_matrices += 3 * 3 * 2;
-        elec_calibration_matrices += 2 * 2 * 2;
-        output_asm += NB_VALUES_PER_SM;
-    }
-}
+#endif

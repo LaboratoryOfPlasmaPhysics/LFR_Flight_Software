@@ -105,7 +105,7 @@ if meson.is_cross_build()
       input : fsw,
       output : 'fsw.S',
       capture: true,
-      command : [objdump, '-d','-S', '-l', '@INPUT@'],
+      command : [objdump, '-drwCSl', '@INPUT@'],
       build_by_default: true
     )
 
