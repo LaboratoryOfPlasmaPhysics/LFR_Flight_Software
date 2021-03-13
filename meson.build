@@ -15,6 +15,19 @@ fsw_version = '@0@-@1@-@2@-@3@'.format(get_option('SW_VERSION_N1'),
                                        get_option('SW_VERSION_N3'),
                                        get_option('SW_VERSION_N4'))
 
+if(target_machine.endian() == 'big')
+    target_endian_def = '-DLFR_BIG_ENDIAN'
+else
+    target_endian_def = '-DLFR_LITTLE_ENDIAN'
+endif
+
+if(build_machine.endian() == 'big')
+    build_machine_endian_def = '-DLFR_BIG_ENDIAN'
+else
+    build_machine_endian_def = '-DLFR_LITTLE_ENDIAN'
+endif
+
+
 subdir('LFR_basic-parameters')
 subdir('src')
 subdir('tests')

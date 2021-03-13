@@ -60,7 +60,7 @@ if meson.is_cross_build()
     cc = meson.get_compiler('c')
     m_dep = cc.find_library('m', required : false)
 
-    c_args = ['-std=gnu99']
+    c_args = ['-std=gnu99', target_endian_def]
     link_args = ['-Xlinker', '-Map=fsw-@0@.map'.format(fsw_version)]
     if get_option('fix-b2bst')
         c_args += '-mfix-b2bst'
