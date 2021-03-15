@@ -35,13 +35,20 @@
 #define NB_SM_PER_S1_BP_P0 24
 
 #define ASM_COMP_B1B2 1
+#define ASM_COMP_B1B2_imag 2
 #define ASM_COMP_B1B3 3
+#define ASM_COMP_B1B3_imag 4
 #define ASM_COMP_B1E1 5
+#define ASM_COMP_B1E1_imag 6
 #define ASM_COMP_B1E2 7
+#define ASM_COMP_B1E2_imag 8
 #define ASM_COMP_B2B3 10
+#define ASM_COMP_B2B3_imag 11
 #define ASM_COMP_B2E1 12
 #define ASM_COMP_B2E2 14
+#define ASM_COMP_B2E2_imag 15
 #define ASM_COMP_B3E1 17
+#define ASM_COMP_B3E1_imag 18
 #define ASM_COMP_B3E2 19
 #define ASM_COMP_E1E2 22
 #define ASM_COMP_B1B1 0
@@ -52,8 +59,8 @@
 
 #define SM_FLOATS_PER_VAL 2
 #define NB_BINS_PER_SM 128
-#define NB_VALUES_PER_SM 25
-#define TOTAL_SIZE_SM (NB_BINS_PER_SM * NB_VALUES_PER_SM) // 25 * 128 = 0xC80
+#define NB_FLOATS_PER_SM 25
+#define TOTAL_SIZE_SM (NB_BINS_PER_SM * NB_FLOATS_PER_SM) // 25 * 128 = 0xC80
 // F0
 #define NB_RING_NODES_SM_F0 20 // AT LEAST 8 due to the way the averaging is done
 #define NB_RING_NODES_ASM_BURST_SBM_F0 10 // AT LEAST 3

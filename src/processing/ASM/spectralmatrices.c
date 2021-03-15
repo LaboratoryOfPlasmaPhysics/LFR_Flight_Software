@@ -132,7 +132,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
     // Just zero the whole compressed ASM
     // has to be done either way if divider==0. or to initialize average
     {
-        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_VALUES_PER_SM; _++)
+        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; _++)
         {
             *compressed_spec_mat = 0.;
             compressed_spec_mat++;
@@ -141,7 +141,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
     if (divider != 0.f)
     {
         int freq_offset = ASMIndexStart;
-        float* input_asm_ptr = averaged_spec_mat + (ASMIndexStart * NB_VALUES_PER_SM);
+        float* input_asm_ptr = averaged_spec_mat + (ASMIndexStart * NB_FLOATS_PER_SM);
         float* compressed_asm_ptr = compressed_spec_mat;
         for (int compressed_frequency_bin = 0; compressed_frequency_bin < nbBinsCompressedMatrix;
              compressed_frequency_bin++)
@@ -150,7 +150,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
             {
                 int fBinMask = getFBinMask(freq_offset, channel);
                 compressed_asm_ptr = compressed_spec_mat + compressed_frequency_bin;
-                for (int asm_component = 0; asm_component < NB_VALUES_PER_SM; asm_component++)
+                for (int asm_component = 0; asm_component < NB_FLOATS_PER_SM; asm_component++)
                 {
                     *compressed_asm_ptr += (*input_asm_ptr * fBinMask);
                     compressed_asm_ptr++;
@@ -159,7 +159,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
             }
         }
         compressed_asm_ptr = compressed_spec_mat;
-        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_VALUES_PER_SM; _++)
+        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; _++)
         {
             *compressed_asm_ptr = *compressed_asm_ptr / (divider * nbBinsToAverage);
         }
@@ -171,7 +171,7 @@ void ASM_divide(float* averaged_spec_mat, float* averaged_spec_mat_reorganized, 
     // BUILD DATA
     if (divider == 0.)
     {
-        for (int _ = 0; _ < NB_VALUES_PER_SM * NB_BINS_PER_SM; _++)
+        for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
         {
             *averaged_spec_mat_reorganized = 0.;
             averaged_spec_mat_reorganized++;
@@ -179,7 +179,7 @@ void ASM_divide(float* averaged_spec_mat, float* averaged_spec_mat_reorganized, 
     }
     else
     {
-        for (int _ = 0; _ < NB_VALUES_PER_SM * NB_BINS_PER_SM; _++)
+        for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
         {
             *averaged_spec_mat_reorganized = *averaged_spec_mat / divider;
             averaged_spec_mat_reorganized++;
@@ -455,7 +455,7 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
 void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
     float* elec_calibration_matrices, float* output_asm)
 {
-    float work_matrix[NB_VALUES_PER_SM];
+    float work_matrix[NB_FLOATS_PER_SM];
     for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
     {
         float* out_ptr = work_matrix;
@@ -484,7 +484,7 @@ void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
             work_matrix, mag_calibration_matrices, elec_calibration_matrices, output_asm);
         mag_calibration_matrices += 3 * 3 * 2;
         elec_calibration_matrices += 2 * 2 * 2;
-        output_asm += NB_VALUES_PER_SM;
+        output_asm += NB_FLOATS_PER_SM;
     }
 }
 

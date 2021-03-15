@@ -1395,7 +1395,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
         {
             spw_ioctl_send_ASM.dlen = DLEN_ASM_F0_PKT_1;
             spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
-                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_VALUES_PER_SM )
+                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_FLOATS_PER_SM )
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_1;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
@@ -1406,7 +1406,7 @@ void spw_send_asm_f0( ring_node *ring_node_to_send,
         {
             spw_ioctl_send_ASM.dlen = DLEN_ASM_F0_PKT_2;
             spw_ioctl_send_ASM.data = (char*) &spectral_matrix[
-                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_VALUES_PER_SM )
+                    ( (ASM_F0_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F0_1) ) * NB_FLOATS_PER_SM )
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F0_2;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
@@ -1475,7 +1475,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
         {
             spw_ioctl_send_ASM.dlen = DLEN_ASM_F1_PKT_1;
             spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
-                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_VALUES_PER_SM )
+                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_FLOATS_PER_SM )
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_1;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
@@ -1486,7 +1486,7 @@ void spw_send_asm_f1( ring_node *ring_node_to_send,
         {
             spw_ioctl_send_ASM.dlen = DLEN_ASM_F1_PKT_2;
             spw_ioctl_send_ASM.data = (char*) &spectral_matrix[
-                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_VALUES_PER_SM )
+                    ( (ASM_F1_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F1_1) ) * NB_FLOATS_PER_SM )
                     ];
             length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F1_2;
             header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_6;
@@ -1559,7 +1559,7 @@ void spw_send_asm_f2( ring_node *ring_node_to_send,
 
         spw_ioctl_send_ASM.dlen = DLEN_ASM_F2_PKT;
         spw_ioctl_send_ASM.data = (char *) &spectral_matrix[
-                ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_VALUES_PER_SM )
+                ( (ASM_F2_INDICE_START + (i*NB_BINS_PER_PKT_ASM_F2) ) * NB_FLOATS_PER_SM )
                 ];
         length = PACKET_LENGTH_TM_LFR_SCIENCE_ASM_F2;
         header->serviceSubType = TM_SUBTYPE_LFR_SCIENCE_3;
