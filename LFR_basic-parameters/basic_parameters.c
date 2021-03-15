@@ -245,7 +245,7 @@ normal_wave_vector_t normal_wave_vector(const float* spectral_matrix)
     if (ab != 0.)
     {
         normal_wave_vector_t nvec = { .x = spectral_matrix[ASM_COMP_B2B3] / ab,
-            .y = - spectral_matrix[ASM_COMP_B1B3] / ab,
+            .y = -spectral_matrix[ASM_COMP_B1B3] / ab,
             .z = spectral_matrix[ASM_COMP_B1B2] / ab,
             .ab = ab };
         return nvec;
@@ -280,28 +280,43 @@ inline _Complex float X_poynting_vector(const float* spectral_matrix)
 
 inline float modulus(const _Complex float value)
 {
-    return hypotf(__real__ value,__imag__ value);
+    return hypotf(__real__ value, __imag__ value);
 }
 
-inline  float phase_velocity_estimator(
-    const float* spectral_matrix, const normal_wave_vector_t nvec)
+inline float phase_velocity_estimator(const float* spectral_matrix, const normal_wave_vector_t nvec)
 {
     /*
     VPHI = abs(NEBX) * sign( Re[NEBX] ) / BXBX
 with:
-    NEBX = nY<EZBX*> - nZ<EYBX*> = n2<E2B1*> - n3<E1B1*>
+    NEBX = nY<EZBX*>/rho_EZBX  - nZ<EYBX*>/rho_EYBX = n2<E2B1*>/rho_E2B1 - n3<E1B1*>/rho_E1B1
+    rho_E2B1 = |<E2B1*>| / sqrt(<E2E2*><B1B1*>)
+    rho_E1B1 = |<E1B1*>| / sqrt(<E1E1*><B1B1*>)
     BXBX = <BXBX*> = <B1B1*>
 */
+    float sqrt_E2E2B1B1 = sqrtf(spectral_matrix[ASM_COMP_E2E2] * spectral_matrix[ASM_COMP_B1B1]);
+    float sqrt_E1E1B1B1 = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
+    float mod_E2B1 = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
+    float mod_E1B1 = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
     _Complex float NEBX;
-    __real__ NEBX = nvec.y*spectral_matrix[ASM_COMP_B1E2] - nvec.z*spectral_matrix[ASM_COMP_B1E1];
-    __imag__ NEBX = nvec.y*spectral_matrix[ASM_COMP_B1E2_imag] - nvec.z*spectral_matrix[ASM_COMP_B1E1_imag];
-    const float BXBX=spectral_matrix[ASM_COMP_B1B1];
+    if (mod_E2B1 != 0. && mod_E1B1 != 0.)
+    {
+        __real__ NEBX = nvec.y * spectral_matrix[ASM_COMP_B1E2] * sqrt_E2E2B1B1 / mod_E2B1
+            - nvec.z * spectral_matrix[ASM_COMP_B1E1] * sqrt_E1E1B1B1 / mod_E1B1;
 
-    float vphi = modulus(NEBX)/BXBX;
-    if(__real__ NEBX >=0.)
-        return vphi;
+        __imag__ NEBX = nvec.z * spectral_matrix[ASM_COMP_B1E1_imag] * sqrt_E1E1B1B1 / mod_E1B1
+            - nvec.y * spectral_matrix[ASM_COMP_B1E2_imag] * sqrt_E2E2B1B1 / mod_E2B1;
+
+        const float BXBX = spectral_matrix[ASM_COMP_B1B1];
+        float vphi = modulus(NEBX) / BXBX;
+        if (__real__ NEBX >= 0.)
+            return vphi;
+        else
+            return -vphi;
+    }
     else
-        return -vphi;
+    {
+        return 0.;
+    }
 }
 
 void compute_BP1(float* spectral_matrix, uint8_t spectral_matrix_size, uint8_t* bp1_buffer)
