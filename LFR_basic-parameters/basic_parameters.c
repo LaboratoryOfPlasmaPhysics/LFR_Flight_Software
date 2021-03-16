@@ -208,17 +208,17 @@ void init_k_coefficients(float* k_coefficients, unsigned char nb_binscompressed_
     }
 }
 
-inline float* next_matrix(const float* spectral_matrix)
+inline const float* next_matrix(const float* const spectral_matrix)
 {
     return spectral_matrix + NB_FLOATS_PER_SM;
 }
 
-inline float elec_power_spectrum_density(const float* spectral_matrix)
+inline float elec_power_spectrum_density(const float*  const spectral_matrix)
 {
     return spectral_matrix[ASM_COMP_E1E1] + spectral_matrix[ASM_COMP_E2E2];
 }
 
-inline float mag_power_spectrum_density(const float* spectral_matrix)
+inline float mag_power_spectrum_density(const float* const spectral_matrix)
 {
     return spectral_matrix[ASM_COMP_B1B1] + spectral_matrix[ASM_COMP_B2B2]
         + spectral_matrix[ASM_COMP_B3B3];
@@ -237,9 +237,9 @@ inline float square(const float value)
     return value * value;
 }
 
-normal_wave_vector_t normal_wave_vector(const float* spectral_matrix)
+normal_wave_vector_t normal_wave_vector(const float* const spectral_matrix)
 {
-    float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag])
+    const float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag])
         + square(spectral_matrix[ASM_COMP_B1B3_imag])
         + square(spectral_matrix[ASM_COMP_B2B3_imag]));
     if (ab != 0.)
@@ -262,14 +262,14 @@ inline float wave_ellipticity_estimator(const float mag_psd, const float nvec_de
     return 2.f * nvec_denom / mag_psd;
 }
 
-inline float degree_of_polarization(const float B_trace, const float* spectral_matrix)
+inline float degree_of_polarization(const float B_trace, const float* const spectral_matrix)
 {
-    float B_square_trace = square(spectral_matrix[ASM_COMP_B1B1])
+    const float B_square_trace = square(spectral_matrix[ASM_COMP_B1B1])
         + square(spectral_matrix[ASM_COMP_B2B2]) + square(spectral_matrix[ASM_COMP_B3B3]);
     return sqrtf((3.f * B_square_trace - square(B_trace)) / (2.f * B_square_trace));
 }
 
-inline _Complex float X_poynting_vector(const float* spectral_matrix)
+inline _Complex float X_poynting_vector(const float* const spectral_matrix)
 {
     // E1B3 - E2B2
     _Complex float X_PV;
@@ -283,7 +283,7 @@ inline float modulus(const _Complex float value)
     return hypotf(__real__ value, __imag__ value);
 }
 
-inline float phase_velocity_estimator(const float* spectral_matrix, const normal_wave_vector_t nvec)
+inline float phase_velocity_estimator(const float* const spectral_matrix, const normal_wave_vector_t nvec)
 {
     /*
     VPHI = abs(NEBX) * sign( Re[NEBX] ) / BXBX
@@ -293,10 +293,10 @@ with:
     rho_E1B1 = |<E1B1*>| / sqrt(<E1E1*><B1B1*>)
     BXBX = <BXBX*> = <B1B1*>
 */
-    float sqrt_E2E2B1B1 = sqrtf(spectral_matrix[ASM_COMP_E2E2] * spectral_matrix[ASM_COMP_B1B1]);
-    float sqrt_E1E1B1B1 = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
-    float mod_E2B1 = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
-    float mod_E1B1 = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
+    const float sqrt_E2E2B1B1 = sqrtf(spectral_matrix[ASM_COMP_E2E2] * spectral_matrix[ASM_COMP_B1B1]);
+    const float sqrt_E1E1B1B1 = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
+    const float mod_E2B1 = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
+    const float mod_E1B1 = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
     _Complex float NEBX;
     if (mod_E2B1 != 0. && mod_E1B1 != 0.)
     {
@@ -319,19 +319,19 @@ with:
     }
 }
 
-void compute_BP1(float* spectral_matrices, uint8_t spectral_matrices_count, uint8_t* bp1_buffer)
+void compute_BP1(const float* const spectral_matrices, uint8_t spectral_matrices_count, uint8_t* bp1_buffer)
 {
 
-    float* spectral_matrix_ptr = spectral_matrices;
+    const float*  spectral_matrix_ptr = spectral_matrices;
     for (int i = 0; i < spectral_matrices_count; i++)
     {
-        float mag_PSD = mag_power_spectrum_density(spectral_matrix_ptr);
-        float elec_PSD = elec_power_spectrum_density(spectral_matrix_ptr);
-        normal_wave_vector_t nvec = normal_wave_vector(spectral_matrix_ptr);
-        float ellipticity = wave_ellipticity_estimator(mag_PSD, nvec.ab);
-        float DOP = degree_of_polarization(mag_PSD, spectral_matrix_ptr);
-        _Complex float X_PV = X_poynting_vector(spectral_matrix_ptr);
-        float VPHI = phase_velocity_estimator(spectral_matrix_ptr, nvec);
+        const float mag_PSD = mag_power_spectrum_density(spectral_matrix_ptr);
+        const float elec_PSD = elec_power_spectrum_density(spectral_matrix_ptr);
+        const normal_wave_vector_t nvec = normal_wave_vector(spectral_matrix_ptr);
+        const float ellipticity = wave_ellipticity_estimator(mag_PSD, nvec.ab);
+        const float DOP = degree_of_polarization(mag_PSD, spectral_matrix_ptr);
+        const _Complex float X_PV = X_poynting_vector(spectral_matrix_ptr);
+        const float VPHI = phase_velocity_estimator(spectral_matrix_ptr, nvec);
 
         spectral_matrix_ptr = next_matrix(spectral_matrix_ptr);
     }
