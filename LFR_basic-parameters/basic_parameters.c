@@ -239,7 +239,7 @@ inline float square(const float value)
 
 normal_wave_vector_t normal_wave_vector(const float* spectral_matrix)
 {
-    float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag + 2])
+    float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag])
         + square(spectral_matrix[ASM_COMP_B1B3_imag])
         + square(spectral_matrix[ASM_COMP_B2B3_imag]));
     if (ab != 0.)
@@ -319,11 +319,11 @@ with:
     }
 }
 
-void compute_BP1(float* spectral_matrix, uint8_t spectral_matrix_size, uint8_t* bp1_buffer)
+void compute_BP1(float* spectral_matrices, uint8_t spectral_matrices_count, uint8_t* bp1_buffer)
 {
 
-    float* spectral_matrix_ptr = spectral_matrix;
-    for (int i = 0; i < spectral_matrix_size; i++)
+    float* spectral_matrix_ptr = spectral_matrices;
+    for (int i = 0; i < spectral_matrices_count; i++)
     {
         float mag_PSD = mag_power_spectrum_density(spectral_matrix_ptr);
         float elec_PSD = elec_power_spectrum_density(spectral_matrix_ptr);
