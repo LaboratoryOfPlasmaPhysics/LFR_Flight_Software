@@ -84,7 +84,7 @@ void initCache()
 
 #include "processing/ASM/spectralmatrices.h"
 
-void fill_matrix(float* matrix, int size)
+void fill_matrix(volatile float* matrix, int size)
 {
     while (size)
     {

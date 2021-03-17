@@ -48,6 +48,8 @@
 
 #include "ASM/spectralmatrices.h"
 #include "basic_parameters_params.h"
+#include "custom_floats.h"
+
 
 void init_k_coefficients_f0(float* k_coefficients, unsigned char nb_binscompressed_matrix)
 {
@@ -213,7 +215,7 @@ inline const float* next_matrix(const float* const spectral_matrix)
     return spectral_matrix + NB_FLOATS_PER_SM;
 }
 
-inline float elec_power_spectrum_density(const float*  const spectral_matrix)
+inline float elec_power_spectrum_density(const float* const spectral_matrix)
 {
     return spectral_matrix[ASM_COMP_E1E1] + spectral_matrix[ASM_COMP_E2E2];
 }
@@ -283,7 +285,8 @@ inline float modulus(const _Complex float value)
     return hypotf(__real__ value, __imag__ value);
 }
 
-inline float phase_velocity_estimator(const float* const spectral_matrix, const normal_wave_vector_t nvec)
+inline float phase_velocity_estimator(
+    const float* const spectral_matrix, const normal_wave_vector_t nvec)
 {
     /*
     VPHI = abs(NEBX) * sign( Re[NEBX] ) / BXBX
@@ -293,10 +296,14 @@ with:
     rho_E1B1 = |<E1B1*>| / sqrt(<E1E1*><B1B1*>)
     BXBX = <BXBX*> = <B1B1*>
 */
-    const float sqrt_E2E2B1B1 = sqrtf(spectral_matrix[ASM_COMP_E2E2] * spectral_matrix[ASM_COMP_B1B1]);
-    const float sqrt_E1E1B1B1 = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
-    const float mod_E2B1 = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
-    const float mod_E1B1 = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
+    const float sqrt_E2E2B1B1
+        = sqrtf(spectral_matrix[ASM_COMP_E2E2] * spectral_matrix[ASM_COMP_B1B1]);
+    const float sqrt_E1E1B1B1
+        = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
+    const float mod_E2B1
+        = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
+    const float mod_E1B1
+        = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
     _Complex float NEBX;
     if (mod_E2B1 != 0. && mod_E1B1 != 0.)
     {
@@ -319,10 +326,39 @@ with:
     }
 }
 
-void compute_BP1(const float* const spectral_matrices, uint8_t spectral_matrices_count, uint8_t* bp1_buffer)
+inline uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD,
+    const normal_wave_vector_t nvec, const float ellipticity, const float DOP,
+    const _Complex float X_PV, const float VPHI, uint8_t* bp1_buffer_frame)
+{
+    {
+        const str_uint16_t elec_PSD_enc = { .value = to_custom_float_6_10(elec_PSD) };
+        *bp1_buffer_frame = elec_PSD_enc.str.LSB;
+        bp1_buffer_frame++;
+        *bp1_buffer_frame = elec_PSD_enc.str.MSB;
+        bp1_buffer_frame++;
+    }
+    {
+        const str_uint16_t mag_PSD_enc = { .value = to_custom_float_6_10(mag_PSD) };
+        *bp1_buffer_frame = mag_PSD_enc.str.LSB;
+        bp1_buffer_frame++;
+        *bp1_buffer_frame = mag_PSD_enc.str.MSB;
+        bp1_buffer_frame++;
+    }
+    {
+        *bp1_buffer_frame=(uint8_t)(nvec.x*127.5f + 128.f);
+        bp1_buffer_frame++;
+        *bp1_buffer_frame=(uint8_t)(nvec.y*127.5f + 128.f);
+        bp1_buffer_frame++;
+    }
+    return bp1_buffer_frame;
+}
+
+void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
+    uint8_t* bp1_buffer)
 {
 
-    const float*  spectral_matrix_ptr = spectral_matrices;
+    const float* spectral_matrix_ptr = spectral_matrices;
+    uint8_t* bp1_buffer_frame = bp1_buffer;
     for (int i = 0; i < spectral_matrices_count; i++)
     {
         const float mag_PSD = mag_power_spectrum_density(spectral_matrix_ptr);
@@ -332,7 +368,8 @@ void compute_BP1(const float* const spectral_matrices, uint8_t spectral_matrices
         const float DOP = degree_of_polarization(mag_PSD, spectral_matrix_ptr);
         const _Complex float X_PV = X_poynting_vector(spectral_matrix_ptr);
         const float VPHI = phase_velocity_estimator(spectral_matrix_ptr, nvec);
-
+        bp1_buffer_frame
+            = encode_BP1(mag_PSD, elec_PSD, nvec, ellipticity, DOP, X_PV, VPHI, bp1_buffer_frame);
         spectral_matrix_ptr = next_matrix(spectral_matrix_ptr);
     }
 }

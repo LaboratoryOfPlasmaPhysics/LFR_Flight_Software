@@ -56,18 +56,17 @@ extern "C"
     void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
         float* elec_calibration_matrices, float* output_asm);
 
-    void ASM_patch(float* inputASM, float* outputASM);
-
     void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
         asm_msg* msgForMATR, unsigned char channel);
 
-    void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_spec_mat,
-        float divider, unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
-        unsigned char ASMIndexStart, unsigned char channel);
+    void ASM_compress_divide_and_mask(const float* const averaged_spec_mat,
+        float* compressed_spec_mat, const float divider, const unsigned char nbBinsCompressedMatrix,
+        const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
+        const unsigned char channel);
 
     void ASM_divide(
-        float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider);
+        const float* averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider);
 
 #ifdef __cplusplus
 }

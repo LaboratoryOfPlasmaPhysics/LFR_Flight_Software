@@ -55,6 +55,8 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         {
             if (incomingSMIsValid[k] == MATRIX_IS_NOT_POLLUTED)
             {
+                // TODO check this, why looping over k and accumulating the
+                // very same SM element
                 sum = sum + ((int*)(ring_node_tab[0]->buffer_address))[i];
             }
         }
@@ -116,9 +118,9 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
 }
 
 // TODO add unit test
-void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_spec_mat,
-    float divider, unsigned char nbBinsCompressedMatrix, unsigned char nbBinsToAverage,
-    unsigned char ASMIndexStart, unsigned char channel)
+void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* compressed_spec_mat,
+    const float divider, const unsigned char nbBinsCompressedMatrix, const unsigned char nbBinsToAverage,
+    const unsigned char ASMIndexStart, const unsigned char channel)
 {
     //*************
     // input format
@@ -141,7 +143,7 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
     if (divider != 0.f)
     {
         int freq_offset = ASMIndexStart;
-        float* input_asm_ptr = averaged_spec_mat + (ASMIndexStart * NB_FLOATS_PER_SM);
+        const float* input_asm_ptr = averaged_spec_mat + (ASMIndexStart * NB_FLOATS_PER_SM);
         float* compressed_asm_ptr = compressed_spec_mat;
         for (int compressed_frequency_bin = 0; compressed_frequency_bin < nbBinsCompressedMatrix;
              compressed_frequency_bin++)
@@ -166,95 +168,28 @@ void ASM_compress_divide_and_mask(float* averaged_spec_mat, float* compressed_sp
     }
 }
 
-void ASM_divide(float* averaged_spec_mat, float* averaged_spec_mat_reorganized, const float divider)
+void ASM_divide(const float*  averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider)
 {
     // BUILD DATA
     if (divider == 0.)
     {
         for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
         {
-            *averaged_spec_mat_reorganized = 0.;
-            averaged_spec_mat_reorganized++;
+            *averaged_spec_mat_normalized = 0.;
+            averaged_spec_mat_normalized++;
         }
     }
     else
     {
         for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
         {
-            *averaged_spec_mat_reorganized = *averaged_spec_mat / divider;
-            averaged_spec_mat_reorganized++;
+            *averaged_spec_mat_normalized = *averaged_spec_mat / divider;
+            averaged_spec_mat_normalized++;
             averaged_spec_mat++;
         }
     }
 }
 
-
-/**
- * @brief extractReImVectors converts a given ASM component from interleaved to split representation
- * @param inputASM
- * @param outputASM
- * @param asmComponent
- */
-void extractReImVectors(float* inputASM, float* outputASM, unsigned int asmComponent)
-{
-    unsigned int i;
-    float re;
-    float im;
-
-    for (i = 0; i < NB_BINS_PER_SM; i++)
-    {
-        re = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_FLOATS_PER_VAL)];
-        im = inputASM[(asmComponent * NB_BINS_PER_SM) + (i * SM_FLOATS_PER_VAL) + 1];
-        outputASM[(asmComponent * NB_BINS_PER_SM) + i] = re;
-        outputASM[((asmComponent + 1) * NB_BINS_PER_SM) + i] = im;
-    }
-}
-
-/**
- * @brief copyReVectors copies real part of a given ASM from inputASM to outputASM
- * @param inputASM
- * @param outputASM
- * @param asmComponent
- */
-void copyReVectors(float* inputASM, float* outputASM, unsigned int asmComponent)
-{
-    unsigned int i;
-    float re;
-
-    for (i = 0; i < NB_BINS_PER_SM; i++)
-    {
-        re = inputASM[(asmComponent * NB_BINS_PER_SM) + i];
-        outputASM[(asmComponent * NB_BINS_PER_SM) + i] = re;
-    }
-}
-
-/**
- * @brief ASM_patch, converts ASM from interleaved to split representation
- * @param inputASM
- * @param outputASM
- * @note inputASM and outputASM must be different, in other words this function can't do in place
- * convertion
- * @see extractReImVectors
- */
-void ASM_patch(float* inputASM, float* outputASM)
-{
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B1B2); // b1b2
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B1B3); // b1b3
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B1E1); // b1e1
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B1E2); // b1e2
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B2B3); // b2b3
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B2E1); // b2e1
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B2E2); // b2e2
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B3E1); // b3e1
-    extractReImVectors(inputASM, outputASM, ASM_COMP_B3E2); // b3e2
-    extractReImVectors(inputASM, outputASM, ASM_COMP_E1E2); // e1e2
-
-    copyReVectors(inputASM, outputASM, ASM_COMP_B1B1); // b1b1
-    copyReVectors(inputASM, outputASM, ASM_COMP_B2B2); // b2b2
-    copyReVectors(inputASM, outputASM, ASM_COMP_B3B3); // b3b3
-    copyReVectors(inputASM, outputASM, ASM_COMP_E1E1); // e1e1
-    copyReVectors(inputASM, outputASM, ASM_COMP_E2E2); // e2e2
-}
 
 static inline float* spectral_matrix_re_element(
     float* spectral_matrix, int frequency, int line, int column) __attribute__((always_inline));
