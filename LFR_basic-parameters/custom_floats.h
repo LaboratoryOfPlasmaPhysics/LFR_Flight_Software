@@ -33,7 +33,7 @@ typedef union
         uint16_t MSB : 8;
         uint16_t LSB : 8;
     } str;
-}str_uint16_t;
+} str_uint16_t;
 
 typedef union
 {
@@ -43,7 +43,19 @@ typedef union
         uint16_t exponent : 6;
         uint16_t mantissa : 10;
     } str;
-}float_6_10_t;
+} float_6_10_t;
+
+typedef union
+{
+    uint16_t value;
+    struct __attribute__((__packed__))
+    {
+        uint16_t sign : 1;
+        uint16_t arg : 1;
+        uint16_t exponent : 6;
+        uint16_t mantissa : 8;
+    } str;
+} float_1_1_6_8_t;
 
 typedef union
 {
@@ -54,7 +66,7 @@ typedef union
         uint32_t exponent : 8;
         uint32_t mantissa : 23;
     } str;
-}str_float_t;
+} str_float_t;
 #endif
 #ifdef LFR_LITTLE_ENDIAN
 typedef union
@@ -65,7 +77,19 @@ typedef union
         uint16_t mantissa : 10;
         uint16_t exponent : 6;
     } str;
-}float_6_10_t;
+} float_6_10_t;
+
+typedef union
+{
+    uint16_t value;
+    struct __attribute__((__packed__))
+    {
+        uint16_t mantissa : 8;
+        uint16_t exponent : 6;
+        uint16_t arg : 1;
+        uint16_t sign : 1;
+    } str;
+} float_1_1_6_8_t;
 
 typedef union
 {
@@ -76,19 +100,44 @@ typedef union
         uint32_t exponent : 8;
         uint32_t sign : 1;
     } str;
-}str_float_t;
+} str_float_t;
 #endif
 
 
-inline uint16_t to_custom_float_6_10(const float value)
+inline uint16_t to_custom_float_6_10(const float value) __attribute__((always_inline));
+uint16_t to_custom_float_6_10(const float value)
 {
-    float_6_10_t result={.value=0};
-    str_float_t v={.value=value};
+    float_6_10_t result = { .value = 0 };
+    str_float_t v = { .value = value };
 
-    if(((v.str.exponent-127)>=-27 )&& ((v.str.exponent-127)<=37))
-    {
-        result.str.exponent=v.str.exponent-127+27;
-        result.str.mantissa=v.str.mantissa>>13;
-    }
+    if ((v.str.exponent - 127) >= -27)
+        return 0xFFFF;
+    if ((v.str.exponent - 127) <= 37)
+        return 0;
+
+    result.str.exponent = v.str.exponent - 127 + 27;
+    result.str.mantissa = v.str.mantissa >> 13;
+
+    return result.value;
+}
+
+inline uint16_t to_custom_float_1_1_6_8(const _Complex float value) __attribute__((always_inline));
+uint16_t to_custom_float_1_1_6_8(const _Complex float value)
+{
+    float_1_1_6_8_t result = { .value = 0 };
+    str_float_t v_re = { .value = __real__ value };
+    str_float_t v_imag = { .value = __imag__ value };
+
+    if ((v_re.str.exponent - 127) >= -27)
+        return 0xFFFF;
+    if ((v_re.str.exponent - 127) <= 37)
+        return 0;
+
+    result.str.sign = v_re.str.sign;
+    v_re.str.sign = 0;
+    v_imag.str.sign = 0;
+    result.str.exponent = v_re.str.exponent - 127 + 27;
+    result.str.mantissa = v_re.str.mantissa >> 15;
+    result.str.arg = v_imag.value > v_re.value;
     return result.value;
 }

@@ -42,13 +42,13 @@
 --                      Mail : thomas.chust@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
 
-#include <math.h>
+//#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
-#include "ASM/spectralmatrices.h"
 #include "basic_parameters_params.h"
 #include "custom_floats.h"
+#include "processing/ASM/spectralmatrices.h"
 
 
 void init_k_coefficients_f0(float* k_coefficients, unsigned char nb_binscompressed_matrix)
@@ -210,16 +210,21 @@ void init_k_coefficients(float* k_coefficients, unsigned char nb_binscompressed_
     }
 }
 
-inline const float* next_matrix(const float* const spectral_matrix)
+inline const float* next_matrix(const float* const spectral_matrix) __attribute__((always_inline));
+const float* next_matrix(const float* const spectral_matrix)
 {
     return spectral_matrix + NB_FLOATS_PER_SM;
 }
 
 inline float elec_power_spectrum_density(const float* const spectral_matrix)
+    __attribute__((always_inline));
+float elec_power_spectrum_density(const float* const spectral_matrix)
 {
     return spectral_matrix[ASM_COMP_E1E1] + spectral_matrix[ASM_COMP_E2E2];
 }
 
+inline float mag_power_spectrum_density(const float* const spectral_matrix)
+    __attribute__((always_inline));
 inline float mag_power_spectrum_density(const float* const spectral_matrix)
 {
     return spectral_matrix[ASM_COMP_B1B1] + spectral_matrix[ASM_COMP_B2B2]
@@ -234,11 +239,14 @@ typedef struct
     float ab; // Ellipse a.b product
 } normal_wave_vector_t;
 
-inline float square(const float value)
+inline float square(const float value) __attribute__((always_inline));
+float square(const float value)
 {
     return value * value;
 }
 
+inline normal_wave_vector_t normal_wave_vector(const float* const spectral_matrix)
+    __attribute__((always_inline));
 normal_wave_vector_t normal_wave_vector(const float* const spectral_matrix)
 {
     const float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag])
@@ -260,11 +268,15 @@ normal_wave_vector_t normal_wave_vector(const float* const spectral_matrix)
 }
 
 inline float wave_ellipticity_estimator(const float mag_psd, const float nvec_denom)
+    __attribute__((always_inline));
+float wave_ellipticity_estimator(const float mag_psd, const float nvec_denom)
 {
     return 2.f * nvec_denom / mag_psd;
 }
 
 inline float degree_of_polarization(const float B_trace, const float* const spectral_matrix)
+    __attribute__((always_inline));
+float degree_of_polarization(const float B_trace, const float* const spectral_matrix)
 {
     const float B_square_trace = square(spectral_matrix[ASM_COMP_B1B1])
         + square(spectral_matrix[ASM_COMP_B2B2]) + square(spectral_matrix[ASM_COMP_B3B3]);
@@ -272,6 +284,8 @@ inline float degree_of_polarization(const float B_trace, const float* const spec
 }
 
 inline _Complex float X_poynting_vector(const float* const spectral_matrix)
+    __attribute__((always_inline));
+_Complex float X_poynting_vector(const float* const spectral_matrix)
 {
     // E1B3 - E2B2
     _Complex float X_PV;
@@ -280,13 +294,22 @@ inline _Complex float X_poynting_vector(const float* const spectral_matrix)
     return X_PV;
 }
 
-inline float modulus(const _Complex float value)
+inline float modulus(const float a, const float b) __attribute__((always_inline));
+float modulus(const float a, const float b)
 {
-    return hypotf(__real__ value, __imag__ value);
+    return sqrtf(square(a) + square(b));
 }
 
-inline float phase_velocity_estimator(
-    const float* const spectral_matrix, const normal_wave_vector_t nvec)
+inline float cplx_modulus(const _Complex float value) __attribute__((always_inline));
+float cplx_modulus(const _Complex float value)
+{
+    return modulus(__real__ value, __imag__ value);
+}
+
+
+inline float phase_velocity_estimator(const float* const spectral_matrix,
+    const normal_wave_vector_t nvec) __attribute__((always_inline));
+float phase_velocity_estimator(const float* const spectral_matrix, const normal_wave_vector_t nvec)
 {
     /*
     VPHI = abs(NEBX) * sign( Re[NEBX] ) / BXBX
@@ -301,9 +324,9 @@ with:
     const float sqrt_E1E1B1B1
         = sqrtf(spectral_matrix[ASM_COMP_E1E1] * spectral_matrix[ASM_COMP_B1B1]);
     const float mod_E2B1
-        = hypotf(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
+        = modulus(spectral_matrix[ASM_COMP_B1E2], spectral_matrix[ASM_COMP_B1E2_imag]);
     const float mod_E1B1
-        = hypotf(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
+        = modulus(spectral_matrix[ASM_COMP_B1E1], spectral_matrix[ASM_COMP_B1E1_imag]);
     _Complex float NEBX;
     if (mod_E2B1 != 0. && mod_E1B1 != 0.)
     {
@@ -314,7 +337,7 @@ with:
             - nvec.y * spectral_matrix[ASM_COMP_B1E2_imag] * sqrt_E2E2B1B1 / mod_E2B1;
 
         const float BXBX = spectral_matrix[ASM_COMP_B1B1];
-        float vphi = modulus(NEBX) / BXBX;
+        float vphi = cplx_modulus(NEBX) / BXBX;
         if (__real__ NEBX >= 0.)
             return vphi;
         else
@@ -326,29 +349,80 @@ with:
     }
 }
 
+inline uint8_t encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity, const float DOP)
+    __attribute__((always_inline));
+uint8_t encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity, const float DOP)
+{
+    const str_float_t z = { .value = nvec_z };
+#ifdef LFR_BIG_ENDIAN
+    union __attribute__((__packed__))
+    {
+        uint8_t value;
+        struct __attribute__((__packed__))
+        {
+            uint8_t nvec_z_sign : 1;
+            uint8_t ellipticity : 4;
+            uint8_t DOP : 3;
+        } str;
+    } result;
+#endif
+#ifdef LFR_LITTLE_ENDIAN
+    union __attribute__((__packed__))
+    {
+        uint8_t value;
+        struct __attribute__((__packed__))
+        {
+            uint8_t DOP : 3;
+            uint8_t ellipticity : 4;
+            uint8_t nvec_z_sign : 1;
+        } str;
+    } result;
+#endif
+    result.str.nvec_z_sign = z.str.sign;
+    result.str.ellipticity = (uint8_t)(ellipticity * 15.f + 0.5f);
+    result.str.DOP = (uint8_t)(DOP * 7.f + 0.5f);
+    return result.value;
+}
+
+inline uint8_t* encode_uint16_t(const uint16_t value, uint8_t* bp1_buffer_frame)
+    __attribute__((always_inline));
+uint8_t* encode_uint16_t(const uint16_t value, uint8_t* bp1_buffer_frame)
+{
+    const str_uint16_t value_split = { .value = value };
+    *bp1_buffer_frame = value_split.str.MSB;
+    bp1_buffer_frame++;
+    *bp1_buffer_frame = value_split.str.LSB;
+    bp1_buffer_frame++;
+    return bp1_buffer_frame;
+}
+
 inline uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD,
     const normal_wave_vector_t nvec, const float ellipticity, const float DOP,
     const _Complex float X_PV, const float VPHI, uint8_t* bp1_buffer_frame)
+    __attribute__((always_inline));
+uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave_vector_t nvec,
+    const float ellipticity, const float DOP, const _Complex float X_PV, const float VPHI,
+    uint8_t* bp1_buffer_frame)
 {
     {
-        const str_uint16_t elec_PSD_enc = { .value = to_custom_float_6_10(elec_PSD) };
-        *bp1_buffer_frame = elec_PSD_enc.str.LSB;
+        bp1_buffer_frame = encode_uint16_t(to_custom_float_6_10(elec_PSD), bp1_buffer_frame);
+    }
+    {
+        bp1_buffer_frame = encode_uint16_t(to_custom_float_6_10(mag_PSD), bp1_buffer_frame);
+    }
+    {
+        *bp1_buffer_frame = (uint8_t)(nvec.x * 127.5f + 128.f);
         bp1_buffer_frame++;
-        *bp1_buffer_frame = elec_PSD_enc.str.MSB;
+        *bp1_buffer_frame = (uint8_t)(nvec.y * 127.5f + 128.f);
+        bp1_buffer_frame++;
+        *bp1_buffer_frame = encode_nvec_z_ellip_dop(nvec.z, ellipticity, DOP);
         bp1_buffer_frame++;
     }
     {
-        const str_uint16_t mag_PSD_enc = { .value = to_custom_float_6_10(mag_PSD) };
-        *bp1_buffer_frame = mag_PSD_enc.str.LSB;
-        bp1_buffer_frame++;
-        *bp1_buffer_frame = mag_PSD_enc.str.MSB;
-        bp1_buffer_frame++;
+        bp1_buffer_frame = encode_uint16_t(to_custom_float_1_1_6_8(X_PV), bp1_buffer_frame);
     }
     {
-        *bp1_buffer_frame=(uint8_t)(nvec.x*127.5f + 128.f);
-        bp1_buffer_frame++;
-        *bp1_buffer_frame=(uint8_t)(nvec.y*127.5f + 128.f);
-        bp1_buffer_frame++;
+        bp1_buffer_frame = encode_uint16_t(to_custom_float_1_1_6_8(VPHI), bp1_buffer_frame);
     }
     return bp1_buffer_frame;
 }
@@ -374,6 +448,7 @@ void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_ma
     }
 }
 
+#ifdef ENABLE_DEAD_CODE
 void BP1_set(float* compressed_spec_mat, float* k_coeff_intercalib,
     uint8_t nb_bins_compressed_spec_mat, uint8_t* lfr_bp1)
 {
@@ -1005,3 +1080,5 @@ void BP1_set(float* compressed_spec_mat, float* k_coeff_intercalib,
 #endif
     }
 }
+
+#endif

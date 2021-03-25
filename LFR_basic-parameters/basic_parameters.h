@@ -81,6 +81,9 @@ void init_k_coefficients(float* k_coeff_intercalib, unsigned char nb_binscompres
 void BP1_set(float* compressed_spec_mat, float* k_coeff_intercalib,
     uint8_t nb_bins_compressed_spec_mat, uint8_t* lfr_bp1);
 
+void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
+    uint8_t* bp1_buffer);
+
 void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, uint8_t* lfr_bp2)
 {
     float cross_re; // 32-bit floating point
@@ -142,7 +145,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
         // == PA_LFR_SC_BP2_CROSS_RE_9_F0 == 8 bits
         // == PA_LFR_SC_BP2_CROSS_IM_9_F0 == 8 bits
         // S12
-        aux = sqrt(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
+        aux = sqrtf(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]);
         if (aux != 0.)
         { // no division by 0.
@@ -166,7 +169,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 20]);
 #endif
         // S13
-        aux = sqrt(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
+        aux = sqrtf(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]);
         if (aux != 0.)
         { // no division by 0.
@@ -189,7 +192,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 21]);
 #endif
         // S14
-        aux = sqrt(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
+        aux = sqrtf(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 21]);
         if (aux != 0.)
         { // no division by 0.
@@ -212,7 +215,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 22]);
 #endif
         // S15
-        aux = sqrt(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
+        aux = sqrtf(compressed_spec_mat[i * NB_VALUES_PER_SPECTRAL_MATRIX]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 24]);
         if (aux != 0.)
         { // no division by 0.
@@ -235,7 +238,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 23]);
 #endif
         // S23
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]);
         if (aux != 0.)
         { // no division by 0.
@@ -258,7 +261,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 24]);
 #endif
         // S24
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 21]);
         if (aux != 0.)
         { // no division by 0.
@@ -281,7 +284,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 25]);
 #endif
         // S25
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 9]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 24]);
         if (aux != 0.)
         { // no division by 0.
@@ -304,7 +307,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 26]);
 #endif
         // S34
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 21]);
         if (aux != 0.)
         { // no division by 0.
@@ -327,7 +330,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 27]);
 #endif
         // S35
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 16]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 24]);
         if (aux != 0.)
         { // no division by 0.
@@ -350,7 +353,7 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
             lfr_bp2[i * NB_BYTES_BP2 + 28]);
 #endif
         // S45
-        aux = sqrt(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 21]
+        aux = sqrtf(compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 21]
             * compressed_spec_mat[(i * NB_VALUES_PER_SPECTRAL_MATRIX) + 24]);
         if (aux != 0.)
         { // no division by 0.
