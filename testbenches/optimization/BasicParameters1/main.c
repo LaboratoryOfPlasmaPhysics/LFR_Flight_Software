@@ -14,37 +14,37 @@ rtems_task Init(rtems_task_argument argument); /* forward declaration needed */
 
 #define CONFIGURE_MAXIMUM_TASKS 23 // number of tasks concurrently active including INIT
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
-#define CONFIGURE_EXTRA_TASK_STACKS (3 * RTEMS_MINIMUM_STACK_SIZE)
+#define CONFIGURE_EXTRA_TASK_STACKS              (3 * RTEMS_MINIMUM_STACK_SIZE)
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 32
-#define CONFIGURE_INIT_TASK_PRIORITY 1 // instead of 100
-#define CONFIGURE_INIT_TASK_MODE (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
-#define CONFIGURE_INIT_TASK_ATTRIBUTES (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
-#define CONFIGURE_MAXIMUM_DRIVERS 16
-#define CONFIGURE_MAXIMUM_PERIODS 6 // [hous] [load] [avgv]
-#define CONFIGURE_MAXIMUM_TIMERS 6 // [spiq] [link] [spacewire_reset_link]
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 5
+#define CONFIGURE_INIT_TASK_PRIORITY             1 // instead of 100
+#define CONFIGURE_INIT_TASK_MODE                 (RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT)
+#define CONFIGURE_INIT_TASK_ATTRIBUTES           (RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT)
+#define CONFIGURE_MAXIMUM_DRIVERS                16
+#define CONFIGURE_MAXIMUM_PERIODS                6 // [hous] [load] [avgv]
+#define CONFIGURE_MAXIMUM_TIMERS                 6 // [spiq] [link] [spacewire_reset_link]
+#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES         5
 #ifdef PRINT_STACK_REPORT
-#define CONFIGURE_STACK_CHECKER_ENABLED
+    #define CONFIGURE_STACK_CHECKER_ENABLED
 #endif
 
 #include <rtems/confdefs.h>
 
 /* If --drvmgr was enabled during the configuration of the RTEMS kernel */
 #ifdef RTEMS_DRVMGR_STARTUP
-#ifdef LEON3
-/* Add Timer and UART Driver */
+    #ifdef LEON3
+    /* Add Timer and UART Driver */
 
-#ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
-#endif
+        #ifdef CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
+            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GPTIMER
+        #endif
 
-#ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
-#endif
+        #ifdef CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+            #define CONFIGURE_DRIVER_AMBAPP_GAISLER_APBUART
+        #endif
 
-#endif
-#define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW /* GRSPW Driver */
-#include <drvmgr/drvmgr_confdefs.h>
+    #endif
+    #define CONFIGURE_DRIVER_AMBAPP_GAISLER_GRSPW /* GRSPW Driver */
+    #include <drvmgr/drvmgr_confdefs.h>
 #endif
 
 #include "GscMemoryLPP.hpp"

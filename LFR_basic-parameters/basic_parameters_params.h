@@ -2,15 +2,15 @@
 // version 1.4: 16/05/2014
 // version 1.5: 20/05/2014
 // version 1.6: 19/12/2014
-// version 1.7: 15/01/2015 (modifs de Paul + correction erreurs qui se compensaient (LSB <=> MSB + indices [0,2] <=> [1,3])
-// version 1.8: 02/02/2015 (gestion des divisions par zéro)
-// In the frame of RPW LFR Sofware ICD Issue3 Rev6 (27/01/2015) => R3 FSW
-// version 2.0: 19/06/2015
-// version 2.1: 22/06/2015 (modifs de Paul)
-// version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
+// version 1.7: 15/01/2015 (modifs de Paul + correction erreurs qui se compensaient (LSB <=> MSB +
+// indices [0,2] <=> [1,3]) version 1.8: 02/02/2015 (gestion des divisions par zéro) In the frame of
+// RPW LFR Sofware ICD Issue3 Rev6 (27/01/2015) => R3 FSW version 2.0: 19/06/2015 version 2.1:
+// 22/06/2015 (modifs de Paul) version 2.2: 23/06/2015 (modifs de l'ordre de déclaration/définition
+// de init_k_coefficients dans basic_parameters.c ... + maintien des declarations dans le .h)
 // version 2.3: 01/07/2015 (affectation initiale des octets 7 et 9 dans les BP1 corrigée ...)
 // version 2.4: 05/10/2018 (added GPL headers)
-// version 2.5: 09/10/2018 (dans main.c #include "basic_parameters_utilities.h" est changé par les déclarations extern correspondantes ...!
+// version 2.5: 09/10/2018 (dans main.c #include "basic_parameters_utilities.h" est changé par les
+// déclarations extern correspondantes ...!
 //                          + delta mise en conformité LOGISCOPE)
 
 /*------------------------------------------------------------------------------

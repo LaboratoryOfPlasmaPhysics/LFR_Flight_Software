@@ -1,6 +1,6 @@
 #include "grspw.h"
 
-int grspw_set_ie( unsigned char value, unsigned int *ctrlReg )
+int grspw_set_ie(unsigned char value, unsigned int* ctrlReg)
 {
     // IE = bit 3
     // Interrupt Enable
@@ -23,7 +23,7 @@ int grspw_set_ie( unsigned char value, unsigned int *ctrlReg )
     return ret;
 }
 
-int grspw_set_tq( unsigned char value, unsigned int *ctrlReg )
+int grspw_set_tq(unsigned char value, unsigned int* ctrlReg)
 {
     // TQ = bit 8
     // Tick-out IRQ
@@ -46,7 +46,7 @@ int grspw_set_tq( unsigned char value, unsigned int *ctrlReg )
     return ret;
 }
 
-int grspw_set_tr( unsigned char value, unsigned int *ctrlReg )
+int grspw_set_tr(unsigned char value, unsigned int* ctrlReg)
 {
     // TR = bit 11
     // Enable timecode reception

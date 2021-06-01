@@ -24,10 +24,11 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int getFBinMask(int k, unsigned char channel);
+    int getFBinMask(int index, unsigned char channel);
 
 #ifdef __cplusplus
 }

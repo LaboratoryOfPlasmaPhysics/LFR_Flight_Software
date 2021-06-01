@@ -24,15 +24,14 @@
 #pragma once
 #include <sys/types.h>
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-unsigned char isPolluted(u_int64_t t0, u_int64_t t1, u_int64_t tbad0,
-                         u_int64_t tbad1);
+    unsigned char isPolluted(u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t tbad1);
 
-unsigned char acquisitionTimeIsValid(unsigned int coarseTime,
-                                     unsigned int fineTime,
-                                     unsigned char channel);
+    unsigned char acquisitionTimeIsValid(
+        unsigned int coarseTime, unsigned int fineTime, unsigned char channel);
 
 #ifdef __cplusplus
 }

@@ -42,7 +42,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "gcov-io.h"
 
 /* Chain of per-object gcov structures.  */
-struct gcov_info *gcov_list;
+struct gcov_info* gcov_list;
 
 /* A program checksum allows us to distinguish program data for an
    object file included in multiple programs.  */
@@ -51,45 +51,43 @@ gcov_unsigned_t gcov_crc32;
 /* The profile merging function that just adds the counters.  It is given
    an array COUNTERS of N_COUNTERS old counters and it reads the same number
    of counters from the gcov file.  */
-void
-__gcov_merge_add (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_add(gcov_type* counters, unsigned n_counters)
 {
-  for (; n_counters; counters++, n_counters--)
-    *counters += gcov_read_counter ();
+    for (; n_counters; counters++, n_counters--)
+        *counters += gcov_read_counter();
 }
 /* The profile merging function for choosing the most common value.
    It is given an array COUNTERS of N_COUNTERS old counters and it
    reads the same number of counters from the gcov file.  The counters
    are split into 3-tuples where the members of the tuple have
    meanings:
-   
+
    -- the stored candidate on the most common value of the measured entity
    -- counter
    -- total number of evaluations of the value  */
-void
-__gcov_merge_single (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_single(gcov_type* counters, unsigned n_counters)
 {
-  unsigned i, n_measures;
-  gcov_type value, counter, all;
+    unsigned i, n_measures;
+    gcov_type value, counter, all;
 
-  GCOV_CHECK (!(n_counters % 3));
-  n_measures = n_counters / 3;
-  for (i = 0; i < n_measures; i++, counters += 3)
+    GCOV_CHECK(!(n_counters % 3));
+    n_measures = n_counters / 3;
+    for (i = 0; i < n_measures; i++, counters += 3)
     {
-      value = gcov_read_counter ();
-      counter = gcov_read_counter ();
-      all = gcov_read_counter ();
+        value = gcov_read_counter();
+        counter = gcov_read_counter();
+        all = gcov_read_counter();
 
-      if (counters[0] == value)
-	counters[1] += counter;
-      else if (counter > counters[1])
-	{
-	  counters[0] = value;
-	  counters[1] = counter - counters[1];
-	}
-      else
-	counters[1] -= counter;
-      counters[2] += all;
+        if (counters[0] == value)
+            counters[1] += counter;
+        else if (counter > counters[1])
+        {
+            counters[0] = value;
+            counters[1] = counter - counters[1];
+        }
+        else
+            counters[1] -= counter;
+        counters[2] += all;
     }
 }
 
@@ -98,37 +96,36 @@ __gcov_merge_single (gcov_type *counters, unsigned n_counters)
    given an array COUNTERS of N_COUNTERS old counters and it reads the
    same number of counters from the gcov file.  The counters are split
    into 4-tuples where the members of the tuple have meanings:
-   
+
    -- the last value of the measured entity
    -- the stored candidate on the most common difference
    -- counter
    -- total number of evaluations of the value  */
 
-void
-__gcov_merge_delta (gcov_type *counters, unsigned n_counters)
+void __gcov_merge_delta(gcov_type* counters, unsigned n_counters)
 {
-  unsigned i, n_measures;
-  gcov_type last, value, counter, all;
+    unsigned i, n_measures;
+    gcov_type last, value, counter, all;
 
-  GCOV_CHECK (!(n_counters % 4));
-  n_measures = n_counters / 4;
-  for (i = 0; i < n_measures; i++, counters += 4)
+    GCOV_CHECK(!(n_counters % 4));
+    n_measures = n_counters / 4;
+    for (i = 0; i < n_measures; i++, counters += 4)
     {
-      last = gcov_read_counter ();
-      value = gcov_read_counter ();
-      counter = gcov_read_counter ();
-      all = gcov_read_counter ();
+        last = gcov_read_counter();
+        value = gcov_read_counter();
+        counter = gcov_read_counter();
+        all = gcov_read_counter();
 
-      if (counters[1] == value)
-	counters[2] += counter;
-      else if (counter > counters[2])
-	{
-	  counters[1] = value;
-	  counters[2] = counter - counters[2];
-	}
-      else
-	counters[2] -= counter;
-      counters[3] += all;
+        if (counters[1] == value)
+            counters[2] += counter;
+        else if (counter > counters[2])
+        {
+            counters[1] = value;
+            counters[2] = counter - counters[2];
+        }
+        else
+            counters[2] -= counter;
+        counters[3] += all;
     }
 }
 //#endif /* __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ */
