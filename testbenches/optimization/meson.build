@@ -22,5 +22,6 @@ if meson.is_cross_build()
                         include_directories: ['../../header'] )
 
     subdir('Matrix_change_of_basis')
+    subdir('Matrix_average')
     subdir('BasicParameters1')
 endif

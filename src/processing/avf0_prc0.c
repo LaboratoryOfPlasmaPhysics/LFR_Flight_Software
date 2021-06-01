@@ -33,6 +33,7 @@
  */
 
 #include "avf0_prc0.h"
+#include <string.h>
 
 nb_sm_before_bp_asm_f0 nb_sm_before_f0 = { 0 };
 
@@ -124,7 +125,6 @@ float elec_calibration_matrices_f0[NB_BINS_PER_SM * 2 * 2 * 2]
 
 rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
 {
-    int i;
 
     rtems_event_set event_out;
     rtems_status_code status;
@@ -179,12 +179,10 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
         //****************************************
 
         nodeForAveraging = getRingNodeForAveraging(0);
-
-        ring_node_tab[NB_SM_BEFORE_AVF0_F1 - 1] = nodeForAveraging;
-        for (i = 1; i < (NB_SM_BEFORE_AVF0_F1); i++)
+        for (int i = NB_SM_BEFORE_AVF0_F1 - 1; i >= 0; i--)
         {
+            ring_node_tab[i] = nodeForAveraging;
             nodeForAveraging = nodeForAveraging->previous;
-            ring_node_tab[NB_SM_BEFORE_AVF0_F1 - i - 1] = nodeForAveraging;
         }
 
         // compute the average and store it in the averaged_sm_f1 buffer

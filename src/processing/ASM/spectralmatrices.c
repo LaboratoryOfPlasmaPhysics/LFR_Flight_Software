@@ -23,7 +23,70 @@
 ----------------------------------------------------------------------------*/
 #include "processing/ASM/spectralmatrices.h"
 
+
+inline void clear_spectral_matrix(float* spectral_matrix) __attribute__((always_inline));
+void clear_spectral_matrix(float* spectral_matrix)
+{
+    for (int i = 0; i < TOTAL_SIZE_SM; i++)
+    {
+        spectral_matrix[i] = 0.f;
+    }
+}
+
 void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
+    ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
+    asm_msg* msgForMATR, unsigned char channel)
+{
+    if (nbAverageNORM == 0)
+    {
+        clear_spectral_matrix(averaged_spec_mat_NORM);
+        msgForMATR->coarseTimeNORM = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeNORM = ring_node_tab[0]->fineTime;
+    }
+    if (nbAverageSBM == 0)
+    {
+        clear_spectral_matrix(averaged_spec_mat_SBM);
+        for (int i = 0; i < TOTAL_SIZE_SM; i++)
+        {
+            averaged_spec_mat_SBM[i] = 0.f;
+        }
+        msgForMATR->coarseTimeSBM = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeSBM = ring_node_tab[0]->fineTime;
+    }
+    unsigned int numberOfValidSM = 0U;
+    for (int SM_index = 0; SM_index < NB_SM_BEFORE_AVF0_F1; SM_index++)
+    {
+        if (acquisitionTimeIsValid(
+                ring_node_tab[SM_index]->coarseTime, ring_node_tab[SM_index]->fineTime, channel))
+        {
+            numberOfValidSM++;
+            int* input_SM_ptr = (int*)(ring_node_tab[SM_index]->buffer_address);
+            for (int i = 0; i < TOTAL_SIZE_SM; i++)
+            {
+                averaged_spec_mat_SBM[i] += (float)input_SM_ptr[i];
+                averaged_spec_mat_NORM[i] += (float)input_SM_ptr[i];
+            }
+        }
+    }
+    if (nbAverageNORM == 0)
+    {
+        msgForMATR->numberOfSMInASMNORM = numberOfValidSM;
+    }
+    else
+    {
+        msgForMATR->numberOfSMInASMNORM += numberOfValidSM;
+    }
+    if (nbAverageSBM == 0)
+    {
+        msgForMATR->numberOfSMInASMSBM = numberOfValidSM;
+    }
+    else
+    {
+        msgForMATR->numberOfSMInASMSBM += numberOfValidSM;
+    }
+}
+
+void SM_average_old(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
     asm_msg* msgForMATR, unsigned char channel)
 {
@@ -57,7 +120,7 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
             {
                 // TODO check this, why looping over k and accumulating the
                 // very same SM element
-                sum = sum + ((int*)(ring_node_tab[0]->buffer_address))[i];
+                sum = sum + ((int*)(ring_node_tab[k]->buffer_address))[i];
             }
         }
 
@@ -119,8 +182,9 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
 
 // TODO add unit test
 void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* compressed_spec_mat,
-    const float divider, const unsigned char nbBinsCompressedMatrix, const unsigned char nbBinsToAverage,
-    const unsigned char ASMIndexStart, const unsigned char channel)
+    const float divider, const unsigned char nbBinsCompressedMatrix,
+    const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
+    const unsigned char channel)
 {
     //*************
     // input format
@@ -164,11 +228,13 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
         for (int _ = 0; _ < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; _++)
         {
             *compressed_asm_ptr = *compressed_asm_ptr / (divider * nbBinsToAverage);
+            compressed_asm_ptr++;
         }
     }
 }
 
-void ASM_divide(const float*  averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider)
+void ASM_divide(
+    const float* averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider)
 {
     // BUILD DATA
     if (divider == 0.)
