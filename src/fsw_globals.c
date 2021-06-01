@@ -37,8 +37,9 @@
  *
  */
 
-#include <grspw.h>
 #include <rtems.h>
+
+#include <grspw.h>
 
 #include "ccsds_types.h"
 #include "fsw_params.h"

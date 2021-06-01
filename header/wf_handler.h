@@ -1,11 +1,15 @@
 #ifndef WF_HANDLER_H_INCLUDED
 #define WF_HANDLER_H_INCLUDED
 
-#include <fsw_params.h>
-#include <grspw.h>
-#include <math.h>
 #include <rtems.h>
+
+#include <grspw.h>
+
+#include <math.h>
 #include <stdio.h>
+
+
+#include <fsw_params.h>
 
 #include "fsw_init.h"
 #include "fsw_params_wf_handler.h"

@@ -33,8 +33,9 @@
  *
  */
 
+#include <math.h>
+
 #include "tc_handler.h"
-#include "math.h"
 
 //***********
 // RTEMS TASK

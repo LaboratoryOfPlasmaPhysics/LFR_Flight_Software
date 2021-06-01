@@ -1,8 +1,9 @@
 #ifndef TC_HANDLER_H_INCLUDED
 #define TC_HANDLER_H_INCLUDED
 
-#include <leon.h>
 #include <rtems.h>
+
+#include <leon.h>
 
 #include "fsw_processing.h"
 #include "tc_acceptance.h"

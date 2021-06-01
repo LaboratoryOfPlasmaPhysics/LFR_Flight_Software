@@ -1,10 +1,13 @@
 #ifndef FSW_MISC_H_INCLUDED
 #define FSW_MISC_H_INCLUDED
 
-#include <grlib_regs.h>
-#include <grspw.h>
 #include <rtems.h>
+
+#include <grspw.h>
+
 #include <stdio.h>
+
+#include <grlib_regs.h>
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"

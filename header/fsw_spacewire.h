@@ -1,8 +1,9 @@
 #ifndef FSW_SPACEWIRE_H_INCLUDED
 #define FSW_SPACEWIRE_H_INCLUDED
 
-#include <grspw.h>
 #include <rtems.h>
+
+#include <grspw.h>
 
 #include <errno.h>
 #include <fcntl.h> // for  O_RDWR
