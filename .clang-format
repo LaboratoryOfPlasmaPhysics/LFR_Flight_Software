@@ -24,3 +24,5 @@ MaxEmptyLinesToKeep: 2
 Standard: Cpp11
 UseTab: Never
 
+AlignConsecutiveMacros: true
+IndentPPDirectives: BeforeHash
