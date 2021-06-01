@@ -75,6 +75,7 @@ if meson.is_cross_build()
     fsw = executable('fsw', fsw_srcs,
                     include_directories: fsw_inc,
                     c_args: c_args,
+                    pie: false,
                     link_args: link_args,
                     dependencies:[lfr_bp_dep, m_dep],
                     extra_files: fsw_extra_files)
