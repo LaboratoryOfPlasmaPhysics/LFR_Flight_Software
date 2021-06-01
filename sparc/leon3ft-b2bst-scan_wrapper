@@ -4,4 +4,4 @@ BASEDIR=$(dirname "$0")
 OBJDUMP_BIN=$1
 ELF=$2
 
-$OBJDUMP_BIN -d $ELF | $BASEDIR/leon3ft-b2bst-scan.tcl > $3
+$OBJDUMP_BIN -d $ELF | tclsh $BASEDIR/leon3ft-b2bst-scan.tcl > $3
