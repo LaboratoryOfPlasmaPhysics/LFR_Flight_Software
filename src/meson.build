@@ -60,7 +60,7 @@ if meson.is_cross_build()
     cc = meson.get_compiler('c')
     m_dep = cc.find_library('m', required : false)
 
-    c_args = ['-std=gnu99','-fno-math-errno', target_endian_def]
+    c_args = ['-std=gnu99','-fno-math-errno', '-fdump-rtl-expand', target_endian_def]
     link_args = ['-Xlinker', '-Map=fsw-@0@.map'.format(fsw_version)]
     if get_option('fix-b2bst')
         c_args += '-mfix-b2bst'
@@ -85,6 +85,7 @@ if meson.is_cross_build()
     objdump = find_program('objdump')
     size = find_program('size')
     b2bst_scan = find_program('../sparc/leon3ft-b2bst-scan_wrapper')
+    cally = find_program('../python_scripts/cally.sh')
 
     data_srec = custom_target('data_srec',
       input : fsw,
@@ -108,6 +109,13 @@ if meson.is_cross_build()
       capture: true,
       command : [objdump, '-drwCSl', '@INPUT@'],
       build_by_default: true
+    )
+
+    cally_callgraphs = custom_target('cally_callgraphs',
+        input : fsw,
+        output : 'all_calgraph.png',
+        command : [cally, meson.project_source_root(), meson.project_build_root()],
+        build_by_default: true
     )
 
     if get_option('fix-b2bst')
