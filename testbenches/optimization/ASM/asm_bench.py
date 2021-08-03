@@ -22,8 +22,10 @@ def wait_for_bench():
 
 def print_duration(symbol):
     address = elffile.getSymbolAddress(elffile.getSymbolIndex(symbol))
-    duration=timedelta(seconds=float(SpwPlugin0.Read(address,1)[0])/25.e6)
-    print(symbol + " = " + str(duration) + "s or "+ str(duration.microseconds) + "us")
+    cycles = SpwPlugin0.Read(address,1)[0]
+    duration = float(SpwPlugin0.Read(address,1)[0])/25.e6
+    td=timedelta(seconds=float(SpwPlugin0.Read(address,1)[0])/25.e6)
+    print(symbol + " = " + str(td) + "s or "+ str(duration*1e6) + "us\t (or " + str(cycles) + " CPU cycles)")
 
 proxy.loadSysDriver("SpwPlugin")
 SpwPlugin0.selectBridge("STAR-Dundee Spw USB Brick")
@@ -37,6 +39,7 @@ SpwPlugin0.connectBridge()
 SpwPlugin0.TCPServerConnect()
 loadSW(FSW)
 
+time.sleep(5.)
 wait_for_bench()
 
 for symbol in duration_symbols:
