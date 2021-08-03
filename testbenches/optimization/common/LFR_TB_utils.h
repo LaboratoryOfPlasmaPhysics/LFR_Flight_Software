@@ -1,3 +1,4 @@
+#pragma once
 #include <rtems.h>
 
 #define CONFIGURE_INIT
@@ -82,6 +83,21 @@ void initCache()
     cacheControlRegister = CCR_getValue();
 }
 
+
+#define ARG(...) (__VA_ARGS__)
+
+#define BENCH(code, duration)                                                                      \
+    {                                                                                              \
+        register int __computation_begin = get_timetag_counter();                                  \
+        for (int i = 0; i < 8; i++)                                                                \
+        {                                                                                          \
+            code;                                                                                  \
+        }                                                                                          \
+        register int __computation_end = get_timetag_counter();                                    \
+        duration = (__computation_end - __computation_begin) / (8);                                \
+    }
+
+
 #include "processing/ASM/spectralmatrices.h"
 
 void fill_matrix(volatile float* matrix, int size)
@@ -94,66 +110,7 @@ void fill_matrix(volatile float* matrix, int size)
     }
 }
 
-unsigned int get_timetag_counter()
+static inline unsigned int get_timetag_counter()
 {
     return *((volatile int*)0x90000008);
-}
-
-volatile int duration = 0;
-volatile int duration2 = 0;
-
-#define ARG(...) (__VA_ARGS__)
-
-#define BENCH(code, duration)                                                                      \
-    {                                                                                              \
-        int __computation_begin = get_timetag_counter();                                           \
-        for (int i = 0; i < 8; i++)                                                                \
-        {                                                                                          \
-            code;                                                                                  \
-        }                                                                                          \
-        int __computation_end = get_timetag_counter();                                             \
-        duration = (__computation_end - __computation_begin) / (8);                                \
-    }
-
-volatile float input_matrix[25 * 128];
-volatile float output_matrix[25 * 128];
-volatile float b_trans[3 * 3 * 2 * 128];
-volatile float e_trans[2 * 2 * 2 * 128];
-
-rtems_task Init(rtems_task_argument ignored)
-{
-    (void)ignored;
-    /** This is the RTEMS INIT taks, it is the first task launched by the system.
-     *
-     * @param unused is the starting argument of the RTEMS task
-     *
-     * The INIT task create and run all other RTEMS tasks.
-     *
-     */
-
-    initCache();
-
-
-    fill_matrix(input_matrix, 25 * 128);
-    fill_matrix(output_matrix, 25 * 128);
-    fill_matrix(b_trans, 3 * 3 * 2 * 128);
-    fill_matrix(e_trans, 2 * 2 * 2 * 128);
-
-    BENCH(ARG(
-              {
-                  for (int freq = 0; freq < 128; freq++)
-                      Matrix_change_of_basis(input_matrix + freq * 25, b_trans + freq * 3 * 3 * 2,
-                          e_trans + freq * 2 * 2 * 2, output_matrix + freq * 25);
-              }),
-        duration);
-    BENCH(ARG(
-              {
-                  for (int freq = 0; freq < 128; freq++)
-                      Matrix_change_of_basis_old(input_matrix + freq * 25,
-                          b_trans + freq * 3 * 3 * 2, e_trans + freq * 2 * 2 * 2,
-                          output_matrix + freq * 25);
-              }),
-        duration2);
-    while (1)
-        ;
 }

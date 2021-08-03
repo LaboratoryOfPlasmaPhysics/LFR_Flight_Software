@@ -1,5 +1,5 @@
 
-FSW="/opt/LFR/BENCHMARKS/matrix_bench"
+FSW="/opt/LFR/BENCHMARKS/memory_write_benchmark"
 elffile=PySocExplorer.ElfFile(FSW)
 
 duration_address=elffile.getSymbolAddress(elffile.getSymbolIndex("duration"))

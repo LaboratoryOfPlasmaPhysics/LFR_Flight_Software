@@ -19,9 +19,10 @@ if meson.is_cross_build()
                         compile_args: c_args,
                         link_args: link_args,
                         dependencies: m_dep,
-                        include_directories: ['../../header'] )
+                        include_directories: ['../../header','common'] )
 
-    subdir('Matrix_change_of_basis')
+    subdir('ASM')
     subdir('Matrix_average')
     subdir('BasicParameters1')
+    subdir('Memory_write')
 endif
