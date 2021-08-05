@@ -646,12 +646,12 @@ void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, ui
 #ifdef MSB_FIRST_TCH
         lfr_bp2[(i * NB_BYTES_BP2) + 8] = pt_uint8[0]; // Record MSB of tmp_uint16
         lfr_bp2[(i * NB_BYTES_BP2) + 9] = pt_uint8[1]; // Record LSB of tmp_uint16
-            // printf("MSB:\n");
+                                                       // printf("MSB:\n");
 #endif
 #ifdef LSB_FIRST_TCH
         lfr_bp2[(i * NB_BYTES_BP2) + 8] = pt_uint8[1]; // Record MSB of tmp_uint16
         lfr_bp2[(i * NB_BYTES_BP2) + 9] = pt_uint8[0]; // Record LSB of tmp_uint16
-            // printf("LSB:\n");
+                                                       // printf("LSB:\n");
 #endif
 #ifdef DEBUG_TCH
         printf("autocor for S55 significand : %u\n", autocor);

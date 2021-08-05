@@ -23,7 +23,6 @@
 ----------------------------------------------------------------------------*/
 #include "processing/ASM/spectralmatrices.h"
 
-
 inline void clear_spectral_matrix(float* spectral_matrix) __attribute__((always_inline));
 void clear_spectral_matrix(float* spectral_matrix)
 {
@@ -46,10 +45,6 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     if (nbAverageSBM == 0)
     {
         clear_spectral_matrix(averaged_spec_mat_SBM);
-        for (int i = 0; i < TOTAL_SIZE_SM; i++)
-        {
-            averaged_spec_mat_SBM[i] = 0.f;
-        }
         msgForMATR->coarseTimeSBM = ring_node_tab[0]->coarseTime;
         msgForMATR->fineTimeSBM = ring_node_tab[0]->fineTime;
     }
@@ -61,10 +56,23 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         {
             numberOfValidSM++;
             int* input_SM_ptr = (int*)(ring_node_tab[SM_index]->buffer_address);
-            for (int i = 0; i < TOTAL_SIZE_SM; i++)
+            for (int i = 0; i < TOTAL_SIZE_SM; i += 4)
             {
-                averaged_spec_mat_SBM[i] += (float)input_SM_ptr[i];
-                averaged_spec_mat_NORM[i] += (float)input_SM_ptr[i];
+                register float input = (float)input_SM_ptr[i];
+                averaged_spec_mat_SBM[i] += input;
+                averaged_spec_mat_NORM[i] += input;
+
+                input = (float)input_SM_ptr[i + 1];
+                averaged_spec_mat_SBM[i + 1] += input;
+                averaged_spec_mat_NORM[i + 1] += input;
+
+                input = (float)input_SM_ptr[i + 2];
+                averaged_spec_mat_SBM[i + 2] += input;
+                averaged_spec_mat_NORM[i + 2] += input;
+
+                input = (float)input_SM_ptr[i + 3];
+                averaged_spec_mat_SBM[i + 3] += input;
+                averaged_spec_mat_NORM[i + 3] += input;
             }
         }
     }
@@ -151,8 +159,8 @@ void SM_average_old(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
             averaged_spec_mat_SBM[i] = (averaged_spec_mat_SBM[i] + sum);
             msgForMATR->coarseTimeNORM = ring_node_tab[0]->coarseTime;
             msgForMATR->fineTimeNORM = ring_node_tab[0]->fineTime;
-            //            PRINTF2("ERR *** in SM_average *** unexpected parameters %d %d\n",
-            //            nbAverageNORM, nbAverageSBM)
+            //            PRINTF2("ERR *** in SM_average *** unexpected parameters %d
+            //            %d\n", nbAverageNORM, nbAverageSBM)
         }
     }
 
@@ -192,7 +200,8 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
     //************
     // compression
     // matr0[0 .. 24]      matr1[0 .. 24]       .. matr11[0 .. 24] => f0 NORM
-    // matr0[0 .. 24]      matr1[0 .. 24]       .. matr22[0 .. 24] => f0 BURST, SBM
+    // matr0[0 .. 24]      matr1[0 .. 24]       .. matr22[0 .. 24] => f0 BURST,
+    // SBM
 
     // BUILD DATA
     // Just zero the whole compressed ASM
@@ -239,23 +248,19 @@ void ASM_divide(
     // BUILD DATA
     if (divider == 0.)
     {
-        for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
+        for (int i = 0; i < NB_FLOATS_PER_SM * NB_BINS_PER_SM; i++)
         {
-            *averaged_spec_mat_normalized = 0.;
-            averaged_spec_mat_normalized++;
+            averaged_spec_mat_normalized[i] = 0.;
         }
     }
     else
     {
-        for (int _ = 0; _ < NB_FLOATS_PER_SM * NB_BINS_PER_SM; _++)
+        for (int i = 0; i < NB_FLOATS_PER_SM * NB_BINS_PER_SM; i++)
         {
-            *averaged_spec_mat_normalized = *averaged_spec_mat / divider;
-            averaged_spec_mat_normalized++;
-            averaged_spec_mat++;
+            averaged_spec_mat_normalized[i] = averaged_spec_mat[i] / divider;
         }
     }
 }
-
 
 static inline float* spectral_matrix_re_element(
     float* spectral_matrix, int frequency, int line, int column) __attribute__((always_inline));
@@ -290,7 +295,7 @@ float* triangular_matrix_im_element(float* matrix, int line, int column)
     return triangular_matrix_re_element(matrix, line, column) + 1;
 }
 
-inline float* matrix_re_element(float* matrix, int line, int column, const int size)
+static inline float* matrix_re_element(float* matrix, int line, int column, const int size)
     __attribute__((always_inline));
 float* matrix_re_element(float* matrix, int line, int column, const int size)
 {
@@ -303,7 +308,6 @@ float* matrix_im_element(float* matrix, int line, int column, const int size)
 {
     return matrix_re_element(matrix, line, column, size) + 1;
 }
-
 
 static inline _Complex float triangular_matrix_element(float* matrix, int line, int column)
     __attribute__((always_inline));
@@ -337,7 +341,6 @@ _Complex float matrix_element(float* matrix, int line, int column, const int siz
     return res;
 }
 
-
 // clang-format off
 /*
  *   This function performs a specific 5x5 matrix change of basis with the folowing assumptions
@@ -363,6 +366,7 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
 {
 
     // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
+    // It's OK if only called
     _Complex float intermediary[25] = { 0.f };
     _Complex float* intermediary_ptr = intermediary;
     // first part: intermediary = transpose(transition_matrix) x input_matrix
@@ -488,7 +492,6 @@ void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
         output_asm += NB_FLOATS_PER_SM;
     }
 }
-
 
 #ifdef ENABLE_BENCHMARKS
 

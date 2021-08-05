@@ -95,7 +95,7 @@ volatile int duration2 = 0;
 #define BENCH(code, duration)                                                                      \
     {                                                                                              \
         register int __computation_begin = get_timetag_counter();                                  \
-        for (volatile int i = 0; i < 8; i++)                                                                \
+        for (volatile int i = 0; i < 8; i++)                                                       \
         {                                                                                          \
             code;                                                                                  \
         }                                                                                          \
@@ -103,7 +103,7 @@ volatile int duration2 = 0;
         duration = (__computation_end - __computation_begin) / (8);                                \
     }
 
-#define TABLE_SIZE (1024*512)
+#define TABLE_SIZE (1024 * 512)
 volatile uint32_t table[TABLE_SIZE];
 
 rtems_task Init(rtems_task_argument ignored)
@@ -122,7 +122,7 @@ rtems_task Init(rtems_task_argument ignored)
     BENCH(ARG(
               {
                   volatile register uint32_t dest;
-                  for(volatile unsigned int i=0;i<TABLE_SIZE;i++)
+                  for (volatile unsigned int i = 0; i < TABLE_SIZE; i++)
                   {
                       dest = table[i];
                   }
@@ -130,9 +130,9 @@ rtems_task Init(rtems_task_argument ignored)
         duration);
     BENCH(ARG(
               {
-                  for(volatile unsigned int i=0;i<TABLE_SIZE;i++)
+                  for (volatile unsigned int i = 0; i < TABLE_SIZE; i++)
                   {
-                      table[i]=i;
+                      table[i] = i;
                   }
               }),
         duration2);
