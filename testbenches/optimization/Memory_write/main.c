@@ -82,7 +82,7 @@ void initCache()
     cacheControlRegister = CCR_getValue();
 }
 
-inline unsigned int get_timetag_counter()
+static inline unsigned int get_timetag_counter()
 {
     return *((volatile int*)0x90000008);
 }
