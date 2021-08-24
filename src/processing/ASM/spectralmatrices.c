@@ -36,62 +36,55 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
     asm_msg* msgForMATR, unsigned char channel)
 {
-    if (nbAverageNORM == 0)
-    {
-        clear_spectral_matrix(averaged_spec_mat_NORM);
-        msgForMATR->coarseTimeNORM = ring_node_tab[0]->coarseTime;
-        msgForMATR->fineTimeNORM = ring_node_tab[0]->fineTime;
-    }
-    if (nbAverageSBM == 0)
-    {
-        clear_spectral_matrix(averaged_spec_mat_SBM);
-        msgForMATR->coarseTimeSBM = ring_node_tab[0]->coarseTime;
-        msgForMATR->fineTimeSBM = ring_node_tab[0]->fineTime;
-    }
     unsigned int numberOfValidSM = 0U;
+    int* valid_matrices[8];
     for (int SM_index = 0; SM_index < NB_SM_BEFORE_AVF0_F1; SM_index++)
     {
         if (acquisitionTimeIsValid(
                 ring_node_tab[SM_index]->coarseTime, ring_node_tab[SM_index]->fineTime, channel))
         {
+            valid_matrices[numberOfValidSM] = (int*)(ring_node_tab[SM_index]->buffer_address);
             numberOfValidSM++;
-            int* input_SM_ptr = (int*)(ring_node_tab[SM_index]->buffer_address);
-            for (int i = 0; i < TOTAL_SIZE_SM; i += 4)
-            {
-                register float input = (float)input_SM_ptr[i];
-                averaged_spec_mat_SBM[i] += input;
-                averaged_spec_mat_NORM[i] += input;
-
-                input = (float)input_SM_ptr[i + 1];
-                averaged_spec_mat_SBM[i + 1] += input;
-                averaged_spec_mat_NORM[i + 1] += input;
-
-                input = (float)input_SM_ptr[i + 2];
-                averaged_spec_mat_SBM[i + 2] += input;
-                averaged_spec_mat_NORM[i + 2] += input;
-
-                input = (float)input_SM_ptr[i + 3];
-                averaged_spec_mat_SBM[i + 3] += input;
-                averaged_spec_mat_NORM[i + 3] += input;
-            }
         }
     }
+
     if (nbAverageNORM == 0)
     {
+        clear_spectral_matrix(averaged_spec_mat_NORM);
+        msgForMATR->coarseTimeNORM = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeNORM = ring_node_tab[0]->fineTime;
         msgForMATR->numberOfSMInASMNORM = numberOfValidSM;
     }
     else
     {
+
         msgForMATR->numberOfSMInASMNORM += numberOfValidSM;
     }
+
     if (nbAverageSBM == 0)
     {
+        clear_spectral_matrix(averaged_spec_mat_SBM);
+        msgForMATR->coarseTimeSBM = ring_node_tab[0]->coarseTime;
+        msgForMATR->fineTimeSBM = ring_node_tab[0]->fineTime;
         msgForMATR->numberOfSMInASMSBM = numberOfValidSM;
     }
     else
     {
         msgForMATR->numberOfSMInASMSBM += numberOfValidSM;
     }
+
+    // Looping this way is 40% faster ~ 32ms Vs ~54ms
+    for (int i = 0; i < TOTAL_SIZE_SM; i++)
+    {
+        float sum = 0.;
+        for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
+        {
+            sum+=valid_matrices[SM_index][i];
+        }
+        averaged_spec_mat_SBM[i] += sum;
+        averaged_spec_mat_NORM[i] += sum;
+    }
+
 }
 
 void SM_average_old(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
@@ -266,8 +259,8 @@ static inline float* spectral_matrix_re_element(
     float* spectral_matrix, int frequency, int line, int column) __attribute__((always_inline));
 float* spectral_matrix_re_element(float* spectral_matrix, int frequency, int line, int column)
 {
-    const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 }, { 3, 10, 16, 17, 19 },
-        { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
+    static const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 },
+        { 3, 10, 16, 17, 19 }, { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
     return spectral_matrix + (indexes[line][column] * NB_BINS_PER_SM)
         + (frequency * (line == column ? 1 : 2));
 }
@@ -283,8 +276,8 @@ static inline float* triangular_matrix_re_element(float* matrix, int line, int c
     __attribute__((always_inline));
 float* triangular_matrix_re_element(float* matrix, int line, int column)
 {
-    const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 }, { 3, 10, 16, 17, 19 },
-        { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
+    static const int indexes[5][5] = { { 0, 1, 3, 5, 7 }, { 1, 9, 10, 12, 14 },
+        { 3, 10, 16, 17, 19 }, { 5, 12, 17, 21, 22 }, { 7, 14, 19, 22, 24 } };
     return matrix + indexes[line][column];
 }
 
@@ -361,13 +354,11 @@ For a more readable but equivalent impl jump bellow to Matrix_change_of_basis_ol
 */
 // clang-format on
 
-void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
-    float* elec_transition_matrix, float* output_matrix)
+void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
+    float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
 {
 
     // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
-    // It's OK if only called
-    _Complex float intermediary[25] = { 0.f };
     _Complex float* intermediary_ptr = intermediary;
     // first part: intermediary = transpose(transition_matrix) x input_matrix
     for (int line = 0; line < 3; line++)
@@ -457,10 +448,10 @@ void Matrix_change_of_basis(float* input_matrix, float* mag_transition_matrix,
     }
 }
 
-void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
-    float* elec_calibration_matrices, float* output_asm)
+void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix[NB_FLOATS_PER_SM],
+    float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices,
+    float* output_asm)
 {
-    float work_matrix[NB_FLOATS_PER_SM];
     for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
     {
         float* out_ptr = work_matrix;
@@ -485,12 +476,39 @@ void SM_calibrate_and_reorder(float* input_asm, float* mag_calibration_matrices,
             in_ptr -= frequency_offset;
         }
 
-        Matrix_change_of_basis(
-            work_matrix, mag_calibration_matrices, elec_calibration_matrices, output_asm);
+        Matrix_change_of_basis(intermediary, work_matrix, mag_calibration_matrices,
+            elec_calibration_matrices, output_asm);
         mag_calibration_matrices += 3 * 3 * 2;
         elec_calibration_matrices += 2 * 2 * 2;
         output_asm += NB_FLOATS_PER_SM;
     }
+}
+
+void SM_calibrate_and_reorder_f0(float* input_asm, float* mag_calibration_matrices,
+    float* elec_calibration_matrices, float* output_asm)
+{
+    static float work_matrix[NB_FLOATS_PER_SM];
+    static _Complex float intermediary[25];
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
+        elec_calibration_matrices, output_asm);
+}
+
+void SM_calibrate_and_reorder_f1(float* input_asm, float* mag_calibration_matrices,
+    float* elec_calibration_matrices, float* output_asm)
+{
+    static float work_matrix[NB_FLOATS_PER_SM];
+    static _Complex float intermediary[25];
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
+        elec_calibration_matrices, output_asm);
+}
+
+void SM_calibrate_and_reorder_f2(float* input_asm, float* mag_calibration_matrices,
+    float* elec_calibration_matrices, float* output_asm)
+{
+    static float work_matrix[NB_FLOATS_PER_SM];
+    static _Complex float intermediary[25];
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
+        elec_calibration_matrices, output_asm);
 }
 
 #ifdef ENABLE_BENCHMARKS

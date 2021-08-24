@@ -1,6 +1,7 @@
 #include "LFR_TB_utils.h"
 
 volatile int Nope_duration = 0;
+volatile int Matrix_change_of_basis_128_freq_duration = 0;
 volatile int Matrix_change_of_basis_duration = 0;
 volatile int ASM_divide_0_duration = 0;
 volatile int ASM_divide_1_duration = 0;
@@ -17,6 +18,7 @@ volatile float input_matrix[25 * 128];
 volatile float output_matrix[25 * 128];
 volatile float b_trans[3 * 3 * 2 * 128];
 volatile float e_trans[2 * 2 * 2 * 128];
+static _Complex float intermediary[25];
 
 volatile float ams_buffer[25 * 128 * 8];
 ring_node ring_node_tab_buff[NB_SM_BEFORE_AVF0_F1];
@@ -56,10 +58,14 @@ rtems_task Init(rtems_task_argument ignored)
     BENCH(ARG(
               {
                   for (int freq = 0; freq < 128; freq++)
-                      Matrix_change_of_basis(input_matrix + freq * 25, b_trans + freq * 3 * 3 * 2,
-                          e_trans + freq * 2 * 2 * 2, output_matrix + freq * 25);
+                      Matrix_change_of_basis(intermediary,input_matrix + (freq * 25),
+                          b_trans + (freq * 3 * 3 * 2), e_trans + (freq * 2 * 2 * 2),
+                          output_matrix + (freq * 25));
               }),
-        Matrix_change_of_basis_duration, 10);
+        Matrix_change_of_basis_128_freq_duration, 10);
+
+    BENCH(ARG({ Matrix_change_of_basis(intermediary,input_matrix, b_trans, e_trans, output_matrix); }),
+        Matrix_change_of_basis_duration, 1000);
 
     BENCH(ARG({ ASM_divide(input_matrix, output_matrix, 0.); }), ASM_divide_0_duration, 10);
 

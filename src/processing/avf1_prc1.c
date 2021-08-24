@@ -362,7 +362,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F1))
         {
             // ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
-            SM_calibrate_and_reorder(incomingMsg->burst_sbm->matrix, mag_calibration_matrices_f1,
+            SM_calibrate_and_reorder_f1(incomingMsg->burst_sbm->matrix, mag_calibration_matrices_f1,
                 elec_calibration_matrices_f1, asm_f1_patched_burst_sbm);
             nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
             sid = getSID(incomingMsg->event);
@@ -409,7 +409,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1))
         {
             // ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
-            SM_calibrate_and_reorder(incomingMsg->norm->matrix, mag_calibration_matrices_f1,
+            SM_calibrate_and_reorder_f1(incomingMsg->norm->matrix, mag_calibration_matrices_f1,
                 elec_calibration_matrices_f1, asm_f1_patched_norm);
             nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
         }

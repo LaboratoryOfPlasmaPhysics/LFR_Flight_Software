@@ -41,7 +41,7 @@ test_scripts = {
 
 if get_option('with-tests')
     foreach test_name,test_params:tests
-        test_exe = executable(test_name, kwargs: test_params)
+        test_exe = executable(test_name, kwargs: test_params, extra_files: 'SM_calibration/test.py')
         test('test-' + test_name, test_exe)
     endforeach
 

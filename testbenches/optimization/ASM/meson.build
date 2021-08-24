@@ -1,7 +1,4 @@
 
-
-
-
 asm_bench = executable('asm_bench', ['main.c'],
                 dependencies:[bench_lfr_dep],
                 extra_files:['asm_bench.py', 'README.md']
@@ -9,8 +6,7 @@ asm_bench = executable('asm_bench', ['main.c'],
 
 asm_bench_tsim = executable('asm_bench_tsim', ['main.c'],
                 dependencies:[bench_lfr_dep],
-                c_args:['-DTSIM'],
-                extra_files:['asm_bench.py', 'README.md']
+                c_args:['-DTSIM']
                 )
 
 

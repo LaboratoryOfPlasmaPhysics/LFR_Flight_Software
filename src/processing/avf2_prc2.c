@@ -275,7 +275,7 @@ rtems_task prc2_task(rtems_task_argument argument)
 
         incomingMsg = (asm_msg*)incomingData;
 
-        SM_calibrate_and_reorder(incomingMsg->norm->matrix, mag_calibration_matrices_f2,
+        SM_calibrate_and_reorder_f2(incomingMsg->norm->matrix, mag_calibration_matrices_f2,
             elec_calibration_matrices_f2, asm_f2_patched_norm);
         // ASM_patch( incomingMsg->norm->matrix, asm_f2_patched_norm );
 

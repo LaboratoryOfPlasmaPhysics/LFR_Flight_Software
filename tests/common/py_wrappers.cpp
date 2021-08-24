@@ -174,7 +174,7 @@ PYBIND11_MODULE(lfr, m)
             auto elec_transition_matrix
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
             std::vector<float> _output_matrix(_matrix.size());
-            SM_calibrate_and_reorder(_matrix.data(), mag_transition_matrix.data(),
+            SM_calibrate_and_reorder_f0(_matrix.data(), mag_transition_matrix.data(),
                 elec_transition_matrix.data(), _output_matrix.data());
             from_lfr_spectral_matrix_repr(_output_matrix, output_matrix);
             return output_matrix;
@@ -184,12 +184,14 @@ PYBIND11_MODULE(lfr, m)
         [](py::array_t<std::complex<float>> input_matrix,
             py::array_t<std::complex<float>> transition_matrix)
         {
+
+            _Complex float intermediary[25];
             auto output_matrix = py::array_t<std::complex<float>>(
                 py::buffer_info { input_matrix.request() }.shape);
             auto _matrix = to_lfr_matrix_repr<true>(input_matrix);
             auto mag_transition_matrix = extract_transition_matrix<3, 0>(transition_matrix);
             auto elec_transition_matrix = extract_transition_matrix<2, 3>(transition_matrix);
-            Matrix_change_of_basis(_matrix.data(), mag_transition_matrix.data(),
+            Matrix_change_of_basis(intermediary,_matrix.data(), mag_transition_matrix.data(),
                 elec_transition_matrix.data(), _matrix.data());
             from_lfr_matrix_repr(_matrix, output_matrix);
             return output_matrix;
