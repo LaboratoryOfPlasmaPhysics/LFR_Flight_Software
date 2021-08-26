@@ -188,7 +188,8 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
         // compute the average and store it in the averaged_sm_f1 buffer
         SM_average(current_ring_node_asm_norm_f0->matrix,
             current_ring_node_asm_burst_sbm_f0->matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
-            &msgForPRC, 0); // 0 => frequency channel 0
+            &msgForPRC, 0, ASM_F0_INDICE_START,
+            ASM_F0_INDICE_START + ASM_F0_KEEP_BINS); // 0 => frequency channel 0
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0_F1;
@@ -462,7 +463,8 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
         {
             // 1) reorganize the ASM and divide
             ASM_divide(asm_f0_patched_norm,
-                (float*)current_ring_node_to_send_asm_f0->buffer_address, nbSMInASMNORM);
+                (float*)current_ring_node_to_send_asm_f0->buffer_address, nbSMInASMNORM,
+                ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
             current_ring_node_to_send_asm_f0->coarseTime = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f0->fineTime = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f0->sid = SID_NORM_ASM_F0;

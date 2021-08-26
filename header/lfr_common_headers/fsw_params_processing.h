@@ -81,16 +81,19 @@
 #define DLEN_ASM_F0_PKT_1        3200 // 32 * 25 * 4, 25 components per matrix, 4 bytes per float
 #define DLEN_ASM_F0_PKT_2        2400 // 24 * 25 * 4, 25 components per matrix, 4 bytes per float
 #define ASM_F0_INDICE_START      16 // 17  - 1, (-1) due to the VHDL behaviour
+#define ASM_F0_KEEP_BINS         88
 //
 #define NB_BINS_PER_PKT_ASM_F1_1 36
 #define NB_BINS_PER_PKT_ASM_F1_2 32
 #define DLEN_ASM_F1_PKT_1        3600 // 36 * 25 * 4, 25 components per matrix, 4 bytes per float
 #define DLEN_ASM_F1_PKT_2        3200 // 32 * 25 * 4, 25 components per matrix, 4 bytes per float
 #define ASM_F1_INDICE_START      5 //   6 - 1, (-1) due to the VHDL behaviour
+#define ASM_F1_KEEP_BINS         104
 //
 #define NB_BINS_PER_PKT_ASM_F2 32
 #define DLEN_ASM_F2_PKT        3200 // 32 * 25 * 4, 25 components per matrix, 4 bytes per float
 #define ASM_F2_INDICE_START    6 //   7 - 1, (-1) due to the VHDL behaviour
+#define ASM_F2_KEEP_BINS       96
 //
 #define KCOEFF_BLK_SIZE              130
 #define KCOEFF_FREQ                  2

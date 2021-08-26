@@ -325,7 +325,8 @@ rtems_task prc2_task(rtems_task_argument argument)
         {
             // 1) reorganize the ASM and divide
             ASM_divide(asm_f2_patched_norm,
-                (float*)current_ring_node_to_send_asm_f2->buffer_address, nb_sm_before_f2.norm_bp1);
+                (float*)current_ring_node_to_send_asm_f2->buffer_address, nb_sm_before_f2.norm_bp1,
+                ASM_F2_INDICE_START, ASM_F2_INDICE_START + ASM_F2_KEEP_BINS);
             current_ring_node_to_send_asm_f2->coarseTime = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f2->fineTime = incomingMsg->fineTimeNORM;
             current_ring_node_to_send_asm_f2->sid = SID_NORM_ASM_F2;

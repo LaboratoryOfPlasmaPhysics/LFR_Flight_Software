@@ -34,7 +34,7 @@ void clear_spectral_matrix(float* spectral_matrix)
 
 void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-    asm_msg* msgForMATR, unsigned char channel)
+    asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice, unsigned int stop_indice)
 {
     unsigned int numberOfValidSM = 0U;
     int* valid_matrices[8];
@@ -73,18 +73,27 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         msgForMATR->numberOfSMInASMSBM += numberOfValidSM;
     }
 
-    // Looping this way is 40% faster ~ 32ms Vs ~54ms
-    for (int i = 0; i < TOTAL_SIZE_SM; i++)
+    for (unsigned int component = 0; component < 25; component++)
     {
-        float sum = 0.;
-        for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
+        // Looping this way is 40% faster ~ 32ms Vs ~54ms
+        // Skiping discarded frequencies gives another speedup
+        for (unsigned int i = (component * 128) + start_indice; i < (component * 128) + stop_indice;
+             i += 2)
         {
-            sum+=valid_matrices[SM_index][i];
-        }
-        averaged_spec_mat_SBM[i] += sum;
-        averaged_spec_mat_NORM[i] += sum;
-    }
+            register float sum1 = 0.;
+            register float sum2 = 0.;
+            for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
+            {
+                sum1 += valid_matrices[SM_index][i];
+                sum2 += valid_matrices[SM_index][i + 1];
+            }
+            averaged_spec_mat_SBM[i] += sum1;
+            averaged_spec_mat_NORM[i] += sum1;
 
+            averaged_spec_mat_SBM[i + 1] += sum2;
+            averaged_spec_mat_NORM[i + 1] += sum2;
+        }
+    }
 }
 
 void SM_average_old(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
@@ -235,20 +244,20 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
     }
 }
 
-void ASM_divide(
-    const float* averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider)
+void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normalized,
+    const float divider, unsigned int start_indice, unsigned int stop_indice)
 {
     // BUILD DATA
     if (divider == 0.)
     {
-        for (int i = 0; i < NB_FLOATS_PER_SM * NB_BINS_PER_SM; i++)
+        for (int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
         {
             averaged_spec_mat_normalized[i] = 0.;
         }
     }
     else
     {
-        for (int i = 0; i < NB_FLOATS_PER_SM * NB_BINS_PER_SM; i++)
+        for (int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
         {
             averaged_spec_mat_normalized[i] = averaged_spec_mat[i] / divider;
         }
@@ -450,9 +459,10 @@ void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix
 
 void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix[NB_FLOATS_PER_SM],
     float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices,
-    float* output_asm)
+    float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
-    for (int frequency_offset = 0; frequency_offset < NB_BINS_PER_SM; frequency_offset++)
+    output_asm += start_indice*NB_FLOATS_PER_SM;
+    for (int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
     {
         float* out_ptr = work_matrix;
         float* in_ptr = input_asm + frequency_offset;
@@ -490,7 +500,8 @@ void SM_calibrate_and_reorder_f0(float* input_asm, float* mag_calibration_matric
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm);
+        elec_calibration_matrices, output_asm, ASM_F0_INDICE_START,
+        ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
 }
 
 void SM_calibrate_and_reorder_f1(float* input_asm, float* mag_calibration_matrices,
@@ -499,7 +510,8 @@ void SM_calibrate_and_reorder_f1(float* input_asm, float* mag_calibration_matric
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm);
+        elec_calibration_matrices, output_asm, ASM_F1_INDICE_START,
+        ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
 }
 
 void SM_calibrate_and_reorder_f2(float* input_asm, float* mag_calibration_matrices,
@@ -508,7 +520,8 @@ void SM_calibrate_and_reorder_f2(float* input_asm, float* mag_calibration_matric
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm);
+        elec_calibration_matrices, output_asm, ASM_F2_INDICE_START,
+        ASM_F2_INDICE_START + ASM_F2_KEEP_BINS);
 }
 
 #ifdef ENABLE_BENCHMARKS

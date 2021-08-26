@@ -50,8 +50,8 @@ extern "C"
         unsigned int numberOfSMInASMSBM;
     } asm_msg;
 
-    void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix, float* mag_transition_matrix,
-        float* elec_transition_matrix, float* output_matrix);
+    void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
+        float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix);
 
     void SM_calibrate_and_reorder_f0(float* input_asm, float* mag_calibration_matrices,
         float* elec_calibration_matrices, float* output_asm);
@@ -62,15 +62,16 @@ extern "C"
 
     void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-        asm_msg* msgForMATR, unsigned char channel);
+        asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice,
+        unsigned int stop_indice);
 
     void ASM_compress_divide_and_mask(const float* const averaged_spec_mat,
         float* compressed_spec_mat, const float divider, const unsigned char nbBinsCompressedMatrix,
         const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
         const unsigned char channel);
 
-    void ASM_divide(
-        const float* averaged_spec_mat, float* averaged_spec_mat_normalized, const float divider);
+    void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normalized,
+        const float divider, unsigned int start_indice, unsigned int stop_indice);
 
 #ifdef __cplusplus
 }
