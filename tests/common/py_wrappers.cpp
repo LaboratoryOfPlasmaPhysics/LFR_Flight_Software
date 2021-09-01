@@ -8,6 +8,14 @@
 #include "common/FSW_helpers.hpp"
 #include "processing/ASM/spectralmatrices.h"
 
+extern "C"
+{
+    void SM_calibrate_and_reorder(_Complex float intermediary[25],
+        float work_matrix[NB_FLOATS_PER_SM], float* input_asm, float* mag_calibration_matrices,
+        float* elec_calibration_matrices, float* output_asm, unsigned int start_indice,
+        unsigned int stop_indice);
+}
+
 namespace py = pybind11;
 
 template <bool is_triangular = true>
@@ -166,6 +174,8 @@ PYBIND11_MODULE(lfr, m)
         [](py::array_t<std::complex<float>> input_asm,
             py::array_t<std::complex<float>> calibration_matrix)
         {
+            static float work_matrix[NB_FLOATS_PER_SM];
+            static _Complex float intermediary[25];
             auto output_matrix
                 = py::array_t<std::complex<float>>(py::buffer_info { input_asm.request() }.shape);
             auto _matrix = to_lfr_spectral_matrix_repr(input_asm);
@@ -174,8 +184,9 @@ PYBIND11_MODULE(lfr, m)
             auto elec_transition_matrix
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
             std::vector<float> _output_matrix(_matrix.size());
-            SM_calibrate_and_reorder_f0(_matrix.data(), mag_transition_matrix.data(),
-                elec_transition_matrix.data(), _output_matrix.data());
+            SM_calibrate_and_reorder(intermediary, work_matrix, _matrix.data(),
+                mag_transition_matrix.data(), elec_transition_matrix.data(), _output_matrix.data(),
+                0, 128);
             from_lfr_spectral_matrix_repr(_output_matrix, output_matrix);
             return output_matrix;
         });
@@ -184,16 +195,24 @@ PYBIND11_MODULE(lfr, m)
         [](py::array_t<std::complex<float>> input_matrix,
             py::array_t<std::complex<float>> transition_matrix)
         {
-
             _Complex float intermediary[25];
             auto output_matrix = py::array_t<std::complex<float>>(
                 py::buffer_info { input_matrix.request() }.shape);
             auto _matrix = to_lfr_matrix_repr<true>(input_matrix);
             auto mag_transition_matrix = extract_transition_matrix<3, 0>(transition_matrix);
             auto elec_transition_matrix = extract_transition_matrix<2, 3>(transition_matrix);
-            Matrix_change_of_basis(intermediary,_matrix.data(), mag_transition_matrix.data(),
+            Matrix_change_of_basis(intermediary, _matrix.data(), mag_transition_matrix.data(),
                 elec_transition_matrix.data(), _matrix.data());
             from_lfr_matrix_repr(_matrix, output_matrix);
             return output_matrix;
         });
+
+
+    m.def("Extract_triangular_matrix",
+        [](py::array_t<std::complex<float>> input_matrix)
+        { return to_lfr_matrix_repr<true>(input_matrix); });
+
+    m.def("Convert_ASMs_to_VHDL_repr",
+        [](py::array_t<std::complex<float>> input_matrix)
+        { return to_lfr_spectral_matrix_repr(input_matrix); });
 }

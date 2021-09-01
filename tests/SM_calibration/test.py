@@ -3,24 +3,70 @@
 import unittest
 import lfr
 import numpy as np
+from ddt import ddt, data, unpack
+
+def cplx_random(shape, dtype=np.csingle):
+    return (np.random.random(shape) + np.random.random(shape) * 1j).astype(dtype)
+
+def make_SM(Vect):
+    return Vect.transpose() @ np.conjugate(Vect)
+
+def make_transition_matrix(B_cal_matrix, E_cal_matrix):
+    transition = np.zeros((5,5), dtype=np.csingle)
+    transition[:3,:3]=B_cal_matrix
+    transition[3:,3:]=E_cal_matrix
+    return transition
+
+def extract_triangular_matrix_ref(M):
+    tri = []
+    for line in range(5):
+        for column in range(5):
+            if line <= column:
+                tri.append(M[line, column].real)
+                if line < column:
+                    tri.append(M[line, column].imag)
+    return tri
 
 
+def convert_ASMs_to_VHDL_repr_ref(ASM):
+    vhdl_repr = [None]*25*128
+    index = 0
+    for line in range(5):
+        for column in range(5):
+            if line == column:
+                vhdl_repr[index:index+128] = ASM[:, line, column].real
+                index += 128
+            elif line < column:
+                vhdl_repr[index:index+256:2] = ASM[:, line, column].real
+                vhdl_repr[index+1:index+256:2] = ASM[:, line, column].imag
+                index += 256
+    return vhdl_repr
+
+
+
+@ddt
+class PythonWrappers(unittest.TestCase):
+
+    @data(*[(make_SM(cplx_random((1,5))), ) for i in range(100)])
+    @unpack
+    def test_can_extract_an_lfr_sm_from_a_full_matrix(self, SM, *args):
+        self.assertTrue(lfr.Extract_triangular_matrix(SM) == extract_triangular_matrix_ref(SM))
+
+    def test_can_extract_an_lfr_sm_from_a_full_matrix(self):
+        ASM=np.zeros((128,5,5), dtype=np.csingle)
+        for f in range(128):
+            ASM[f] = make_SM(cplx_random((1,5))*f)
+        self.assertTrue(lfr.Convert_ASMs_to_VHDL_repr(ASM) == convert_ASMs_to_VHDL_repr_ref(ASM))
+
+@ddt
 class AnLFRMatrix(unittest.TestCase):
-   def test_can_be_calibrated(self):
-       B1=1.+0.j
-       B2=0.+1.j
-       B3=1.+1.j
-       E1=3.+1.j
-       E2=1.+3.j
-       VECT = np.array([[B1,B2,B3,E1,E2]], dtype=np.csingle)
-       TRANSITION = np.array([[ 0.+0.j,  -1.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                              [ 1.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                              [ 0.+0.j,   0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
-                              [ 0.+0.j,   0.+0j, 0.+0.j, 9.+0.j, 0.+0.j ],
-                              [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 9.+0.j ]], dtype=np.csingle)
-       SM = VECT.transpose() * np.conjugate(VECT)
-       REF = np.matmul(np.matmul(TRANSITION.transpose(), SM), TRANSITION)
-       self.assertTrue(np.all(REF == lfr.Matrix_change_of_basis(SM,TRANSITION)))
+   @data(*[(i*cplx_random((1,5)), i*cplx_random((3,3)) , i*cplx_random((2,2))) for i in range(100)])
+   @unpack
+   def test_can_be_calibrated(self,VECT, BCAL, ECAL):
+       transition = make_transition_matrix(BCAL, ECAL)
+       SM = make_SM(VECT)
+       REF = transition @ SM @ transition.transpose().conjugate()
+       self.assertTrue(np.allclose(REF , lfr.Matrix_change_of_basis(SM, transition)))
 
 class AnLFRSpectralMatrix(unittest.TestCase):
   def test_can_be_calibrated(self):
@@ -28,23 +74,13 @@ class AnLFRSpectralMatrix(unittest.TestCase):
       CAL_MATRICES=np.zeros((128,5,5), dtype=np.csingle)
       CALIBRATED_ASM=np.zeros((128,5,5), dtype=np.csingle)
       for f in range(128):
-          B1=f*1.+0.j
-          B2=0.+1.j
-          B3=1.+1.j
-          E1=3.+1.j
-          E2=1.+3.j
-          VECT = np.array([[B1,B2,B3,E1,E2]], dtype=np.csingle)
-          TRANSITION = np.array([[ 0.+0.j,  -1.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                                 [ 1.+0.j,   0.+0j, 0.+0.j, 0.+0.j, 0.+0.j ],
-                                 [ 0.+0.j,   0.+0j, 1.+0.j, 0.+0.j, 0.+0.j ],
-                                 [ 0.+0.j,   0.+0j, 0.+0.j, f +0.j, 0.+0.j ],
-                                 [ 0.+0.j,   0.+0j, 0.+0.j, 0.+0.j, f +0.j ]], dtype=np.csingle)
-          SM = VECT.transpose() * np.conjugate(VECT)
-          REF = np.matmul(np.matmul(TRANSITION.transpose(), SM), TRANSITION)
+          transition = make_transition_matrix(cplx_random((3,3))*f, cplx_random((2,2))*f)
+          SM = make_SM(cplx_random((1,5))*f)
+          REF = transition @ SM @ transition.transpose().conjugate()
           ASM[f] = SM
-          CAL_MATRICES[f] = TRANSITION
+          CAL_MATRICES[f] = transition
           CALIBRATED_ASM[f] = REF
-      self.assertTrue(np.all(CALIBRATED_ASM == lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES)))
+      self.assertTrue(np.allclose(CALIBRATED_ASM, lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES)))
 
 if __name__ == '__main__':
    unittest.main()

@@ -115,7 +115,7 @@ if meson.is_cross_build()
         input : fsw,
         output : 'all_calgraph.png',
         command : [cally, meson.project_source_root(), meson.project_build_root()],
-        build_by_default: true
+        build_by_default: false
     )
 
     if get_option('fix-b2bst')

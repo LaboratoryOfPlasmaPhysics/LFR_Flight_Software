@@ -346,7 +346,7 @@ _Complex float matrix_element(float* matrix, int line, int column, const int siz
 // clang-format off
 /*
  *   This function performs a specific 5x5 matrix change of basis with the folowing assumptions
-                                                            T
+                                                                                                                              T*
           output_matrix                mag_transition_matrix               input_matrix                 mag_transition_matrix
                |                              |                                 |                              |
                v                              v                                 v                              v
@@ -356,112 +356,315 @@ _Complex float matrix_element(float* matrix, int line, int column, const int siz
  |                    |SM44| SM45  |   |  0   0   0   E11 E21 |   |                    |SM44| SM45  |   |  0   0   0   E11 E12 |
  |                          |SM55| |   |  0   0   0   E12 E22 |   |                          |SM55| |   |  0   0   0   E21 E22 |
                                                          ^                                                                ^
-                                                         |          T                                                     |
+                                                         |                                                                |            T*
                                               elec_transition_matrix                                             elec_transition_matrix
 Where each matrix product is done sequencialy for mag and elec transition matrices
-For a more readable but equivalent impl jump bellow to Matrix_change_of_basis_old
+Note that this code is generated with LFR_Flight_Software/python_scripts/Matrix_calibration_code_gen.ipynb
 */
 // clang-format on
-
-void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
+void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matrix,
     float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
 {
-
-    // does  transpose(P)xMxP see https://en.wikipedia.org/wiki/Change_of_basis
-    _Complex float* intermediary_ptr = intermediary;
-    // first part: intermediary = transpose(transition_matrix) x input_matrix
-    for (int line = 0; line < 3; line++)
-    {
-        for (int column = 0; column < 5; column++)
-        {
-            float* mag_ptr = mag_transition_matrix + (line * 2);
-            _Complex float product = 0.f;
-            for (int k = 0; k < 3; k++)
-            {
-                _Complex float mag;
-                __real__ mag = *mag_ptr;
-                __imag__ mag = *(mag_ptr + 1);
-                mag_ptr += 6;
-                product += mag * triangular_matrix_element(input_matrix, k, column);
-            }
-            *intermediary_ptr = product;
-            intermediary_ptr++;
-        }
-    }
-    intermediary_ptr = intermediary + 3 * 5;
-    for (int line = 0; line < 2; line++)
-    {
-        for (int column = 0; column < 5; column++)
-        {
-            float* elec_ptr = elec_transition_matrix + (line * 2);
-            _Complex float product = 0.f;
-            for (int k = 0; k < 2; k++)
-            {
-                _Complex float elec;
-                __real__ elec = *elec_ptr;
-                __imag__ elec = *(elec_ptr + 1);
-                elec_ptr += 4;
-                product += elec * triangular_matrix_element(input_matrix, k + 3, column);
-            }
-            *intermediary_ptr = product;
-            intermediary_ptr++;
-        }
-    }
-
-    // second part: output_matrix = intermediary x transition_matrix
-    for (int line = 0; line < 3; line++)
-    {
-        for (int column = line; column < 3; column++)
-        {
-            intermediary_ptr = intermediary + line * 5;
-            float* mag_ptr = mag_transition_matrix + (column * 2);
-            _Complex float product = 0.f;
-            for (int k = 0; k < 3; k++)
-            {
-                _Complex float mag;
-                __real__ mag = *mag_ptr;
-                __imag__ mag = *(mag_ptr + 1);
-                mag_ptr += 6;
-                product += *intermediary_ptr * mag;
-                intermediary_ptr++;
-            }
-            *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
-            if (line != column)
-            {
-                *triangular_matrix_im_element(output_matrix, line, column) = __imag__ product;
-            }
-        }
-    }
-    for (int column = 3; column < 5; column++)
-    {
-        for (int line = 0; line <= column; line++)
-        {
-            intermediary_ptr = intermediary + line * 5 + 3;
-            float* elec_ptr = elec_transition_matrix + ((column - 3) * 2);
-            _Complex float product = 0.f;
-            for (int k = 0; k < 2; k++)
-            {
-                _Complex float elec;
-                __real__ elec = *elec_ptr;
-                __imag__ elec = *(elec_ptr + 1);
-                elec_ptr += 4;
-                product += *intermediary_ptr * elec;
-                intermediary_ptr++;
-            }
-            *triangular_matrix_re_element(output_matrix, line, column) = __real__ product;
-            if (line != column)
-            {
-                *triangular_matrix_im_element(output_matrix, line, column) = __imag__ product;
-            }
-        }
-    }
+    float* intermediary = (float*)_intermediary;
+    intermediary[0] = input_matrix[0] * mag_transition_matrix[0]
+        + input_matrix[1] * mag_transition_matrix[2] + input_matrix[3] * mag_transition_matrix[4]
+        - (-input_matrix[2]) * mag_transition_matrix[3]
+        - (-input_matrix[4]) * mag_transition_matrix[5];
+    intermediary[1] = input_matrix[0] * mag_transition_matrix[1]
+        + input_matrix[1] * mag_transition_matrix[3] + input_matrix[3] * mag_transition_matrix[5]
+        + mag_transition_matrix[2] * (-input_matrix[2])
+        + mag_transition_matrix[4] * (-input_matrix[4]);
+    intermediary[2] = input_matrix[9] * mag_transition_matrix[2]
+        + input_matrix[1] * mag_transition_matrix[0] + input_matrix[10] * mag_transition_matrix[4]
+        - input_matrix[2] * mag_transition_matrix[1]
+        - (-input_matrix[11]) * mag_transition_matrix[5];
+    intermediary[3] = input_matrix[9] * mag_transition_matrix[3]
+        + input_matrix[1] * mag_transition_matrix[1] + input_matrix[10] * mag_transition_matrix[5]
+        + mag_transition_matrix[0] * input_matrix[2]
+        + mag_transition_matrix[4] * (-input_matrix[11]);
+    intermediary[4] = input_matrix[16] * mag_transition_matrix[4]
+        + input_matrix[3] * mag_transition_matrix[0] + input_matrix[10] * mag_transition_matrix[2]
+        - input_matrix[4] * mag_transition_matrix[1] - input_matrix[11] * mag_transition_matrix[3];
+    intermediary[5] = input_matrix[16] * mag_transition_matrix[5]
+        + input_matrix[3] * mag_transition_matrix[1] + input_matrix[10] * mag_transition_matrix[3]
+        + mag_transition_matrix[0] * input_matrix[4] + mag_transition_matrix[2] * input_matrix[11];
+    intermediary[6] = input_matrix[5] * mag_transition_matrix[0]
+        + input_matrix[12] * mag_transition_matrix[2] + input_matrix[17] * mag_transition_matrix[4]
+        - input_matrix[6] * mag_transition_matrix[1] - input_matrix[13] * mag_transition_matrix[3]
+        - input_matrix[18] * mag_transition_matrix[5];
+    intermediary[7] = input_matrix[5] * mag_transition_matrix[1]
+        + input_matrix[12] * mag_transition_matrix[3] + input_matrix[17] * mag_transition_matrix[5]
+        + mag_transition_matrix[0] * input_matrix[6] + mag_transition_matrix[2] * input_matrix[13]
+        + mag_transition_matrix[4] * input_matrix[18];
+    intermediary[8] = input_matrix[7] * mag_transition_matrix[0]
+        + input_matrix[14] * mag_transition_matrix[2] + input_matrix[19] * mag_transition_matrix[4]
+        - input_matrix[8] * mag_transition_matrix[1] - input_matrix[15] * mag_transition_matrix[3]
+        - input_matrix[20] * mag_transition_matrix[5];
+    intermediary[9] = input_matrix[7] * mag_transition_matrix[1]
+        + input_matrix[14] * mag_transition_matrix[3] + input_matrix[19] * mag_transition_matrix[5]
+        + mag_transition_matrix[0] * input_matrix[8] + mag_transition_matrix[2] * input_matrix[15]
+        + mag_transition_matrix[4] * input_matrix[20];
+    intermediary[10] = input_matrix[0] * mag_transition_matrix[6]
+        + input_matrix[1] * mag_transition_matrix[8] + input_matrix[3] * mag_transition_matrix[10]
+        - (-input_matrix[2]) * mag_transition_matrix[9]
+        - (-input_matrix[4]) * mag_transition_matrix[11];
+    intermediary[11] = input_matrix[0] * mag_transition_matrix[7]
+        + input_matrix[1] * mag_transition_matrix[9] + input_matrix[3] * mag_transition_matrix[11]
+        + mag_transition_matrix[8] * (-input_matrix[2])
+        + mag_transition_matrix[10] * (-input_matrix[4]);
+    intermediary[12] = input_matrix[9] * mag_transition_matrix[8]
+        + input_matrix[1] * mag_transition_matrix[6] + input_matrix[10] * mag_transition_matrix[10]
+        - input_matrix[2] * mag_transition_matrix[7]
+        - (-input_matrix[11]) * mag_transition_matrix[11];
+    intermediary[13] = input_matrix[9] * mag_transition_matrix[9]
+        + input_matrix[1] * mag_transition_matrix[7] + input_matrix[10] * mag_transition_matrix[11]
+        + mag_transition_matrix[6] * input_matrix[2]
+        + mag_transition_matrix[10] * (-input_matrix[11]);
+    intermediary[14] = input_matrix[16] * mag_transition_matrix[10]
+        + input_matrix[3] * mag_transition_matrix[6] + input_matrix[10] * mag_transition_matrix[8]
+        - input_matrix[4] * mag_transition_matrix[7] - input_matrix[11] * mag_transition_matrix[9];
+    intermediary[15] = input_matrix[16] * mag_transition_matrix[11]
+        + input_matrix[3] * mag_transition_matrix[7] + input_matrix[10] * mag_transition_matrix[9]
+        + mag_transition_matrix[6] * input_matrix[4] + mag_transition_matrix[8] * input_matrix[11];
+    intermediary[16] = input_matrix[5] * mag_transition_matrix[6]
+        + input_matrix[12] * mag_transition_matrix[8] + input_matrix[17] * mag_transition_matrix[10]
+        - input_matrix[6] * mag_transition_matrix[7] - input_matrix[13] * mag_transition_matrix[9]
+        - input_matrix[18] * mag_transition_matrix[11];
+    intermediary[17] = input_matrix[5] * mag_transition_matrix[7]
+        + input_matrix[12] * mag_transition_matrix[9] + input_matrix[17] * mag_transition_matrix[11]
+        + mag_transition_matrix[6] * input_matrix[6] + mag_transition_matrix[8] * input_matrix[13]
+        + mag_transition_matrix[10] * input_matrix[18];
+    intermediary[18] = input_matrix[7] * mag_transition_matrix[6]
+        + input_matrix[14] * mag_transition_matrix[8] + input_matrix[19] * mag_transition_matrix[10]
+        - input_matrix[8] * mag_transition_matrix[7] - input_matrix[15] * mag_transition_matrix[9]
+        - input_matrix[20] * mag_transition_matrix[11];
+    intermediary[19] = input_matrix[7] * mag_transition_matrix[7]
+        + input_matrix[14] * mag_transition_matrix[9] + input_matrix[19] * mag_transition_matrix[11]
+        + mag_transition_matrix[6] * input_matrix[8] + mag_transition_matrix[8] * input_matrix[15]
+        + mag_transition_matrix[10] * input_matrix[20];
+    intermediary[20] = input_matrix[0] * mag_transition_matrix[12]
+        + input_matrix[1] * mag_transition_matrix[14] + input_matrix[3] * mag_transition_matrix[16]
+        - (-input_matrix[2]) * mag_transition_matrix[15]
+        - (-input_matrix[4]) * mag_transition_matrix[17];
+    intermediary[21] = input_matrix[0] * mag_transition_matrix[13]
+        + input_matrix[1] * mag_transition_matrix[15] + input_matrix[3] * mag_transition_matrix[17]
+        + mag_transition_matrix[14] * (-input_matrix[2])
+        + mag_transition_matrix[16] * (-input_matrix[4]);
+    intermediary[22] = input_matrix[9] * mag_transition_matrix[14]
+        + input_matrix[1] * mag_transition_matrix[12] + input_matrix[10] * mag_transition_matrix[16]
+        - input_matrix[2] * mag_transition_matrix[13]
+        - (-input_matrix[11]) * mag_transition_matrix[17];
+    intermediary[23] = input_matrix[9] * mag_transition_matrix[15]
+        + input_matrix[1] * mag_transition_matrix[13] + input_matrix[10] * mag_transition_matrix[17]
+        + mag_transition_matrix[12] * input_matrix[2]
+        + mag_transition_matrix[16] * (-input_matrix[11]);
+    intermediary[24] = input_matrix[16] * mag_transition_matrix[16]
+        + input_matrix[3] * mag_transition_matrix[12] + input_matrix[10] * mag_transition_matrix[14]
+        - input_matrix[4] * mag_transition_matrix[13]
+        - input_matrix[11] * mag_transition_matrix[15];
+    intermediary[25] = input_matrix[16] * mag_transition_matrix[17]
+        + input_matrix[3] * mag_transition_matrix[13] + input_matrix[10] * mag_transition_matrix[15]
+        + mag_transition_matrix[12] * input_matrix[4]
+        + mag_transition_matrix[14] * input_matrix[11];
+    intermediary[26] = input_matrix[5] * mag_transition_matrix[12]
+        + input_matrix[12] * mag_transition_matrix[14]
+        + input_matrix[17] * mag_transition_matrix[16] - input_matrix[6] * mag_transition_matrix[13]
+        - input_matrix[13] * mag_transition_matrix[15]
+        - input_matrix[18] * mag_transition_matrix[17];
+    intermediary[27] = input_matrix[5] * mag_transition_matrix[13]
+        + input_matrix[12] * mag_transition_matrix[15]
+        + input_matrix[17] * mag_transition_matrix[17] + mag_transition_matrix[12] * input_matrix[6]
+        + mag_transition_matrix[14] * input_matrix[13]
+        + mag_transition_matrix[16] * input_matrix[18];
+    intermediary[28] = input_matrix[7] * mag_transition_matrix[12]
+        + input_matrix[14] * mag_transition_matrix[14]
+        + input_matrix[19] * mag_transition_matrix[16] - input_matrix[8] * mag_transition_matrix[13]
+        - input_matrix[15] * mag_transition_matrix[15]
+        - input_matrix[20] * mag_transition_matrix[17];
+    intermediary[29] = input_matrix[7] * mag_transition_matrix[13]
+        + input_matrix[14] * mag_transition_matrix[15]
+        + input_matrix[19] * mag_transition_matrix[17] + mag_transition_matrix[12] * input_matrix[8]
+        + mag_transition_matrix[14] * input_matrix[15]
+        + mag_transition_matrix[16] * input_matrix[20];
+    intermediary[30] = elec_transition_matrix[0] * input_matrix[5]
+        + elec_transition_matrix[2] * input_matrix[7]
+        - elec_transition_matrix[1] * (-input_matrix[6])
+        - elec_transition_matrix[3] * (-input_matrix[8]);
+    intermediary[31] = elec_transition_matrix[0] * (-input_matrix[6])
+        + elec_transition_matrix[2] * (-input_matrix[8])
+        + input_matrix[5] * elec_transition_matrix[1] + input_matrix[7] * elec_transition_matrix[3];
+    intermediary[32] = elec_transition_matrix[0] * input_matrix[12]
+        + elec_transition_matrix[2] * input_matrix[14]
+        - elec_transition_matrix[1] * (-input_matrix[13])
+        - elec_transition_matrix[3] * (-input_matrix[15]);
+    intermediary[33] = elec_transition_matrix[0] * (-input_matrix[13])
+        + elec_transition_matrix[2] * (-input_matrix[15])
+        + input_matrix[12] * elec_transition_matrix[1]
+        + input_matrix[14] * elec_transition_matrix[3];
+    intermediary[34] = elec_transition_matrix[0] * input_matrix[17]
+        + elec_transition_matrix[2] * input_matrix[19]
+        - elec_transition_matrix[1] * (-input_matrix[18])
+        - elec_transition_matrix[3] * (-input_matrix[20]);
+    intermediary[35] = elec_transition_matrix[0] * (-input_matrix[18])
+        + elec_transition_matrix[2] * (-input_matrix[20])
+        + input_matrix[17] * elec_transition_matrix[1]
+        + input_matrix[19] * elec_transition_matrix[3];
+    intermediary[36] = input_matrix[21] * elec_transition_matrix[0]
+        + elec_transition_matrix[2] * input_matrix[22]
+        - elec_transition_matrix[3] * (-input_matrix[23]);
+    intermediary[37] = input_matrix[21] * elec_transition_matrix[1]
+        + elec_transition_matrix[2] * (-input_matrix[23])
+        + input_matrix[22] * elec_transition_matrix[3];
+    intermediary[38] = input_matrix[24] * elec_transition_matrix[2]
+        + elec_transition_matrix[0] * input_matrix[22]
+        - elec_transition_matrix[1] * input_matrix[23];
+    intermediary[39] = input_matrix[24] * elec_transition_matrix[3]
+        + elec_transition_matrix[0] * input_matrix[23]
+        + input_matrix[22] * elec_transition_matrix[1];
+    intermediary[40] = elec_transition_matrix[4] * input_matrix[5]
+        + elec_transition_matrix[6] * input_matrix[7]
+        - elec_transition_matrix[5] * (-input_matrix[6])
+        - elec_transition_matrix[7] * (-input_matrix[8]);
+    intermediary[41] = elec_transition_matrix[4] * (-input_matrix[6])
+        + elec_transition_matrix[6] * (-input_matrix[8])
+        + input_matrix[5] * elec_transition_matrix[5] + input_matrix[7] * elec_transition_matrix[7];
+    intermediary[42] = elec_transition_matrix[4] * input_matrix[12]
+        + elec_transition_matrix[6] * input_matrix[14]
+        - elec_transition_matrix[5] * (-input_matrix[13])
+        - elec_transition_matrix[7] * (-input_matrix[15]);
+    intermediary[43] = elec_transition_matrix[4] * (-input_matrix[13])
+        + elec_transition_matrix[6] * (-input_matrix[15])
+        + input_matrix[12] * elec_transition_matrix[5]
+        + input_matrix[14] * elec_transition_matrix[7];
+    intermediary[44] = elec_transition_matrix[4] * input_matrix[17]
+        + elec_transition_matrix[6] * input_matrix[19]
+        - elec_transition_matrix[5] * (-input_matrix[18])
+        - elec_transition_matrix[7] * (-input_matrix[20]);
+    intermediary[45] = elec_transition_matrix[4] * (-input_matrix[18])
+        + elec_transition_matrix[6] * (-input_matrix[20])
+        + input_matrix[17] * elec_transition_matrix[5]
+        + input_matrix[19] * elec_transition_matrix[7];
+    intermediary[46] = input_matrix[21] * elec_transition_matrix[4]
+        + elec_transition_matrix[6] * input_matrix[22]
+        - elec_transition_matrix[7] * (-input_matrix[23]);
+    intermediary[47] = input_matrix[21] * elec_transition_matrix[5]
+        + elec_transition_matrix[6] * (-input_matrix[23])
+        + input_matrix[22] * elec_transition_matrix[7];
+    intermediary[48] = input_matrix[24] * elec_transition_matrix[6]
+        + elec_transition_matrix[4] * input_matrix[22]
+        - elec_transition_matrix[5] * input_matrix[23];
+    intermediary[49] = input_matrix[24] * elec_transition_matrix[7]
+        + elec_transition_matrix[4] * input_matrix[23]
+        + input_matrix[22] * elec_transition_matrix[5];
+    output_matrix[0] = mag_transition_matrix[0] * intermediary[0]
+        + mag_transition_matrix[2] * intermediary[2] + mag_transition_matrix[4] * intermediary[4]
+        + mag_transition_matrix[1] * intermediary[1] + mag_transition_matrix[3] * intermediary[3]
+        + mag_transition_matrix[5] * intermediary[5];
+    output_matrix[1] = mag_transition_matrix[6] * intermediary[0]
+        + mag_transition_matrix[8] * intermediary[2] + mag_transition_matrix[10] * intermediary[4]
+        + mag_transition_matrix[7] * intermediary[1] + mag_transition_matrix[9] * intermediary[3]
+        + mag_transition_matrix[11] * intermediary[5];
+    output_matrix[2] = mag_transition_matrix[6] * intermediary[1]
+        + mag_transition_matrix[8] * intermediary[3] + mag_transition_matrix[10] * intermediary[5]
+        - intermediary[0] * mag_transition_matrix[7] - intermediary[2] * mag_transition_matrix[9]
+        - intermediary[4] * mag_transition_matrix[11];
+    output_matrix[3] = mag_transition_matrix[12] * intermediary[0]
+        + mag_transition_matrix[14] * intermediary[2] + mag_transition_matrix[16] * intermediary[4]
+        + mag_transition_matrix[13] * intermediary[1] + mag_transition_matrix[15] * intermediary[3]
+        + mag_transition_matrix[17] * intermediary[5];
+    output_matrix[4] = mag_transition_matrix[12] * intermediary[1]
+        + mag_transition_matrix[14] * intermediary[3] + mag_transition_matrix[16] * intermediary[5]
+        - intermediary[0] * mag_transition_matrix[13] - intermediary[2] * mag_transition_matrix[15]
+        - intermediary[4] * mag_transition_matrix[17];
+    output_matrix[5] = elec_transition_matrix[0] * intermediary[6]
+        + elec_transition_matrix[2] * intermediary[8] + elec_transition_matrix[1] * intermediary[7]
+        + elec_transition_matrix[3] * intermediary[9];
+    output_matrix[6] = elec_transition_matrix[0] * intermediary[7]
+        + elec_transition_matrix[2] * intermediary[9] - intermediary[6] * elec_transition_matrix[1]
+        - intermediary[8] * elec_transition_matrix[3];
+    output_matrix[7] = elec_transition_matrix[4] * intermediary[6]
+        + elec_transition_matrix[6] * intermediary[8] + elec_transition_matrix[5] * intermediary[7]
+        + elec_transition_matrix[7] * intermediary[9];
+    output_matrix[8] = elec_transition_matrix[4] * intermediary[7]
+        + elec_transition_matrix[6] * intermediary[9] - intermediary[6] * elec_transition_matrix[5]
+        - intermediary[8] * elec_transition_matrix[7];
+    output_matrix[9] = mag_transition_matrix[6] * intermediary[10]
+        + mag_transition_matrix[8] * intermediary[12] + mag_transition_matrix[10] * intermediary[14]
+        + mag_transition_matrix[7] * intermediary[11] + mag_transition_matrix[9] * intermediary[13]
+        + mag_transition_matrix[11] * intermediary[15];
+    output_matrix[10] = mag_transition_matrix[12] * intermediary[10]
+        + mag_transition_matrix[14] * intermediary[12]
+        + mag_transition_matrix[16] * intermediary[14]
+        + mag_transition_matrix[13] * intermediary[11]
+        + mag_transition_matrix[15] * intermediary[13]
+        + mag_transition_matrix[17] * intermediary[15];
+    output_matrix[11] = mag_transition_matrix[12] * intermediary[11]
+        + mag_transition_matrix[14] * intermediary[13]
+        + mag_transition_matrix[16] * intermediary[15]
+        - intermediary[10] * mag_transition_matrix[13]
+        - intermediary[12] * mag_transition_matrix[15]
+        - intermediary[14] * mag_transition_matrix[17];
+    output_matrix[12] = elec_transition_matrix[0] * intermediary[16]
+        + elec_transition_matrix[2] * intermediary[18]
+        + elec_transition_matrix[1] * intermediary[17]
+        + elec_transition_matrix[3] * intermediary[19];
+    output_matrix[13] = elec_transition_matrix[0] * intermediary[17]
+        + elec_transition_matrix[2] * intermediary[19]
+        - intermediary[16] * elec_transition_matrix[1]
+        - intermediary[18] * elec_transition_matrix[3];
+    output_matrix[14] = elec_transition_matrix[4] * intermediary[16]
+        + elec_transition_matrix[6] * intermediary[18]
+        + elec_transition_matrix[5] * intermediary[17]
+        + elec_transition_matrix[7] * intermediary[19];
+    output_matrix[15] = elec_transition_matrix[4] * intermediary[17]
+        + elec_transition_matrix[6] * intermediary[19]
+        - intermediary[16] * elec_transition_matrix[5]
+        - intermediary[18] * elec_transition_matrix[7];
+    output_matrix[16] = mag_transition_matrix[12] * intermediary[20]
+        + mag_transition_matrix[14] * intermediary[22]
+        + mag_transition_matrix[16] * intermediary[24]
+        + mag_transition_matrix[13] * intermediary[21]
+        + mag_transition_matrix[15] * intermediary[23]
+        + mag_transition_matrix[17] * intermediary[25];
+    output_matrix[17] = elec_transition_matrix[0] * intermediary[26]
+        + elec_transition_matrix[2] * intermediary[28]
+        + elec_transition_matrix[1] * intermediary[27]
+        + elec_transition_matrix[3] * intermediary[29];
+    output_matrix[18] = elec_transition_matrix[0] * intermediary[27]
+        + elec_transition_matrix[2] * intermediary[29]
+        - intermediary[26] * elec_transition_matrix[1]
+        - intermediary[28] * elec_transition_matrix[3];
+    output_matrix[19] = elec_transition_matrix[4] * intermediary[26]
+        + elec_transition_matrix[6] * intermediary[28]
+        + elec_transition_matrix[5] * intermediary[27]
+        + elec_transition_matrix[7] * intermediary[29];
+    output_matrix[20] = elec_transition_matrix[4] * intermediary[27]
+        + elec_transition_matrix[6] * intermediary[29]
+        - intermediary[26] * elec_transition_matrix[5]
+        - intermediary[28] * elec_transition_matrix[7];
+    output_matrix[21] = elec_transition_matrix[0] * intermediary[36]
+        + elec_transition_matrix[2] * intermediary[38]
+        + elec_transition_matrix[1] * intermediary[37]
+        + elec_transition_matrix[3] * intermediary[39];
+    output_matrix[22] = elec_transition_matrix[4] * intermediary[36]
+        + elec_transition_matrix[6] * intermediary[38]
+        + elec_transition_matrix[5] * intermediary[37]
+        + elec_transition_matrix[7] * intermediary[39];
+    output_matrix[23] = elec_transition_matrix[4] * intermediary[37]
+        + elec_transition_matrix[6] * intermediary[39]
+        - intermediary[36] * elec_transition_matrix[5]
+        - intermediary[38] * elec_transition_matrix[7];
+    output_matrix[24] = elec_transition_matrix[4] * intermediary[46]
+        + elec_transition_matrix[6] * intermediary[48]
+        + elec_transition_matrix[5] * intermediary[47]
+        + elec_transition_matrix[7] * intermediary[49];
 }
 
 void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix[NB_FLOATS_PER_SM],
     float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices,
     float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
-    output_asm += start_indice*NB_FLOATS_PER_SM;
+    output_asm += start_indice * NB_FLOATS_PER_SM;
     for (int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
     {
         float* out_ptr = work_matrix;
@@ -488,6 +691,7 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
 
         Matrix_change_of_basis(intermediary, work_matrix, mag_calibration_matrices,
             elec_calibration_matrices, output_asm);
+
         mag_calibration_matrices += 3 * 3 * 2;
         elec_calibration_matrices += 2 * 2 * 2;
         output_asm += NB_FLOATS_PER_SM;
