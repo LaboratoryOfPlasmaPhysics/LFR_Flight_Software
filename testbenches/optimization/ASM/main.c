@@ -9,8 +9,6 @@ volatile int ASM_divide_8_duration = 0;
 volatile int ASM_compress_divide_and_mask_duration = 0;
 volatile int SM_average_with_clear_duration = 0;
 volatile int SM_average_duration = 0;
-volatile int SM_average_old_with_clear_duration = 0;
-volatile int SM_average_old_duration = 0;
 
 volatile int done = 0;
 
@@ -93,15 +91,6 @@ rtems_task Init(rtems_task_argument ignored)
     }),
         SM_average_duration, 10);
 
-    BENCH(ARG({
-        SM_average_old(input_matrix, output_matrix, ring_node_tab, 0, 0, &asm_msg_, CHANNELF0);
-    }),
-        SM_average_old_with_clear_duration, 10);
-
-    BENCH(ARG({
-        SM_average_old(input_matrix, output_matrix, ring_node_tab, 1, 1, &asm_msg_, CHANNELF0);
-    }),
-        SM_average_old_duration, 10);
 #ifndef TSIM
     while (1)
         done = 1;

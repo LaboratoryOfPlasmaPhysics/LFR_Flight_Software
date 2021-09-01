@@ -22,7 +22,6 @@ if meson.is_cross_build()
                         include_directories: ['../../header','common'] )
 
     subdir('ASM')
-    subdir('Matrix_average')
     subdir('BasicParameters1')
     subdir('Memory_write')
 endif
