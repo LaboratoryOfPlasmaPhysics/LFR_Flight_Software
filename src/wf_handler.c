@@ -396,7 +396,7 @@ rtems_task wfrm_task(rtems_task_argument argument) // used with the waveform pic
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in WFRM *** ERR get_message_queue_id_send %d\n", status);
+        PRINTF("in WFRM *** ERR get_message_queue_id_send %d\n", status);
     }
 
     BOOT_PRINTF("in WFRM ***\n");
@@ -450,7 +450,7 @@ rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform pic
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in CWF3 *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in CWF3 *** ERR get_message_queue_id_send %d\n", status)
     }
 
     ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
@@ -490,7 +490,7 @@ rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform pic
         }
         else
         {
-            PRINTF1("in CWF3 *** lfrCurrentMode is %d, no data will be sent\n", lfrCurrentMode)
+            PRINTF("in CWF3 *** lfrCurrentMode is %d, no data will be sent\n", lfrCurrentMode)
         }
     }
 }
@@ -521,7 +521,7 @@ rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN BURST AND SBM
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in CWF2 *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in CWF2 *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in CWF2 ***\n");
@@ -594,7 +594,7 @@ rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN SBM1
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in CWF1 *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in CWF1 *** ERR get_message_queue_id_send %d\n", status)
     }
 
     BOOT_PRINTF("in CWF1 ***\n");
@@ -669,7 +669,7 @@ rtems_task swbd_task(rtems_task_argument argument)
         }
         else
         {
-            PRINTF1("in SWBD *** unexpected rtems event received %x\n", (int)event_out)
+            PRINTF("in SWBD *** unexpected rtems event received %x\n", (int)event_out)
         }
     }
 }
@@ -691,14 +691,14 @@ void WFP_init_rings(void)
     ring_node_swf1_extracted.buffer_address = (int)swf1_extracted;
     ring_node_swf2_extracted.buffer_address = (int)swf2_extracted;
 
-    DEBUG_PRINTF1("waveform_ring_f0 @%x\n", (unsigned int)waveform_ring_f0)
-    DEBUG_PRINTF1("waveform_ring_f1 @%x\n", (unsigned int)waveform_ring_f1)
-    DEBUG_PRINTF1("waveform_ring_f2 @%x\n", (unsigned int)waveform_ring_f2)
-    DEBUG_PRINTF1("waveform_ring_f3 @%x\n", (unsigned int)waveform_ring_f3)
-    DEBUG_PRINTF1("wf_buffer_f0 @%x\n", (unsigned int)wf_buffer_f0)
-    DEBUG_PRINTF1("wf_buffer_f1 @%x\n", (unsigned int)wf_buffer_f1)
-    DEBUG_PRINTF1("wf_buffer_f2 @%x\n", (unsigned int)wf_buffer_f2)
-    DEBUG_PRINTF1("wf_buffer_f3 @%x\n", (unsigned int)wf_buffer_f3)
+    DEBUG_PRINTF("waveform_ring_f0 @%x\n", (unsigned int)waveform_ring_f0)
+    DEBUG_PRINTF("waveform_ring_f1 @%x\n", (unsigned int)waveform_ring_f1)
+    DEBUG_PRINTF("waveform_ring_f2 @%x\n", (unsigned int)waveform_ring_f2)
+    DEBUG_PRINTF("waveform_ring_f3 @%x\n", (unsigned int)waveform_ring_f3)
+    DEBUG_PRINTF("wf_buffer_f0 @%x\n", (unsigned int)wf_buffer_f0)
+    DEBUG_PRINTF("wf_buffer_f1 @%x\n", (unsigned int)wf_buffer_f1)
+    DEBUG_PRINTF("wf_buffer_f2 @%x\n", (unsigned int)wf_buffer_f2)
+    DEBUG_PRINTF("wf_buffer_f3 @%x\n", (unsigned int)wf_buffer_f3)
 }
 
 void WFP_reset_current_ring_nodes(void)
@@ -828,7 +828,7 @@ void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime, un
             break;
 
         default:
-            PRINTF1("in compute_acquisition_time *** ERR unexpected sid %d\n", sid)
+            PRINTF("in compute_acquisition_time *** ERR unexpected sid %d\n", sid)
             deltaT = 0.;
             break;
     }
@@ -995,7 +995,7 @@ double computeCorrection(unsigned char* timePtr)
     deltaPrevious_ms = (((double)deltaPreviousTick) / TICKS_PER_S) * MS_PER_S;
     deltaNext_ms = (((double)deltaNextTick) / TICKS_PER_S) * MS_PER_S;
 
-    PRINTF2("    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
+    PRINTF("    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
 
     // which tick is the closest?
     if (deltaPreviousTick > deltaNextTick)
@@ -1009,7 +1009,7 @@ double computeCorrection(unsigned char* timePtr)
         correctionInF2 = -(deltaPrevious_ms * FREQ_F2 / MS_PER_S);
     }
 
-    PRINTF1("    correctionInF2 = %.2f\n", correctionInF2);
+    PRINTF("    correctionInF2 = %.2f\n", correctionInF2);
 
     return correctionInF2;
 }
@@ -1071,22 +1071,22 @@ void snapshot_resynchronization(unsigned char* timePtr)
 
         case MEASURE:
             // ********
-            PRINTF1("MEASURE === %d\n", nbSnapshots);
+            PRINTF("MEASURE === %d\n", nbSnapshots);
             state = CORRECTION;
             correction = computeCorrection(timePtr);
-            PRINTF1("MEASURE === correction = %.2f\n", correction);
+            PRINTF("MEASURE === correction = %.2f\n", correction);
             applyCorrection(correction);
-            PRINTF1("MEASURE === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+            PRINTF("MEASURE === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
             //****
             break;
 
         case CORRECTION:
             //************
-            PRINTF1("CORRECTION === %d\n", nbSnapshots);
+            PRINTF("CORRECTION === %d\n", nbSnapshots);
             state = MEASURE;
             computeCorrection(timePtr);
             set_wfp_delta_snapshot();
-            PRINTF1("CORRECTION === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
+            PRINTF("CORRECTION === delta_snapshot = %d\n", waveform_picker_regs->delta_snapshot);
             //****
             break;
 
@@ -1179,11 +1179,11 @@ void reset_waveform_picker_regs(void)
 
     set_wfp_delta_f2(); // 0x2c
 
-    DEBUG_PRINTF1("delta_snapshot %x\n", waveform_picker_regs->delta_snapshot);
-    DEBUG_PRINTF1("delta_f0 %x\n", waveform_picker_regs->delta_f0);
-    DEBUG_PRINTF1("delta_f0_2 %x\n", waveform_picker_regs->delta_f0_2);
-    DEBUG_PRINTF1("delta_f1 %x\n", waveform_picker_regs->delta_f1);
-    DEBUG_PRINTF1("delta_f2 %x\n", waveform_picker_regs->delta_f2);
+    DEBUG_PRINTF("delta_snapshot %x\n", waveform_picker_regs->delta_snapshot);
+    DEBUG_PRINTF("delta_f0 %x\n", waveform_picker_regs->delta_f0);
+    DEBUG_PRINTF("delta_f0_2 %x\n", waveform_picker_regs->delta_f0_2);
+    DEBUG_PRINTF("delta_f1 %x\n", waveform_picker_regs->delta_f1);
+    DEBUG_PRINTF("delta_f2 %x\n", waveform_picker_regs->delta_f2);
     // 2688 = 8 * 336
     waveform_picker_regs->nb_data_by_buffer
         = DFLT_WFP_NB_DATA_BY_BUFFER; // 0x30 *** 2688 - 1 => nb samples -1
@@ -1393,7 +1393,7 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
     else
     {
         sequence_cnt = (unsigned short*)NULL;
-        PRINTF1("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", sid)
+        PRINTF("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", sid)
     }
 
     if (sequence_cnt != NULL)

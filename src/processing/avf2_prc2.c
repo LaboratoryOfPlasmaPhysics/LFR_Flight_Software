@@ -56,7 +56,7 @@ float k_coeff_intercalib_f2[NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN] = { 0
 #define UNITY_2x2_MATRIX 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f
 
 // 128 * 3x3 float complex matrices
-float mag_calibration_matrices_f2[NB_BINS_PER_SM * 3 * 3 * 2]
+float mag_calibration_matrices_f2[NB_BINS_PER_SM * NB_MAG_COMPONENT_PER_SM * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX]
     = { UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
@@ -85,7 +85,7 @@ float mag_calibration_matrices_f2[NB_BINS_PER_SM * 3 * 3 * 2]
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX };
 
 // 128 * 2x2 float complex matrices
-float elec_calibration_matrices_f2[NB_BINS_PER_SM * 2 * 2 * 2]
+float elec_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEC_COMPONENT_PER_SM * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX]
     = { UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
           UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
           UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
@@ -142,12 +142,12 @@ rtems_task avf2_task(rtems_task_argument argument)
     ASM_generic_init_ring(asm_ring_norm_f2, NB_RING_NODES_ASM_NORM_F2);
     current_ring_node_asm_norm_f2 = asm_ring_norm_f2;
 
-    BOOT_PRINTF("in AVF2 ***\n")
+    BOOT_PRINTF("in AVF2 ***\n");
 
     status = get_message_queue_id_prc2(&queue_id_prc2);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status)
+        PRINTF("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status);
     }
 
     while (1)
@@ -217,7 +217,7 @@ rtems_task avf2_task(rtems_task_argument argument)
 
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in AVF2 *** Error sending message to PRC2, code %d\n", status)
+            PRINTF("in AVF2 *** Error sending message to PRC2, code %d\n", status)
         }
     }
 }
@@ -257,12 +257,12 @@ rtems_task prc2_task(rtems_task_argument argument)
     status = get_message_queue_id_send(&queue_id_send);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in PRC2 *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in PRC2 *** ERR get_message_queue_id_send %d\n", status)
     }
     status = get_message_queue_id_prc2(&queue_id_q_p2);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in PRC2 *** ERR get_message_queue_id_prc2 %d\n", status)
+        PRINTF("in PRC2 *** ERR get_message_queue_id_prc2 %d\n", status)
     }
 
     BOOT_PRINTF("in PRC2 ***\n")

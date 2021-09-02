@@ -59,33 +59,21 @@
 //*******
 // MACROS
 #ifdef PRINT_MESSAGES_ON_CONSOLE
-    #define PRINTF(x)        printf(x);
-    #define PRINTF1(x, y)    printf(x, y);
-    #define PRINTF2(x, y, z) printf(x, y, z);
+    #define PRINTF(...)        printf(__VA_ARGS__);
 #else
-    #define PRINTF(x)        ;
-    #define PRINTF1(x, y)    ;
-    #define PRINTF2(x, y, z) ;
+    #define PRINTF(...)        ;
 #endif
 
 #ifdef BOOT_MESSAGES
-    #define BOOT_PRINTF(x)        printf(x);
-    #define BOOT_PRINTF1(x, y)    printf(x, y);
-    #define BOOT_PRINTF2(x, y, z) printf(x, y, z);
+    #define BOOT_PRINTF(...)        printf(__VA_ARGS__);
 #else
-    #define BOOT_PRINTF(x)        ;
-    #define BOOT_PRINTF1(x, y)    ;
-    #define BOOT_PRINTF2(x, y, z) ;
+    #define BOOT_PRINTF(...)        ;
 #endif
 
 #ifdef DEBUG_MESSAGES
-    #define DEBUG_PRINTF(x)        printf(x);
-    #define DEBUG_PRINTF1(x, y)    printf(x, y);
-    #define DEBUG_PRINTF2(x, y, z) printf(x, y, z);
+    #define DEBUG_PRINTF(...)        printf(__VA_ARGS__);
 #else
-    #define DEBUG_PRINTF(x)        ;
-    #define DEBUG_PRINTF1(x, y)    ;
-    #define DEBUG_PRINTF2(x, y, z) ;
+    #define DEBUG_PRINTF(...)        ;
 #endif
 
 #define CONST_65536 65536 // 2^16

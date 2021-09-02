@@ -69,13 +69,13 @@ rtems_task actn_task(rtems_task_argument unused)
     status = get_message_queue_id_recv(&queue_rcv_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR get_message_queue_id_recv %d\n", status)
+        PRINTF("in ACTN *** ERR get_message_queue_id_recv %d\n", status);
     }
 
     status = get_message_queue_id_send(&queue_snd_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in ACTN *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in ACTN *** ERR get_message_queue_id_send %d\n", status);
     }
 
     result = LFR_SUCCESSFUL;
@@ -90,7 +90,7 @@ rtems_task actn_task(rtems_task_argument unused)
         getTime(time); // set time to the current time
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+            PRINTF("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
         }
         else
         {
@@ -244,7 +244,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     if (status == LFR_SUCCESSFUL) // the date is valid, enter the mode
     {
-        PRINTF1("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
+        PRINTF("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
 
         switch (requestedMode)
         {
@@ -532,13 +532,13 @@ void update_last_valid_transition_date(unsigned int transitionCoarseTime)
     if (transitionCoarseTime == 0)
     {
         lastValidEnterModeTime = time_management_regs->coarse_time + 1;
-        PRINTF1("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n",
+        PRINTF("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n",
             lastValidEnterModeTime);
     }
     else
     {
         lastValidEnterModeTime = transitionCoarseTime;
-        PRINTF1("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
+        PRINTF("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
     }
 }
 
@@ -558,7 +558,7 @@ int check_transition_date(unsigned int transitionCoarseTime)
     {
         localCoarseTime = time_management_regs->coarse_time & COARSE_TIME_MASK;
 
-        PRINTF2("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
+        PRINTF("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
 
         if (transitionCoarseTime <= localCoarseTime) // SSS-CP-EQS-322
         {
@@ -573,7 +573,7 @@ int check_transition_date(unsigned int transitionCoarseTime)
             if (deltaCoarseTime > MAX_DELTA_COARSE_TIME) // SSS-CP-EQS-323
             {
                 status = LFR_DEFAULT;
-                PRINTF1(
+                PRINTF(
                     "ERR *** in check_transition_date *** deltaCoarseTime = %x\n", deltaCoarseTime)
             }
         }
@@ -630,7 +630,7 @@ int stop_spectral_matrices(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
+        PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
     return status;
@@ -681,7 +681,7 @@ int stop_current_mode(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
+        PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
     return status;
@@ -786,7 +786,7 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode_normal *** status = %d\n", status)
+        PRINTF("ERR *** in enter_mode_normal *** status = %d\n", status)
         status = RTEMS_UNSATISFIED;
     }
 
@@ -827,7 +827,7 @@ int enter_mode_burst(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode_burst *** status = %d\n", status)
+        PRINTF("ERR *** in enter_mode_burst *** status = %d\n", status)
         status = RTEMS_UNSATISFIED;
     }
 
@@ -897,7 +897,7 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode_sbm1 *** status = %d\n", status);
+        PRINTF("ERR *** in enter_mode_sbm1 *** status = %d\n", status);
         status = RTEMS_UNSATISFIED;
     }
 
@@ -968,7 +968,7 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in enter_mode_sbm2 *** status = %d\n", status)
+        PRINTF("ERR *** in enter_mode_sbm2 *** status = %d\n", status)
         status = RTEMS_UNSATISFIED;
     }
 
@@ -997,61 +997,61 @@ int restart_science_tasks(unsigned char lfrRequestedMode)
     status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
+        PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
     }
 
     status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
     if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
+        PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
     }
 
     status[STATUS_2] = rtems_task_restart(Task_id[TASKID_WFRM], 1);
     if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2])
+        PRINTF("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2])
     }
 
     status[STATUS_3] = rtems_task_restart(Task_id[TASKID_CWF3], 1);
     if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3])
+        PRINTF("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3])
     }
 
     status[STATUS_4] = rtems_task_restart(Task_id[TASKID_CWF2], 1);
     if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4])
+        PRINTF("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4])
     }
 
     status[STATUS_5] = rtems_task_restart(Task_id[TASKID_CWF1], 1);
     if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5])
+        PRINTF("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5])
     }
 
     status[STATUS_6] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
     if (status[STATUS_6] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6])
+        PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6])
     }
 
     status[STATUS_7] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
     if (status[STATUS_7] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7])
+        PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7])
     }
 
     status[STATUS_8] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
     if (status[STATUS_8] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8])
+        PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8])
     }
 
     status[STATUS_9] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
     if (status[STATUS_9] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9])
+        PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9])
     }
 
     if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
@@ -1088,37 +1088,37 @@ int restart_asm_tasks(unsigned char lfrRequestedMode)
     status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
+        PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
     }
 
     status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
     if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
+        PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
     }
 
     status[STATUS_2] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
     if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2])
+        PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2])
     }
 
     status[STATUS_3] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
     if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3])
+        PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3])
     }
 
     status[STATUS_4] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
     if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4])
+        PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4])
     }
 
     status[STATUS_5] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
     if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5])
+        PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5])
     }
 
     if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
@@ -1149,7 +1149,7 @@ int suspend_science_tasks(void)
     status = rtems_task_suspend(Task_id[TASKID_AVF0]); // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
-        PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
+        PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status)
     }
     else
     {
@@ -1160,7 +1160,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC0]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC0 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status)
         }
         else
         {
@@ -1172,7 +1172,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** AVF1 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status)
         }
         else
         {
@@ -1184,7 +1184,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status)
         }
         else
         {
@@ -1196,7 +1196,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status)
         }
         else
         {
@@ -1208,7 +1208,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status)
         }
         else
         {
@@ -1220,7 +1220,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_WFRM]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** WFRM ERR %d\n", status)
+            PRINTF("in suspend_science_task *** WFRM ERR %d\n", status)
         }
         else
         {
@@ -1232,7 +1232,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF3]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** CWF3 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** CWF3 ERR %d\n", status)
         }
         else
         {
@@ -1244,7 +1244,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** CWF2 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** CWF2 ERR %d\n", status)
         }
         else
         {
@@ -1256,7 +1256,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** CWF1 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** CWF1 ERR %d\n", status)
         }
         else
         {
@@ -1285,7 +1285,7 @@ int suspend_asm_tasks(void)
     status = rtems_task_suspend(Task_id[TASKID_AVF0]); // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
-        PRINTF1("in suspend_science_task *** AVF0 ERR %d\n", status)
+        PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status)
     }
     else
     {
@@ -1297,7 +1297,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC0]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC0 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status)
         }
         else
         {
@@ -1310,7 +1310,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** AVF1 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status)
         }
         else
         {
@@ -1323,7 +1323,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC1 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status)
         }
         else
         {
@@ -1336,7 +1336,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** AVF2 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status)
         }
         else
         {
@@ -1349,7 +1349,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF1("in suspend_science_task *** PRC2 ERR %d\n", status)
+            PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status)
         }
         else
         {

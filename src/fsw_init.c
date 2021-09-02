@@ -93,8 +93,8 @@ void initCache()
     ASR16_resetRegisterProtectionControlRegister();
 
     cacheControlRegister = CCR_getValue();
-    PRINTF1("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    PRINTF1("(0) ASR16                        = %x\n", *asr16Ptr);
+    PRINTF("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    PRINTF("(0) ASR16                        = %x\n", *asr16Ptr);
 
     CCR_enableInstructionCache(); // ICS bits
     CCR_enableDataCache(); // DCS bits
@@ -103,8 +103,8 @@ void initCache()
     faultTolerantScheme();
 
     cacheControlRegister = CCR_getValue();
-    PRINTF1("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    PRINTF1("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
+    PRINTF("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    PRINTF("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
 
     PRINTF("\n");
 }
@@ -150,16 +150,16 @@ rtems_task Init(rtems_task_argument ignored)
     PRINTF("*************************\n")
     PRINTF("** LFR Flight Software **\n")
 
-    PRINTF1("** %d-", SW_VERSION_N1)
-    PRINTF1("%d-", SW_VERSION_N2)
-    PRINTF1("%d-", SW_VERSION_N3)
-    PRINTF1("%d             **\n", SW_VERSION_N4)
+    PRINTF("** %d-", SW_VERSION_N1)
+    PRINTF("%d-", SW_VERSION_N2)
+    PRINTF("%d-", SW_VERSION_N3)
+    PRINTF("%d             **\n", SW_VERSION_N4)
 
     vhdlVersion = (unsigned char*)(REGS_ADDR_VHDL_VERSION);
     PRINTF("** VHDL                **\n")
-    PRINTF1("** %d-", vhdlVersion[1])
-    PRINTF1("%d-", vhdlVersion[2])
-    PRINTF1("%d              **\n", vhdlVersion[3])
+    PRINTF("** %d-", vhdlVersion[1])
+    PRINTF("%d-", vhdlVersion[2])
+    PRINTF("%d              **\n", vhdlVersion[3])
     PRINTF("*************************\n")
     PRINTF("\n\n")
 
@@ -217,26 +217,26 @@ rtems_task Init(rtems_task_argument ignored)
 
     updateLFRCurrentMode(LFR_MODE_STANDBY);
 
-    BOOT_PRINTF1("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
+    BOOT_PRINTF("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
 
     create_names(); // create all names
 
     status = create_timecode_timer(); // create the timer used by timecode_irq_handler
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR in create_timer_timecode, code %d", status)
+        PRINTF("in INIT *** ERR in create_timer_timecode, code %d", status)
     }
 
     status = create_message_queues(); // create message queues
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR in create_message_queues, code %d", status)
+        PRINTF("in INIT *** ERR in create_message_queues, code %d", status)
     }
 
     status = create_all_tasks(); // create all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR in create_all_tasks, code %d\n", status)
+        PRINTF("in INIT *** ERR in create_all_tasks, code %d\n", status)
     }
 
     // **************************
@@ -244,7 +244,7 @@ rtems_task Init(rtems_task_argument ignored)
     status_spw = spacewire_open_link(); // (1) open the link
     if (status_spw != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR spacewire_open_link code %d\n", status_spw)
+        PRINTF("in INIT *** ERR spacewire_open_link code %d\n", status_spw)
     }
 
     if (status_spw == RTEMS_SUCCESSFUL) // (2) configure the link
@@ -252,7 +252,7 @@ rtems_task Init(rtems_task_argument ignored)
         status_spw = spacewire_configure_link(fdSPW);
         if (status_spw != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in INIT *** ERR spacewire_configure_link code %d\n", status_spw)
+            PRINTF("in INIT *** ERR spacewire_configure_link code %d\n", status_spw)
         }
     }
 
@@ -261,7 +261,7 @@ rtems_task Init(rtems_task_argument ignored)
         status_spw = spacewire_start_link(fdSPW);
         if (status_spw != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in INIT *** ERR spacewire_start_link code %d\n", status_spw)
+            PRINTF("in INIT *** ERR spacewire_start_link code %d\n", status_spw)
         }
     }
     // </SPACEWIRE INITIALIZATION>
@@ -270,7 +270,7 @@ rtems_task Init(rtems_task_argument ignored)
     status = start_all_tasks(); // start all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR in start_all_tasks, code %d", status)
+        PRINTF("in INIT *** ERR in start_all_tasks, code %d", status)
     }
 
     // start RECV and SEND *AFTER* SpaceWire Initialization, due to the timeout of the start call
@@ -278,7 +278,7 @@ rtems_task Init(rtems_task_argument ignored)
     status = start_recv_send_tasks();
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** ERR start_recv_send_tasks code %d\n", status)
+        PRINTF("in INIT *** ERR start_recv_send_tasks code %d\n", status)
     }
 
     // suspend science tasks, they will be restarted later depending on the mode
@@ -286,7 +286,7 @@ rtems_task Init(rtems_task_argument ignored)
                                       // current mode = STANDBY)
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
+        PRINTF("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
     }
 
     // configure IRQ handling for the waveform picker unit
@@ -301,7 +301,7 @@ rtems_task Init(rtems_task_argument ignored)
         status = rtems_event_send(Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in INIT *** ERR rtems_event_send to SPIQ code %d\n", status)
+            PRINTF("in INIT *** ERR rtems_event_send to SPIQ code %d\n", status)
         }
     }
 
@@ -330,8 +330,8 @@ void init_local_mode_parameters(void)
 
     // LOCAL PARAMETERS
 
-    BOOT_PRINTF1("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
-    BOOT_PRINTF1("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+    BOOT_PRINTF("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
+    BOOT_PRINTF("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
 
     // init sequence counters
 
@@ -790,7 +790,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         CCSDS_TC_PKT_MAX_SIZE, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_recv != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
+        PRINTF("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
     }
 
     //************************************************
@@ -799,7 +799,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         MSG_QUEUE_SIZE_SEND, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_send != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
+        PRINTF("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
     }
 
     //*****************************************************************************
@@ -808,7 +808,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         MSG_QUEUE_SIZE_PRC0, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p0 != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0)
+        PRINTF("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0)
     }
 
     //*****************************************************************************
@@ -817,7 +817,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         MSG_QUEUE_SIZE_PRC1, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p1 != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1)
+        PRINTF("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1)
     }
 
     //*****************************************************************************
@@ -826,7 +826,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         MSG_QUEUE_SIZE_PRC2, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p2 != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_message_queues *** ERR creating Q_P2 queue, %d\n", status_q_p2)
+        PRINTF("in create_message_queues *** ERR creating Q_P2 queue, %d\n", status_q_p2)
     }
 
     if (status_recv != RTEMS_SUCCESSFUL)
@@ -861,7 +861,7 @@ rtems_status_code create_timecode_timer(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status)
+        PRINTF("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status)
     }
     else
     {
@@ -949,7 +949,7 @@ void update_queue_max_count(rtems_id queue_id, unsigned char* fifo_size_max)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in update_queue_max_count *** ERR = %d\n", status)
+        PRINTF("in update_queue_max_count *** ERR = %d\n", status)
     }
     else
     {

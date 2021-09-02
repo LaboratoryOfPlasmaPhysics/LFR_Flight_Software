@@ -63,7 +63,7 @@ float k_coeff_intercalib_f0_sbm[NB_BINS_COMPRESSED_SM_SBM_F0 * NB_K_COEFF_PER_BI
 #define UNITY_2x2_MATRIX 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f
 
 // 128 * 3x3 float complex matrices
-float mag_calibration_matrices_f0[NB_BINS_PER_SM * 3 * 3 * 2]
+float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_MAG_COMPONENT_PER_SM * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX]
     = { UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX,
@@ -92,7 +92,7 @@ float mag_calibration_matrices_f0[NB_BINS_PER_SM * 3 * 3 * 2]
           UNITY_3x3_MATRIX, UNITY_3x3_MATRIX, UNITY_3x3_MATRIX };
 
 // 128 * 2x2 float complex matrices
-float elec_calibration_matrices_f0[NB_BINS_PER_SM * 2 * 2 * 2]
+float elec_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEC_COMPONENT_PER_SM * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX]
     = { UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
           UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
           UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX, UNITY_2x2_MATRIX,
@@ -156,12 +156,12 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
     current_ring_node_asm_norm_f0 = asm_ring_norm_f0;
     current_ring_node_asm_burst_sbm_f0 = asm_ring_burst_sbm_f0;
 
-    BOOT_PRINTF1("in AVFO *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
+    BOOT_PRINTF("in AVFO *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     status = get_message_queue_id_prc0(&queue_id_prc0);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in MATR *** ERR get_message_queue_id_prc0 %d\n", status)
+        PRINTF("in MATR *** ERR get_message_queue_id_prc0 %d\n", status);
     }
 
     while (1)
@@ -268,7 +268,7 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
 
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in AVF0 *** Error sending message to PRC, code %d\n", status)
+            PRINTF("in AVF0 *** Error sending message to PRC, code %d\n", status);
         }
     }
 }
@@ -336,22 +336,22 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
     }
     else
     {
-        PRINTF1("in PRC0 *** lfrRequestedMode is %d, several headers not initialized\n",
-            (unsigned int)lfrRequestedMode)
+        PRINTF("in PRC0 *** lfrRequestedMode is %d, several headers not initialized\n",
+            (unsigned int)lfrRequestedMode);
     }
 
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in PRC0 *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in PRC0 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc0(&queue_id_q_p0);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in PRC0 *** ERR get_message_queue_id_prc0 %d\n", status)
+        PRINTF("in PRC0 *** ERR get_message_queue_id_prc0 %d\n", status);
     }
 
-    BOOT_PRINTF1("in PRC0 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode)
+    BOOT_PRINTF("in PRC0 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     while (1)
     {

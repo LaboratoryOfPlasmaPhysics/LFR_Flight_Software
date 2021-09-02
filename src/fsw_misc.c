@@ -214,7 +214,7 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
 
     apbuart_regs->scaler = value;
 
-    BOOT_PRINTF1("OK  *** apbuart port scaler reload register set to 0x%x\n", value)
+    BOOT_PRINTF("OK  *** apbuart port scaler reload register set to 0x%x\n", value);
 }
 
 /**
@@ -240,7 +240,7 @@ rtems_task load_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_create(name_watchdog_rate_monotonic, &watchdog_period_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in LOAD *** rtems_rate_monotonic_create failed with status of %d\n", status)
+        PRINTF("in LOAD *** rtems_rate_monotonic_create failed with status of %d\n", status);
     }
 
     i = 0;
@@ -261,7 +261,7 @@ rtems_task load_task(rtems_task_argument argument)
         {
             i = 0;
             j = j + 1;
-            PRINTF1("%d\n", j)
+            PRINTF("%d\n", j);
         }
 #ifdef DEBUG_WATCHDOG
         if (j == WATCHDOG_LOOP_DEBUG)
@@ -292,7 +292,7 @@ rtems_task hous_task(rtems_task_argument argument)
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in HOUS *** ERR get_message_queue_id_send %d\n", status)
+        PRINTF("in HOUS *** ERR get_message_queue_id_send %d\n", status);
     }
 
     BOOT_PRINTF("in HOUS ***\n");
@@ -302,14 +302,14 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_create(name_hk_rate_monotonic, &HK_id);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("rtems_rate_monotonic_create failed with status of %d\n", status);
+            PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
         }
     }
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status);
+        PRINTF("ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status);
     }
     else
     {
@@ -319,7 +319,7 @@ rtems_task hous_task(rtems_task_argument argument)
     // startup phase
     status = rtems_rate_monotonic_period(HK_id, SY_LFR_TIME_SYN_TIMEOUT_in_ticks);
     status = rtems_rate_monotonic_get_status(HK_id, &period_status);
-    DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
+    DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
     while ((period_status.state != RATE_MONOTONIC_EXPIRED)
         && (isSynchronized == false)) // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
     {
@@ -336,7 +336,7 @@ rtems_task hous_task(rtems_task_argument argument)
         }
     }
     status = rtems_rate_monotonic_cancel(HK_id);
-    DEBUG_PRINTF1("startup HK, HK_id status = %d\n", period_status.state)
+    DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
 
     set_hk_lfr_reset_cause(POWER_ON);
 
@@ -345,7 +345,7 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period(HK_id, HK_PERIOD);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in HOUS *** ERR period: %d\n", status);
+            PRINTF("in HOUS *** ERR period: %d\n", status);
             spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_6);
         }
         else
@@ -395,12 +395,12 @@ rtems_task hous_task(rtems_task_argument argument)
                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL)
             {
-                PRINTF1("in HOUS *** ERR send: %d\n", status)
+                PRINTF("in HOUS *** ERR send: %d\n", status);
             }
         }
     }
 
-    PRINTF("in HOUS *** deleting task\n")
+    PRINTF("in HOUS *** deleting task\n");
 
     status = rtems_task_delete(RTEMS_SELF); // should not return
 
@@ -482,14 +482,14 @@ rtems_task avgv_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_create(name_avgv_rate_monotonic, &AVGV_id);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("rtems_rate_monotonic_create failed with status of %d\n", status);
+            PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
         }
     }
 
     status = rtems_rate_monotonic_cancel(AVGV_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status);
+        PRINTF("ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status);
     }
     else
     {
@@ -515,7 +515,7 @@ rtems_task avgv_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period(AVGV_id, AVGV_PERIOD);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("in AVGV *** ERR period: %d\n", status);
+            PRINTF("in AVGV *** ERR period: %d\n", status);
         }
         else
         {
@@ -582,15 +582,15 @@ rtems_task dumb_task(rtems_task_argument unused)
                 fine_time = time_management_regs->fine_time;
                 if (i == EVENT_12)
                 {
-                    PRINTF1("%s\n", DUMB_MESSAGE_12)
+                    PRINTF("%s\n", DUMB_MESSAGE_12);
                 }
                 if (i == EVENT_13)
                 {
-                    PRINTF1("%s\n", DUMB_MESSAGE_13)
+                    PRINTF("%s\n", DUMB_MESSAGE_13);
                 }
                 if (i == EVENT_14)
                 {
-                    PRINTF1("%s\n", DUMB_MESSAGE_1)
+                    PRINTF("%s\n", DUMB_MESSAGE_1);
                 }
             }
         }
@@ -1111,7 +1111,7 @@ void set_hk_lfr_time_not_synchro()
             }
             break;
         default:
-            PRINTF1("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n",
+            PRINTF("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n",
                 synchronizationBit);
             break;
     }

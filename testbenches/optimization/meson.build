@@ -2,7 +2,7 @@ if meson.is_cross_build()
     cc = meson.get_compiler('c')
     m_dep = cc.find_library('m', required : false)
 
-    c_args = ['-std=gnu99','-fno-math-errno', target_endian_def, '-DENABLE_BENCHMARKS', '-DPRINTF(X)', '-DPRINTF1(...)', '-DPRINTF2(...)']
+    c_args = ['-std=gnu99','-fno-math-errno', target_endian_def, '-DENABLE_BENCHMARKS', '-DPRINTF(...)']
     link_args = []
     if get_option('fix-b2bst')
         c_args += '-mfix-b2bst'

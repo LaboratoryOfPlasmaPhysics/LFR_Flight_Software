@@ -573,7 +573,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status)
+        PRINTF("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status);
     }
 
     //********
@@ -611,7 +611,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status)
+        PRINTF("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status);
     }
 
     return status;
@@ -656,7 +656,7 @@ int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("in action_dump *** ERR sending packet, code %d", status)
+        PRINTF("in action_dump *** ERR sending packet, code %d", status);
     }
 
     return status;
@@ -1817,9 +1817,9 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     unsigned int kcoeff;
     unsigned short sy_lfr_kcoeff_frequency;
     unsigned short bin;
+    int status;
     float* kcoeffPtr_norm;
     float* kcoeffPtr_sbm;
-    int status;
     unsigned char* kcoeffLoadPtr;
     unsigned char* kcoeffNormPtr;
     unsigned char* kcoeffSbmPtr_a;
@@ -1838,7 +1838,7 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     if (sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM)
     {
-        PRINTF1("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n",
+        PRINTF("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n",
             sy_lfr_kcoeff_frequency)
         status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
             DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + DATAFIELD_OFFSET,
@@ -1905,8 +1905,6 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
             copyFloatByChar(kcoeffSbmPtr_b, kcoeffLoadPtr);
         }
     }
-
-    //    print_k_coeff();
 
     return status;
 }

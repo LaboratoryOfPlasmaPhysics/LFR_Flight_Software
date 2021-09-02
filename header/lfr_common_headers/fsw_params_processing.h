@@ -57,7 +57,9 @@
 #define ASM_COMP_E1E1      21
 #define ASM_COMP_E2E2      24
 
-#define SM_FLOATS_PER_VAL 2
+#define FLOATS_PER_COMPLEX 2
+#define NB_MAG_COMPONENT_PER_SM    3
+#define NB_ELEC_COMPONENT_PER_SM    2
 #define NB_BINS_PER_SM    128
 #define NB_FLOATS_PER_SM  25
 #define TOTAL_SIZE_SM     (NB_BINS_PER_SM * NB_FLOATS_PER_SM) // 25 * 128 = 0xC80

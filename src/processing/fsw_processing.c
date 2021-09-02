@@ -354,12 +354,12 @@ void SM_init_rings(void)
     init_ring(sm_ring_f1, NB_RING_NODES_SM_F1, sm_f1, TOTAL_SIZE_SM);
     init_ring(sm_ring_f2, NB_RING_NODES_SM_F2, sm_f2, TOTAL_SIZE_SM);
 
-    DEBUG_PRINTF1("sm_ring_f0 @%x\n", (unsigned int)sm_ring_f0)
-    DEBUG_PRINTF1("sm_ring_f1 @%x\n", (unsigned int)sm_ring_f1)
-    DEBUG_PRINTF1("sm_ring_f2 @%x\n", (unsigned int)sm_ring_f2)
-    DEBUG_PRINTF1("sm_f0 @%x\n", (unsigned int)sm_f0)
-    DEBUG_PRINTF1("sm_f1 @%x\n", (unsigned int)sm_f1)
-    DEBUG_PRINTF1("sm_f2 @%x\n", (unsigned int)sm_f2)
+    DEBUG_PRINTF("sm_ring_f0 @%x\n", (unsigned int)sm_ring_f0)
+    DEBUG_PRINTF("sm_ring_f1 @%x\n", (unsigned int)sm_ring_f1)
+    DEBUG_PRINTF("sm_ring_f2 @%x\n", (unsigned int)sm_ring_f2)
+    DEBUG_PRINTF("sm_f0 @%x\n", (unsigned int)sm_f0)
+    DEBUG_PRINTF("sm_f1 @%x\n", (unsigned int)sm_f1)
+    DEBUG_PRINTF("sm_f2 @%x\n", (unsigned int)sm_f2)
 }
 
 void ASM_generic_init_ring(ring_node_asm* ring, unsigned char nbNodes)
@@ -469,7 +469,7 @@ void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
     status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF1("ERR *** in BP_send *** ERR %d\n", (int)status)
+        PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status)
     }
 }
 
@@ -497,7 +497,7 @@ void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend, un
         status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF1("ERR *** in BP_send *** ERR %d\n", (int)status)
+            PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status)
         }
     }
 }
