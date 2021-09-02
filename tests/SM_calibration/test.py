@@ -66,7 +66,7 @@ class AnLFRMatrix(unittest.TestCase):
        transition = make_transition_matrix(BCAL, ECAL)
        SM = make_SM(VECT)
        REF = transition @ SM @ transition.transpose().conjugate()
-       self.assertTrue(np.allclose(REF , lfr.Matrix_change_of_basis(SM, transition)))
+       self.assertTrue(np.allclose(lfr.Matrix_change_of_basis(SM, transition), REF, rtol=1e-06, atol=0.))
 
 class AnLFRSpectralMatrix(unittest.TestCase):
   def test_can_be_calibrated(self):
@@ -80,7 +80,7 @@ class AnLFRSpectralMatrix(unittest.TestCase):
           ASM[f] = SM
           CAL_MATRICES[f] = transition
           CALIBRATED_ASM[f] = REF
-      self.assertTrue(np.allclose(CALIBRATED_ASM, lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES)))
+      self.assertTrue(np.allclose(lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES), CALIBRATED_ASM, rtol=1e-06, atol=0.))
 
 if __name__ == '__main__':
    unittest.main()
