@@ -128,9 +128,9 @@ uint16_t to_custom_float_1_1_6_8(const _Complex float value)
     str_float_t v_re = { .value = __real__ value };
     str_float_t v_imag = { .value = __imag__ value };
 
-    if ((v.str.exponent - 127) < -27)
+    if ((v_re.str.exponent - 127) < -27)
         return 0;
-    if ((v.str.exponent - 127) > 37)
+    if ((v_re.str.exponent - 127) > 37)
         return 0xFFFF;
 
     result.str.sign = v_re.str.sign;
