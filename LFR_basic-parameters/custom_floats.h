@@ -138,6 +138,6 @@ uint16_t to_custom_float_1_1_6_8(const _Complex float value)
     v_imag.str.sign = 0;
     result.str.exponent = v_re.str.exponent - 127 + 27;
     result.str.mantissa = v_re.str.mantissa >> 15;
-    result.str.arg = v_imag.value > v_re.value;
+    result.str.arg = fabs(v_imag.value) > fabs(v_re.value);
     return result.value;
 }
