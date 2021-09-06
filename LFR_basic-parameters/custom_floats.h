@@ -110,10 +110,10 @@ uint16_t to_custom_float_6_10(const float value)
     float_6_10_t result = { .value = 0 };
     str_float_t v = { .value = value };
 
-    if ((v.str.exponent - 127) >= -27)
-        return 0xFFFF;
-    if ((v.str.exponent - 127) <= 37)
+    if ((v.str.exponent - 127) < -27)
         return 0;
+    if ((v.str.exponent - 127) > 37)
+        return 0xFFFF;
 
     result.str.exponent = v.str.exponent - 127 + 27;
     result.str.mantissa = v.str.mantissa >> 13;
