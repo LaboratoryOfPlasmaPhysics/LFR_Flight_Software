@@ -44,20 +44,14 @@ extern float k_coeff_intercalib_f1_norm[];
 extern float k_coeff_intercalib_f1_sbm[];
 extern float k_coeff_intercalib_f2[];
 
-extern float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_MAG_COMPONENT_PER_SM
-    * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEC_COMPONENT_PER_SM
-    * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
+extern float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
+extern float elec_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
 
-extern float mag_calibration_matrices_f1[NB_BINS_PER_SM * NB_MAG_COMPONENT_PER_SM
-    * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f1[NB_BINS_PER_SM * NB_ELEC_COMPONENT_PER_SM
-    * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
+extern float mag_calibration_matrices_f1[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
+extern float elec_calibration_matrices_f1[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
 
-extern float mag_calibration_matrices_f2[NB_BINS_PER_SM * NB_MAG_COMPONENT_PER_SM
-    * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEC_COMPONENT_PER_SM
-    * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX];
+extern float mag_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
+extern float elec_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
 
 extern fbins_masks_t fbins_masks;
 

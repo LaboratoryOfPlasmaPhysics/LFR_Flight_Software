@@ -37,6 +37,8 @@
  */
 
 #include "tc_load_dump_parameters.h"
+#include <string.h>
+
 
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1 = { 0 };
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2 = { 0 };
@@ -502,61 +504,52 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     unsigned char* kCoeffPtr;
     unsigned char* kCoeffDumpPtr;
 
-    // for each sy_lfr_kcoeff_frequency there is 32 kcoeff
-    // F0 => 11 bins
-    // F1 => 13 bins
-    // F2 => 12 bins
-    // 36 bins to dump in two packets (30 bins max per packet)
+    // Each packet is 3900 bytes
+    // Packet1:
+    // F0 needs 12 bins * 26 floats -> 1248 bytes
+    // F1 needs 14 bins * 26 floats -> 1456 bytes
+    // total -> 2704 bytes
+
+    // Packet2:
+    // F2 needs 13 bins * 26 floats -> 1352 bytes
+    // total -> 1352 bytes
+
 
     //*********
     // PACKET 1
-    // 11 F0 bins, 13 F1 bins and 6 F2 bins
+    // 12 F0 bins, 14 F1 bins
     kcoefficients_dump_1.destinationID = TC->sourceID;
     increment_seq_counter_destination_id_dump(
         kcoefficients_dump_1.packetSequenceControl, TC->sourceID);
-    for (freq = 0; freq < NB_BINS_COMPRESSED_SM_F0; freq++)
+    kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
+    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F0; freq++)
     {
-        kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE) + 1] = freq;
-        bin = freq;
-        for (coeff = 0; coeff < NB_K_COEFF_PER_BIN; coeff++)
-        {
-            kCoeffDumpPtr
-                = (unsigned char*)&kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE)
-                    + (coeff * NB_BYTES_PER_FLOAT) + KCOEFF_FREQ]; // 2 for the kcoeff_frequency
-            kCoeffPtr
-                = (unsigned char*)&k_coeff_intercalib_f0_norm[(bin * NB_K_COEFF_PER_BIN) + coeff];
-            copyFloatByChar(kCoeffDumpPtr, kCoeffPtr);
-        }
+
+        memcpy(kCoeffDumpPtr,
+            mag_calibration_matrices_f0
+                + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0),
+            NB_BYTES_MAG_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_MAG_CAL_MATRIX;
+        memcpy(kCoeffDumpPtr,
+            elec_calibration_matrices_f0
+                + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0),
+            NB_BYTES_ELEC_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
     }
-    for (freq = NB_BINS_COMPRESSED_SM_F0;
-         freq < (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1); freq++)
+    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F1; freq++)
     {
-        kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE) + 1] = freq;
-        bin = freq - NB_BINS_COMPRESSED_SM_F0;
-        for (coeff = 0; coeff < NB_K_COEFF_PER_BIN; coeff++)
-        {
-            kCoeffDumpPtr
-                = (unsigned char*)&kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE)
-                    + (coeff * NB_BYTES_PER_FLOAT) + KCOEFF_FREQ]; // 2 for the kcoeff_frequency
-            kCoeffPtr
-                = (unsigned char*)&k_coeff_intercalib_f1_norm[(bin * NB_K_COEFF_PER_BIN) + coeff];
-            copyFloatByChar(kCoeffDumpPtr, kCoeffPtr);
-        }
+        memcpy(kCoeffDumpPtr,
+            mag_calibration_matrices_f1
+                + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1),
+            NB_BYTES_MAG_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_MAG_CAL_MATRIX;
+        memcpy(kCoeffDumpPtr,
+            elec_calibration_matrices_f1
+                + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1),
+            NB_BYTES_ELEC_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
     }
-    for (freq = (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1); freq < KCOEFF_BLK_NR_PKT1;
-         freq++)
-    {
-        kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE) + 1] = freq;
-        bin = freq - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
-        for (coeff = 0; coeff < NB_K_COEFF_PER_BIN; coeff++)
-        {
-            kCoeffDumpPtr
-                = (unsigned char*)&kcoefficients_dump_1.kcoeff_blks[(freq * KCOEFF_BLK_SIZE)
-                    + (coeff * NB_BYTES_PER_FLOAT) + KCOEFF_FREQ]; // 2 for the kcoeff_frequency
-            kCoeffPtr = (unsigned char*)&k_coeff_intercalib_f2[(bin * NB_K_COEFF_PER_BIN) + coeff];
-            copyFloatByChar(kCoeffDumpPtr, kCoeffPtr);
-        }
-    }
+
     kcoefficients_dump_1.time[BYTE_0]
         = (unsigned char)(time_management_regs->coarse_time >> SHIFT_3_BYTES);
     kcoefficients_dump_1.time[BYTE_1]
@@ -578,23 +571,27 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
 
     //********
     // PACKET 2
-    // 6 F2 bins
+    // 13 F2 bins
     kcoefficients_dump_2.destinationID = TC->sourceID;
     increment_seq_counter_destination_id_dump(
         kcoefficients_dump_2.packetSequenceControl, TC->sourceID);
-    for (freq = 0; freq < KCOEFF_BLK_NR_PKT2; freq++)
+
+    kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
+    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
     {
-        kcoefficients_dump_2.kcoeff_blks[(freq * KCOEFF_BLK_SIZE) + 1] = KCOEFF_BLK_NR_PKT1 + freq;
-        bin = freq + KCOEFF_BLK_NR_PKT2;
-        for (coeff = 0; coeff < NB_K_COEFF_PER_BIN; coeff++)
-        {
-            kCoeffDumpPtr
-                = (unsigned char*)&kcoefficients_dump_2.kcoeff_blks[(freq * KCOEFF_BLK_SIZE)
-                    + (coeff * NB_BYTES_PER_FLOAT) + KCOEFF_FREQ]; // 2 for the kcoeff_frequency
-            kCoeffPtr = (unsigned char*)&k_coeff_intercalib_f2[(bin * NB_K_COEFF_PER_BIN) + coeff];
-            copyFloatByChar(kCoeffDumpPtr, kCoeffPtr);
-        }
+
+        memcpy(kCoeffDumpPtr,
+            mag_calibration_matrices_f2
+                + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2),
+            NB_BYTES_MAG_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_MAG_CAL_MATRIX;
+        memcpy(kCoeffDumpPtr,
+            elec_calibration_matrices_f2
+                + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2),
+            NB_BYTES_ELEC_CAL_MATRIX);
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
     }
+
     kcoefficients_dump_2.time[BYTE_0]
         = (unsigned char)(time_management_regs->coarse_time >> SHIFT_3_BYTES);
     kcoefficients_dump_2.time[BYTE_1]
@@ -1810,26 +1807,55 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
     return flag;
 }
 
+
+void interpolate_calibration_matrix(
+    float* matrix, unsigned int matrix_len, unsigned int count, unsigned int gap)
+{
+    for (unsigned int major_bin = 0; major_bin < count; major_bin++)
+    {
+        for (unsigned int element = 0; element < matrix_len; element++)
+        {
+            float alpha = (matrix[gap] - matrix[0]) / (float)gap;
+            for (unsigned int minor_bin = 1; minor_bin < gap; minor_bin++)
+            {
+                matrix[minor_bin] = matrix[minor_bin - 1] + alpha;
+            }
+            matrix++;
+        }
+        matrix += matrix_len * (gap - 1);
+    }
+}
+
 //**************
 // KCOEFFICIENTS
 int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 {
-    unsigned int kcoeff;
-    unsigned short sy_lfr_kcoeff_frequency;
-    unsigned short bin;
-    int status;
-    float* kcoeffPtr_norm;
-    float* kcoeffPtr_sbm;
-    unsigned char* kcoeffLoadPtr;
-    unsigned char* kcoeffNormPtr;
-    unsigned char* kcoeffSbmPtr_a;
-    unsigned char* kcoeffSbmPtr_b;
 
-    sy_lfr_kcoeff_frequency = 0;
-    bin = 0;
-    kcoeffPtr_norm = NULL;
-    kcoeffPtr_sbm = NULL;
-    status = LFR_SUCCESSFUL;
+#define F0_COMPRESSED_BIN_OFFSET            0
+#define F1_COMPRESSED_BIN_OFFSET            NB_BINS_COMPRESSED_SM_F0
+#define F2_COMPRESSED_BIN_OFFSET            (NB_BINS_COMPRESSED_SM_F1 + F1_COMPRESSED_BIN_OFFSET)
+#define TOTAL_COMPRESSED_BIN_COUNT          (F2_COMPRESSED_BIN_OFFSET + NB_BINS_COMPRESSED_SM_F2)
+#define DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX DATAFIELD_POS_SY_LFR_KCOEFF_1
+#define DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX                                                       \
+    (DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX)
+#if TOTAL_COMPRESSED_BIN_COUNT != NB_BINS_COMPRESSED_SM
+    #error "TOTAL_COMPRESSED_BIN_COUNT must match NB_BINS_COMPRESSED_SM"
+#endif
+
+    unsigned short sy_lfr_kcoeff_frequency = 255;
+    int status = LFR_SUCCESSFUL;
+
+    unsigned int matrix_index = 0;
+    float* mag_matrix_ptr = NULL;
+    float* elec_matrix_ptr = NULL;
+    float* extra_mag_matrix_ptr = NULL;
+    float* extra_elec_matrix_ptr = NULL;
+    enum
+    {
+        no = 0,
+        yes = 1
+    } interpolate
+        = 0;
 
     // copy the value of the frequency byte by byte DO NOT USE A SHORT* POINTER
     copyInt16ByChar((unsigned char*)&sy_lfr_kcoeff_frequency,
@@ -1848,62 +1874,106 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     }
     else
     {
-        if ((sy_lfr_kcoeff_frequency >= 0) && (sy_lfr_kcoeff_frequency < NB_BINS_COMPRESSED_SM_F0))
+        if (sy_lfr_kcoeff_frequency >= F2_COMPRESSED_BIN_OFFSET
+            && sy_lfr_kcoeff_frequency < NB_BINS_COMPRESSED_SM)
         {
-            kcoeffPtr_norm = k_coeff_intercalib_f0_norm;
-            kcoeffPtr_sbm = k_coeff_intercalib_f0_sbm;
-            bin = sy_lfr_kcoeff_frequency;
+            matrix_index
+                = (sy_lfr_kcoeff_frequency - F2_COMPRESSED_BIN_OFFSET) * NB_BINS_TO_AVERAGE_ASM_F2
+                + ASM_F2_INDICE_START;
+            mag_matrix_ptr = mag_calibration_matrices_f2
+                + (ASM_F2_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2);
+            elec_matrix_ptr = elec_calibration_matrices_f2
+                + (ASM_F2_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2);
+            extra_mag_matrix_ptr = mag_calibration_matrices_f2
+                + ((ASM_F2_INDICE_START + ASM_F2_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr = elec_calibration_matrices_f2
+                + ((ASM_F2_INDICE_START + ASM_F2_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
+
+            if (sy_lfr_kcoeff_frequency == NB_BINS_COMPRESSED_SM - 1)
+                interpolate = yes;
         }
-        else if ((sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM_F0)
-            && (sy_lfr_kcoeff_frequency < (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1)))
+        else if (sy_lfr_kcoeff_frequency >= F1_COMPRESSED_BIN_OFFSET)
         {
-            kcoeffPtr_norm = k_coeff_intercalib_f1_norm;
-            kcoeffPtr_sbm = k_coeff_intercalib_f1_sbm;
-            bin = sy_lfr_kcoeff_frequency - NB_BINS_COMPRESSED_SM_F0;
+            matrix_index
+                = (sy_lfr_kcoeff_frequency - NB_BINS_COMPRESSED_SM_F0) * NB_BINS_TO_AVERAGE_ASM_F1
+                + ASM_F1_INDICE_START;
+            mag_matrix_ptr = mag_calibration_matrices_f1
+                + (ASM_F1_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1);
+            elec_matrix_ptr = elec_calibration_matrices_f1
+                + (ASM_F1_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1);
+            extra_mag_matrix_ptr = mag_calibration_matrices_f1
+                + ((ASM_F1_INDICE_START + ASM_F1_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr = elec_calibration_matrices_f1
+                + ((ASM_F1_INDICE_START + ASM_F1_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
         }
-        else if ((sy_lfr_kcoeff_frequency >= (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1))
-            && (sy_lfr_kcoeff_frequency
-                < (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1 + NB_BINS_COMPRESSED_SM_F2)))
+        else
         {
-            kcoeffPtr_norm = k_coeff_intercalib_f2;
-            kcoeffPtr_sbm = NULL;
-            bin = sy_lfr_kcoeff_frequency - (NB_BINS_COMPRESSED_SM_F0 + NB_BINS_COMPRESSED_SM_F1);
+            matrix_index
+                = sy_lfr_kcoeff_frequency * NB_BINS_TO_AVERAGE_ASM_F0 + ASM_F0_INDICE_START;
+            mag_matrix_ptr = mag_calibration_matrices_f0
+                + (ASM_F0_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0);
+            elec_matrix_ptr = elec_calibration_matrices_f0
+                + (ASM_F0_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
+                + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0);
+            extra_mag_matrix_ptr = mag_calibration_matrices_f0
+                + ((ASM_F0_INDICE_START + ASM_F0_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr = elec_calibration_matrices_f0
+                + ((ASM_F0_INDICE_START + ASM_F0_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
         }
     }
 
-    if (kcoeffPtr_norm != NULL) // update K coefficient for NORMAL data products
+    if (mag_matrix_ptr != NULL && elec_matrix_ptr != NULL)
     {
-        for (kcoeff = 0; kcoeff < NB_K_COEFF_PER_BIN; kcoeff++)
-        {
-            // destination
-            kcoeffNormPtr = (unsigned char*)&kcoeffPtr_norm[(bin * NB_K_COEFF_PER_BIN) + kcoeff];
-            // source
-            kcoeffLoadPtr
-                = (unsigned char*)&TC
-                      ->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + (NB_BYTES_PER_FLOAT * kcoeff)];
-            // copy source to destination
-            copyFloatByChar(kcoeffNormPtr, kcoeffLoadPtr);
-        }
+        memcpy(mag_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX,
+            NB_BYTES_MAG_CAL_MATRIX);
+        memcpy(elec_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX,
+            NB_BYTES_ELEC_CAL_MATRIX);
     }
 
-    if (kcoeffPtr_sbm != NULL) // update K coefficient for SBM data products
+    // The 3 first packets contains one line of last MAG CAL MATRIX
+    if (matrix_index < 3)
     {
-        for (kcoeff = 0; kcoeff < NB_K_COEFF_PER_BIN; kcoeff++)
-        {
-            // destination
-            kcoeffSbmPtr_a = (unsigned char*)&kcoeffPtr_sbm[((bin * NB_K_COEFF_PER_BIN) + kcoeff)
-                * SBM_COEFF_PER_NORM_COEFF];
-            kcoeffSbmPtr_b = (unsigned char*)&kcoeffPtr_sbm[(((bin * NB_K_COEFF_PER_BIN) + kcoeff)
-                                                                * SBM_KCOEFF_PER_NORM_KCOEFF)
-                + 1];
-            // source
-            kcoeffLoadPtr
-                = (unsigned char*)&TC
-                      ->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_1 + (NB_BYTES_PER_FLOAT * kcoeff)];
-            // copy source to destination
-            copyFloatByChar(kcoeffSbmPtr_a, kcoeffLoadPtr);
-            copyFloatByChar(kcoeffSbmPtr_b, kcoeffLoadPtr);
-        }
+        memcpy(extra_mag_matrix_ptr + (matrix_index * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX),
+            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX,
+            NB_MAG_COMPONENT_PER_SM * NB_BYTES_PER_FLOAT);
+    }
+    else if (matrix_index < 5) // The 2 following packets contains one line of last ELEC CAL MATRIX
+    {
+        memcpy(extra_elec_matrix_ptr
+                + ((matrix_index - NB_MAG_COMPONENT_PER_SM) * NB_ELEC_COMPONENT_PER_SM
+                    * FLOATS_PER_COMPLEX),
+            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX,
+            NB_ELEC_COMPONENT_PER_SM * NB_BYTES_PER_FLOAT);
+    }
+
+    if (interpolate == yes)
+    {
+        interpolate_calibration_matrix(
+            mag_calibration_matrices_f0 + (ASM_F0_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
+            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
+        interpolate_calibration_matrix(
+            elec_calibration_matrices_f0 + (ASM_F0_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
+            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
+
+        interpolate_calibration_matrix(
+            mag_calibration_matrices_f1 + (ASM_F1_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
+            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
+        interpolate_calibration_matrix(
+            elec_calibration_matrices_f1 + (ASM_F1_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
+            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
+
+
+        interpolate_calibration_matrix(
+            mag_calibration_matrices_f2 + (ASM_F2_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
+            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
+        interpolate_calibration_matrix(
+            elec_calibration_matrices_f2 + (ASM_F2_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
+            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
     }
 
     return status;
