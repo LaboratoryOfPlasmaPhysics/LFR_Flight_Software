@@ -20,8 +20,11 @@ lfr_dep = declare_dependency(link_with: lfr,include_directories: [rtems_mock_inc
 pywrappers = python3.extension_module('lfr',
                     'common/py_wrappers.cpp',
                     native: true,
-                    cpp_args: ['-std=c++17'],
-                    dependencies: [lfr_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
+                    cpp_args: ['-std=c++17', build_machine_endian_def],
+                    c_args: [build_machine_endian_def],
+                    install: true,
+                    install_dir: python3.get_path('platlib'),
+                    dependencies: [lfr_dep, lfr_bp_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
 
 
 tests ={

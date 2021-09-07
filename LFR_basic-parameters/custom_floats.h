@@ -74,6 +74,16 @@ typedef union
     uint16_t value;
     struct __attribute__((__packed__))
     {
+        uint16_t LSB : 8;
+        uint16_t MSB : 8;
+    } str;
+} str_uint16_t;
+
+typedef union
+{
+    uint16_t value;
+    struct __attribute__((__packed__))
+    {
         uint16_t mantissa : 10;
         uint16_t exponent : 6;
     } str;

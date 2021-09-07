@@ -7,6 +7,7 @@
 
 #include "common/FSW_helpers.hpp"
 #include "processing/ASM/spectralmatrices.h"
+#include "basic_parameters.h"
 
 extern "C"
 {
@@ -168,7 +169,7 @@ void from_lfr_spectral_matrix_repr(std::vector<float>& src, py::array_t<std::com
 
 PYBIND11_MODULE(lfr, m)
 {
-    m.doc() = "lfr module";
+    m.doc() = "lfr module, wraps most LFR Flight Software processing functions with same the accuracy";
 
     m.def("SM_calibrate_and_reorder",
         [](py::array_t<std::complex<float>> input_asm,
@@ -207,6 +208,14 @@ PYBIND11_MODULE(lfr, m)
             return output_matrix;
         });
 
+    auto bp=m.def_submodule("LFR basic parameters");
+    bp.def("compute_BP1",[](py::array_t<std::complex<float>> input_matrix){
+        //compute_BP1();
+    });
+
+    bp.def("compute_BP2",[](py::array_t<std::complex<float>> input_matrix){
+        //compute_BP2();
+    });
 
     m.def("Extract_triangular_matrix",
         [](py::array_t<std::complex<float>> input_matrix)
