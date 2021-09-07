@@ -52,11 +52,6 @@ float asm_f0_reorganized[TOTAL_SIZE_SM] = { 0 };
 float compressed_sm_norm_f0[TOTAL_SIZE_COMPRESSED_ASM_NORM_F0] = { 0 };
 float compressed_sm_sbm_f0[TOTAL_SIZE_COMPRESSED_ASM_SBM_F0] = { 0 };
 
-float k_coeff_intercalib_f0_norm[NB_BINS_COMPRESSED_SM_F0 * NB_K_COEFF_PER_BIN]
-    = { 0 }; // 11 * 32 = 352
-float k_coeff_intercalib_f0_sbm[NB_BINS_COMPRESSED_SM_SBM_F0 * NB_K_COEFF_PER_BIN]
-    = { 0 }; // 22 * 32 = 704
-
 #define UNITY_3x3_MATRIX                                                                           \
     1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f
 
@@ -396,7 +391,7 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
                 || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F0))
             {
                 // 1) compute the BP2 set
-                BP2_set(compressed_sm_sbm_f0, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp2.data);
+                compute_BP2(compressed_sm_sbm_f0, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp2.data);
                 // 2) send the BP2 set
                 set_time(packet_sbm_bp2.time, (unsigned char*)&incomingMsg->coarseTimeSBM);
                 set_time(
@@ -445,7 +440,7 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F0)
             {
                 // 1) compute the BP2 set using the same ASM as the one used for BP1
-                BP2_set(compressed_sm_norm_f0, NB_BINS_COMPRESSED_SM_F0, packet_norm_bp2.data);
+                compute_BP2(compressed_sm_norm_f0, NB_BINS_COMPRESSED_SM_F0, packet_norm_bp2.data);
                 // 2) send the BP2 set
                 set_time(packet_norm_bp2.time, (unsigned char*)&incomingMsg->coarseTimeNORM);
                 set_time(
@@ -521,10 +516,3 @@ void reset_nb_sm_f0(unsigned char lfrMode)
     }
 }
 
-void init_k_coefficients_prc0(void)
-{
-    init_k_coefficients(k_coeff_intercalib_f0_norm, NB_BINS_COMPRESSED_SM_F0);
-
-    init_kcoeff_sbm_from_kcoeff_norm(
-        k_coeff_intercalib_f0_norm, k_coeff_intercalib_f0_sbm, NB_BINS_COMPRESSED_SM_F0);
-}

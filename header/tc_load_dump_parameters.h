@@ -38,11 +38,6 @@
 
 extern unsigned short sequenceCounterParameterDump;
 extern unsigned short sequenceCounters_TM_DUMP[];
-extern float k_coeff_intercalib_f0_norm[];
-extern float k_coeff_intercalib_f0_sbm[];
-extern float k_coeff_intercalib_f1_norm[];
-extern float k_coeff_intercalib_f1_sbm[];
-extern float k_coeff_intercalib_f2[];
 
 extern float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
 extern float elec_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];

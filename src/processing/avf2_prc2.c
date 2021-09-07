@@ -48,8 +48,6 @@ float asm_f2_reorganized[TOTAL_SIZE_SM] = { 0 };
 
 float compressed_sm_norm_f2[TOTAL_SIZE_COMPRESSED_ASM_NORM_F2] = { 0 };
 
-float k_coeff_intercalib_f2[NB_BINS_COMPRESSED_SM_F2 * NB_K_COEFF_PER_BIN] = { 0 }; // 12 * 32 = 384
-
 #define UNITY_3x3_MATRIX                                                                           \
     0.f, 0.f, -1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f
 
@@ -310,7 +308,7 @@ rtems_task prc2_task(rtems_task_argument argument)
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
         {
             // 1) compute the BP2 set
-            BP2_set(compressed_sm_norm_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp2.data);
+            compute_BP2(compressed_sm_norm_f2, NB_BINS_COMPRESSED_SM_F2, packet_norm_bp2.data);
             // 2) send the BP2 set
             set_time(packet_norm_bp2.time, (unsigned char*)&incomingMsg->coarseTimeNORM);
             set_time(packet_norm_bp2.acquisitionTime, (unsigned char*)&incomingMsg->coarseTimeNORM);
@@ -417,7 +415,3 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
     }
 }
 
-void init_k_coefficients_prc2(void)
-{
-    init_k_coefficients(k_coeff_intercalib_f2, NB_BINS_COMPRESSED_SM_F2);
-}

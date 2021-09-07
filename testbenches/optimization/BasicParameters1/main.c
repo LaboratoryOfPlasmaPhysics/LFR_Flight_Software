@@ -117,7 +117,6 @@ volatile int BP1_set_duration = 0;
     }
 #define NB_BINS 1
 volatile float input_matrix[NB_FLOATS_PER_SM * NB_BINS];
-volatile float kcoefs[NB_K_COEFF_PER_BIN * NB_BINS];
 volatile uint8_t tm_buffer[NB_BYTES_BP1 * NB_BINS];
 
 rtems_task Init(rtems_task_argument ignored)
@@ -135,10 +134,8 @@ rtems_task Init(rtems_task_argument ignored)
 
 
     fill_floats(input_matrix, NB_FLOATS_PER_SM * NB_BINS);
-    fill_floats(kcoefs, NB_K_COEFF_PER_BIN * NB_BINS);
 
     BENCH(ARG({ compute_BP1(input_matrix, NB_BINS, tm_buffer); }), compute_BP1_duration);
-    BENCH(ARG({ BP1_set(input_matrix, kcoefs, NB_BINS, tm_buffer); }), BP1_set_duration);
     while (1)
         ;
 }

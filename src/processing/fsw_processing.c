@@ -609,21 +609,3 @@ unsigned char getSID(rtems_event_set event)
     return sid;
 }
 
-
-void init_kcoeff_sbm_from_kcoeff_norm(
-    float* input_kcoeff, float* output_kcoeff, unsigned char nb_bins_norm)
-{
-    unsigned char bin;
-    unsigned char kcoeff;
-
-    for (bin = 0; bin < nb_bins_norm; bin++)
-    {
-        for (kcoeff = 0; kcoeff < NB_K_COEFF_PER_BIN; kcoeff++)
-        {
-            output_kcoeff[((bin * NB_K_COEFF_PER_BIN) + kcoeff) * SBM_COEFF_PER_NORM_COEFF]
-                = input_kcoeff[(bin * NB_K_COEFF_PER_BIN) + kcoeff];
-            output_kcoeff[(((bin * NB_K_COEFF_PER_BIN) + kcoeff) * SBM_COEFF_PER_NORM_COEFF) + 1]
-                = input_kcoeff[(bin * NB_K_COEFF_PER_BIN) + kcoeff];
-        }
-    }
-}

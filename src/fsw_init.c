@@ -167,9 +167,6 @@ rtems_task Init(rtems_task_argument ignored)
     init_kcoefficients_dump();
     init_local_mode_parameters();
     init_housekeeping_parameters();
-    init_k_coefficients_prc0();
-    init_k_coefficients_prc1();
-    init_k_coefficients_prc2();
     pa_bia_status_info = INIT_CHAR;
 
     // initialize all reaction wheels frequencies to NaN
