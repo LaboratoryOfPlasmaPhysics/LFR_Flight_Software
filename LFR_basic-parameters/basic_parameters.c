@@ -144,7 +144,7 @@ _Complex float X_poynting_vector(const float* const spectral_matrix)
     // E1B3 - E2B2
     _Complex float X_PV;
     __real__ X_PV = spectral_matrix[ASM_COMP_B3E1] - spectral_matrix[ASM_COMP_B2E2];
-    __imag__ X_PV = spectral_matrix[ASM_COMP_B3E1_imag] - spectral_matrix[ASM_COMP_B2E2_imag];
+    __imag__ X_PV = spectral_matrix[ASM_COMP_B3E1_imag] + spectral_matrix[ASM_COMP_B2E2_imag];
     return X_PV;
 }
 
@@ -213,9 +213,10 @@ with:
     }
 }
 
-inline uint8_t encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity, const float DOP)
-    __attribute__((always_inline));
-uint8_t encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity, const float DOP)
+inline uint8_t* encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity,
+    const float DOP, uint8_t* const bp_buffer_frame) __attribute__((always_inline));
+uint8_t* encode_nvec_z_ellip_dop(
+    const float nvec_z, const float ellipticity, const float DOP, uint8_t* const bp_buffer_frame)
 {
     const str_float_t z = { .value = nvec_z };
 #ifdef LFR_BIG_ENDIAN
@@ -245,7 +246,8 @@ uint8_t encode_nvec_z_ellip_dop(const float nvec_z, const float ellipticity, con
     result.str.nvec_z_sign = z.str.sign;
     result.str.ellipticity = (uint8_t)(ellipticity * 15.f + 0.5f);
     result.str.DOP = (uint8_t)(DOP * 7.f + 0.5f);
-    return result.value;
+    bp_buffer_frame[0] = result.value;
+    return bp_buffer_frame + 1;
 }
 
 inline uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp1_buffer_frame)
@@ -284,8 +286,7 @@ uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave
     {
         bp1_buffer_frame = encode_float_uint8_t(nvec.x, bp1_buffer_frame);
         bp1_buffer_frame = encode_float_uint8_t(nvec.y, bp1_buffer_frame);
-        *bp1_buffer_frame = encode_nvec_z_ellip_dop(nvec.z, ellipticity, DOP);
-        bp1_buffer_frame++;
+        bp1_buffer_frame = encode_nvec_z_ellip_dop(nvec.z, ellipticity, DOP, bp1_buffer_frame);
     }
     {
         bp1_buffer_frame = encode_uint16_t(to_custom_float_1_1_6_8(X_PV), bp1_buffer_frame);
@@ -373,4 +374,3 @@ void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_ma
             sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_B3E2], sm_ptr[ASM_COMP_B3E2_imag]);
     }
 }
-
