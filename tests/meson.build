@@ -22,7 +22,7 @@ pywrappers = python3.extension_module('lfr',
                     native: true,
                     cpp_args: ['-std=c++17', build_machine_endian_def],
                     c_args: [build_machine_endian_def],
-                    install: true,
+                    install: not meson.is_cross_build(),
                     install_dir: python3.get_path('platlib'),
                     dependencies: [lfr_dep, lfr_bp_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
 
