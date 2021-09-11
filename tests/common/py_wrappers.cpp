@@ -7,7 +7,6 @@
 
 #include "common/FSW_helpers.hpp"
 #include "processing/ASM/spectralmatrices.h"
-#include "basic_parameters.h"
 
 extern "C"
 {
@@ -15,6 +14,9 @@ extern "C"
         float work_matrix[NB_FLOATS_PER_SM], float* input_asm, float* mag_calibration_matrices,
         float* elec_calibration_matrices, float* output_asm, unsigned int start_indice,
         unsigned int stop_indice);
+
+    void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
+        uint8_t* bp1_buffer);
 }
 
 namespace py = pybind11;
@@ -55,17 +57,19 @@ std::vector<float> to_lfr_matrix_repr(py::array_t<std::complex<float>>& input_ma
     return result;
 }
 
+template <bool VHDL_REPR = true>
 std::vector<float> to_lfr_spectral_matrix_repr(py::array_t<std::complex<float>>& input_matrix)
 {
     py::buffer_info input_matrix_buff = input_matrix.request();
-    auto result = std::vector<float>(25 * 128);
+    unsigned frequencies = input_matrix_buff.shape[0];
+    auto result = std::vector<float>(25 * frequencies);
     if (input_matrix_buff.ndim != 3)
         throw std::runtime_error("Number of dimensions must be 3");
-    if (input_matrix_buff.shape != std::vector<ssize_t> { 128, 5, 5 })
+    if (input_matrix_buff.shape != std::vector<ssize_t> { frequencies, 5, 5 })
         throw std::runtime_error("Shape must be (128, 5, 5)");
 
-    auto view = lfr_triangular_spectral_matrix_t { result.data() };
-    for (auto frequency = 0ul; frequency < 128; frequency++)
+    auto view = lfr_triangular_spectral_matrix_t<VHDL_REPR> { result.data() };
+    for (auto frequency = 0ul; frequency < frequencies; frequency++)
     {
         for (int line = 0; line < 5; line++)
         {
@@ -169,7 +173,8 @@ void from_lfr_spectral_matrix_repr(std::vector<float>& src, py::array_t<std::com
 
 PYBIND11_MODULE(lfr, m)
 {
-    m.doc() = "lfr module, wraps most LFR Flight Software processing functions with same the accuracy";
+    m.doc()
+        = "lfr module, wraps most LFR Flight Software processing functions with same the accuracy";
 
     m.def("SM_calibrate_and_reorder",
         [](py::array_t<std::complex<float>> input_asm,
@@ -208,14 +213,32 @@ PYBIND11_MODULE(lfr, m)
             return output_matrix;
         });
 
-    auto bp=m.def_submodule("LFR basic parameters");
-    bp.def("compute_BP1",[](py::array_t<std::complex<float>> input_matrix){
-        //compute_BP1();
-    });
+    auto bp = m.def_submodule("basic_parameters");
+    bp.def("compute_BP1",
+        [](py::array_t<std::complex<float>> input_asm)
+        {
+            auto input_shape = py::buffer_info { input_asm.request() }.shape;
+            unsigned frequencies = input_shape[0];
+            std::vector<unsigned char> tm_data(11*frequencies);
+            if(std::size(input_shape)==3)
+            {
+                std::vector<float> _matrix;
+                _matrix= to_lfr_spectral_matrix_repr<false>(input_asm);
+                compute_BP1(_matrix.data(), frequencies, tm_data.data());
 
-    bp.def("compute_BP2",[](py::array_t<std::complex<float>> input_matrix){
-        //compute_BP2();
-    });
+            }
+            else if(std::size(input_shape)==1)
+            {
+                compute_BP1(reinterpret_cast<const float* const>(input_asm.data()), frequencies, tm_data.data());
+            }
+            return tm_data;
+        });
+
+    bp.def("compute_BP2",
+        [](py::array_t<std::complex<float>> input_matrix)
+        {
+            // compute_BP2();
+        });
 
     m.def("Extract_triangular_matrix",
         [](py::array_t<std::complex<float>> input_matrix)
