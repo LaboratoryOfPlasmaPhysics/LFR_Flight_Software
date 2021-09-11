@@ -113,6 +113,11 @@ typedef union
 } str_float_t;
 #endif
 
+typedef struct
+{
+    float real;
+    uint8_t arg;
+} compressed_complex;
 
 inline uint16_t to_custom_float_6_10(const float value) __attribute__((always_inline));
 uint16_t to_custom_float_6_10(const float value)
@@ -131,12 +136,11 @@ uint16_t to_custom_float_6_10(const float value)
     return result.value;
 }
 
-inline uint16_t to_custom_float_1_1_6_8(const _Complex float value) __attribute__((always_inline));
-uint16_t to_custom_float_1_1_6_8(const _Complex float value)
+inline uint16_t to_custom_float_1_1_6_8(const compressed_complex value) __attribute__((always_inline));
+uint16_t to_custom_float_1_1_6_8(const compressed_complex value)
 {
     float_1_1_6_8_t result = { .value = 0 };
-    str_float_t v_re = { .value = __real__ value };
-    str_float_t v_imag = { .value = __imag__ value };
+    str_float_t v_re = { .value = value.real };
 
     if ((v_re.str.exponent - 127) < -27)
         return 0;
@@ -144,10 +148,8 @@ uint16_t to_custom_float_1_1_6_8(const _Complex float value)
         return 0xFFFF;
 
     result.str.sign = v_re.str.sign;
-    v_re.str.sign = 0;
-    v_imag.str.sign = 0;
     result.str.exponent = v_re.str.exponent - 127 + 27;
     result.str.mantissa = v_re.str.mantissa >> 15;
-    result.str.arg = v_imag.value > v_re.value;
+    result.str.arg = value.arg;
     return result.value;
 }
