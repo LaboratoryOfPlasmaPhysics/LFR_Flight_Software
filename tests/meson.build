@@ -6,7 +6,7 @@ python3 = pymod.find_installation('python3')
 
 rtems_mock_inc = include_directories('common/rtems_mock')
 
-lfr = library('lfr',
+lfr = static_library('lfr',
             ['../src/processing/ASM/spectralmatrices.c',
             '../src/mitigations/PAS_filtering.c',
             '../src/mitigations/reaction_wheel_filtering.c',
