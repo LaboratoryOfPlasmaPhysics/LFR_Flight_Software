@@ -144,7 +144,7 @@ compressed_complex X_poynting_vector(const float* const spectral_matrix)
     // E1B3 - E2B2
     compressed_complex X_PV;
     X_PV.real = spectral_matrix[ASM_COMP_B3E1] - spectral_matrix[ASM_COMP_B2E2];
-    const float imag = spectral_matrix[ASM_COMP_B3E1_imag] + spectral_matrix[ASM_COMP_B2E2_imag];
+    const float imag = spectral_matrix[ASM_COMP_B2E2_imag] - spectral_matrix[ASM_COMP_B3E1_imag];
     X_PV.arg = fabs(imag) > fabs(X_PV.real);
     return X_PV;
 }
@@ -275,8 +275,8 @@ inline uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD,
     const compressed_complex X_PV, const compressed_complex VPHI, uint8_t* bp1_buffer_frame)
     __attribute__((always_inline));
 uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave_vector_t nvec,
-    const float ellipticity, const float DOP, const compressed_complex X_PV, const compressed_complex VPHI,
-    uint8_t* bp1_buffer_frame)
+    const float ellipticity, const float DOP, const compressed_complex X_PV,
+    const compressed_complex VPHI, uint8_t* bp1_buffer_frame)
 {
     {
         bp1_buffer_frame = encode_uint16_t(to_custom_float_6_10(elec_PSD), bp1_buffer_frame);
@@ -350,17 +350,14 @@ void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_ma
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B1B1],
             sm_ptr[ASM_COMP_B3B3], sm_ptr[ASM_COMP_B1B3], sm_ptr[ASM_COMP_B1B3_imag]);
 
-        bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B2B2],
-            sm_ptr[ASM_COMP_B3B3], sm_ptr[ASM_COMP_B2B3], sm_ptr[ASM_COMP_B2B3_imag]);
-
-        bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_E1E1],
-            sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_E1E2], sm_ptr[ASM_COMP_E1E2_imag]);
-
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B1B1],
             sm_ptr[ASM_COMP_E1E1], sm_ptr[ASM_COMP_B1E1], sm_ptr[ASM_COMP_B1E1_imag]);
 
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B1B1],
             sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_B1E2], sm_ptr[ASM_COMP_B1E2_imag]);
+
+        bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B2B2],
+            sm_ptr[ASM_COMP_B3B3], sm_ptr[ASM_COMP_B2B3], sm_ptr[ASM_COMP_B2B3_imag]);
 
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B2B2],
             sm_ptr[ASM_COMP_E1E1], sm_ptr[ASM_COMP_B2E1], sm_ptr[ASM_COMP_B2E1_imag]);
@@ -373,5 +370,8 @@ void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_ma
 
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_B3B3],
             sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_B3E2], sm_ptr[ASM_COMP_B3E2_imag]);
+
+        bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_E1E1],
+            sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_E1E2], sm_ptr[ASM_COMP_E1E2_imag]);
     }
 }
