@@ -39,15 +39,6 @@
 extern unsigned short sequenceCounterParameterDump;
 extern unsigned short sequenceCounters_TM_DUMP[];
 
-extern float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
-
-extern float mag_calibration_matrices_f1[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f1[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
-
-extern float mag_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX];
-extern float elec_calibration_matrices_f2[NB_BINS_PER_SM * NB_ELEMENTS_ELEC_CAL_MATRIX * FLOATS_PER_COMPLEX];
-
 extern fbins_masks_t fbins_masks;
 
 int action_load_common_par(ccsdsTelecommandPacket_t* TC);

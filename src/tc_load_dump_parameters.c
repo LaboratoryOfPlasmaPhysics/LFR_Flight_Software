@@ -38,7 +38,8 @@
 
 #include "tc_load_dump_parameters.h"
 #include <string.h>
-
+#include "processing/calibration_matrices.h"
+#include <math.h>
 
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1 = { 0 };
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2 = { 0 };
@@ -498,10 +499,6 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
 
     void* address;
     rtems_status_code status;
-    unsigned int freq;
-    unsigned int bin;
-    unsigned int coeff;
-    unsigned char* kCoeffPtr;
     unsigned char* kCoeffDumpPtr;
 
     // Each packet is 3900 bytes
@@ -522,7 +519,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     increment_seq_counter_destination_id_dump(
         kcoefficients_dump_1.packetSequenceControl, TC->sourceID);
     kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
-    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F0; freq++)
+    for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F0; freq++)
     {
 
         memcpy(kCoeffDumpPtr,
@@ -536,7 +533,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
             NB_BYTES_ELEC_CAL_MATRIX);
         kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
     }
-    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F1; freq++)
+    for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F1; freq++)
     {
         memcpy(kCoeffDumpPtr,
             mag_calibration_matrices_f1
@@ -577,7 +574,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
         kcoefficients_dump_2.packetSequenceControl, TC->sourceID);
 
     kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
-    for (freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
+    for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
     {
 
         memcpy(kCoeffDumpPtr,
@@ -1073,7 +1070,7 @@ void set_hk_lfr_sc_rw_f_flag(unsigned char wheel, unsigned char freq, float valu
 
     // if the frequency value is not a number, the flag is set to 0 and the frequency RWx_Fy is not
     // filtered
-    if (isnan(value))
+    if (isnanf(value))
     {
         flag = FLAG_NAN;
     }
@@ -1350,7 +1347,7 @@ void setFBinMask(unsigned char* fbins_mask, float rw_f, unsigned char deltaFreq,
         binToRemove[k] = -1;
     }
 
-    if (!isnan(rw_f))
+    if (!isnanf(rw_f))
     {
         // compute the frequency range to filter [ rw_f - delta_f; rw_f + delta_f ]
         f_RW_min = rw_f - ((filterPar.sy_lfr_sc_rw_delta_f) * sy_lfr_rw_k);
@@ -1741,8 +1738,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
     if (flag == LFR_SUCCESSFUL)
     {
         // TODO either sy_lfr_pas_filter_offset is signed or remove this test!
-        if ((sy_lfr_pas_filter_offset < MIN_PAS_FILTER_OFFSET)
-            || (sy_lfr_pas_filter_offset > MAX_PAS_FILTER_OFFSET))
+        if (sy_lfr_pas_filter_offset > MAX_PAS_FILTER_OFFSET)
         {
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET + DATAFIELD_OFFSET,
