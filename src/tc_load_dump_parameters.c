@@ -37,9 +37,9 @@
  */
 
 #include "tc_load_dump_parameters.h"
-#include <string.h>
 #include "processing/calibration_matrices.h"
 #include <math.h>
+#include <string.h>
 
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1 = { 0 };
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2 = { 0 };
@@ -324,11 +324,17 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
      *
      */
 
-    int flag;
+    int flag = LFR_DEFAULT;
+    rtems_status_code status;
 
-    flag = LFR_DEFAULT;
-
-    flag = set_sy_lfr_kcoeff(TC, queue_id);
+    if (lfrCurrentMode != LFR_MODE_STANDBY)
+    {
+        status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+    }
+    else
+    {
+        flag = set_sy_lfr_kcoeff(TC, queue_id);
+    }
 
     return flag;
 }
