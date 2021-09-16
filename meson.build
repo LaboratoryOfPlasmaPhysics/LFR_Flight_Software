@@ -1,6 +1,6 @@
 project('LFR_FSW', 'c', 'cpp',
         license : 'GPL-2.0-or-later',
-        default_options : ['warning_level=3'])
+        default_options : ['warning_level=3', 'staticpic=false'])
 
 add_global_arguments(
             '-DSW_VERSION_N1=@0@'.format(get_option('SW_VERSION_N1')),
@@ -9,6 +9,13 @@ add_global_arguments(
             '-DSW_VERSION_N4=@0@'.format(get_option('SW_VERSION_N4')),
             language: 'c'
     )
+
+add_global_arguments(
+            '-DCATCH_CONFIG_NO_POSIX_SIGNALS', # workaround for this https://github.com/catchorg/Catch2/issues/2192
+            language: 'cpp',
+            native: true
+    )
+
 
 fsw_version = '@0@-@1@-@2@-@3@'.format(get_option('SW_VERSION_N1'),
                                        get_option('SW_VERSION_N2'),

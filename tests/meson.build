@@ -6,16 +6,13 @@ python3 = pymod.find_installation('python3')
 
 rtems_mock_inc = include_directories('common/rtems_mock')
 
-lfr = static_library('lfr',
-            ['../src/processing/ASM/spectralmatrices.c',
-            '../src/mitigations/PAS_filtering.c',
-            '../src/mitigations/reaction_wheel_filtering.c',
-            'common/mock_globals.c'],
-            include_directories: [rtems_mock_inc, '../header'],
-            extra_files: ['common/FSW_helpers.hpp'],
-            native: true)
+lfr_sources = ['../src/processing/ASM/spectralmatrices.c',
+'../src/mitigations/PAS_filtering.c',
+'../src/mitigations/reaction_wheel_filtering.c',
+'common/mock_globals.c']
 
-lfr_dep = declare_dependency(link_with: lfr,include_directories: [rtems_mock_inc, '../header'] )
+
+lfr_dep = declare_dependency(include_directories: [rtems_mock_inc, '../header'], sources: lfr_sources)
 
 pywrappers = python3.extension_module('lfr',
                     'common/py_wrappers.cpp',
@@ -24,6 +21,7 @@ pywrappers = python3.extension_module('lfr',
                     c_args: [build_machine_endian_def],
                     install: not meson.is_cross_build(),
                     install_dir: python3.get_path('platlib'),
+                    extra_files: ['common/FSW_helpers.hpp'],
                     dependencies: [lfr_dep, lfr_bp_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
 
 
