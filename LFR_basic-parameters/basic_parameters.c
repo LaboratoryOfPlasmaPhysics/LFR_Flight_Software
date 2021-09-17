@@ -301,7 +301,6 @@ uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave
 void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
     uint8_t* bp1_buffer)
 {
-
     const float* spectral_matrix_ptr = spectral_matrices;
     uint8_t* bp1_buffer_frame = bp1_buffer;
     for (int i = 0; i < spectral_matrices_count; i++)
@@ -326,8 +325,16 @@ uint8_t* _compute_BP2_cross_component(
     uint8_t* const bp2_frame, float auto1, float auto2, float cross_re, float cross_imag)
 {
     const float aux = sqrtf(auto1 * auto2);
-    encode_float_uint8_t(cross_re / aux, bp2_frame);
-    encode_float_uint8_t(cross_imag / aux, bp2_frame + 10);
+    if (aux != 0.f)
+    {
+        encode_float_uint8_t(cross_re / aux, bp2_frame);
+        encode_float_uint8_t(cross_imag / aux, bp2_frame + 10);
+    }
+    else
+    {
+        encode_float_uint8_t(0.f, bp2_frame);
+        encode_float_uint8_t(0.f, bp2_frame + 10);
+    }
     return bp2_frame + 1;
 }
 
