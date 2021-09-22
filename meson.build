@@ -10,6 +10,39 @@ add_global_arguments(
             language: 'c'
     )
 
+if get_option('enable-printf')
+    add_global_arguments(
+                '-DPRINT_MESSAGES_ON_CONSOLE',
+                language: 'c'
+        )
+endif
+if get_option('enable-boot-messages')
+    add_global_arguments(
+            '-DBOOT_MESSAGES',
+            language: 'c'
+    )
+endif
+if get_option('enable-debug-messages')
+    add_global_arguments(
+            '-DPRINT_MESSAGES_ON_CONSOLE',
+            language: 'c'
+    )
+endif
+
+if get_option('enable-cpu-usage-report')
+    add_global_arguments(
+            '-DPRINT_TASK_STATISTICS',
+            language: 'c'
+    )
+endif
+
+if get_option('enable-stack-report')
+    add_global_arguments(
+            '-DPRINT_STACK_REPORT',
+            language: 'c'
+    )
+endif
+
 add_global_arguments(
             '-DCATCH_CONFIG_NO_POSIX_SIGNALS', # workaround for this https://github.com/catchorg/Catch2/issues/2192
             language: 'cpp',

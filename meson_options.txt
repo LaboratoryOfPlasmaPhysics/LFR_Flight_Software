@@ -8,3 +8,10 @@ option('fix-b2bst', type : 'boolean', value : true, description : 'Activate -mfi
 option('with-tests', type : 'boolean', value : true, description : 'Enables native tests.')
 
 option('lpp-destid', type : 'boolean', value : false, description : 'Set DPU dest ID to the one used at LPP.')
+
+option('enable-printf', type : 'boolean', value : false, description : '')
+option('enable-boot-messages', type : 'boolean', value : false, description : '')
+option('enable-debug-messages', type : 'boolean', value : false, description : '')
+
+option('enable-cpu-usage-report', type : 'boolean', value : false, description :  'Enable LFR cpu usage report')
+option('enable-stack-report', type : 'boolean', value : false, description :  'Enable LFR stack report')
