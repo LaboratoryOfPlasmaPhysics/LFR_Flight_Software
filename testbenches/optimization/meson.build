@@ -10,6 +10,7 @@ if meson.is_cross_build()
     endif
 
     bench_lfr_src = ['../../src/processing/ASM/spectralmatrices.c',
+                '../../src/processing/calibration_matrices.c',
                 '../../src/mitigations/PAS_filtering.c',
                 '../../src/mitigations/reaction_wheel_filtering.c',
                 '../../tests/common/mock_globals.c']

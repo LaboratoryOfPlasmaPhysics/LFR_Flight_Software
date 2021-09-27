@@ -138,7 +138,7 @@ rtems_task Init(rtems_task_argument ignored)
 
     // UART settings
     enable_apbuart_transmitter();
-    set_apbuart_scaler_reload_register(REGS_ADDR_APBUART, APBUART_SCALER_RELOAD_VALUE);
+    set_apbuart_scaler_reload_register(APBUART_SCALER_RELOAD_VALUE);
 
     DEBUG_PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
 

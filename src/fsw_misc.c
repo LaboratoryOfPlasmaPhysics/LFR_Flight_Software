@@ -192,14 +192,14 @@ void watchdog_start(void)
 int enable_apbuart_transmitter(
     void) // set the bit 1, TE Transmitter Enable to 1 in the APBUART control register
 {
-    struct apbuart_regs_str* apbuart_regs = (struct apbuart_regs_str*)REGS_ADDR_APBUART;
+    apbuart_regs_t* apbuart_regs = (apbuart_regs_t*)REGS_ADDR_APBUART;
 
     apbuart_regs->ctrl = APBUART_CTRL_REG_MASK_TE;
 
     return 0;
 }
 
-void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
+void set_apbuart_scaler_reload_register(unsigned int value)
 {
     /** This function sets the scaler reload register of the apbuart module
      *
@@ -209,8 +209,7 @@ void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value)
      * The value shall be set by the software to get data on the serial interface.
      *
      */
-
-    struct apbuart_regs_str* apbuart_regs = (struct apbuart_regs_str*)regs;
+    apbuart_regs_t* apbuart_regs = (apbuart_regs_t*)REGS_ADDR_APBUART;
 
     apbuart_regs->scaler = value;
 
@@ -453,23 +452,15 @@ rtems_task avgv_task(rtems_task_argument argument)
 {
 #define MOVING_AVERAGE 16
     rtems_status_code status;
-    static int32_t v[MOVING_AVERAGE] = { 0 };
-    static int32_t e1[MOVING_AVERAGE] = { 0 };
-    static int32_t e2[MOVING_AVERAGE] = { 0 };
     static int old_v = 0;
     static int old_e1 = 0;
     static int old_e2 = 0;
-    int32_t current_v;
-    int32_t current_e1;
-    int32_t current_e2;
-    int32_t average_v;
-    int32_t average_e1;
-    int32_t average_e2;
-    int32_t newValue_v;
-    int32_t newValue_e1;
-    int32_t newValue_e2;
-    unsigned char k;
-    unsigned char indexOfOldValue;
+    int32_t current_v = 0;
+    int32_t current_e1 = 0;
+    int32_t current_e2 = 0;
+    int32_t average_v = 0;
+    int32_t average_e1 = 0;
+    int32_t average_e2 = 0;
 
     static filter_ctx ctx_v = { { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } } };
     static filter_ctx ctx_e1 = { { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } } };
@@ -495,20 +486,6 @@ rtems_task avgv_task(rtems_task_argument argument)
     {
         DEBUG_PRINTF("OK  *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id)\n");
     }
-
-    // initialize values
-    indexOfOldValue = MOVING_AVERAGE - 1;
-    current_v = 0;
-    current_e1 = 0;
-    current_e2 = 0;
-    average_v = 0;
-    average_e1 = 0;
-    average_e2 = 0;
-    newValue_v = 0;
-    newValue_e1 = 0;
-    newValue_e2 = 0;
-
-    k = INIT_CHAR;
 
     while (1)
     { // launch the rate monotonic task

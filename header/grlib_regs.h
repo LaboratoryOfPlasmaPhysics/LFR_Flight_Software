@@ -5,34 +5,34 @@
 
 #include <stdint.h>
 
-struct apbuart_regs_str
+typedef volatile struct
 {
-    volatile unsigned int data;
-    volatile unsigned int status;
-    volatile unsigned int ctrl;
-    volatile unsigned int scaler;
-    volatile unsigned int fifoDebug;
-};
+    uint32_t data;
+    uint32_t status;
+    uint32_t ctrl;
+    uint32_t scaler;
+    uint32_t fifoDebug;
+}apbuart_regs_t;
 
-struct grgpio_regs_str
+typedef volatile struct
 {
-    volatile int io_port_data_register;
-    int io_port_output_register;
-    int io_port_direction_register;
-    int interrupt_mak_register;
-    int interrupt_polarity_register;
-    int interrupt_edge_register;
-    int bypass_register;
-    int reserved;
+    uint32_t io_port_data_register;
+    uint32_t io_port_output_register;
+    uint32_t io_port_direction_register;
+    uint32_t interrupt_mak_register;
+    uint32_t interrupt_polarity_register;
+    uint32_t interrupt_edge_register;
+    uint32_t bypass_register;
+    uint32_t reserved;
     // 0x20-0x3c interrupt map register(s)
-};
+}grgpio_regs_t;
 
-typedef struct
+typedef volatile struct
 {
-    volatile unsigned int counter;
-    volatile unsigned int reload;
-    volatile unsigned int ctrl;
-    volatile unsigned int unused;
+    uint32_t counter;
+    uint32_t reload;
+    uint32_t ctrl;
+    uint32_t unused;
 } timer_regs_t;
 
 //*************
@@ -47,12 +47,12 @@ typedef struct
 #define GPTIMER_IE        0x00000008 // IE interrupt enable
 #define GPTIMER_IE_MASK   0xffffffef // IE interrupt enable
 
-typedef struct
+typedef volatile struct
 {
-    volatile unsigned int scaler_value;
-    volatile unsigned int scaler_reload;
-    volatile unsigned int conf;
-    volatile unsigned int unused0;
+    uint32_t scaler_value;
+    uint32_t scaler_reload;
+    uint32_t conf;
+    uint32_t unused0;
     timer_regs_t timer[NB_GPTIMER];
 } gptimer_regs_t;
 
@@ -75,26 +75,25 @@ typedef struct
 #define BIT_SOFT_RESET       0x00000004 // [0100]
 #define MASK_SOFT_RESET      0xfffffffb // [1011]
 
-typedef struct
+typedef volatile struct
 {
-    volatile int
-        ctrl; // bit 0 forces the load of the coarse_time_load value and resets the fine_time
-              // bit 1 is the soft reset for the time management module
-              // bit 2 is the soft reset for the waveform picker and the spectral matrix modules,
-              // set to 1 after HW reset
-    volatile int coarse_time_load;
-    volatile int coarse_time;
-    volatile int fine_time;
+    uint32_t ctrl; // bit 0 forces the load of the coarse_time_load value and resets the fine_time
+                   // bit 1 is the soft reset for the time management module
+                   // bit 2 is the soft reset for the waveform picker and the spectral matrix
+                   // modules, set to 1 after HW reset
+    uint32_t coarse_time_load;
+    uint32_t coarse_time;
+    uint32_t fine_time;
     // TEMPERATURES
-    volatile int temp_pcb; // SEL1 = 0 SEL0 = 0
-    volatile int temp_fpga; // SEL1 = 0 SEL0 = 1
-    volatile int temp_scm; // SEL1 = 1 SEL0 = 0
+    uint32_t temp_pcb; // SEL1 = 0 SEL0 = 0
+    uint32_t temp_fpga; // SEL1 = 0 SEL0 = 1
+    uint32_t temp_scm; // SEL1 = 1 SEL0 = 0
     // CALIBRATION
-    volatile unsigned int calDACCtrl;
-    volatile unsigned int calPrescaler;
-    volatile unsigned int calDivisor;
-    volatile unsigned int calDataPtr;
-    volatile unsigned int calData;
+    uint32_t calDACCtrl;
+    uint32_t calPrescaler;
+    uint32_t calDivisor;
+    uint32_t calDataPtr;
+    uint32_t calData;
 } time_management_regs_t;
 
 //*********************
@@ -139,56 +138,56 @@ typedef struct
 #define DFLT_WFP_DELTA_F0_2        0x30 // 48 = 11 0000, max 7 bits
 
 // PDB >= 0.1.28, 0x80000f54
-typedef struct
+typedef volatile struct
 {
-    int data_shaping; // 0x00 00 *** R2 R1 R0 SP1 SP0 BW
-    int run_burst_enable; // 0x04 01 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    int addr_data_f0_0; // 0x08
-    int addr_data_f0_1; // 0x0c
-    int addr_data_f1_0; // 0x10
-    int addr_data_f1_1; // 0x14
-    int addr_data_f2_0; // 0x18
-    int addr_data_f2_1; // 0x1c
-    int addr_data_f3_0; // 0x20
-    int addr_data_f3_1; // 0x24
-    volatile int status; // 0x28
-    volatile int delta_snapshot; // 0x2c
-    int delta_f0; // 0x30
-    int delta_f0_2; // 0x34
-    int delta_f1; // 0x38
-    int delta_f2; // 0x3c
-    int nb_data_by_buffer; // 0x40 number of samples in a buffer = 2688
-    int snapshot_param; // 0x44
-    int start_date; // 0x48
+    uint32_t data_shaping; // 0x00 00 *** R2 R1 R0 SP1 SP0 BW
+    uint32_t run_burst_enable; // 0x04 01 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
+    uint32_t addr_data_f0_0; // 0x08
+    uint32_t addr_data_f0_1; // 0x0c
+    uint32_t addr_data_f1_0; // 0x10
+    uint32_t addr_data_f1_1; // 0x14
+    uint32_t addr_data_f2_0; // 0x18
+    uint32_t addr_data_f2_1; // 0x1c
+    uint32_t addr_data_f3_0; // 0x20
+    uint32_t addr_data_f3_1; // 0x24
+    uint32_t status; // 0x28
+    uint32_t delta_snapshot; // 0x2c
+    uint32_t delta_f0; // 0x30
+    uint32_t delta_f0_2; // 0x34
+    uint32_t delta_f1; // 0x38
+    uint32_t delta_f2; // 0x3c
+    uint32_t nb_data_by_buffer; // 0x40 number of samples in a buffer = 2688
+    uint32_t snapshot_param; // 0x44
+    uint32_t start_date; // 0x48
     //
-    volatile unsigned int f0_0_coarse_time; // 0x4c
-    volatile unsigned int f0_0_fine_time; // 0x50
-    volatile unsigned int f0_1_coarse_time; // 0x54
-    volatile unsigned int f0_1_fine_time; // 0x58
+    uint32_t f0_0_coarse_time; // 0x4c
+    uint32_t f0_0_fine_time; // 0x50
+    uint32_t f0_1_coarse_time; // 0x54
+    uint32_t f0_1_fine_time; // 0x58
     //
-    volatile unsigned int f1_0_coarse_time; // 0x5c
-    volatile unsigned int f1_0_fine_time; // 0x60
-    volatile unsigned int f1_1_coarse_time; // 0x64
-    volatile unsigned int f1_1_fine_time; // 0x68
+    uint32_t f1_0_coarse_time; // 0x5c
+    uint32_t f1_0_fine_time; // 0x60
+    uint32_t f1_1_coarse_time; // 0x64
+    uint32_t f1_1_fine_time; // 0x68
     //
-    volatile unsigned int f2_0_coarse_time; // 0x6c
-    volatile unsigned int f2_0_fine_time; // 0x70
-    volatile unsigned int f2_1_coarse_time; // 0x74
-    volatile unsigned int f2_1_fine_time; // 0x78
+    uint32_t f2_0_coarse_time; // 0x6c
+    uint32_t f2_0_fine_time; // 0x70
+    uint32_t f2_1_coarse_time; // 0x74
+    uint32_t f2_1_fine_time; // 0x78
     //
-    volatile unsigned int f3_0_coarse_time; // 0x7c => 0x7c + 0xf54 = 0xd0
-    volatile unsigned int f3_0_fine_time; // 0x80
-    volatile unsigned int f3_1_coarse_time; // 0x84
-    volatile unsigned int f3_1_fine_time; // 0x88
+    uint32_t f3_0_coarse_time; // 0x7c => 0x7c + 0xf54 = 0xd0
+    uint32_t f3_0_fine_time; // 0x80
+    uint32_t f3_1_coarse_time; // 0x84
+    uint32_t f3_1_fine_time; // 0x88
     //
-    unsigned int buffer_length; // 0x8c = buffer length in burst 2688 / 16 = 168
+    uint32_t buffer_length; // 0x8c = buffer length in burst 2688 / 16 = 168
     //
-    volatile int16_t v_dummy; // 0x90
-    volatile int16_t v; // 0x90
-    volatile int16_t e1_dummy; // 0x94
-    volatile int16_t e1; // 0x94
-    volatile int16_t e2_dummy; // 0x98
-    volatile int16_t e2; // 0x98
+    int16_t v_dummy; // 0x90
+    int16_t v; // 0x90
+    int16_t e1_dummy; // 0x94
+    int16_t e1; // 0x94
+    int16_t e2_dummy; // 0x98
+    int16_t e2; // 0x98
 } waveform_picker_regs_0_1_18_t;
 
 //*********************
@@ -214,34 +213,34 @@ typedef struct
 #define BIT_IRQ_ON_ERROR       0x02
 #define MASK_IRQ_ON_ERROR      0xfffffffd
 
-typedef struct
+typedef volatile struct
 {
-    volatile int config; // 0x00
-    volatile int status; // 0x04
-    volatile int f0_0_address; // 0x08
-    volatile int f0_1_address; // 0x0C
+    uint32_t config; // 0x00
+    uint32_t status; // 0x04
+    uint32_t f0_0_address; // 0x08
+    uint32_t f0_1_address; // 0x0C
     //
-    volatile int f1_0_address; // 0x10
-    volatile int f1_1_address; // 0x14
-    volatile int f2_0_address; // 0x18
-    volatile int f2_1_address; // 0x1C
+    uint32_t f1_0_address; // 0x10
+    uint32_t f1_1_address; // 0x14
+    uint32_t f2_0_address; // 0x18
+    uint32_t f2_1_address; // 0x1C
     //
-    volatile unsigned int f0_0_coarse_time; // 0x20
-    volatile unsigned int f0_0_fine_time; // 0x24
-    volatile unsigned int f0_1_coarse_time; // 0x28
-    volatile unsigned int f0_1_fine_time; // 0x2C
+    uint32_t f0_0_coarse_time; // 0x20
+    uint32_t f0_0_fine_time; // 0x24
+    uint32_t f0_1_coarse_time; // 0x28
+    uint32_t f0_1_fine_time; // 0x2C
     //
-    volatile unsigned int f1_0_coarse_time; // 0x30
-    volatile unsigned int f1_0_fine_time; // 0x34
-    volatile unsigned int f1_1_coarse_time; // 0x38
-    volatile unsigned int f1_1_fine_time; // 0x3C
+    uint32_t f1_0_coarse_time; // 0x30
+    uint32_t f1_0_fine_time; // 0x34
+    uint32_t f1_1_coarse_time; // 0x38
+    uint32_t f1_1_fine_time; // 0x3C
     //
-    volatile unsigned int f2_0_coarse_time; // 0x40
-    volatile unsigned int f2_0_fine_time; // 0x44
-    volatile unsigned int f2_1_coarse_time; // 0x48
-    volatile unsigned int f2_1_fine_time; // 0x4C
+    uint32_t f2_0_coarse_time; // 0x40
+    uint32_t f2_0_fine_time; // 0x44
+    uint32_t f2_1_coarse_time; // 0x48
+    uint32_t f2_1_fine_time; // 0x4C
     //
-    unsigned int matrix_length; // 0x50, length of a spectral matrix in burst 3200 / 16 = 200 = 0xc8
+    uint32_t matrix_length; // 0x50, length of a spectral matrix in burst 3200 / 16 = 200 = 0xc8
 } spectral_matrix_regs_t;
 
 #endif // GRLIB_REGS_H_INCLUDED

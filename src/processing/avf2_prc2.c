@@ -33,15 +33,15 @@
  */
 
 #include "avf2_prc2.h"
-#include "processing/calibration_matrices.h"
+#include "mitigations/PAS_filtering.h"
 
 nb_sm_before_bp_asm_f2 nb_sm_before_f2 = { 0 };
 
 //***
 // F2
-ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { { 0 } };
+ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { 0 };
 
-ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { { 0 } };
+ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { 0 };
 int buffer_asm_f2[NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM] = { 0 };
 
 float asm_f2_patched_norm[TOTAL_SIZE_SM] = { 0 };
@@ -103,6 +103,7 @@ rtems_task avf2_task(rtems_task_argument argument)
 
         nodeForAveraging = getRingNodeForAveraging(CHANNELF2);
 
+        DEBUG_PRINTF("in AVF2 *** got new SM\n");
         // compute the average and store it in the averaged_sm_f2 buffer
         SM_average_f2(
             current_ring_node_asm_norm_f2->matrix, nodeForAveraging, nb_norm_bp1, &msgForPRC);
@@ -212,8 +213,9 @@ rtems_task prc2_task(rtems_task_argument argument)
 
         incomingMsg = (asm_msg*)incomingData;
 
-        SM_calibrate_and_reorder_f2(incomingMsg->norm->matrix, mag_calibration_matrices_f2,
-            elec_calibration_matrices_f2, asm_f2_patched_norm);
+        DEBUG_PRINTF("Before SM_calibrate_and_reorder_f2");
+        SM_calibrate_and_reorder_f2(incomingMsg->norm->matrix, asm_f2_patched_norm);
+        DEBUG_PRINTF("After SM_calibrate_and_reorder_f2");
         // ASM_patch( incomingMsg->norm->matrix, asm_f2_patched_norm );
 
         nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
@@ -294,6 +296,7 @@ void reset_nb_sm_f2(void)
 void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned int nbAverageNormF2,
     asm_msg* msgForMATR)
 {
+    DEBUG_PRINTF("in SM_average_f2");
     float sum;
     unsigned int i;
     unsigned char keepMatrix;
@@ -352,4 +355,5 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
             // nothing to do
         }
     }
+    DEBUG_PRINTF("leaving SM_average_f2");
 }

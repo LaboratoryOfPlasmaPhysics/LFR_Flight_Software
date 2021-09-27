@@ -456,7 +456,7 @@ rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform pic
     ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
 
     // init the ring_node_cwf3_light structure
-    ring_node_cwf3_light.buffer_address = (int)wf_cont_f3_light;
+    ring_node_cwf3_light.buffer_address = wf_cont_f3_light;
     ring_node_cwf3_light.coarseTime = INIT_CHAR;
     ring_node_cwf3_light.fineTime = INIT_CHAR;
     ring_node_cwf3_light.next = NULL;
@@ -688,8 +688,8 @@ void WFP_init_rings(void)
     // F3 RING
     init_ring(waveform_ring_f3, NB_RING_NODES_F3, wf_buffer_f3, WFRM_BUFFER);
 
-    ring_node_swf1_extracted.buffer_address = (int)swf1_extracted;
-    ring_node_swf2_extracted.buffer_address = (int)swf2_extracted;
+    ring_node_swf1_extracted.buffer_address = swf1_extracted;
+    ring_node_swf2_extracted.buffer_address = swf2_extracted;
 
     DEBUG_PRINTF("waveform_ring_f0 @%x\n", (unsigned int)waveform_ring_f0)
     DEBUG_PRINTF("waveform_ring_f1 @%x\n", (unsigned int)waveform_ring_f1)
@@ -1126,17 +1126,17 @@ void reset_wfp_status(void)
 void reset_wfp_buffer_addresses(void)
 {
     // F0
-    waveform_picker_regs->addr_data_f0_0 = current_ring_node_f0->previous->buffer_address; // 0x08
-    waveform_picker_regs->addr_data_f0_1 = current_ring_node_f0->buffer_address; // 0x0c
+    waveform_picker_regs->addr_data_f0_0 = (uint32_t)current_ring_node_f0->previous->buffer_address; // 0x08
+    waveform_picker_regs->addr_data_f0_1 = (uint32_t)current_ring_node_f0->buffer_address; // 0x0c
     // F1
-    waveform_picker_regs->addr_data_f1_0 = current_ring_node_f1->previous->buffer_address; // 0x10
-    waveform_picker_regs->addr_data_f1_1 = current_ring_node_f1->buffer_address; // 0x14
+    waveform_picker_regs->addr_data_f1_0 = (uint32_t)current_ring_node_f1->previous->buffer_address; // 0x10
+    waveform_picker_regs->addr_data_f1_1 = (uint32_t)current_ring_node_f1->buffer_address; // 0x14
     // F2
-    waveform_picker_regs->addr_data_f2_0 = current_ring_node_f2->previous->buffer_address; // 0x18
-    waveform_picker_regs->addr_data_f2_1 = current_ring_node_f2->buffer_address; // 0x1c
+    waveform_picker_regs->addr_data_f2_0 = (uint32_t)current_ring_node_f2->previous->buffer_address; // 0x18
+    waveform_picker_regs->addr_data_f2_1 = (uint32_t)current_ring_node_f2->buffer_address; // 0x1c
     // F3
-    waveform_picker_regs->addr_data_f3_0 = current_ring_node_f3->previous->buffer_address; // 0x20
-    waveform_picker_regs->addr_data_f3_1 = current_ring_node_f3->buffer_address; // 0x24
+    waveform_picker_regs->addr_data_f3_0 = (uint32_t)current_ring_node_f3->previous->buffer_address; // 0x20
+    waveform_picker_regs->addr_data_f3_1 = (uint32_t)current_ring_node_f3->buffer_address; // 0x24
 }
 
 void reset_waveform_picker_regs(void)

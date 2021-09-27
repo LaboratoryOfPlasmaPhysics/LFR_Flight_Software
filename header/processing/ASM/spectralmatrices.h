@@ -53,12 +53,9 @@ extern "C"
     void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
         float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix);
 
-    void SM_calibrate_and_reorder_f0(float* input_asm, float* mag_calibration_matrices,
-        float* elec_calibration_matrices, float* output_asm);
-    void SM_calibrate_and_reorder_f1(float* input_asm, float* mag_calibration_matrices,
-        float* elec_calibration_matrices, float* output_asm);
-    void SM_calibrate_and_reorder_f2(float* input_asm, float* mag_calibration_matrices,
-        float* elec_calibration_matrices, float* output_asm);
+    void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm);
+    void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm);
+    void SM_calibrate_and_reorder_f2(float* input_asm, float* output_asm);
 
     void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,

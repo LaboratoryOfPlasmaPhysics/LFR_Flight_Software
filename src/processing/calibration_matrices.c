@@ -1,5 +1,5 @@
-
-#include "fsw_params_processing.h"
+#include "processing/calibration_matrices.h"
+#include "lfr_common_headers/fsw_params_processing.h"
 
 float mag_calibration_matrices_f0[NB_BINS_PER_SM * NB_ELEMENTS_MAG_CAL_MATRIX * FLOATS_PER_COMPLEX]
     = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,

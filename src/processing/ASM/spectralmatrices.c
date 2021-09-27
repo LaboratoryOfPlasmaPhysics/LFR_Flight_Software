@@ -21,7 +21,10 @@
 --                   Contact : Alexis Jeandet
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
+#include "mitigations/PAS_filtering.h"
+#include "mitigations/reaction_wheel_filtering.h"
 #include "processing/ASM/spectralmatrices.h"
+#include "processing/calibration_matrices.h"
 
 inline void clear_spectral_matrix(float* spectral_matrix) __attribute__((always_inline));
 void clear_spectral_matrix(float* spectral_matrix)
@@ -156,14 +159,14 @@ void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normali
     // BUILD DATA
     if (divider == 0.)
     {
-        for (int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
+        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
         {
             averaged_spec_mat_normalized[i] = 0.;
         }
     }
     else
     {
-        for (int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
+        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
         {
             averaged_spec_mat_normalized[i] = averaged_spec_mat[i] / divider;
         }
@@ -493,7 +496,7 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
     output_asm += start_indice * NB_FLOATS_PER_SM;
-    for (int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
+    for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
     {
         float* out_ptr = work_matrix;
         float* in_ptr = input_asm + frequency_offset;
@@ -526,33 +529,29 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     }
 }
 
-void SM_calibrate_and_reorder_f0(float* input_asm, float* mag_calibration_matrices,
-    float* elec_calibration_matrices, float* output_asm)
+void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm)
 {
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
-    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm, ASM_F0_INDICE_START,
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f0,
+        elec_calibration_matrices_f0, output_asm, ASM_F0_INDICE_START,
         ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
 }
 
-void SM_calibrate_and_reorder_f1(float* input_asm, float* mag_calibration_matrices,
-    float* elec_calibration_matrices, float* output_asm)
+void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm)
 {
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
-    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm, ASM_F1_INDICE_START,
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f1,
+        elec_calibration_matrices_f1, output_asm, ASM_F1_INDICE_START,
         ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
 }
 
-void SM_calibrate_and_reorder_f2(float* input_asm, float* mag_calibration_matrices,
-    float* elec_calibration_matrices, float* output_asm)
+void SM_calibrate_and_reorder_f2(float* input_asm, float* output_asm)
 {
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
-    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices,
-        elec_calibration_matrices, output_asm, ASM_F2_INDICE_START,
+    SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f2,
+        elec_calibration_matrices_f2, output_asm, ASM_F2_INDICE_START,
         ASM_F2_INDICE_START + ASM_F2_KEEP_BINS);
 }
-

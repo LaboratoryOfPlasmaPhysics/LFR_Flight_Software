@@ -34,8 +34,6 @@
 
 #include "avf1_prc1.h"
 
-#include "processing/calibration_matrices.h"
-
 nb_sm_before_bp_asm_f1 nb_sm_before_f1 = { 0 };
 
 //***
@@ -298,8 +296,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F1))
         {
             // ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
-            SM_calibrate_and_reorder_f1(incomingMsg->burst_sbm->matrix, mag_calibration_matrices_f1,
-                elec_calibration_matrices_f1, asm_f1_patched_burst_sbm);
+            SM_calibrate_and_reorder_f1(incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm);
             nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
             sid = getSID(incomingMsg->event);
             // 1)  compress the matrix for Basic Parameters calculation
@@ -323,7 +320,8 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
                 || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F1))
             {
                 // 1) compute the BP2 set
-                compute_BP2(compressed_sm_sbm_f1, NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp2.data);
+                compute_BP2(
+                    compressed_sm_sbm_f1, NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp2.data);
                 // 2) send the BP2 set
                 set_time(packet_sbm_bp2.time, (unsigned char*)&incomingMsg->coarseTimeSBM);
                 set_time(
@@ -345,8 +343,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1))
         {
             // ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
-            SM_calibrate_and_reorder_f1(incomingMsg->norm->matrix, mag_calibration_matrices_f1,
-                elec_calibration_matrices_f1, asm_f1_patched_norm);
+            SM_calibrate_and_reorder_f1(incomingMsg->norm->matrix, asm_f1_patched_norm);
             nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
         }
 
@@ -438,4 +435,3 @@ void reset_nb_sm_f1(unsigned char lfrMode)
         nb_sm_before_f1.burst_sbm_bp2 = nb_sm_before_f1.burst_bp2;
     }
 }
-

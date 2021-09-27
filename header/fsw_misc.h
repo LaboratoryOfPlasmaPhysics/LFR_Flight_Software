@@ -96,7 +96,6 @@ typedef struct filter_ctx
     int W[NB_COEFFS][NB_COEFFS];
 } filter_ctx;
 
-extern gptimer_regs_t* gptimer_regs;
 extern void ASR16_get_FPRF_IURF_ErrorCounters(unsigned int*, unsigned int*);
 extern void CCR_getInstructionAndDataErrorCounters(unsigned int*, unsigned int*);
 
@@ -123,7 +122,7 @@ void watchdog_start(void);
 // SERIAL LINK
 int send_console_outputs_on_apbuart_port(void);
 int enable_apbuart_transmitter(void);
-void set_apbuart_scaler_reload_register(unsigned int regs, unsigned int value);
+void set_apbuart_scaler_reload_register(unsigned int value);
 
 // RTEMS TASKS
 rtems_task load_task(rtems_task_argument argument);

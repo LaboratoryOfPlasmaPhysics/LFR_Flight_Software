@@ -110,7 +110,8 @@ void spectral_matrices_isr_f0(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f0_0_fine_time;
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
+            spectral_matrix_regs->f0_0_address
+                = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f0 = nb_sm_f0 + 1;
             if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
@@ -129,7 +130,8 @@ void spectral_matrices_isr_f0(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f0_1_fine_time;
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+            spectral_matrix_regs->f0_1_address
+                = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f0 = nb_sm_f0 + 1;
             if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
@@ -171,7 +173,8 @@ void spectral_matrices_isr_f1(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f1_0_fine_time;
             current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
-            spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
+            spectral_matrix_regs->f1_0_address
+                = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f1 = nb_sm_f1 + 1;
             if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
@@ -190,7 +193,8 @@ void spectral_matrices_isr_f1(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f1_1_fine_time;
             current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
-            spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
+            spectral_matrix_regs->f1_1_address
+                = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f1 = nb_sm_f1 + 1;
             if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
@@ -538,14 +542,17 @@ void reset_spectral_matrix_regs(void)
     reset_sm_status();
 
     // F1
-    spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->previous->buffer_address;
-    spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->f0_0_address
+        = (volatile uint32_t)current_ring_node_sm_f0->previous->buffer_address;
+    spectral_matrix_regs->f0_1_address = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
     // F2
-    spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->previous->buffer_address;
-    spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
+    spectral_matrix_regs->f1_0_address
+        = (volatile uint32_t)current_ring_node_sm_f1->previous->buffer_address;
+    spectral_matrix_regs->f1_1_address = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
     // F3
-    spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
-    spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
+    spectral_matrix_regs->f2_0_address
+        = (volatile uint32_t)current_ring_node_sm_f2->previous->buffer_address;
+    spectral_matrix_regs->f2_1_address = (volatile uint32_t)current_ring_node_sm_f2->buffer_address;
 
     spectral_matrix_regs->matrix_length = DEFAULT_MATRIX_LENGTH; // 25 * 128 / 16 = 200 = 0xc8
 }
@@ -608,4 +615,3 @@ unsigned char getSID(rtems_event_set event)
 
     return sid;
 }
-

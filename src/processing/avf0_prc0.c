@@ -34,7 +34,6 @@
 
 #include "avf0_prc0.h"
 #include <string.h>
-#include "processing/calibration_matrices.h"
 
 nb_sm_before_bp_asm_f0 nb_sm_before_f0 = { 0 };
 
@@ -304,8 +303,7 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F0))
         {
             // ASM_patch( incomingMsg->burst_sbm->matrix, asm_f0_patched_burst_sbm );
-            SM_calibrate_and_reorder_f0(incomingMsg->burst_sbm->matrix, mag_calibration_matrices_f0,
-                elec_calibration_matrices_f0, asm_f0_patched_burst_sbm);
+            SM_calibrate_and_reorder_f0(incomingMsg->burst_sbm->matrix, asm_f0_patched_burst_sbm);
             nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
 
             sid = getSID(incomingMsg->event);
@@ -330,7 +328,8 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
                 || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F0))
             {
                 // 1) compute the BP2 set
-                compute_BP2(compressed_sm_sbm_f0, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp2.data);
+                compute_BP2(
+                    compressed_sm_sbm_f0, NB_BINS_COMPRESSED_SM_SBM_F0, packet_sbm_bp2.data);
                 // 2) send the BP2 set
                 set_time(packet_sbm_bp2.time, (unsigned char*)&incomingMsg->coarseTimeSBM);
                 set_time(
@@ -352,8 +351,7 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
             || (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F0))
         {
             // ASM_patch( incomingMsg->norm->matrix,      asm_f0_patched_norm      );
-            SM_calibrate_and_reorder_f0(incomingMsg->norm->matrix, mag_calibration_matrices_f0,
-                elec_calibration_matrices_f0, asm_f0_patched_norm);
+            SM_calibrate_and_reorder_f0(incomingMsg->norm->matrix, asm_f0_patched_norm);
             nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
         }
 
@@ -454,4 +452,3 @@ void reset_nb_sm_f0(unsigned char lfrMode)
         nb_sm_before_f0.burst_sbm_bp2 = nb_sm_before_f0.burst_bp2;
     }
 }
-

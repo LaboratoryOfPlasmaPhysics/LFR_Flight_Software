@@ -44,7 +44,6 @@
 #include "ccsds_types.h"
 #include "fsw_params.h"
 #include "fsw_params_wf_handler.h"
-#include "grlib_regs.h"
 
 
 #define NB_OF_MISC_NAMES 5
@@ -59,12 +58,12 @@ rtems_name name_hk_rate_monotonic = 0; // name of the HK rate monotonic
 rtems_id HK_id = RTEMS_ID_NONE; // id of the HK rate monotonic period
 rtems_name name_avgv_rate_monotonic = 0; // name of the AVGV rate monotonic
 rtems_id AVGV_id = RTEMS_ID_NONE; // id of the AVGV rate monotonic period
-int fdSPW = 0;
-int fdUART = 0;
-unsigned char lfrCurrentMode = 0;
-unsigned char pa_bia_status_info = 0;
-unsigned char thisIsAnASMRestart = 0;
-unsigned char oneTcLfrUpdateTimeReceived = 0;
+volatile int fdSPW = 0;
+volatile int fdUART = 0;
+volatile unsigned char lfrCurrentMode = 0;
+volatile unsigned char pa_bia_status_info = 0;
+volatile unsigned char thisIsAnASMRestart = 0;
+volatile unsigned char oneTcLfrUpdateTimeReceived = 0;
 
 // WAVEFORMS GLOBAL VARIABLES   // 2048 * 3 * 4 + 2 * 4 = 24576 + 8 bytes = 24584
 //  97 * 256 = 24832 => delta = 248 bytes = 62 words
@@ -84,13 +83,6 @@ volatile int wf_buffer_f3[NB_RING_NODES_F3 * WFRM_BUFFER] __attribute__((aligned
 volatile int sm_f0[NB_RING_NODES_SM_F0 * TOTAL_SIZE_SM] __attribute__((aligned(0x100))) = { 0 };
 volatile int sm_f1[NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM] __attribute__((aligned(0x100))) = { 0 };
 volatile int sm_f2[NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM] __attribute__((aligned(0x100))) = { 0 };
-
-// APB CONFIGURATION REGISTERS
-time_management_regs_t* time_management_regs = (time_management_regs_t*)REGS_ADDR_TIME_MANAGEMENT;
-gptimer_regs_t* gptimer_regs = (gptimer_regs_t*)REGS_ADDR_GPTIMER;
-waveform_picker_regs_0_1_18_t* waveform_picker_regs
-    = (waveform_picker_regs_0_1_18_t*)REGS_ADDR_WAVEFORM_PICKER;
-spectral_matrix_regs_t* spectral_matrix_regs = (spectral_matrix_regs_t*)REGS_ADDR_SPECTRAL_MATRIX;
 
 // MODE PARAMETERS
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet = { 0 };
