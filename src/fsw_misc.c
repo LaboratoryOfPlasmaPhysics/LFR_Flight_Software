@@ -30,6 +30,8 @@
  */
 
 #include "fsw_misc.h"
+#include <stdlib.h>
+#include "fsw_compile_warnings.h"
 
 int16_t hk_lfr_sc_v_f3_as_int16 = 0;
 int16_t hk_lfr_sc_e1_f3_as_int16 = 0;
@@ -62,7 +64,7 @@ void timer_configure(unsigned char timer, unsigned int clock_divider, unsigned c
         timer_isr, interrupt_level, &old_isr_handler); // see sparcv8.pdf p.76 for interrupt levels
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in configure_timer *** ERR rtems_interrupt_catch\n")
+        LFR_PRINTF("in configure_timer *** ERR rtems_interrupt_catch\n");
     }
 
     timer_set_clock_divider(timer, clock_divider);
@@ -117,11 +119,13 @@ void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider)
 
 rtems_isr watchdog_isr(rtems_vector_number vector)
 {
+    IGNORE_UNUSED_PARAMETER(vector);
+
     rtems_status_code status_code;
 
     status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_12);
 
-    PRINTF("watchdog_isr *** this is the end, exit(0)\n");
+    LFR_PRINTF("watchdog_isr *** this is the end, exit(0)\n");
 
     exit(0);
 }
@@ -224,7 +228,9 @@ void set_apbuart_scaler_reload_register(unsigned int value)
 
 rtems_task load_task(rtems_task_argument argument)
 {
-    BOOT_PRINTF("in LOAD *** \n")
+    IGNORE_UNUSED_PARAMETER(argument);
+
+    BOOT_PRINTF("in LOAD *** \n");
 
     rtems_status_code status;
     unsigned int i;
@@ -239,7 +245,7 @@ rtems_task load_task(rtems_task_argument argument)
     status = rtems_rate_monotonic_create(name_watchdog_rate_monotonic, &watchdog_period_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in LOAD *** rtems_rate_monotonic_create failed with status of %d\n", status);
+        LFR_PRINTF("in LOAD *** rtems_rate_monotonic_create failed with status of %d\n", status);
     }
 
     i = 0;
@@ -260,7 +266,7 @@ rtems_task load_task(rtems_task_argument argument)
         {
             i = 0;
             j = j + 1;
-            PRINTF("%d\n", j);
+            LFR_PRINTF("%d\n", j);
         }
 #ifdef DEBUG_WATCHDOG
         if (j == WATCHDOG_LOOP_DEBUG)
@@ -278,6 +284,8 @@ rtems_task load_task(rtems_task_argument argument)
  */
 rtems_task hous_task(rtems_task_argument argument)
 {
+    IGNORE_UNUSED_PARAMETER(argument);
+
     rtems_status_code status;
     rtems_status_code spare_status;
     rtems_id queue_id;
@@ -291,7 +299,7 @@ rtems_task hous_task(rtems_task_argument argument)
     status = get_message_queue_id_send(&queue_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in HOUS *** ERR get_message_queue_id_send %d\n", status);
+        LFR_PRINTF("in HOUS *** ERR get_message_queue_id_send %d\n", status);
     }
 
     BOOT_PRINTF("in HOUS ***\n");
@@ -301,14 +309,14 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_create(name_hk_rate_monotonic, &HK_id);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
+            LFR_PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
         }
     }
 
     status = rtems_rate_monotonic_cancel(HK_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status);
+        LFR_PRINTF("ERR *** in HOUS *** rtems_rate_monotonic_cancel(HK_id) ***code: %d\n", status);
     }
     else
     {
@@ -344,7 +352,7 @@ rtems_task hous_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period(HK_id, HK_PERIOD);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in HOUS *** ERR period: %d\n", status);
+            LFR_PRINTF("in HOUS *** ERR period: %d\n", status);
             spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_6);
         }
         else
@@ -394,12 +402,12 @@ rtems_task hous_task(rtems_task_argument argument)
                 PACKET_LENGTH_HK + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
             if (status != RTEMS_SUCCESSFUL)
             {
-                PRINTF("in HOUS *** ERR send: %d\n", status);
+                LFR_PRINTF("in HOUS *** ERR send: %d\n", status);
             }
         }
     }
 
-    PRINTF("in HOUS *** deleting task\n");
+    LFR_PRINTF("in HOUS *** deleting task\n");
 
     status = rtems_task_delete(RTEMS_SELF); // should not return
 
@@ -450,6 +458,8 @@ int filter(int x, filter_ctx* ctx)
  */
 rtems_task avgv_task(rtems_task_argument argument)
 {
+    IGNORE_UNUSED_PARAMETER(argument);
+
 #define MOVING_AVERAGE 16
     rtems_status_code status;
     static int old_v = 0;
@@ -473,14 +483,14 @@ rtems_task avgv_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_create(name_avgv_rate_monotonic, &AVGV_id);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
+            LFR_PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
         }
     }
 
     status = rtems_rate_monotonic_cancel(AVGV_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status);
+        LFR_PRINTF("ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status);
     }
     else
     {
@@ -492,7 +502,7 @@ rtems_task avgv_task(rtems_task_argument argument)
         status = rtems_rate_monotonic_period(AVGV_id, AVGV_PERIOD);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in AVGV *** ERR period: %d\n", status);
+            LFR_PRINTF("in AVGV *** ERR period: %d\n", status);
         }
         else
         {
@@ -516,7 +526,7 @@ rtems_task avgv_task(rtems_task_argument argument)
         }
     }
 
-    PRINTF("in AVGV *** deleting task\n");
+    LFR_PRINTF("in AVGV *** deleting task\n");
 
     status = rtems_task_delete(RTEMS_SELF); // should not return
 
@@ -534,6 +544,8 @@ rtems_task dumb_task(rtems_task_argument unused)
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(unused);
+
     unsigned int i;
     unsigned int intEventOut;
     unsigned int coarse_time = 0;
@@ -542,7 +554,7 @@ rtems_task dumb_task(rtems_task_argument unused)
 
     event_out = EVENT_SETS_NONE_PENDING;
 
-    BOOT_PRINTF("in DUMB *** \n")
+    BOOT_PRINTF("in DUMB *** \n");
 
     while (1)
     {
@@ -559,15 +571,15 @@ rtems_task dumb_task(rtems_task_argument unused)
                 fine_time = time_management_regs->fine_time;
                 if (i == EVENT_12)
                 {
-                    PRINTF("%s\n", DUMB_MESSAGE_12);
+                    LFR_PRINTF("%s\n", DUMB_MESSAGE_12);
                 }
                 if (i == EVENT_13)
                 {
-                    PRINTF("%s\n", DUMB_MESSAGE_13);
+                    LFR_PRINTF("%s\n", DUMB_MESSAGE_13);
                 }
                 if (i == EVENT_14)
                 {
-                    PRINTF("%s\n", DUMB_MESSAGE_1);
+                    LFR_PRINTF("%s\n", DUMB_MESSAGE_1);
                 }
             }
         }
@@ -584,12 +596,13 @@ rtems_task scrubbing_task(rtems_task_argument unused)
      * The scrubbing reads continuously memory when no other tasks are ready.
      *
      */
+    IGNORE_UNUSED_PARAMETER(unused);
 
     BOOT_PRINTF("in SCRUBBING *** \n");
     volatile int i = 0;
     volatile float valuef = 1.;
     volatile uint32_t* RAM = (uint32_t*)0x40000000;
-    volatile uint32_t value;
+
 #ifdef ENABLE_SCRUBBING_COUNTER
     housekeeping_packet.lfr_fpga_version[BYTE_0] = 0;
 #endif
@@ -617,6 +630,9 @@ rtems_task calibration_sweep_task(rtems_task_argument unused)
      * sampling frequency to loop indefinitely.
      *
      */
+
+    IGNORE_UNUSED_PARAMETER(unused);
+
     rtems_event_set event_out;
     BOOT_PRINTF("in calibration sweep *** \n");
     rtems_interval ticks_per_seconds = rtems_clock_get_ticks_per_second();
@@ -1088,7 +1104,7 @@ void set_hk_lfr_time_not_synchro()
             }
             break;
         default:
-            PRINTF("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n",
+            LFR_PRINTF("in hk_lfr_time_not_synchro *** unexpected value for synchronizationBit = %d\n",
                 synchronizationBit);
             break;
     }

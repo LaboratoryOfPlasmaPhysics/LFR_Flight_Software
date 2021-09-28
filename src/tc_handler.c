@@ -36,6 +36,7 @@
 #include <math.h>
 
 #include "tc_handler.h"
+#include "fsw_compile_warnings.h"
 
 //***********
 // RTEMS TASK
@@ -52,6 +53,7 @@ rtems_task actn_task(rtems_task_argument unused)
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(unused);
     int result;
     rtems_status_code status; // RTEMS status code
     ccsdsTelecommandPacket_t __attribute__((aligned(4))) TC; // TC sent to the ACTN task
@@ -69,13 +71,13 @@ rtems_task actn_task(rtems_task_argument unused)
     status = get_message_queue_id_recv(&queue_rcv_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in ACTN *** ERR get_message_queue_id_recv %d\n", status);
+        LFR_PRINTF("in ACTN *** ERR get_message_queue_id_recv %d\n", status);
     }
 
     status = get_message_queue_id_send(&queue_snd_id);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in ACTN *** ERR get_message_queue_id_send %d\n", status);
+        LFR_PRINTF("in ACTN *** ERR get_message_queue_id_send %d\n", status);
     }
 
     result = LFR_SUCCESSFUL;
@@ -90,7 +92,7 @@ rtems_task actn_task(rtems_task_argument unused)
         getTime(time); // set time to the current time
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("ERR *** in task ACTN *** error receiving a message, code %d \n", status)
+            LFR_PRINTF("ERR *** in task ACTN *** error receiving a message, code %d \n", status);
         }
         else
         {
@@ -98,7 +100,7 @@ rtems_task actn_task(rtems_task_argument unused)
             switch (subtype)
             {
                 case TC_SUBTYPE_RESET:
-                    result = action_reset(&TC, queue_snd_id, time);
+                    result = action_reset();
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_LOAD_COMM:
@@ -130,15 +132,15 @@ rtems_task actn_task(rtems_task_argument unused)
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_UPDT_INFO:
-                    result = action_update_info(&TC, queue_snd_id);
+                    result = action_update_info(&TC);
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_EN_CAL:
-                    result = action_enable_calibration(&TC, queue_snd_id, time);
+                    result = action_enable_calibration();
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_DIS_CAL:
-                    result = action_disable_calibration(&TC, queue_snd_id, time);
+                    result = action_disable_calibration();
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_LOAD_K:
@@ -154,7 +156,7 @@ rtems_task actn_task(rtems_task_argument unused)
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_LOAD_FILTER_PAR:
-                    result = action_load_filter_par(&TC, queue_snd_id, time);
+                    result = action_load_filter_par(&TC, queue_snd_id);
                     close_action(&TC, result, queue_snd_id);
                     break;
                 case TC_SUBTYPE_UPDT_TIME:
@@ -171,7 +173,7 @@ rtems_task actn_task(rtems_task_argument unused)
 //***********
 // TC ACTIONS
 
-int action_reset(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_reset()
 {
     /** This function executes specific actions when a TC_LFR_RESET TeleCommand has been received.
      *
@@ -180,7 +182,7 @@ int action_reset(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char*
      *
      */
 
-    PRINTF("this is the end!!!\n");
+    LFR_PRINTF("this is the end!!!\n");
 #ifdef GCOV_ENABLED
     #ifndef GCOV_USE_EXIT
     extern void gcov_exit(void);
@@ -213,7 +215,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     bytePosPtr = (unsigned char*)&TC->packetID;
     requestedMode = bytePosPtr[BYTE_POS_CP_MODE_LFR_SET];
-    copyInt32ByChar((char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
+    copyInt32ByChar((unsigned char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
     transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
     status = check_mode_value(requestedMode);
 
@@ -227,7 +229,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         status = check_mode_transition(requestedMode);
         if (status != LFR_SUCCESSFUL)
         {
-            PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n")
+            LFR_PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n");
             send_tm_lfr_tc_exe_not_executable(TC, queue_id);
         }
     }
@@ -237,14 +239,14 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         status = check_transition_date(transitionCoarseTime);
         if (status != LFR_SUCCESSFUL)
         {
-            PRINTF("ERR *** in action_enter_mode *** check_transition_date\n");
+            LFR_PRINTF("ERR *** in action_enter_mode *** check_transition_date\n");
             send_tm_lfr_tc_exe_not_executable(TC, queue_id);
         }
     }
 
     if (status == LFR_SUCCESSFUL) // the date is valid, enter the mode
     {
-        PRINTF("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
+        LFR_PRINTF("OK  *** in action_enter_mode *** enter mode %d\n", requestedMode);
 
         switch (requestedMode)
         {
@@ -276,7 +278,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return status;
 }
 
-int action_update_info(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int action_update_info(ccsdsTelecommandPacket_t* TC)
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been
      * received.
@@ -360,7 +362,7 @@ int action_update_info(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return status;
 }
 
-int action_enable_calibration(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_enable_calibration()
 {
     /** This function executes specific actions when a TC_LFR_ENABLE_CALIBRATION TeleCommand has
      * been received.
@@ -381,7 +383,7 @@ int action_enable_calibration(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     return result;
 }
 
-int action_disable_calibration(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_disable_calibration()
 {
     /** This function executes specific actions when a TC_LFR_DISABLE_CALIBRATION TeleCommand has
      * been received.
@@ -532,13 +534,13 @@ void update_last_valid_transition_date(unsigned int transitionCoarseTime)
     if (transitionCoarseTime == 0)
     {
         lastValidEnterModeTime = time_management_regs->coarse_time + 1;
-        PRINTF("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n",
+        LFR_PRINTF("lastValidEnterModeTime = 0x%x (transitionCoarseTime = 0 => coarse_time+1)\n",
             lastValidEnterModeTime);
     }
     else
     {
         lastValidEnterModeTime = transitionCoarseTime;
-        PRINTF("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
+        LFR_PRINTF("lastValidEnterModeTime = 0x%x\n", transitionCoarseTime);
     }
 }
 
@@ -558,12 +560,12 @@ int check_transition_date(unsigned int transitionCoarseTime)
     {
         localCoarseTime = time_management_regs->coarse_time & COARSE_TIME_MASK;
 
-        PRINTF("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
+        LFR_PRINTF("localTime = %x, transitionTime = %x\n", localCoarseTime, transitionCoarseTime);
 
         if (transitionCoarseTime <= localCoarseTime) // SSS-CP-EQS-322
         {
             status = LFR_DEFAULT;
-            PRINTF(
+            LFR_PRINTF(
                 "ERR *** in check_transition_date *** transitionCoarseTime <= localCoarseTime\n");
         }
 
@@ -573,8 +575,8 @@ int check_transition_date(unsigned int transitionCoarseTime)
             if (deltaCoarseTime > MAX_DELTA_COARSE_TIME) // SSS-CP-EQS-323
             {
                 status = LFR_DEFAULT;
-                PRINTF(
-                    "ERR *** in check_transition_date *** deltaCoarseTime = %x\n", deltaCoarseTime)
+                LFR_PRINTF(
+                    "ERR *** in check_transition_date *** deltaCoarseTime = %x\n", deltaCoarseTime);
             }
         }
     }
@@ -630,7 +632,7 @@ int stop_spectral_matrices(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
+        LFR_PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status);
     }
 
     return status;
@@ -681,7 +683,7 @@ int stop_current_mode(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status)
+        LFR_PRINTF("in stop_current_mode *** in suspend_science_tasks *** ERR code: %d\n", status);
     }
 
     return status;
@@ -714,7 +716,7 @@ int enter_mode_standby(void)
 #endif
 
 #ifdef PRINT_STACK_REPORT
-    PRINTF("stack report selected\n")
+    LFR_PRINTF("stack report selected\n");
     rtems_stack_checker_report_usage();
 #endif
 
@@ -786,7 +788,7 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in enter_mode_normal *** status = %d\n", status)
+        LFR_PRINTF("ERR *** in enter_mode_normal *** status = %d\n", status);
         status = RTEMS_UNSATISFIED;
     }
 
@@ -827,7 +829,7 @@ int enter_mode_burst(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in enter_mode_burst *** status = %d\n", status)
+        LFR_PRINTF("ERR *** in enter_mode_burst *** status = %d\n", status);
         status = RTEMS_UNSATISFIED;
     }
 
@@ -897,7 +899,7 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in enter_mode_sbm1 *** status = %d\n", status);
+        LFR_PRINTF("ERR *** in enter_mode_sbm1 *** status = %d\n", status);
         status = RTEMS_UNSATISFIED;
     }
 
@@ -968,7 +970,7 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in enter_mode_sbm2 *** status = %d\n", status)
+        LFR_PRINTF("ERR *** in enter_mode_sbm2 *** status = %d\n", status);
         status = RTEMS_UNSATISFIED;
     }
 
@@ -997,61 +999,61 @@ int restart_science_tasks(unsigned char lfrRequestedMode)
     status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
+        LFR_PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0]);
     }
 
     status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
     if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
+        LFR_PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1]);
     }
 
     status[STATUS_2] = rtems_task_restart(Task_id[TASKID_WFRM], 1);
     if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2])
+        LFR_PRINTF("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2]);
     }
 
     status[STATUS_3] = rtems_task_restart(Task_id[TASKID_CWF3], 1);
     if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3])
+        LFR_PRINTF("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3]);
     }
 
     status[STATUS_4] = rtems_task_restart(Task_id[TASKID_CWF2], 1);
     if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4])
+        LFR_PRINTF("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4]);
     }
 
     status[STATUS_5] = rtems_task_restart(Task_id[TASKID_CWF1], 1);
     if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5])
+        LFR_PRINTF("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5]);
     }
 
     status[STATUS_6] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
     if (status[STATUS_6] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6])
+        LFR_PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6]);
     }
 
     status[STATUS_7] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
     if (status[STATUS_7] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7])
+        LFR_PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7]);
     }
 
     status[STATUS_8] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
     if (status[STATUS_8] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8])
+        LFR_PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8]);
     }
 
     status[STATUS_9] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
     if (status[STATUS_9] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9])
+        LFR_PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9]);
     }
 
     if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
@@ -1088,37 +1090,37 @@ int restart_asm_tasks(unsigned char lfrRequestedMode)
     status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     if (status[STATUS_0] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0])
+        LFR_PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0]);
     }
 
     status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
     if (status[STATUS_1] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1])
+        LFR_PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1]);
     }
 
     status[STATUS_2] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
     if (status[STATUS_2] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2])
+        LFR_PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2]);
     }
 
     status[STATUS_3] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
     if (status[STATUS_3] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3])
+        LFR_PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3]);
     }
 
     status[STATUS_4] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
     if (status[STATUS_4] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4])
+        LFR_PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4]);
     }
 
     status[STATUS_5] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
     if (status[STATUS_5] != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5])
+        LFR_PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5]);
     }
 
     if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
@@ -1144,12 +1146,12 @@ int suspend_science_tasks(void)
 
     rtems_status_code status;
 
-    PRINTF("in suspend_science_tasks\n")
+    LFR_PRINTF("in suspend_science_tasks\n");
 
     status = rtems_task_suspend(Task_id[TASKID_AVF0]); // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
-        PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status)
+        LFR_PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status);
     }
     else
     {
@@ -1160,7 +1162,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC0]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status);
         }
         else
         {
@@ -1172,7 +1174,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status);
         }
         else
         {
@@ -1184,7 +1186,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status);
         }
         else
         {
@@ -1196,7 +1198,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status);
         }
         else
         {
@@ -1208,7 +1210,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status);
         }
         else
         {
@@ -1220,7 +1222,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_WFRM]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** WFRM ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** WFRM ERR %d\n", status);
         }
         else
         {
@@ -1232,7 +1234,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF3]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** CWF3 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** CWF3 ERR %d\n", status);
         }
         else
         {
@@ -1244,7 +1246,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** CWF2 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** CWF2 ERR %d\n", status);
         }
         else
         {
@@ -1256,7 +1258,7 @@ int suspend_science_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_CWF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** CWF1 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** CWF1 ERR %d\n", status);
         }
         else
         {
@@ -1280,12 +1282,12 @@ int suspend_asm_tasks(void)
 
     rtems_status_code status;
 
-    PRINTF("in suspend_science_tasks\n")
+    LFR_PRINTF("in suspend_science_tasks\n");
 
     status = rtems_task_suspend(Task_id[TASKID_AVF0]); // suspend AVF0
     if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
     {
-        PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status)
+        LFR_PRINTF("in suspend_science_task *** AVF0 ERR %d\n", status);
     }
     else
     {
@@ -1297,7 +1299,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC0]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC0 ERR %d\n", status);
         }
         else
         {
@@ -1310,7 +1312,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** AVF1 ERR %d\n", status);
         }
         else
         {
@@ -1323,7 +1325,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC1]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC1 ERR %d\n", status);
         }
         else
         {
@@ -1336,7 +1338,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_AVF2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** AVF2 ERR %d\n", status);
         }
         else
         {
@@ -1349,7 +1351,7 @@ int suspend_asm_tasks(void)
         status = rtems_task_suspend(Task_id[TASKID_PRC2]);
         if ((status != RTEMS_SUCCESSFUL) && (status != RTEMS_ALREADY_SUSPENDED))
         {
-            PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status)
+            LFR_PRINTF("in suspend_science_task *** PRC2 ERR %d\n", status);
         }
         else
         {
@@ -1581,6 +1583,9 @@ void setCalibration(bool state)
 
 void configureCalibration(bool interleaved)
 {
+#ifndef ENABLE_DEAD_CODE
+    IGNORE_UNUSED_PARAMETER(interleaved);
+#endif
     setCalibration(false);
 #ifdef ENABLE_DEAD_CODE
     if (interleaved == true)

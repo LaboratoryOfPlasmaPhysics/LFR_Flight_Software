@@ -34,14 +34,17 @@
 
 #include "avf2_prc2.h"
 #include "mitigations/PAS_filtering.h"
+#include "fsw_compile_warnings.h"
 
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 nb_sm_before_bp_asm_f2 nb_sm_before_f2 = { 0 };
 
 //***
 // F2
-ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { 0 };
+ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { {0} };
+ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { {0} };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
-ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { 0 };
 int buffer_asm_f2[NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM] = { 0 };
 
 float asm_f2_patched_norm[TOTAL_SIZE_SM] = { 0 };
@@ -57,6 +60,7 @@ float compressed_sm_norm_f2[TOTAL_SIZE_COMPRESSED_ASM_NORM_F2] = { 0 };
 // F2
 rtems_task avf2_task(rtems_task_argument argument)
 {
+    IGNORE_UNUSED_PARAMETER(argument);
     rtems_event_set event_out;
     rtems_status_code status;
     rtems_id queue_id_prc2;
@@ -84,7 +88,7 @@ rtems_task avf2_task(rtems_task_argument argument)
     status = get_message_queue_id_prc2(&queue_id_prc2);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status);
+        LFR_PRINTF("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status);
     }
 
     while (1)
@@ -150,18 +154,19 @@ rtems_task avf2_task(rtems_task_argument argument)
         if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
             status
-                = rtems_message_queue_send(queue_id_prc2, (char*)&msgForPRC, MSG_QUEUE_SIZE_PRC2);
+                = rtems_message_queue_send(queue_id_prc2, (char*)&msgForPRC, sizeof (asm_msg));
         }
 
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in AVF2 *** Error sending message to PRC2, code %d\n", status)
+            LFR_PRINTF("in AVF2 *** Error sending message to PRC2, code %d\n", status);
         }
     }
 }
 
 rtems_task prc2_task(rtems_task_argument argument)
 {
+    IGNORE_UNUSED_PARAMETER(argument);
     char incomingData[MSG_QUEUE_SIZE_SEND]; // incoming data buffer
     size_t size; // size of the incoming TC packet
     asm_msg* incomingMsg;
@@ -195,15 +200,15 @@ rtems_task prc2_task(rtems_task_argument argument)
     status = get_message_queue_id_send(&queue_id_send);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in PRC2 *** ERR get_message_queue_id_send %d\n", status)
+        LFR_PRINTF("in PRC2 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc2(&queue_id_q_p2);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in PRC2 *** ERR get_message_queue_id_prc2 %d\n", status)
+        LFR_PRINTF("in PRC2 *** ERR get_message_queue_id_prc2 %d\n", status);
     }
 
-    BOOT_PRINTF("in PRC2 ***\n")
+    BOOT_PRINTF("in PRC2 ***\n");
 
     while (1)
     {
@@ -243,7 +248,7 @@ rtems_task prc2_task(rtems_task_argument argument)
             packet_norm_bp1.sy_lfr_common_parameters
                 = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send((char*)&packet_norm_bp1, queue_id_send,
-                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA, SID_NORM_BP1_F2);
+                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F2 + PACKET_LENGTH_DELTA);
         }
         // BP2_F2
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F2)
@@ -257,7 +262,7 @@ rtems_task prc2_task(rtems_task_argument argument)
             packet_norm_bp2.sy_lfr_common_parameters
                 = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send((char*)&packet_norm_bp2, queue_id_send,
-                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA, SID_NORM_BP2_F2);
+                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2 + PACKET_LENGTH_DELTA);
         }
 
         if (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F2)
@@ -297,7 +302,7 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
     asm_msg* msgForMATR)
 {
     DEBUG_PRINTF("in SM_average_f2");
-    float sum;
+    float sm_bin;
     unsigned int i;
     unsigned char keepMatrix;
 
@@ -306,12 +311,12 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
 
     for (i = 0; i < TOTAL_SIZE_SM; i++)
     {
-        sum = ((int*)(ring_node->buffer_address))[i];
+        sm_bin = ((int*)(ring_node->buffer_address))[i];
         if (nbAverageNormF2 == 0) // average initialization
         {
             if (keepMatrix == MATRIX_IS_NOT_POLLUTED) // keep the matrix and add it to the average
             {
-                averaged_spec_mat_f2[i] = sum;
+                averaged_spec_mat_f2[i] = sm_bin;
             }
             else // drop the matrix and initialize the average
             {
@@ -324,7 +329,7 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
         {
             if (keepMatrix == MATRIX_IS_NOT_POLLUTED) // keep the matrix and add it to the average
             {
-                averaged_spec_mat_f2[i] = (averaged_spec_mat_f2[i] + sum);
+                averaged_spec_mat_f2[i] = (averaged_spec_mat_f2[i] + sm_bin);
             }
             else
             {
@@ -333,7 +338,7 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
         }
     }
 
-    if (keepMatrix == 1)
+    if (keepMatrix == MATRIX_IS_NOT_POLLUTED)
     {
         if (nbAverageNormF2 == 0)
         {

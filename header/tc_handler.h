@@ -60,12 +60,11 @@ rtems_task actn_task(rtems_task_argument unused);
 
 //***********
 // TC ACTIONS
-int action_reset(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
+int action_reset();
 int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
-int action_update_info(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
-int action_enable_calibration(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_disable_calibration(
-    ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
+int action_update_info(ccsdsTelecommandPacket_t* TC);
+int action_enable_calibration();
+int action_disable_calibration();
 int action_update_time(ccsdsTelecommandPacket_t* TC);
 
 // mode transition

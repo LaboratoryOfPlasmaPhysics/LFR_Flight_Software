@@ -48,7 +48,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
 int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
 int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
 int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
+int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
 int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
 int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
 

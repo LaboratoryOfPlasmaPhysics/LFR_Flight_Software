@@ -58,7 +58,6 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_SUCCESS_t TM;
-    unsigned char messageSize;
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -87,14 +86,11 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
     TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
 
-    messageSize
-        = PACKET_LENGTH_TC_EXE_SUCCESS + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
+    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n")
+        LFR_PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n");
     }
 
     // UPDATE HK FIELDS
@@ -128,7 +124,6 @@ int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_INCONSISTENT_t TM;
-    unsigned char messageSize;
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -163,14 +158,11 @@ int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue
     TM.byte_position = byte_position;
     TM.rcv_value = (unsigned char)rcv_value;
 
-    messageSize = PACKET_LENGTH_TC_EXE_INCONSISTENT + CCSDS_TC_TM_PACKET_OFFSET
-        + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
+    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n")
+        LFR_PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n");
     }
 
     // UPDATE HK FIELDS
@@ -199,7 +191,6 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id que
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_NOT_EXECUTABLE_t TM;
-    unsigned char messageSize;
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -234,14 +225,11 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id que
     TM.lfr_status_word[0] = housekeeping_packet.lfr_status_word[0];
     TM.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1];
 
-    messageSize = PACKET_LENGTH_TC_EXE_NOT_EXECUTABLE + CCSDS_TC_TM_PACKET_OFFSET
-        + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
+    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n")
+        LFR_PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n");
     }
 
     // UPDATE HK FIELDS
@@ -249,78 +237,6 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id que
 
     return status;
 }
-
-#ifdef DENABLE_DEAD_CODE
-int send_tm_lfr_tc_exe_not_implemented(
-    ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
-{
-    /** This function sends a TM_LFR_TC_EXE_NOT_IMPLEMENTED packet in the dedicated RTEMS message
-     * queue.
-     *
-     * @param TC points to the TeleCommand packet that is being processed
-     * @param queue_id is the id of the queue which handles TM
-     *
-     * @return RTEMS directive status code:
-     * - RTEMS_SUCCESSFUL - message sent successfully
-     * - RTEMS_INVALID_ID - invalid queue id
-     * - RTEMS_INVALID_SIZE - invalid message size
-     * - RTEMS_INVALID_ADDRESS - buffer is NULL
-     * - RTEMS_UNSATISFIED - out of message buffers
-     * - RTEMS_TOO_MANY - queue s limit has been reached
-     *
-     */
-
-    rtems_status_code status;
-    Packet_TM_LFR_TC_EXE_NOT_IMPLEMENTED_t TM;
-    unsigned char messageSize;
-
-    TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
-    TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
-    TM.reserved = DEFAULT_RESERVED;
-    TM.userApplication = CCSDS_USER_APP;
-    // PACKET HEADER
-    TM.packetID[0] = (unsigned char)(APID_TM_TC_EXE >> SHIFT_1_BYTE);
-    TM.packetID[1] = (unsigned char)(APID_TM_TC_EXE);
-    increment_seq_counter_destination_id(TM.packetSequenceControl, TC->sourceID);
-    TM.packetLength[0] = (unsigned char)(PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED >> SHIFT_1_BYTE);
-    TM.packetLength[1] = (unsigned char)(PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED);
-    // DATA FIELD HEADER
-    TM.spare1_pusVersion_spare2 = DEFAULT_SPARE1_PUSVERSION_SPARE2;
-    TM.serviceType = TM_TYPE_TC_EXE;
-    TM.serviceSubType = TM_SUBTYPE_EXE_NOK;
-    TM.destinationID = TC->sourceID; // default destination id
-    TM.time[BYTE_0] = (unsigned char)(time_management_regs->coarse_time >> SHIFT_3_BYTES);
-    TM.time[BYTE_1] = (unsigned char)(time_management_regs->coarse_time >> SHIFT_2_BYTES);
-    TM.time[BYTE_2] = (unsigned char)(time_management_regs->coarse_time >> SHIFT_1_BYTE);
-    TM.time[BYTE_3] = (unsigned char)(time_management_regs->coarse_time);
-    TM.time[BYTE_4] = (unsigned char)(time_management_regs->fine_time >> SHIFT_1_BYTE);
-    TM.time[BYTE_5] = (unsigned char)(time_management_regs->fine_time);
-    //
-    TM.tc_failure_code[0] = (char)(FUNCT_NOT_IMPL >> SHIFT_1_BYTE);
-    TM.tc_failure_code[1] = (char)(FUNCT_NOT_IMPL);
-    TM.telecommand_pkt_id[0] = TC->packetID[0];
-    TM.telecommand_pkt_id[1] = TC->packetID[1];
-    TM.pkt_seq_control[0] = TC->packetSequenceControl[0];
-    TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
-    TM.tc_service = TC->serviceType; // type of the rejected TC
-    TM.tc_subtype = TC->serviceSubType; // subtype of the rejected TC
-
-    messageSize = PACKET_LENGTH_TC_EXE_NOT_IMPLEMENTED + CCSDS_TC_TM_PACKET_OFFSET
-        + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
-    // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        PRINTF("in send_tm_lfr_tc_exe_not_implemented *** ERR\n")
-    }
-
-    // UPDATE HK FIELDS
-    update_last_TC_rej(TC, TM.time);
-
-    return status;
-}
-#endif
 
 int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 {
@@ -341,7 +257,6 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_ERROR_t TM;
-    unsigned char messageSize;
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;
@@ -374,14 +289,11 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     TM.tc_service = TC->serviceType; // type of the rejected TC
     TM.tc_subtype = TC->serviceSubType; // subtype of the rejected TC
 
-    messageSize
-        = PACKET_LENGTH_TC_EXE_ERROR + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
+    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
+        LFR_PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n");
     }
 
     // UPDATE HK FIELDS
@@ -414,7 +326,6 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_CORRUPTED_t TM;
-    unsigned char messageSize;
     unsigned int packetLength;
     unsigned int estimatedPacketLength;
     unsigned char* packetDataField;
@@ -465,14 +376,11 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
     TM.computed_crc[0] = computed_CRC[0];
     TM.computed_crc[1] = computed_CRC[1];
 
-    messageSize
-        = PACKET_LENGTH_TC_EXE_CORRUPTED + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES;
-
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, messageSize);
+    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n")
+        LFR_PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n");
     }
 
     // UPDATE HK FIELDS

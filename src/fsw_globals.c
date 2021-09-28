@@ -44,7 +44,7 @@
 #include "ccsds_types.h"
 #include "fsw_params.h"
 #include "fsw_params_wf_handler.h"
-
+#include "fsw_compile_warnings.h"
 
 #define NB_OF_MISC_NAMES 5
 
@@ -85,12 +85,16 @@ volatile int sm_f1[NB_RING_NODES_SM_F1 * TOTAL_SIZE_SM] __attribute__((aligned(0
 volatile int sm_f2[NB_RING_NODES_SM_F2 * TOTAL_SIZE_SM] __attribute__((aligned(0x100))) = { 0 };
 
 // MODE PARAMETERS
+
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet = { 0 };
 struct param_local_str param_local = { 0 };
 unsigned int lastValidEnterModeTime = { 0 };
 
 // HK PACKETS
 Packet_TM_LFR_HK_t housekeeping_packet = { 0 };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
+
 // message queues occupancy
 unsigned char hk_lfr_q_sd_fifo_size_max = 0;
 unsigned char hk_lfr_q_rv_fifo_size_max = 0;
@@ -103,12 +107,17 @@ unsigned short sequenceCounters_SCIENCE_SBM1_SBM2 __attribute__((aligned(0x4))) 
 unsigned short sequenceCounters_TC_EXE[SEQ_CNT_NB_DEST_ID] __attribute__((aligned(0x4))) = { 0 };
 unsigned short sequenceCounters_TM_DUMP[SEQ_CNT_NB_DEST_ID] __attribute__((aligned(0x4))) = { 0 };
 unsigned short sequenceCounterHK __attribute__((aligned(0x4))) = { 0 };
+
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 spw_stats grspw_stats __attribute__((aligned(0x4))) = { 0 };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
 // TC_LFR_UPDATE_INFO
 rw_f_t rw_f;
 
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 // TC_LFR_LOAD_FILTER_PAR
 filterPar_t filterPar = { 0 };
 
-fbins_masks_t fbins_masks = { 0 };
+fbins_masks_t fbins_masks = { {0} };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING

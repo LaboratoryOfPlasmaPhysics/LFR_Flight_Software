@@ -12,7 +12,7 @@ typedef volatile struct
     uint32_t ctrl;
     uint32_t scaler;
     uint32_t fifoDebug;
-}apbuart_regs_t;
+} apbuart_regs_t;
 
 typedef volatile struct
 {
@@ -25,7 +25,7 @@ typedef volatile struct
     uint32_t bypass_register;
     uint32_t reserved;
     // 0x20-0x3c interrupt map register(s)
-}grgpio_regs_t;
+} grgpio_regs_t;
 
 typedef volatile struct
 {
@@ -142,14 +142,14 @@ typedef volatile struct
 {
     uint32_t data_shaping; // 0x00 00 *** R2 R1 R0 SP1 SP0 BW
     uint32_t run_burst_enable; // 0x04 01 *** [run *** burst f2, f1, f0 *** enable f3, f2, f1, f0 ]
-    uint32_t addr_data_f0_0; // 0x08
-    uint32_t addr_data_f0_1; // 0x0c
-    uint32_t addr_data_f1_0; // 0x10
-    uint32_t addr_data_f1_1; // 0x14
-    uint32_t addr_data_f2_0; // 0x18
-    uint32_t addr_data_f2_1; // 0x1c
-    uint32_t addr_data_f3_0; // 0x20
-    uint32_t addr_data_f3_1; // 0x24
+    void* addr_data_f0_0; // 0x08
+    void* addr_data_f0_1; // 0x0c
+    void* addr_data_f1_0; // 0x10
+    void* addr_data_f1_1; // 0x14
+    void* addr_data_f2_0; // 0x18
+    void* addr_data_f2_1; // 0x1c
+    void* addr_data_f3_0; // 0x20
+    void* addr_data_f3_1; // 0x24
     uint32_t status; // 0x28
     uint32_t delta_snapshot; // 0x2c
     uint32_t delta_f0; // 0x30
@@ -217,13 +217,13 @@ typedef volatile struct
 {
     uint32_t config; // 0x00
     uint32_t status; // 0x04
-    uint32_t f0_0_address; // 0x08
-    uint32_t f0_1_address; // 0x0C
+    void* f0_0_address; // 0x08
+    void* f0_1_address; // 0x0C
     //
-    uint32_t f1_0_address; // 0x10
-    uint32_t f1_1_address; // 0x14
-    uint32_t f2_0_address; // 0x18
-    uint32_t f2_1_address; // 0x1C
+    void* f1_0_address; // 0x10
+    void* f1_1_address; // 0x14
+    void* f2_0_address; // 0x18
+    void* f2_1_address; // 0x1C
     //
     uint32_t f0_0_coarse_time; // 0x20
     uint32_t f0_0_fine_time; // 0x24

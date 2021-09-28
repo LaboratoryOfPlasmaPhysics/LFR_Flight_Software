@@ -53,8 +53,8 @@ void BP_init_header(bp_packet* packet, unsigned int apid, unsigned char sid,
     unsigned int packetLength, unsigned char blkNr);
 void BP_init_header_with_spare(bp_packet_with_spare* packet, unsigned int apid, unsigned char sid,
     unsigned int packetLength, unsigned char blkNr);
-void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid);
-void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid);
+void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend);
+void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend);
 
 //******************
 // general functions

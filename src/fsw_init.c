@@ -69,6 +69,8 @@
 #include "GscMemoryLPP.hpp"
 #include "fsw_config.c"
 #include "fsw_init.h"
+#include "processing/ASM/spectralmatrices.h"
+#include "fsw_compile_warnings.h"
 
 void initCache()
 {
@@ -93,8 +95,8 @@ void initCache()
     ASR16_resetRegisterProtectionControlRegister();
 
     cacheControlRegister = CCR_getValue();
-    PRINTF("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    PRINTF("(0) ASR16                        = %x\n", *asr16Ptr);
+    LFR_PRINTF("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    LFR_PRINTF("(0) ASR16                        = %x\n", *asr16Ptr);
 
     CCR_enableInstructionCache(); // ICS bits
     CCR_enableDataCache(); // DCS bits
@@ -103,10 +105,10 @@ void initCache()
     faultTolerantScheme();
 
     cacheControlRegister = CCR_getValue();
-    PRINTF("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    PRINTF("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
+    LFR_PRINTF("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
+    LFR_PRINTF("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
 
-    PRINTF("\n");
+    LFR_PRINTF("\n");
 }
 
 rtems_task Init(rtems_task_argument ignored)
@@ -118,7 +120,7 @@ rtems_task Init(rtems_task_argument ignored)
      * The INIT task create and run all other RTEMS tasks.
      *
      */
-
+    IGNORE_UNUSED_PARAMETER(ignored);
     //***********
     // INIT CACHE
 
@@ -140,28 +142,28 @@ rtems_task Init(rtems_task_argument ignored)
     enable_apbuart_transmitter();
     set_apbuart_scaler_reload_register(APBUART_SCALER_RELOAD_VALUE);
 
-    DEBUG_PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n")
+    DEBUG_PRINTF("\n\n\n\n\nIn INIT *** Now the console is on port COM1\n");
 
 
-    PRINTF("\n\n\n\n\n")
+    LFR_PRINTF("\n\n\n\n\n");
 
     initCache();
 
-    PRINTF("*************************\n")
-    PRINTF("** LFR Flight Software **\n")
+    LFR_PRINTF("*************************\n");
+    LFR_PRINTF("** LFR Flight Software **\n");
 
-    PRINTF("** %d-", SW_VERSION_N1)
-    PRINTF("%d-", SW_VERSION_N2)
-    PRINTF("%d-", SW_VERSION_N3)
-    PRINTF("%d             **\n", SW_VERSION_N4)
+    LFR_PRINTF("** %d-", SW_VERSION_N1);
+    LFR_PRINTF("%d-", SW_VERSION_N2);
+    LFR_PRINTF("%d-", SW_VERSION_N3);
+    LFR_PRINTF("%d             **\n", SW_VERSION_N4);
 
     vhdlVersion = (unsigned char*)(REGS_ADDR_VHDL_VERSION);
-    PRINTF("** VHDL                **\n")
-    PRINTF("** %d-", vhdlVersion[1])
-    PRINTF("%d-", vhdlVersion[2])
-    PRINTF("%d              **\n", vhdlVersion[3])
-    PRINTF("*************************\n")
-    PRINTF("\n\n")
+    LFR_PRINTF("** VHDL                **\n");
+    LFR_PRINTF("** %d-", vhdlVersion[1]);
+    LFR_PRINTF("%d-", vhdlVersion[2]);
+    LFR_PRINTF("%d              **\n", vhdlVersion[3]);
+    LFR_PRINTF("*************************\n");
+    LFR_PRINTF("\n\n");
 
     init_parameter_dump();
     init_kcoefficients_dump();
@@ -214,26 +216,26 @@ rtems_task Init(rtems_task_argument ignored)
 
     updateLFRCurrentMode(LFR_MODE_STANDBY);
 
-    BOOT_PRINTF("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode)
+    BOOT_PRINTF("in INIT *** lfrCurrentMode is %d\n", lfrCurrentMode);
 
     create_names(); // create all names
 
     status = create_timecode_timer(); // create the timer used by timecode_irq_handler
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR in create_timer_timecode, code %d", status)
+        LFR_PRINTF("in INIT *** ERR in create_timer_timecode, code %d", status);
     }
 
     status = create_message_queues(); // create message queues
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR in create_message_queues, code %d", status)
+        LFR_PRINTF("in INIT *** ERR in create_message_queues, code %d", status);
     }
 
     status = create_all_tasks(); // create all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR in create_all_tasks, code %d\n", status)
+        LFR_PRINTF("in INIT *** ERR in create_all_tasks, code %d\n", status);
     }
 
     // **************************
@@ -241,7 +243,7 @@ rtems_task Init(rtems_task_argument ignored)
     status_spw = spacewire_open_link(); // (1) open the link
     if (status_spw != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR spacewire_open_link code %d\n", status_spw)
+        LFR_PRINTF("in INIT *** ERR spacewire_open_link code %d\n", status_spw);
     }
 
     if (status_spw == RTEMS_SUCCESSFUL) // (2) configure the link
@@ -249,7 +251,7 @@ rtems_task Init(rtems_task_argument ignored)
         status_spw = spacewire_configure_link(fdSPW);
         if (status_spw != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in INIT *** ERR spacewire_configure_link code %d\n", status_spw)
+            LFR_PRINTF("in INIT *** ERR spacewire_configure_link code %d\n", status_spw);
         }
     }
 
@@ -258,7 +260,7 @@ rtems_task Init(rtems_task_argument ignored)
         status_spw = spacewire_start_link(fdSPW);
         if (status_spw != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in INIT *** ERR spacewire_start_link code %d\n", status_spw)
+            LFR_PRINTF("in INIT *** ERR spacewire_start_link code %d\n", status_spw);
         }
     }
     // </SPACEWIRE INITIALIZATION>
@@ -267,7 +269,7 @@ rtems_task Init(rtems_task_argument ignored)
     status = start_all_tasks(); // start all tasks
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR in start_all_tasks, code %d", status)
+        LFR_PRINTF("in INIT *** ERR in start_all_tasks, code %d", status);
     }
 
     // start RECV and SEND *AFTER* SpaceWire Initialization, due to the timeout of the start call
@@ -275,7 +277,7 @@ rtems_task Init(rtems_task_argument ignored)
     status = start_recv_send_tasks();
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** ERR start_recv_send_tasks code %d\n", status)
+        LFR_PRINTF("in INIT *** ERR start_recv_send_tasks code %d\n", status);
     }
 
     // suspend science tasks, they will be restarted later depending on the mode
@@ -283,7 +285,7 @@ rtems_task Init(rtems_task_argument ignored)
                                       // current mode = STANDBY)
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status)
+        LFR_PRINTF("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status);
     }
 
     // configure IRQ handling for the waveform picker unit
@@ -298,11 +300,11 @@ rtems_task Init(rtems_task_argument ignored)
         status = rtems_event_send(Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in INIT *** ERR rtems_event_send to SPIQ code %d\n", status)
+            LFR_PRINTF("in INIT *** ERR rtems_event_send to SPIQ code %d\n", status);
         }
     }
 
-    BOOT_PRINTF("delete INIT\n")
+    BOOT_PRINTF("delete INIT\n");
 
     set_hk_lfr_sc_potential_flag(true);
 
@@ -327,8 +329,8 @@ void init_local_mode_parameters(void)
 
     // LOCAL PARAMETERS
 
-    BOOT_PRINTF("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max)
-    BOOT_PRINTF("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max)
+    BOOT_PRINTF("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max);
+    BOOT_PRINTF("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max);
 
     // init sequence counters
 
@@ -563,7 +565,7 @@ int start_recv_send_tasks(void)
     status = rtems_task_start(Task_id[TASKID_RECV], recv_task, 1);
     if (status != RTEMS_SUCCESSFUL)
     {
-        BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n");
     }
 
     if (status == RTEMS_SUCCESSFUL) // SEND
@@ -571,7 +573,7 @@ int start_recv_send_tasks(void)
         status = rtems_task_start(Task_id[TASKID_SEND], send_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n");
         }
     }
 
@@ -599,7 +601,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
     status = rtems_task_start(Task_id[TASKID_SPIQ], spiq_task, 1);
     if (status != RTEMS_SUCCESSFUL)
     {
-        BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n")
+        BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n");
     }
 
     if (status == RTEMS_SUCCESSFUL) // LINK
@@ -607,7 +609,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_LINK], link_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LINK\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_LINK\n");
         }
     }
 
@@ -616,7 +618,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_ACTN], actn_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n");
         }
     }
 
@@ -627,7 +629,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_AVF0], avf0_task, LFR_MODE_STANDBY);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // PRC0
@@ -635,7 +637,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_PRC0], prc0_task, LFR_MODE_STANDBY);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC0\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_PRC0\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // AVF1
@@ -643,7 +645,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_AVF1], avf1_task, LFR_MODE_STANDBY);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF1\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVF1\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // PRC1
@@ -651,7 +653,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_PRC1], prc1_task, LFR_MODE_STANDBY);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC1\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_PRC1\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // AVF2
@@ -659,7 +661,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_AVF2], avf2_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF2\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVF2\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // PRC2
@@ -667,7 +669,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_PRC2], prc2_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC2\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_PRC2\n");
         }
     }
 
@@ -678,7 +680,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_WFRM], wfrm_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // CWF3
@@ -686,7 +688,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_CWF3], cwf3_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF3\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_CWF3\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // CWF2
@@ -694,7 +696,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_CWF2], cwf2_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF2\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_CWF2\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // CWF1
@@ -702,7 +704,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_CWF1], cwf1_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // SWBD
@@ -710,7 +712,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_SWBD], swbd_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SWBD\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_SWBD\n");
         }
     }
 
@@ -721,7 +723,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_HOUS], hous_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // AVGV
@@ -729,7 +731,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_AVGV], avgv_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVGV\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_AVGV\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // DUMB
@@ -737,7 +739,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_DUMB], dumb_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // SCRUBBING
@@ -745,7 +747,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_SCRB], scrubbing_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // LOAD
@@ -753,7 +755,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_LOAD], load_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n");
         }
     }
     if (status == RTEMS_SUCCESSFUL) // CALI
@@ -761,7 +763,7 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_CALI], calibration_sweep_task, 1);
         if (status != RTEMS_SUCCESSFUL)
         {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n")
+            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n");
         }
     }
 
@@ -787,7 +789,7 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         CCSDS_TC_PKT_MAX_SIZE, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_recv != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv)
+        LFR_PRINTF("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv);
     }
 
     //************************************************
@@ -796,34 +798,34 @@ rtems_status_code create_message_queues(void) // create the five message queues 
         MSG_QUEUE_SIZE_SEND, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_send != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send)
+        LFR_PRINTF("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send);
     }
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f0
     status_q_p0 = rtems_message_queue_create(misc_name[QUEUE_PRC0], MSG_QUEUE_COUNT_PRC0,
-        MSG_QUEUE_SIZE_PRC0, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p0 != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0)
+        LFR_PRINTF("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0);
     }
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f1
     status_q_p1 = rtems_message_queue_create(misc_name[QUEUE_PRC1], MSG_QUEUE_COUNT_PRC1,
-        MSG_QUEUE_SIZE_PRC1, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p1 != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1)
+        LFR_PRINTF("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1);
     }
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f2
     status_q_p2 = rtems_message_queue_create(misc_name[QUEUE_PRC2], MSG_QUEUE_COUNT_PRC2,
-        MSG_QUEUE_SIZE_PRC2, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     if (status_q_p2 != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_message_queues *** ERR creating Q_P2 queue, %d\n", status_q_p2)
+        LFR_PRINTF("in create_message_queues *** ERR creating Q_P2 queue, %d\n", status_q_p2);
     }
 
     if (status_recv != RTEMS_SUCCESSFUL)
@@ -858,11 +860,11 @@ rtems_status_code create_timecode_timer(void)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status)
+        LFR_PRINTF("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status);
     }
     else
     {
-        PRINTF("in create_timer_timecode *** OK creating SPTC timer\n")
+        LFR_PRINTF("in create_timer_timecode *** OK creating SPTC timer\n");
     }
 
     return status;
@@ -935,7 +937,7 @@ rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id)
  */
 void update_queue_max_count(rtems_id queue_id, unsigned char* fifo_size_max)
 {
-    u_int32_t count;
+    uint32_t count;
     rtems_status_code status;
 
     count = 0;
@@ -946,7 +948,7 @@ void update_queue_max_count(rtems_id queue_id, unsigned char* fifo_size_max)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in update_queue_max_count *** ERR = %d\n", status)
+        LFR_PRINTF("in update_queue_max_count *** ERR = %d\n", status);
     }
     else
     {
@@ -985,7 +987,7 @@ void init_ring(
         ring[i].fineTime = INT32_ALL_F;
         ring[i].sid = INIT_CHAR;
         ring[i].status = INIT_CHAR;
-        ring[i].buffer_address = (int)&buffer[i * bufferSize];
+        ring[i].buffer_address = (void*)&(buffer[i * bufferSize]);
     }
 
     //*****

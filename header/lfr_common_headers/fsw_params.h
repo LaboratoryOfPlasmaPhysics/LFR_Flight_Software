@@ -25,6 +25,7 @@
 #ifndef FSW_PARAMS_H_INCLUDED
 #define FSW_PARAMS_H_INCLUDED
 
+#include <stdio.h>
 #include "ccsds_types.h"
 #include "fsw_params_nb_bytes.h"
 #include "fsw_params_processing.h"
@@ -59,21 +60,21 @@
 //*******
 // MACROS
 #ifdef PRINT_MESSAGES_ON_CONSOLE
-    #define PRINTF(...)        printf(__VA_ARGS__);
+    #define LFR_PRINTF(...)        printf(__VA_ARGS__)
 #else
-    #define PRINTF(...)        ;
+    #define LFR_PRINTF(...)
 #endif
 
 #ifdef BOOT_MESSAGES
-    #define BOOT_PRINTF(...)        printf(__VA_ARGS__);
+    #define BOOT_PRINTF(...)        printf(__VA_ARGS__)
 #else
-    #define BOOT_PRINTF(...)        ;
+    #define BOOT_PRINTF(...)
 #endif
 
 #ifdef DEBUG_MESSAGES
-    #define DEBUG_PRINTF(...)        printf(__VA_ARGS__);
+    #define DEBUG_PRINTF(...)        printf(__VA_ARGS__)
 #else
-    #define DEBUG_PRINTF(...)        ;
+    #define DEBUG_PRINTF(...)
 #endif
 
 #define CONST_65536 65536 // 2^16
@@ -125,16 +126,16 @@ enum lfr_transition_type_t
     TRANSITION_S2_TO_S1
 };
 
-typedef struct ring_node
+typedef volatile struct _rg
 {
-    struct ring_node* previous;
-    struct ring_node* next;
+    volatile struct _rg* previous;
+    volatile struct _rg* next;
     unsigned int sid;
     unsigned int coarseTime;
     unsigned int fineTime;
     void* buffer_address;
     unsigned int status;
-} ring_node;
+}ring_node;
 
 //************************
 // flight software version
@@ -353,9 +354,6 @@ typedef struct ring_node
 #define MSG_QUEUE_COUNT_PRC1 10
 #define MSG_QUEUE_COUNT_PRC2 5
 #define MSG_QUEUE_SIZE_SEND  812 // 808 + 4 => TM_LFR_SCIENCE_BURST_BP2_F1
-#define MSG_QUEUE_SIZE_PRC0  36 // two pointers, one rtems_event + 6 integers
-#define MSG_QUEUE_SIZE_PRC1  36 // two pointers, one rtems_event + 6 integers
-#define MSG_QUEUE_SIZE_PRC2  36 // two pointers, one rtems_event + 6 integers
 
 #define QUEUE_RECV 0
 #define QUEUE_SEND 1

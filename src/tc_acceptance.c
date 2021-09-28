@@ -115,10 +115,8 @@ void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigne
      *
      */
 
-    unsigned int Chk;
-    int j;
-    Chk = CRC_RESET; // reset the syndrom to all ones
-    for (j = 0; j < sizeOfData; j++)
+    unsigned int Chk = CRC_RESET;
+    for (unsigned int j = 0; j < sizeOfData; j++)
     {
         Chk = Crc_opt(data[j], Chk);
     }

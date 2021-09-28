@@ -36,15 +36,21 @@
  *
  */
 
-#include "tc_load_dump_parameters.h"
-#include "processing/calibration_matrices.h"
 #include <math.h>
 #include <string.h>
 
+#include "tc_load_dump_parameters.h"
+#include "processing/calibration_matrices.h"
+#include "fsw_misc.h"
+#include "fsw_compile_warnings.h"
+
+
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_1 = { 0 };
 Packet_TM_LFR_KCOEFFICIENTS_DUMP_t kcoefficients_dump_2 = { 0 };
 ring_node kcoefficient_node_1 = { 0 };
 ring_node kcoefficient_node_2 = { 0 };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
 int action_load_common_par(ccsdsTelecommandPacket_t* TC)
 {
@@ -69,6 +75,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
      * @param queue_id is the id of the queue which handles TM related to this execution step
      *
      */
+    IGNORE_UNUSED_PARAMETER(time);
 
     int result;
     int flag;
@@ -111,7 +118,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
      * @param queue_id is the id of the queue which handles TM related to this execution step
      *
      */
-
+    IGNORE_UNUSED_PARAMETER(time);
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_b_bp_p0;
@@ -183,6 +190,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(time);
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_s1_bp_p0;
@@ -253,6 +261,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(time);
     int flag;
     rtems_status_code status;
     unsigned char sy_lfr_s2_bp_p0;
@@ -324,6 +333,7 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(time);
     int flag = LFR_DEFAULT;
     rtems_status_code status;
 
@@ -348,6 +358,8 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(time);
+    IGNORE_UNUSED_PARAMETER(queue_id);
     int flag;
 
     flag = LFR_DEFAULT;
@@ -361,7 +373,7 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
     return flag;
 }
 
-int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -503,6 +515,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
      *
      */
 
+    IGNORE_UNUSED_PARAMETER(time);
     void* address;
     rtems_status_code status;
     unsigned char* kCoeffDumpPtr;
@@ -565,11 +578,11 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     kcoefficients_dump_1.time[BYTE_5] = (unsigned char)(time_management_regs->fine_time);
     // SEND DATA
     kcoefficient_node_1.status = 1;
-    address = &kcoefficient_node_1;
+    address = (void*)&kcoefficient_node_1;
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status);
+        LFR_PRINTF("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status);
     }
 
     //********
@@ -607,11 +620,11 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     kcoefficients_dump_2.time[BYTE_5] = (unsigned char)(time_management_regs->fine_time);
     // SEND DATA
     kcoefficient_node_2.status = 1;
-    address = &kcoefficient_node_2;
+    address = (void*)&kcoefficient_node_2;
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status);
+        LFR_PRINTF("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status);
     }
 
     return status;
@@ -652,11 +665,11 @@ int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         = (unsigned char)(time_management_regs->fine_time >> SHIFT_1_BYTE);
     parameter_dump_packet.time[BYTE_5] = (unsigned char)(time_management_regs->fine_time);
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &parameter_dump_packet,
-        PACKET_LENGTH_PARAMETER_DUMP + CCSDS_TC_TM_PACKET_OFFSET + CCSDS_PROTOCOLE_EXTRA_BYTES);
+    status
+        = rtems_message_queue_send(queue_id, &parameter_dump_packet, sizeof(parameter_dump_packet));
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in action_dump *** ERR sending packet, code %d", status);
+        LFR_PRINTF("in action_dump *** ERR sending packet, code %d", status);
     }
 
     return status;
@@ -1076,7 +1089,7 @@ void set_hk_lfr_sc_rw_f_flag(unsigned char wheel, unsigned char freq, float valu
 
     // if the frequency value is not a number, the flag is set to 0 and the frequency RWx_Fy is not
     // filtered
-    if (isnanf(value))
+    if (isnan(value))
     {
         flag = FLAG_NAN;
     }
@@ -1353,7 +1366,7 @@ void setFBinMask(unsigned char* fbins_mask, float rw_f, unsigned char deltaFreq,
         binToRemove[k] = -1;
     }
 
-    if (!isnanf(rw_f))
+    if (!isnan(rw_f))
     {
         // compute the frequency range to filter [ rw_f - delta_f; rw_f + delta_f ]
         f_RW_min = rw_f - ((filterPar.sy_lfr_sc_rw_delta_f) * sy_lfr_rw_k);
@@ -1866,8 +1879,8 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     if (sy_lfr_kcoeff_frequency >= NB_BINS_COMPRESSED_SM)
     {
-        PRINTF("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n",
-            sy_lfr_kcoeff_frequency)
+        LFR_PRINTF("ERR *** in set_sy_lfr_kcoeff_frequency *** sy_lfr_kcoeff_frequency = %d\n",
+            sy_lfr_kcoeff_frequency);
         status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
             DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + DATAFIELD_OFFSET,
             TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY
@@ -2160,7 +2173,6 @@ void init_kcoefficients_dump(void)
 void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoefficients_dump,
     unsigned char pkt_nr, unsigned char blk_nr)
 {
-    unsigned int k;
     unsigned int packetLength;
 
     packetLength = ((blk_nr * KCOEFF_BLK_SIZE) + BYTE_POS_KCOEFFICIENTS_PARAMETES)

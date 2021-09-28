@@ -28,6 +28,7 @@ fsw_srcs = files(
 )
 
 fsw_extra_files = files(
+    '../header/fsw_compile_warnings.h',
     '../header/fsw_globals.h',
     '../header/wf_handler.h',
     '../header/tc_handler.h',

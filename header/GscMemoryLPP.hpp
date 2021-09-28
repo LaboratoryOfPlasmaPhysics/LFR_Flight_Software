@@ -45,20 +45,8 @@
 #define COUNTER_MASK_IURF  0xffffc7ff // 1111 1111 1111 1111 1100 0111 1111 1111
 
 volatile unsigned int* asr16Ptr = (volatile unsigned int*)ASR16_REG_ADDRESS;
-#ifdef ENABLE_DEAD_CODE
-static inline void flushCache()
-{
-    /**
-     * Flush the data cache and the instruction cache.
-     *
-     * @param void
-     *
-     * @return void
-     */
 
-    asm("flush");
-}
-#endif
+#include "lfr_common_headers/fsw_params.h"
 
 //***************************
 // CCR Cache control register
@@ -194,18 +182,18 @@ static void faultTolerantScheme()
 
     if ((vendorId == VENDORID_GAISLER) & (deviceId == DEVICEID_LEON3FT))
     {
-        PRINTF("in faultTolerantScheme *** Leon3FT detected\n");
-        PRINTF(
+        LFR_PRINTF("in faultTolerantScheme *** Leon3FT detected\n");
+        LFR_PRINTF(
             "                       *** vendorID = 0x%x, deviceId = 0x%x\n", vendorId, deviceId);
-        PRINTF("ASR16 IU RF protection, bit 0  (IDI) is: 0x%x (0 => protection enabled)\n",
+        LFR_PRINTF("ASR16 IU RF protection, bit 0  (IDI) is: 0x%x (0 => protection enabled)\n",
             (*asr16Ptr >> POS_IDI) & 1);
-        PRINTF("ASR16 FP RF protection, bit 16 (FDI) is: 0x%x (0 => protection enabled)\n",
+        LFR_PRINTF("ASR16 FP RF protection, bit 16 (FDI) is: 0x%x (0 => protection enabled)\n",
             (*asr16Ptr >> POS_FDI) & 1);
-        PRINTF("ASR16 IU FT ID bits [15:14] is: 0x%x (2 => 8-bit parity without restart)\n",
+        LFR_PRINTF("ASR16 IU FT ID bits [15:14] is: 0x%x (2 => 8-bit parity without restart)\n",
             (*asr16Ptr >> POS_IUFTID) & 0x3);
-        PRINTF("ASR16 FP FT ID bits [31:30] is: 0x%x (1 => 4-bit parity with restart)\n",
+        LFR_PRINTF("ASR16 FP FT ID bits [31:30] is: 0x%x (1 => 4-bit parity with restart)\n",
             (*asr16Ptr >> POS_FPFTID) & 0x03);
-        PRINTF("CCR   FT bits [20:19] are: 0x%x (1 => 4-bit parity with restart)\n",
+        LFR_PRINTF("CCR   FT bits [20:19] are: 0x%x (1 => 4-bit parity with restart)\n",
             (cacheControlRegister >> POS_FT) & 0x3);
 
         // CCR The FFT bits are just read, the FT scheme is set to “01” = 4-bit checking implemented
@@ -217,8 +205,8 @@ static void faultTolerantScheme()
     }
     else
     {
-        PRINTF("in faultTolerantScheme *** Leon3FT not detected\n");
-        PRINTF(
+        LFR_PRINTF("in faultTolerantScheme *** Leon3FT not detected\n");
+        LFR_PRINTF(
             "                       *** vendorID = 0x%x, deviceId = 0x%x\n", vendorId, deviceId);
     }
 }

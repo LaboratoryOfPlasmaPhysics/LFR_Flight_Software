@@ -33,15 +33,18 @@
  */
 
 #include "avf1_prc1.h"
+#include "fsw_compile_warnings.h"
 
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 nb_sm_before_bp_asm_f1 nb_sm_before_f1 = { 0 };
 
 //***
 // F1
-ring_node_asm asm_ring_norm_f1[NB_RING_NODES_ASM_NORM_F1] = { 0 };
-ring_node_asm asm_ring_burst_sbm_f1[NB_RING_NODES_ASM_BURST_SBM_F1] = { 0 };
+ring_node_asm asm_ring_norm_f1[NB_RING_NODES_ASM_NORM_F1] = { {0} };
+ring_node_asm asm_ring_burst_sbm_f1[NB_RING_NODES_ASM_BURST_SBM_F1] = { {0} };
+ring_node ring_to_send_asm_f1[NB_RING_NODES_ASM_F1] = { {0} };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
-ring_node ring_to_send_asm_f1[NB_RING_NODES_ASM_F1] = { 0 };
 int buffer_asm_f1[NB_RING_NODES_ASM_F1 * TOTAL_SIZE_SM] = { 0 };
 
 float asm_f1_patched_norm[TOTAL_SIZE_SM] = { 0 };
@@ -89,12 +92,12 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
     current_ring_node_asm_norm_f1 = asm_ring_norm_f1;
     current_ring_node_asm_burst_sbm_f1 = asm_ring_burst_sbm_f1;
 
-    BOOT_PRINTF("in AVF1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode)
+    BOOT_PRINTF("in AVF1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     status = get_message_queue_id_prc1(&queue_id_prc1);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in AVF1 *** ERR get_message_queue_id_prc1 %d\n", status)
+        LFR_PRINTF("in AVF1 *** ERR get_message_queue_id_prc1 %d\n", status);
     }
 
     while (1)
@@ -196,12 +199,12 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
         if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
             status
-                = rtems_message_queue_send(queue_id_prc1, (char*)&msgForPRC, MSG_QUEUE_SIZE_PRC1);
+                = rtems_message_queue_send(queue_id_prc1, (char*)&msgForPRC, sizeof (asm_msg));
         }
 
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("in AVF1 *** Error sending message to PRC1, code %d\n", status)
+            LFR_PRINTF("in AVF1 *** Error sending message to PRC1, code %d\n", status);
         }
     }
 }
@@ -221,8 +224,8 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     bp_packet __attribute__((aligned(4))) packet_sbm_bp1;
     bp_packet __attribute__((aligned(4))) packet_sbm_bp2;
     ring_node* current_ring_node_to_send_asm_f1;
-    float nbSMInASMNORM;
-    float nbSMInASMSBM;
+    float nbSMInASMNORM=0;
+    float nbSMInASMSBM=0;
 
     size = 0;
     queue_id_send = RTEMS_ID_NONE;
@@ -262,22 +265,22 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     }
     else
     {
-        PRINTF("in PRC1 *** lfrRequestedMode is %d, several headers not initialized\n",
-            (unsigned int)lfrRequestedMode)
+        LFR_PRINTF("in PRC1 *** lfrRequestedMode is %d, several headers not initialized\n",
+            (unsigned int)lfrRequestedMode);
     }
 
     status = get_message_queue_id_send(&queue_id_send);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in PRC1 *** ERR get_message_queue_id_send %d\n", status)
+        LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc1(&queue_id_q_p1);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("in PRC1 *** ERR get_message_queue_id_prc1 %d\n", status)
+        LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_prc1 %d\n", status);
     }
 
-    BOOT_PRINTF("in PRC1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode)
+    BOOT_PRINTF("in PRC1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     while (1)
     {
@@ -314,7 +317,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             packet_sbm_bp1.sy_lfr_common_parameters
                 = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send_s1_s2((char*)&packet_sbm_bp1, queue_id_send,
-                PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1 + PACKET_LENGTH_DELTA, sid);
+                PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP1_F1 + PACKET_LENGTH_DELTA);
             // 4) compute the BP2 set if needed
             if ((incomingMsg->event & RTEMS_EVENT_BURST_BP2_F1)
                 || (incomingMsg->event & RTEMS_EVENT_SBM_BP2_F1))
@@ -330,7 +333,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
                 packet_sbm_bp2.sy_lfr_common_parameters
                     = parameter_dump_packet.sy_lfr_common_parameters;
                 BP_send_s1_s2((char*)&packet_sbm_bp2, queue_id_send,
-                    PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1 + PACKET_LENGTH_DELTA, sid);
+                    PACKET_LENGTH_TM_LFR_SCIENCE_SBM_BP2_F1 + PACKET_LENGTH_DELTA);
             }
         }
 
@@ -364,7 +367,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             packet_norm_bp1.sy_lfr_common_parameters
                 = parameter_dump_packet.sy_lfr_common_parameters;
             BP_send((char*)&packet_norm_bp1, queue_id_send,
-                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1 + PACKET_LENGTH_DELTA, SID_NORM_BP1_F1);
+                PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP1_F1 + PACKET_LENGTH_DELTA);
             if (incomingMsg->event & RTEMS_EVENT_NORM_BP2_F1)
             {
                 // 1) compute the BP2 set
@@ -377,8 +380,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
                 packet_norm_bp2.sy_lfr_common_parameters
                     = parameter_dump_packet.sy_lfr_common_parameters;
                 BP_send((char*)&packet_norm_bp2, queue_id_send,
-                    PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1 + PACKET_LENGTH_DELTA,
-                    SID_NORM_BP2_F1);
+                    PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F1 + PACKET_LENGTH_DELTA);
             }
         }
 

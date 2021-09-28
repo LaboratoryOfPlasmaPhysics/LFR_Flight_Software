@@ -1,4 +1,5 @@
 #include "LFR_TB_utils.h"
+#include <stdlib.h>
 
 volatile int Nope_duration = 0;
 volatile int Matrix_change_of_basis_128_freq_duration = 0;

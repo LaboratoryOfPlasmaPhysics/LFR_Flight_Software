@@ -35,6 +35,7 @@
 #include "fsw_processing.h"
 #include "fsw_init.h"
 #include "fsw_processing_globals.c"
+#include "fsw_compile_warnings.h"
 
 unsigned int nb_sm_f0 = 0;
 unsigned int nb_sm_f0_aux_f1 = 0;
@@ -50,9 +51,11 @@ typedef enum restartState_t
 
 //************************
 // spectral matrices rings
-ring_node sm_ring_f0[NB_RING_NODES_SM_F0] = { 0 };
-ring_node sm_ring_f1[NB_RING_NODES_SM_F1] = { 0 };
-ring_node sm_ring_f2[NB_RING_NODES_SM_F2] = { 0 };
+DISABLE_MISSING_FIELD_INITIALIZER_WARNING
+ring_node sm_ring_f0[NB_RING_NODES_SM_F0] = { {0} };
+ring_node sm_ring_f1[NB_RING_NODES_SM_F1] = { {0} };
+ring_node sm_ring_f2[NB_RING_NODES_SM_F2] = { {0} };
+ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_sm_f0 = NULL;
 ring_node* current_ring_node_sm_f1 = NULL;
 ring_node* current_ring_node_sm_f2 = NULL;
@@ -110,8 +113,7 @@ void spectral_matrices_isr_f0(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f0_0_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f0_0_fine_time;
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_0_address
-                = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
+            spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f0 = nb_sm_f0 + 1;
             if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
@@ -130,8 +132,7 @@ void spectral_matrices_isr_f0(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f0_1_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f0_1_fine_time;
             current_ring_node_sm_f0 = current_ring_node_sm_f0->next;
-            spectral_matrix_regs->f0_1_address
-                = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
+            spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f0 = nb_sm_f0 + 1;
             if (nb_sm_f0 == NB_SM_BEFORE_AVF0_F1)
@@ -173,8 +174,7 @@ void spectral_matrices_isr_f1(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f1_0_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f1_0_fine_time;
             current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
-            spectral_matrix_regs->f1_0_address
-                = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
+            spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f1 = nb_sm_f1 + 1;
             if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
@@ -193,8 +193,7 @@ void spectral_matrices_isr_f1(int statusReg)
             full_ring_node->coarseTime = spectral_matrix_regs->f1_1_coarse_time;
             full_ring_node->fineTime = spectral_matrix_regs->f1_1_fine_time;
             current_ring_node_sm_f1 = current_ring_node_sm_f1->next;
-            spectral_matrix_regs->f1_1_address
-                = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
+            spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
             // if there are enough ring nodes ready, wake up an AVFx task
             nb_sm_f1 = nb_sm_f1 + 1;
             if (nb_sm_f1 == NB_SM_BEFORE_AVF0_F1)
@@ -290,6 +289,8 @@ rtems_isr spectral_matrices_isr(rtems_vector_number vector)
     //           10                    9                       8
     // buffer_full ** bad_component_err ** f2_1 ** f2_0 ** f1_1 ** f1_0 ** f0_1 ** f0_0
     //      7                  6             5       4       3       2       1       0
+
+    IGNORE_UNUSED_PARAMETER(vector);
 
     int statusReg;
 
@@ -465,7 +466,7 @@ void BP_init_header_with_spare(bp_packet_with_spare* packet, unsigned int apid, 
     packet->pa_lfr_bp_blk_nr[1] = blkNr; // BLK_NR LSB
 }
 
-void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid)
+void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
 {
     rtems_status_code status;
 
@@ -473,11 +474,11 @@ void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned
     status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
     if (status != RTEMS_SUCCESSFUL)
     {
-        PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status)
+        LFR_PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status);
     }
 }
 
-void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend, unsigned int sid)
+void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
 {
     /** This function is used to send the BP paquets when needed.
      *
@@ -501,7 +502,7 @@ void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend, un
         status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
         if (status != RTEMS_SUCCESSFUL)
         {
-            PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status)
+            LFR_PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status);
         }
     }
 }
@@ -542,17 +543,14 @@ void reset_spectral_matrix_regs(void)
     reset_sm_status();
 
     // F1
-    spectral_matrix_regs->f0_0_address
-        = (volatile uint32_t)current_ring_node_sm_f0->previous->buffer_address;
-    spectral_matrix_regs->f0_1_address = (volatile uint32_t)current_ring_node_sm_f0->buffer_address;
+    spectral_matrix_regs->f0_0_address = current_ring_node_sm_f0->previous->buffer_address;
+    spectral_matrix_regs->f0_1_address = current_ring_node_sm_f0->buffer_address;
     // F2
-    spectral_matrix_regs->f1_0_address
-        = (volatile uint32_t)current_ring_node_sm_f1->previous->buffer_address;
-    spectral_matrix_regs->f1_1_address = (volatile uint32_t)current_ring_node_sm_f1->buffer_address;
+    spectral_matrix_regs->f1_0_address = current_ring_node_sm_f1->previous->buffer_address;
+    spectral_matrix_regs->f1_1_address = current_ring_node_sm_f1->buffer_address;
     // F3
-    spectral_matrix_regs->f2_0_address
-        = (volatile uint32_t)current_ring_node_sm_f2->previous->buffer_address;
-    spectral_matrix_regs->f2_1_address = (volatile uint32_t)current_ring_node_sm_f2->buffer_address;
+    spectral_matrix_regs->f2_0_address = current_ring_node_sm_f2->previous->buffer_address;
+    spectral_matrix_regs->f2_1_address = current_ring_node_sm_f2->buffer_address;
 
     spectral_matrix_regs->matrix_length = DEFAULT_MATRIX_LENGTH; // 25 * 128 / 16 = 200 = 0xc8
 }
