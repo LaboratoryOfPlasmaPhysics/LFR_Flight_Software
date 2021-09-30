@@ -21,40 +21,11 @@
 --                   Contact : Alexis Jeandet
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
-#include "mitigations/reaction_wheel_filtering.h"
-#include "lfr_common_headers/fsw_params.h"
+#pragma once
+#include <rtems.h>
 
-#include "fsw_globals.h"
-#include "fsw_debug.h"
-
-int getFBinMask(int index, unsigned char channel)
-{
-    unsigned int indexInChar;
-    unsigned int indexInTheChar;
-    int fbin;
-    unsigned char* sy_lfr_fbins_fx_word1;
-
-    sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
-
-    switch (channel)
-    {
-        case CHANNELF0:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f0;
-            break;
-        case CHANNELF1:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f1;
-            break;
-        case CHANNELF2:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f2;
-            break;
-        default:
-            LFR_PRINTF("ERR *** in getFBinMask, wrong frequency channel");
-    }
-
-    indexInChar = index >> SHIFT_3_BITS;
-    indexInTheChar = index - (indexInChar * BITS_PER_BYTE);
-
-    fbin = (int)((sy_lfr_fbins_fx_word1[BYTES_PER_MASK - 1 - indexInChar] >> indexInTheChar) & 1);
-
-    return fbin;
-}
+rtems_isr watchdog_isr(rtems_vector_number vector);
+void watchdog_configure(void);
+void watchdog_stop(void);
+void watchdog_reload(void);
+void watchdog_start(void);

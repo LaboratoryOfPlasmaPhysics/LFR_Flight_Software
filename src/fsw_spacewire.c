@@ -38,6 +38,7 @@
 #include <errno.h>
 #include "fsw_spacewire.h"
 #include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
 
 rtems_name semq_name = 0;
 rtems_id semq_id = RTEMS_ID_NONE;

@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 
-#include <grlib_regs.h>
 
 #include "fsw_params.h"
 #include "fsw_spacewire.h"
@@ -58,43 +57,9 @@ typedef struct
     unsigned char dpu_spw_rx_too_big;
 } hk_lfr_me_t;
 
-#define B00 196
-#define B01 196
-#define B02 0
-#define B10 131
-#define B11 -244
-#define B12 131
-#define B20 161
-#define B21 -314
-#define B22 161
 
-#define A00 1
-#define A01 -925
-#define A02 0
-#define A10 1
-#define A11 -947
-#define A12 439
-#define A20 1
-#define A21 -993
-#define A22 486
 
-#define GAIN_B0 12
-#define GAIN_B1 11
-#define GAIN_B2 10
 
-#define GAIN_A0 10
-#define GAIN_A1 9
-#define GAIN_A2 9
-
-#define NB_COEFFS 3
-#define COEFF0    0
-#define COEFF1    1
-#define COEFF2    2
-
-typedef struct filter_ctx
-{
-    int W[NB_COEFFS][NB_COEFFS];
-} filter_ctx;
 
 extern void ASR16_get_FPRF_IURF_ErrorCounters(unsigned int*, unsigned int*);
 extern void CCR_getInstructionAndDataErrorCounters(unsigned int*, unsigned int*);
@@ -104,25 +69,12 @@ extern rtems_id HK_id; // id of the HK rate monotonic period
 extern rtems_name name_avgv_rate_monotonic; // name of the AVGV rate monotonic
 extern rtems_id AVGV_id; // id of the AVGV rate monotonic period
 
-void timer_configure(unsigned char timer, unsigned int clock_divider, unsigned char interrupt_level,
-    rtems_isr (*timer_isr)());
-#ifdef ENABLE_DEAD_CODE
-void timer_start(unsigned char timer);
-#endif
-void timer_stop(unsigned char timer);
-void timer_set_clock_divider(unsigned char timer, unsigned int clock_divider);
 
 // WATCHDOG
-rtems_isr watchdog_isr(rtems_vector_number vector);
-void watchdog_configure(void);
-void watchdog_stop(void);
-void watchdog_reload(void);
-void watchdog_start(void);
+
 
 // SERIAL LINK
-int send_console_outputs_on_apbuart_port(void);
-int enable_apbuart_transmitter(void);
-void set_apbuart_scaler_reload_register(unsigned int value);
+
 
 // RTEMS TASKS
 rtems_task load_task(rtems_task_argument argument);

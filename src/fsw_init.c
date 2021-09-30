@@ -66,11 +66,13 @@
     #include <drvmgr/drvmgr_confdefs.h>
 #endif
 
+#include "fsw_debug.h"
 #include "GscMemoryLPP.hpp"
 #include "fsw_config.c"
 #include "fsw_init.h"
 #include "processing/ASM/spectralmatrices.h"
 #include "fsw_compile_warnings.h"
+#include "hw/uart.h"
 
 void initCache()
 {

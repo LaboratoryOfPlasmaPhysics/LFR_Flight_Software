@@ -21,40 +21,29 @@
 --                   Contact : Alexis Jeandet
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
-#include "mitigations/reaction_wheel_filtering.h"
-#include "lfr_common_headers/fsw_params.h"
-
-#include "fsw_globals.h"
+#include "hw/uart.h"
 #include "fsw_debug.h"
+#include "fsw_globals.h"
+#include "hw/lfr_regs.h"
 
-int getFBinMask(int index, unsigned char channel)
+
+int enable_apbuart_transmitter(
+    void) // set the bit 1, TE Transmitter Enable to 1 in the APBUART control register
 {
-    unsigned int indexInChar;
-    unsigned int indexInTheChar;
-    int fbin;
-    unsigned char* sy_lfr_fbins_fx_word1;
+    apbuart0->ctrl = APBUART_CTRL_REG_MASK_TE;
+    return 0;
+}
 
-    sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
-
-    switch (channel)
-    {
-        case CHANNELF0:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f0;
-            break;
-        case CHANNELF1:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f1;
-            break;
-        case CHANNELF2:
-            sy_lfr_fbins_fx_word1 = fbins_masks.merged_fbins_mask_f2;
-            break;
-        default:
-            LFR_PRINTF("ERR *** in getFBinMask, wrong frequency channel");
-    }
-
-    indexInChar = index >> SHIFT_3_BITS;
-    indexInTheChar = index - (indexInChar * BITS_PER_BYTE);
-
-    fbin = (int)((sy_lfr_fbins_fx_word1[BYTES_PER_MASK - 1 - indexInChar] >> indexInTheChar) & 1);
-
-    return fbin;
+void set_apbuart_scaler_reload_register(unsigned int value)
+{
+    /** This function sets the scaler reload register of the apbuart module
+     *
+     * @param regs is the address of the apbuart registers in memory
+     * @param value is the value that will be stored in the scaler register
+     *
+     * The value shall be set by the software to get data on the serial interface.
+     *
+     */
+    apbuart0->scaler = value;
+    BOOT_PRINTF("OK  *** apbuart port scaler reload register set to 0x%x\n", value);
 }

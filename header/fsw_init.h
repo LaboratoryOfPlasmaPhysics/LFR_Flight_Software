@@ -11,8 +11,8 @@
 #include "fsw_globals.h"
 
 #include "fsw_spacewire.h"
-#include "tc_handler.h"
-#include "wf_handler.h"
+#include "tc_tm/tc_handler.h"
+#include "hw/wf_handler.h"
 
 #include "avf0_prc0.h"
 #include "avf1_prc1.h"

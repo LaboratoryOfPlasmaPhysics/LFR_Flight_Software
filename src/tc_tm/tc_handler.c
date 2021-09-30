@@ -35,8 +35,9 @@
 
 #include <math.h>
 
-#include "tc_handler.h"
+#include "tc_tm/tc_handler.h"
 #include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
 
 //***********
 // RTEMS TASK

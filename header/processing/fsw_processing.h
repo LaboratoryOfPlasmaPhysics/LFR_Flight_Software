@@ -3,8 +3,6 @@
 
 #include <rtems.h>
 
-#include <grlib_regs.h>
-#include <grspw.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h> // abs() is in the stdlib
@@ -24,10 +22,6 @@ extern unsigned int acquisitionDurations[];
 // parameters
 extern struct param_local_str param_local;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
-
-// registers
-extern time_management_regs_t* time_management_regs;
-extern volatile spectral_matrix_regs_t* spectral_matrix_regs;
 
 extern rtems_name misc_name[];
 extern rtems_id Task_id[]; /* array of task ids */
@@ -62,7 +56,6 @@ void reset_sm_status(void);
 void reset_spectral_matrix_regs(void);
 void set_time(unsigned char* time, unsigned char* timeInBuffer);
 unsigned long long int get_acquisition_time(unsigned char* timePtr);
-unsigned char getSID(rtems_event_set event);
 
 extern rtems_status_code get_message_queue_id_prc1(rtems_id* queue_id);
 extern rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id);

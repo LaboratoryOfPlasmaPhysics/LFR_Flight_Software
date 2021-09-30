@@ -9,7 +9,6 @@
 #include "tc_acceptance.h"
 #include "tc_load_dump_parameters.h"
 #include "tm_lfr_tc_exe.h"
-#include "wf_handler.h"
 
 #include "lfr_cpu_usage_report.h"
 

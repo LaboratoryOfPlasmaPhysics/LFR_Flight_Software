@@ -30,7 +30,7 @@
  *
  */
 
-#include "tc_acceptance.h"
+#include "tc_tm/tc_acceptance.h"
 #include <stdio.h>
 
 unsigned int lookUpTableForCRC[CONST_256] = { 0 };

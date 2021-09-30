@@ -31,37 +31,37 @@
  *
  */
 
-#include "wf_handler.h"
+#include "hw/wf_handler.h"
 #include "fsw_misc.h"
-
-#include "lfr_common_headers/fsw_params.h"
+#include "fsw_debug.h"
 #include "fsw_compile_warnings.h"
+#include "lfr_common_headers/fsw_params.h"
 
 //***************
 // waveform rings
 // F0
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
-ring_node waveform_ring_f0[NB_RING_NODES_F0] = { {0} };
+ring_node waveform_ring_f0[NB_RING_NODES_F0] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_f0 = NULL;
 ring_node* ring_node_to_send_swf_f0 = NULL;
 // F1
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
-ring_node waveform_ring_f1[NB_RING_NODES_F1] = { {0} };
+ring_node waveform_ring_f1[NB_RING_NODES_F1] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_f1 = NULL;
 ring_node* ring_node_to_send_swf_f1 = NULL;
 ring_node* ring_node_to_send_cwf_f1 = NULL;
 // F2
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
-ring_node waveform_ring_f2[NB_RING_NODES_F2] = { {0} };
+ring_node waveform_ring_f2[NB_RING_NODES_F2] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_f2 = NULL;
 ring_node* ring_node_to_send_swf_f2 = NULL;
 ring_node* ring_node_to_send_cwf_f2 = NULL;
 // F3
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
-ring_node waveform_ring_f3[NB_RING_NODES_F3] = { {0} };
+ring_node waveform_ring_f3[NB_RING_NODES_F3] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_f3 = NULL;
 ring_node* ring_node_to_send_cwf_f3 = NULL;
@@ -717,14 +717,14 @@ void WFP_init_rings(void)
     ring_node_swf1_extracted.buffer_address = swf1_extracted;
     ring_node_swf2_extracted.buffer_address = swf2_extracted;
 
-    DEBUG_PRINTF("waveform_ring_f0 @%x\n", (unsigned int)waveform_ring_f0)
-    DEBUG_PRINTF("waveform_ring_f1 @%x\n", (unsigned int)waveform_ring_f1)
-    DEBUG_PRINTF("waveform_ring_f2 @%x\n", (unsigned int)waveform_ring_f2)
-    DEBUG_PRINTF("waveform_ring_f3 @%x\n", (unsigned int)waveform_ring_f3)
-    DEBUG_PRINTF("wf_buffer_f0 @%x\n", (unsigned int)wf_buffer_f0)
-    DEBUG_PRINTF("wf_buffer_f1 @%x\n", (unsigned int)wf_buffer_f1)
-    DEBUG_PRINTF("wf_buffer_f2 @%x\n", (unsigned int)wf_buffer_f2)
-    DEBUG_PRINTF("wf_buffer_f3 @%x\n", (unsigned int)wf_buffer_f3)
+    DEBUG_PRINTF("waveform_ring_f0 @%x\n", (unsigned int)waveform_ring_f0);
+    DEBUG_PRINTF("waveform_ring_f1 @%x\n", (unsigned int)waveform_ring_f1);
+    DEBUG_PRINTF("waveform_ring_f2 @%x\n", (unsigned int)waveform_ring_f2);
+    DEBUG_PRINTF("waveform_ring_f3 @%x\n", (unsigned int)waveform_ring_f3);
+    DEBUG_PRINTF("wf_buffer_f0 @%x\n", (unsigned int)wf_buffer_f0);
+    DEBUG_PRINTF("wf_buffer_f1 @%x\n", (unsigned int)wf_buffer_f1);
+    DEBUG_PRINTF("wf_buffer_f2 @%x\n", (unsigned int)wf_buffer_f2);
+    DEBUG_PRINTF("wf_buffer_f3 @%x\n", (unsigned int)wf_buffer_f3);
 }
 
 void WFP_reset_current_ring_nodes(void)
@@ -1021,7 +1021,8 @@ double computeCorrection(unsigned char* timePtr)
     deltaPrevious_ms = (((double)deltaPreviousTick) / TICKS_PER_S) * MS_PER_S;
     deltaNext_ms = (((double)deltaNextTick) / TICKS_PER_S) * MS_PER_S;
 
-    LFR_PRINTF("    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
+    LFR_PRINTF(
+        "    delta previous = %.3f ms, delta next = %.2f ms\n", deltaPrevious_ms, deltaNext_ms);
 
     // which tick is the closest?
     if (deltaPreviousTick > deltaNextTick)
@@ -1102,7 +1103,8 @@ void snapshot_resynchronization(unsigned char* timePtr)
             correction = computeCorrection(timePtr);
             LFR_PRINTF("MEASURE === correction = %.2f\n", correction);
             applyCorrection(correction);
-            LFR_PRINTF("MEASURE === delta_snapshot = %u\n", (unsigned int)waveform_picker_regs->delta_snapshot);
+            LFR_PRINTF("MEASURE === delta_snapshot = %u\n",
+                (unsigned int)waveform_picker_regs->delta_snapshot);
             //****
             break;
 
@@ -1112,7 +1114,8 @@ void snapshot_resynchronization(unsigned char* timePtr)
             state = MEASURE;
             computeCorrection(timePtr);
             set_wfp_delta_snapshot();
-            LFR_PRINTF("CORRECTION === delta_snapshot = %u\n", (unsigned int)waveform_picker_regs->delta_snapshot);
+            LFR_PRINTF("CORRECTION === delta_snapshot = %u\n",
+                (unsigned int)waveform_picker_regs->delta_snapshot);
             //****
             break;
 

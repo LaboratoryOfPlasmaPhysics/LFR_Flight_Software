@@ -9,7 +9,6 @@
 #include "fsw_misc.h"
 #include "fsw_params.h"
 #include "tm_lfr_tc_exe.h"
-#include "wf_handler.h"
 
 #define FLOAT_EQUAL_ZERO  0.001
 #define NB_BINS_TO_REMOVE 3

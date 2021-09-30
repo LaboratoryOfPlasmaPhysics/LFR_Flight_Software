@@ -37,7 +37,8 @@
  *
  */
 
-#include "tm_lfr_tc_exe.h"
+#include "tc_tm/tm_lfr_tc_exe.h"
+#include "fsw_debug.h"
 
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 {

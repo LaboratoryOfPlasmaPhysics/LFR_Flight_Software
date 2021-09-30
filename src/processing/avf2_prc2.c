@@ -35,6 +35,14 @@
 #include "avf2_prc2.h"
 #include "mitigations/PAS_filtering.h"
 #include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
+
+typedef struct
+{
+    unsigned int norm_bp1;
+    unsigned int norm_bp2;
+    unsigned int norm_asm;
+} nb_sm_before_bp_asm_f2;
 
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 nb_sm_before_bp_asm_f2 nb_sm_before_f2 = { 0 };

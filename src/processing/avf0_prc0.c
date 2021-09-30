@@ -35,6 +35,23 @@
 
 #include "fsw_compile_warnings.h"
 #include "avf0_prc0.h"
+#include "fsw_debug.h"
+
+typedef struct
+{
+    unsigned int norm_bp1;
+    unsigned int norm_bp2;
+    unsigned int norm_asm;
+    unsigned int burst_sbm_bp1;
+    unsigned int burst_sbm_bp2;
+    unsigned int burst_bp1;
+    unsigned int burst_bp2;
+    unsigned int sbm1_bp1;
+    unsigned int sbm1_bp2;
+    unsigned int sbm2_bp1;
+    unsigned int sbm2_bp2;
+} nb_sm_before_bp_asm_f0;
+
 
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
 nb_sm_before_bp_asm_f0 nb_sm_before_f0 = { 0 };
@@ -215,7 +232,6 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
     size_t size; // size of the incoming TC packet
     asm_msg* incomingMsg;
     //
-    unsigned char sid;
     rtems_status_code status;
     rtems_id queue_id;
     rtems_id queue_id_q_p0;
@@ -309,7 +325,6 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
             SM_calibrate_and_reorder_f0(incomingMsg->burst_sbm->matrix, asm_f0_patched_burst_sbm);
             nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
 
-            sid = getSID(incomingMsg->event);
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_divide_and_mask(asm_f0_patched_burst_sbm, compressed_sm_sbm_f0,
                 nbSMInASMSBM, NB_BINS_COMPRESSED_SM_SBM_F0, NB_BINS_TO_AVERAGE_ASM_SBM_F0,

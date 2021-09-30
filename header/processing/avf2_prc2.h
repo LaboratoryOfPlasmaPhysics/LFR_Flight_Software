@@ -5,13 +5,6 @@
 #include "fsw_init.h"
 #include "fsw_processing.h"
 
-typedef struct
-{
-    unsigned int norm_bp1;
-    unsigned int norm_bp2;
-    unsigned int norm_asm;
-} nb_sm_before_bp_asm_f2;
-
 //************
 // RTEMS TASKS
 rtems_task avf2_task(rtems_task_argument lfrRequestedMode);

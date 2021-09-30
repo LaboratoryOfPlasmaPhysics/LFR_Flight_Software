@@ -5,35 +5,6 @@
 
 #include <stdint.h>
 
-typedef volatile struct
-{
-    uint32_t data;
-    uint32_t status;
-    uint32_t ctrl;
-    uint32_t scaler;
-    uint32_t fifoDebug;
-} apbuart_regs_t;
-
-typedef volatile struct
-{
-    uint32_t io_port_data_register;
-    uint32_t io_port_output_register;
-    uint32_t io_port_direction_register;
-    uint32_t interrupt_mak_register;
-    uint32_t interrupt_polarity_register;
-    uint32_t interrupt_edge_register;
-    uint32_t bypass_register;
-    uint32_t reserved;
-    // 0x20-0x3c interrupt map register(s)
-} grgpio_regs_t;
-
-typedef volatile struct
-{
-    uint32_t counter;
-    uint32_t reload;
-    uint32_t ctrl;
-    uint32_t unused;
-} timer_regs_t;
 
 //*************
 //*************
@@ -46,15 +17,6 @@ typedef volatile struct
 #define GPTIMER_RS        0x00000002 // RS restart
 #define GPTIMER_IE        0x00000008 // IE interrupt enable
 #define GPTIMER_IE_MASK   0xffffffef // IE interrupt enable
-
-typedef volatile struct
-{
-    uint32_t scaler_value;
-    uint32_t scaler_reload;
-    uint32_t conf;
-    uint32_t unused0;
-    timer_regs_t timer[NB_GPTIMER];
-} gptimer_regs_t;
 
 //*********************
 //*********************

@@ -47,6 +47,7 @@
 volatile unsigned int* asr16Ptr = (volatile unsigned int*)ASR16_REG_ADDRESS;
 
 #include "lfr_common_headers/fsw_params.h"
+#include "fsw_debug.h"
 
 //***************************
 // CCR Cache control register

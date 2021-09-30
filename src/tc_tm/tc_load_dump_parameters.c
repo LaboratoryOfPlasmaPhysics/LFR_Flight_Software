@@ -39,10 +39,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "tc_load_dump_parameters.h"
+#include "tc_tm/tc_load_dump_parameters.h"
 #include "processing/calibration_matrices.h"
 #include "fsw_misc.h"
 #include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
 
 
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING

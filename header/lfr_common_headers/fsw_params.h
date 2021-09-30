@@ -25,7 +25,7 @@
 #ifndef FSW_PARAMS_H_INCLUDED
 #define FSW_PARAMS_H_INCLUDED
 
-#include <stdio.h>
+
 #include "ccsds_types.h"
 #include "fsw_params_nb_bytes.h"
 #include "fsw_params_processing.h"
@@ -59,23 +59,7 @@
 
 //*******
 // MACROS
-#ifdef PRINT_MESSAGES_ON_CONSOLE
-    #define LFR_PRINTF(...)        printf(__VA_ARGS__)
-#else
-    #define LFR_PRINTF(...)
-#endif
 
-#ifdef BOOT_MESSAGES
-    #define BOOT_PRINTF(...)        printf(__VA_ARGS__)
-#else
-    #define BOOT_PRINTF(...)
-#endif
-
-#ifdef DEBUG_MESSAGES
-    #define DEBUG_PRINTF(...)        printf(__VA_ARGS__)
-#else
-    #define DEBUG_PRINTF(...)
-#endif
 
 #define CONST_65536 65536 // 2^16
 #define CONST_2048  2048 // 2^11

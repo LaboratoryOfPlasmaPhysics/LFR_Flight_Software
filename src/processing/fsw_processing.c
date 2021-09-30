@@ -33,9 +33,10 @@
  */
 
 #include "fsw_processing.h"
+#include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
 #include "fsw_init.h"
 #include "fsw_processing_globals.c"
-#include "fsw_compile_warnings.h"
 
 unsigned int nb_sm_f0 = 0;
 unsigned int nb_sm_f0_aux_f1 = 0;
@@ -52,9 +53,9 @@ typedef enum restartState_t
 //************************
 // spectral matrices rings
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
-ring_node sm_ring_f0[NB_RING_NODES_SM_F0] = { {0} };
-ring_node sm_ring_f1[NB_RING_NODES_SM_F1] = { {0} };
-ring_node sm_ring_f2[NB_RING_NODES_SM_F2] = { {0} };
+ring_node sm_ring_f0[NB_RING_NODES_SM_F0] = { { 0 } };
+ring_node sm_ring_f1[NB_RING_NODES_SM_F1] = { { 0 } };
+ring_node sm_ring_f2[NB_RING_NODES_SM_F2] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_sm_f0 = NULL;
 ring_node* current_ring_node_sm_f1 = NULL;
@@ -359,12 +360,12 @@ void SM_init_rings(void)
     init_ring(sm_ring_f1, NB_RING_NODES_SM_F1, sm_f1, TOTAL_SIZE_SM);
     init_ring(sm_ring_f2, NB_RING_NODES_SM_F2, sm_f2, TOTAL_SIZE_SM);
 
-    DEBUG_PRINTF("sm_ring_f0 @%x\n", (unsigned int)sm_ring_f0)
-    DEBUG_PRINTF("sm_ring_f1 @%x\n", (unsigned int)sm_ring_f1)
-    DEBUG_PRINTF("sm_ring_f2 @%x\n", (unsigned int)sm_ring_f2)
-    DEBUG_PRINTF("sm_f0 @%x\n", (unsigned int)sm_f0)
-    DEBUG_PRINTF("sm_f1 @%x\n", (unsigned int)sm_f1)
-    DEBUG_PRINTF("sm_f2 @%x\n", (unsigned int)sm_f2)
+    DEBUG_PRINTF("sm_ring_f0 @%x\n", (unsigned int)sm_ring_f0);
+    DEBUG_PRINTF("sm_ring_f1 @%x\n", (unsigned int)sm_ring_f1);
+    DEBUG_PRINTF("sm_ring_f2 @%x\n", (unsigned int)sm_ring_f2);
+    DEBUG_PRINTF("sm_f0 @%x\n", (unsigned int)sm_f0);
+    DEBUG_PRINTF("sm_f1 @%x\n", (unsigned int)sm_f1);
+    DEBUG_PRINTF("sm_f2 @%x\n", (unsigned int)sm_f2);
 }
 
 void ASM_generic_init_ring(ring_node_asm* ring, unsigned char nbNodes)
@@ -577,39 +578,4 @@ unsigned long long int get_acquisition_time(unsigned char* timePtr)
         + ((unsigned long long int)timePtr[BYTE_6] << SHIFT_1_BYTE)
         + ((unsigned long long int)timePtr[BYTE_7]);
     return acquisitionTimeAslong;
-}
-
-unsigned char getSID(rtems_event_set event)
-{
-    unsigned char sid;
-
-    rtems_event_set eventSetBURST;
-    rtems_event_set eventSetSBM;
-
-    sid = 0;
-
-    //******
-    // BURST
-    eventSetBURST = RTEMS_EVENT_BURST_BP1_F0 | RTEMS_EVENT_BURST_BP1_F1 | RTEMS_EVENT_BURST_BP2_F0
-        | RTEMS_EVENT_BURST_BP2_F1;
-
-    //****
-    // SBM
-    eventSetSBM = RTEMS_EVENT_SBM_BP1_F0 | RTEMS_EVENT_SBM_BP1_F1 | RTEMS_EVENT_SBM_BP2_F0
-        | RTEMS_EVENT_SBM_BP2_F1;
-
-    if (event & eventSetBURST)
-    {
-        sid = SID_BURST_BP1_F0;
-    }
-    else if (event & eventSetSBM)
-    {
-        sid = SID_SBM1_BP1_F0;
-    }
-    else
-    {
-        sid = 0;
-    }
-
-    return sid;
 }

@@ -5,19 +5,6 @@
 #include "fsw_init.h"
 #include "fsw_processing.h"
 
-typedef struct
-{
-    unsigned int norm_bp1;
-    unsigned int norm_bp2;
-    unsigned int norm_asm;
-    unsigned int burst_sbm_bp1;
-    unsigned int burst_sbm_bp2;
-    unsigned int burst_bp1;
-    unsigned int burst_bp2;
-    unsigned int sbm2_bp1;
-    unsigned int sbm2_bp2;
-} nb_sm_before_bp_asm_f1;
-
 //************
 // RTEMS TASKS
 rtems_task avf1_task(rtems_task_argument lfrRequestedMode);

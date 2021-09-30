@@ -12,7 +12,7 @@
 
 #include "fsw_init.h"
 #include "fsw_params.h"
-#include "tc_handler.h"
+#include "tc_tm/tc_handler.h"
 
 #define SPW_LINK_OK       5
 #define CONF_TCODE_CTRL   0x0909 // [Time Rx : Time Tx : Link error : Tick-out IRQ]
