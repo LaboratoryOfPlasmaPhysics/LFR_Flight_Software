@@ -32,6 +32,7 @@
  */
 
 #include "hw/wf_handler.h"
+#include "hw/lfr_regs.h"
 #include "fsw_misc.h"
 #include "fsw_debug.h"
 #include "fsw_compile_warnings.h"

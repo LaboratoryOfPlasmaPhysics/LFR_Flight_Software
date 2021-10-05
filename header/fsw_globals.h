@@ -23,19 +23,12 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "lfr_common_headers/fsw_params.h"
-#include <grlib.h>
-#include "hw/lfr_regs.h"
 
 extern filterPar_t filterPar;
 extern rw_f_t rw_f;
 
+extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern fbins_masks_t fbins_masks;
 
 
-// APB CONFIGURATION REGISTERS
-#define time_management_regs ((time_management_regs_t*)REGS_ADDR_TIME_MANAGEMENT)
-#define gptimer0 ((struct gptimer_regs*)REGS_ADDR_GPTIMER)
-#define apbuart0 ((struct apbuart_regs*)REGS_ADDR_APBUART)
-#define  waveform_picker_regs ((waveform_picker_regs_0_1_18_t*)REGS_ADDR_WAVEFORM_PICKER)
-#define  spectral_matrix_regs ((spectral_matrix_regs_t*)REGS_ADDR_SPECTRAL_MATRIX)

@@ -37,6 +37,7 @@
 #include "fsw_debug.h"
 #include "fsw_init.h"
 #include "fsw_processing_globals.c"
+#include "hw/lfr_regs.h"
 
 unsigned int nb_sm_f0 = 0;
 unsigned int nb_sm_f0_aux_f1 = 0;

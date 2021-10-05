@@ -39,6 +39,9 @@
 #include "fsw_spacewire.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
+#include "fsw_watchdog.h"
+#include "fsw_misc.h"
+#include "hw/lfr_regs.h"
 
 rtems_name semq_name = 0;
 rtems_id semq_id = RTEMS_ID_NONE;
@@ -897,19 +900,6 @@ void spacewire_update_hk_lfr_link_state(unsigned char* hk_lfr_status_word_0)
     *hk_lfr_status_word_0 = *hk_lfr_status_word_0 | linkState; // update hk_lfr_dpu_spw_link_state
 }
 
-void increase_unsigned_char_counter(unsigned char* counter)
-{
-    // update the number of valid timecodes that have been received
-    if (*counter == UINT8_MAX)
-    {
-        *counter = 0;
-    }
-    else
-    {
-        *counter = *counter + 1;
-    }
-}
-
 unsigned int check_timecode_and_previous_timecode_coherency(unsigned char currentTimecodeCtr)
 {
     /** This function checks the coherency between the incoming timecode and the last valid
@@ -1002,7 +992,7 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     housekeeping_packet.hk_lfr_dpu_spw_last_timc = incomingTimecode;
 
     // update the number of tickout that have been generated
-    increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt);
+    housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt);
 
     //**************************
     // HK_LFR_TIMECODE_ERRONEOUS
@@ -1011,7 +1001,7 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     {
         // this is unexpected but a tickout could have been raised despite of the timecode being
         // erroneous
-        increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_timecode_erroneous);
+        housekeeping_packet.hk_lfr_timecode_erroneous=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_erroneous);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_ERRONEOUS);
     }
 
@@ -1020,7 +1010,7 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     // check the coherency between the SpaceWire timecode and the Internal Time
     if (check_timecode_and_internal_time_coherency(incomingTimecode, internalTime) == LFR_DEFAULT)
     {
-        increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_time_timecode_it);
+        housekeeping_packet.hk_lfr_time_timecode_it=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_it);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_IT);
     }
 
@@ -1031,7 +1021,7 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     {
         if (incomingTimecode != updateTime)
         {
-            increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_time_timecode_ctr);
+            housekeeping_packet.hk_lfr_time_timecode_ctr=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_ctr);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_CTR);
         }
     }
@@ -1065,7 +1055,7 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
             // HK_LFR_TIMECODE_MISSING
             // the timecode value has not changed, no valid timecode has been received, the timecode
             // is MISSING
-            increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_timecode_missing);
+            housekeeping_packet.hk_lfr_timecode_missing=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_MISSING);
         }
         else if (currentTimecodeCtr == (previousTimecodeCtr + 1))
@@ -1079,7 +1069,7 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
             // HK_LFR_TIMECODE_INVALID
             // the timecode value has changed and the value is not valid, no tickout has been
             // generated this is why the timer has fired
-            increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_timecode_invalid);
+            housekeeping_packet.hk_lfr_timecode_invalid=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_invalid);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_INVALID);
         }
     }
@@ -1088,7 +1078,7 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
         initStep = 1;
         //************************
         // HK_LFR_TIMECODE_MISSING
-        increase_unsigned_char_counter(&housekeeping_packet.hk_lfr_timecode_missing);
+        housekeeping_packet.hk_lfr_timecode_missing=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_MISSING);
     }
 

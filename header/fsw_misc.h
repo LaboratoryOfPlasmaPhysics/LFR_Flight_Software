@@ -23,42 +23,10 @@
 #define DUMB_MESSAGE_12 "WATCHDOG timer"
 #define DUMB_MESSAGE_13 "TIMECODE timer"
 
-enum lfr_reset_cause_t
-{
-    UNKNOWN_CAUSE,
-    POWER_ON,
-    TC_RESET,
-    WATCHDOG,
-    ERROR_RESET,
-    UNEXP_RESET
-};
-
-typedef struct
-{
-    unsigned char dpu_spw_parity;
-    unsigned char dpu_spw_disconnect;
-    unsigned char dpu_spw_escape;
-    unsigned char dpu_spw_credit;
-    unsigned char dpu_spw_write_sync;
-    unsigned char timecode_erroneous;
-    unsigned char timecode_missing;
-    unsigned char timecode_invalid;
-    unsigned char time_timecode_it;
-    unsigned char time_not_synchro;
-    unsigned char time_timecode_ctr;
-    unsigned char ahb_correctable;
-} hk_lfr_le_t;
-
-typedef struct
-{
-    unsigned char dpu_spw_early_eop;
-    unsigned char dpu_spw_invalid_addr;
-    unsigned char dpu_spw_eep;
-    unsigned char dpu_spw_rx_too_big;
-} hk_lfr_me_t;
-
-
-
+#define MAX_OF(type)                                                                               \
+    (((type)(~0LLU) > (type)((1LLU << ((sizeof(type) << 3) - 1)) - 1LLU))                          \
+            ? (long long unsigned int)(type)(~0LLU)                                                \
+            : (long long unsigned int)(type)((1LLU << ((sizeof(type) << 3) - 1)) - 1LLU))
 
 
 extern void ASR16_get_FPRF_IURF_ErrorCounters(unsigned int*, unsigned int*);
@@ -70,12 +38,6 @@ extern rtems_name name_avgv_rate_monotonic; // name of the AVGV rate monotonic
 extern rtems_id AVGV_id; // id of the AVGV rate monotonic period
 
 
-// WATCHDOG
-
-
-// SERIAL LINK
-
-
 // RTEMS TASKS
 rtems_task load_task(rtems_task_argument argument);
 rtems_task hous_task(rtems_task_argument argument);
@@ -84,20 +46,6 @@ rtems_task dumb_task(rtems_task_argument unused);
 rtems_task scrubbing_task(rtems_task_argument unused);
 rtems_task calibration_sweep_task(rtems_task_argument unused);
 
-void init_housekeeping_parameters(void);
-void increment_seq_counter(unsigned short* packetSequenceControl);
-void getTime(unsigned char* time);
-unsigned long long int getTimeAsUnsignedLongLongInt();
-void get_temperatures(unsigned char* temperatures);
-void get_v_e1_e2_f3(unsigned char* spacecraft_potential);
-void get_cpu_load(unsigned char* resource_statistics);
-void set_hk_lfr_sc_potential_flag(bool state);
-void set_sy_lfr_pas_filter_enabled(bool state);
-void set_sy_lfr_watchdog_enabled(bool state);
-void set_hk_lfr_calib_enable(bool state);
-void set_hk_lfr_reset_cause(enum lfr_reset_cause_t lfr_reset_cause);
-void hk_lfr_le_me_he_update();
-void set_hk_lfr_time_not_synchro();
 
 extern int sched_yield(void);
 extern void rtems_cpu_usage_reset();
@@ -111,5 +59,10 @@ extern unsigned char hk_lfr_q_rv_fifo_size_max;
 extern unsigned char hk_lfr_q_p0_fifo_size_max;
 extern unsigned char hk_lfr_q_p1_fifo_size_max;
 extern unsigned char hk_lfr_q_p2_fifo_size_max;
+
+static inline unsigned char increase_unsigned_char_counter(unsigned char counter)
+{
+    return (counter + 1) & 0xFF;
+}
 
 #endif // FSW_MISC_H_INCLUDED

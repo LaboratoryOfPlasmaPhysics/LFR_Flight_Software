@@ -51,7 +51,6 @@ extern volatile int wf_buffer_f1[];
 extern volatile int wf_buffer_f2[];
 extern volatile int wf_buffer_f3[];
 
-extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern struct param_local_str param_local;
 

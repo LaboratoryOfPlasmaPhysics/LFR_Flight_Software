@@ -4,7 +4,8 @@
 #define NB_GPTIMER 3
 
 #include <stdint.h>
-
+#include <grlib.h>
+#include "fsw_params.h"
 
 //*************
 //*************
@@ -204,5 +205,12 @@ typedef volatile struct
     //
     uint32_t matrix_length; // 0x50, length of a spectral matrix in burst 3200 / 16 = 200 = 0xc8
 } spectral_matrix_regs_t;
+
+// APB CONFIGURATION REGISTERS
+#define time_management_regs ((time_management_regs_t*)REGS_ADDR_TIME_MANAGEMENT)
+#define gptimer0 ((struct gptimer_regs*)REGS_ADDR_GPTIMER)
+#define apbuart0 ((struct apbuart_regs*)REGS_ADDR_APBUART)
+#define  waveform_picker_regs ((waveform_picker_regs_0_1_18_t*)REGS_ADDR_WAVEFORM_PICKER)
+#define  spectral_matrix_regs ((spectral_matrix_regs_t*)REGS_ADDR_SPECTRAL_MATRIX)
 
 #endif // GRLIB_REGS_H_INCLUDED

@@ -34,10 +34,13 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include "tc_tm/tc_handler.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
+#include "hw/lfr_regs.h"
+#include "fsw_housekeeping.h"
 
 //***********
 // RTEMS TASK

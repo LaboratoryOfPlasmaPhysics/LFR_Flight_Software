@@ -31,6 +31,8 @@
 #include "fsw_processing.h"
 #include "fsw_watchdog.h"
 #include "hw/timer.h"
+#include "hw/lfr_regs.h"
+
 // WATCHDOG, this ISR should never be triggered.
 
 rtems_isr watchdog_isr(rtems_vector_number vector)

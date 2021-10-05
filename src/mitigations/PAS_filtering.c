@@ -24,7 +24,7 @@
 #include "mitigations/PAS_filtering.h"
 #include "fsw_globals.h"
 #include "lfr_common_headers/fsw_params.h"
-#include <sys/types.h>
+#include <stdint.h>
 
 /**
  * @brief isPolluted returns MATRIX_IS_POLLUTED if there is any overlap between t0:t1 and
@@ -35,7 +35,7 @@
  * @param tbad1 End time of poluting signal
  * @return
  */
-unsigned char isPolluted(u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t tbad1)
+unsigned char isPolluted(uint64_t t0, uint64_t t1, uint64_t tbad0, uint64_t tbad1)
 {
     unsigned char polluted;
 
@@ -62,24 +62,24 @@ unsigned char isPolluted(u_int64_t t0, u_int64_t t1, u_int64_t tbad0, u_int64_t 
 unsigned char acquisitionTimeIsValid(
     unsigned int coarseTime, unsigned int fineTime, unsigned char channel)
 {
-    u_int64_t t0;
-    u_int64_t t1;
-    u_int64_t tc;
-    u_int64_t tbad0;
-    u_int64_t tbad1;
+    uint64_t t0;
+    uint64_t t1;
+    uint64_t tc;
+    uint64_t tbad0;
+    uint64_t tbad1;
 
-    u_int64_t modulusInFineTime;
-    u_int64_t offsetInFineTime;
-    u_int64_t shiftInFineTime;
-    u_int64_t tbadInFineTime;
+    uint64_t modulusInFineTime;
+    uint64_t offsetInFineTime;
+    uint64_t shiftInFineTime;
+    uint64_t tbadInFineTime;
 
-    u_int64_t timecodeReference;
+    uint64_t timecodeReference;
 
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
 
     // compute acquisition time from caoarseTime and fineTime
-    t0 = (((u_int64_t)coarseTime) << SHIFT_2_BYTES) + (u_int64_t)fineTime;
+    t0 = (((uint64_t)coarseTime) << SHIFT_2_BYTES) + (uint64_t)fineTime;
     t1 = t0;
     tc = t0;
     tbad0 = t0;

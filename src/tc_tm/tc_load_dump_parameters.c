@@ -44,6 +44,7 @@
 #include "fsw_misc.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
+#include "hw/lfr_regs.h"
 
 
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING

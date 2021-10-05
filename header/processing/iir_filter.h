@@ -71,7 +71,7 @@ typedef struct filter_ctx
  * @param ctx, filter context, used to store previous input and output samples
  * @return a new filtered sample
  */
-inline int filter(int x, filter_ctx* ctx)
+static inline int filter(int x, filter_ctx* ctx)
 {
     static const int b[NB_COEFFS][NB_COEFFS]
         = { { B00, B01, B02 }, { B10, B11, B12 }, { B20, B21, B22 } };

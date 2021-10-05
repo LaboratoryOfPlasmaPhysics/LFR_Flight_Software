@@ -35,7 +35,6 @@
 
 #include <rtems.h>
 
-
 /* configuration information */
 
 #define CONFIGURE_INIT
@@ -73,6 +72,7 @@
 #include "processing/ASM/spectralmatrices.h"
 #include "fsw_compile_warnings.h"
 #include "hw/uart.h"
+#include "hw/lfr_regs.h"
 
 void initCache()
 {

@@ -46,7 +46,6 @@ void spacewire_get_last_error(void);
 void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code);
 void update_hk_with_grspw_stats(void);
 void spacewire_update_hk_lfr_link_state(unsigned char* hk_lfr_status_word_0);
-void increase_unsigned_char_counter(unsigned char* counter);
 
 void init_header_cwf(Header_TM_LFR_SCIENCE_CWF_t* header);
 void init_header_swf(Header_TM_LFR_SCIENCE_SWF_t* header);
