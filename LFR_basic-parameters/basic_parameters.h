@@ -41,9 +41,7 @@
 --                   Contact : Thomas Chust
 --                      Mail : thomas.chust@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
-
-#ifndef BASIC_PARAMETERS_H_INCLUDED
-#define BASIC_PARAMETERS_H_INCLUDED
+#pragma once
 
 #include <math.h>
 #include <stdint.h>
@@ -51,6 +49,10 @@
 
 #include "basic_parameters_params.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #ifndef LFR_BIG_ENDIAN
     #ifndef LFR_LITTLE_ENDIAN
@@ -58,17 +60,12 @@
     #endif
 #endif
 
-
-void BP1_set(float* compressed_spec_mat, float* k_coeff_intercalib,
-    uint8_t nb_bins_compressed_spec_mat, uint8_t* lfr_bp1);
-
 void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
     uint8_t* bp1_buffer);
-
-void BP2_set(float* compressed_spec_mat, uint8_t nb_bins_compressed_spec_mat, uint8_t* lfr_bp2);
 
 void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
     uint8_t* bp2_buffer);
 
-
-#endif // BASIC_PARAMETERS_H_INCLUDED
+#ifdef __cplusplus
+}
+#endif

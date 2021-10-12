@@ -48,12 +48,14 @@
 
 #include "basic_parameters_params.h"
 #include "custom_floats.h"
+#include "fsw_debug.h"
 #include "processing/ASM/spectralmatrices.h"
 
 
 inline const float* next_matrix(const float* const spectral_matrix) __attribute__((always_inline));
 const float* next_matrix(const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     return spectral_matrix + NB_FLOATS_PER_SM;
 }
 
@@ -61,6 +63,7 @@ inline float elec_power_spectrum_density(const float* const spectral_matrix)
     __attribute__((always_inline));
 float elec_power_spectrum_density(const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     return spectral_matrix[ASM_COMP_E1E1] + spectral_matrix[ASM_COMP_E2E2];
 }
 
@@ -68,6 +71,7 @@ inline float mag_power_spectrum_density(const float* const spectral_matrix)
     __attribute__((always_inline));
 inline float mag_power_spectrum_density(const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     return spectral_matrix[ASM_COMP_B1B1] + spectral_matrix[ASM_COMP_B2B2]
         + spectral_matrix[ASM_COMP_B3B3];
 }
@@ -90,6 +94,7 @@ inline normal_wave_vector_t normal_wave_vector(const float* const spectral_matri
     __attribute__((always_inline));
 normal_wave_vector_t normal_wave_vector(const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     const float ab = sqrtf(square(spectral_matrix[ASM_COMP_B1B2_imag])
         + square(spectral_matrix[ASM_COMP_B1B3_imag])
         + square(spectral_matrix[ASM_COMP_B2B3_imag]));
@@ -122,6 +127,7 @@ inline float degree_of_polarization(const float mag_PSD, const float* const spec
     __attribute__((always_inline));
 float degree_of_polarization(const float mag_PSD, const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     const float B_square_trace = square(spectral_matrix[ASM_COMP_B1B1])
         + square(spectral_matrix[ASM_COMP_B2B2]) + square(spectral_matrix[ASM_COMP_B3B3])
         + 2.f
@@ -141,6 +147,7 @@ inline compressed_complex X_poynting_vector(const float* const spectral_matrix)
     __attribute__((always_inline));
 compressed_complex X_poynting_vector(const float* const spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     // E1B3 - E2B2
     compressed_complex X_PV;
     X_PV.real = spectral_matrix[ASM_COMP_B3E1] - spectral_matrix[ASM_COMP_B2E2];
@@ -167,6 +174,7 @@ inline compressed_complex phase_velocity_estimator(const float* const spectral_m
 compressed_complex phase_velocity_estimator(
     const float* const spectral_matrix, const normal_wave_vector_t nvec)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     /*
     VPHI = abs(NEBX) * sign( Re[NEBX] ) / BXBX
 with:
@@ -219,6 +227,7 @@ inline uint8_t* encode_nvec_z_ellip_dop(const float nvec_z, const float elliptic
 uint8_t* encode_nvec_z_ellip_dop(
     const float nvec_z, const float ellipticity, const float DOP, uint8_t* const bp_buffer_frame)
 {
+    DEBUG_CHECK_PTR(bp_buffer_frame);
     const str_float_t z = { .value = nvec_z };
 #ifdef LFR_BIG_ENDIAN
     union __attribute__((__packed__))
@@ -255,6 +264,7 @@ inline uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp1_buffer_
     __attribute__((always_inline));
 uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp1_buffer_frame)
 {
+    DEBUG_CHECK_PTR(bp_buffer_frame);
     const str_uint16_t value_split = { .value = value };
     bp1_buffer_frame[0] = value_split.str.MSB;
     bp1_buffer_frame[1] = value_split.str.LSB;
@@ -266,6 +276,7 @@ inline uint8_t* encode_float_uint8_t(float value, uint8_t* const bp_buffer_frame
     __attribute__((always_inline));
 uint8_t* encode_float_uint8_t(float value, uint8_t* const bp_buffer_frame)
 {
+    DEBUG_CHECK_PTR(bp_buffer_frame);
     bp_buffer_frame[0] = (uint8_t)(value * 127.5 + 128);
     return bp_buffer_frame + 1;
 }
@@ -278,6 +289,7 @@ uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave
     const float ellipticity, const float DOP, const compressed_complex X_PV,
     const compressed_complex VPHI, uint8_t* bp1_buffer_frame)
 {
+    DEBUG_CHECK_PTR(bp_buffer_frame);
     {
         bp1_buffer_frame = encode_uint16_t(to_custom_float_6_10(elec_PSD), bp1_buffer_frame);
     }
@@ -301,6 +313,8 @@ uint8_t* encode_BP1(const float mag_PSD, const float elec_PSD, const normal_wave
 void compute_BP1(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
     uint8_t* bp1_buffer)
 {
+    DEBUG_CHECK_PTR(spectral_matrices);
+    DEBUG_CHECK_PTR(bp1_buffer);
     const float* spectral_matrix_ptr = spectral_matrices;
     uint8_t* bp1_buffer_frame = bp1_buffer;
     for (int i = 0; i < spectral_matrices_count; i++)
@@ -324,6 +338,7 @@ inline uint8_t* _compute_BP2_cross_component(uint8_t* const bp2_frame, float aut
 uint8_t* _compute_BP2_cross_component(
     uint8_t* const bp2_frame, float auto1, float auto2, float cross_re, float cross_imag)
 {
+    DEBUG_CHECK_PTR(bp2_frame);
     const float aux = sqrtf(auto1 * auto2);
     if (aux != 0.f)
     {
@@ -341,6 +356,9 @@ uint8_t* _compute_BP2_cross_component(
 void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_matrices_count,
     uint8_t* bp2_buffer)
 {
+    DEBUG_CHECK_PTR(spectral_matrices);
+    DEBUG_CHECK_PTR(bp2_buffer);
+
     const float* sm_ptr = spectral_matrices;
     uint8_t* bp2_frame = bp2_buffer;
     for (int i = 0; i < spectral_matrices_count; i++)

@@ -109,6 +109,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
     BOOT_PRINTF("in AVF1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     status = get_message_queue_id_prc1(&queue_id_prc1);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in AVF1 *** ERR get_message_queue_id_prc1 %d\n", status);
@@ -116,8 +117,9 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
 
     while (1)
     {
-        rtems_event_receive(
+        status = rtems_event_receive(
             RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        DEBUG_CHECK_STATUS(status);
 
         //****************************************
         // initialize the mesage for the MATR task
@@ -129,6 +131,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
         //****************************************
 
         nodeForAveraging = getRingNodeForAveraging(1);
+        DEBUG_CHECK_PTR(nodeForAveraging);
         for (int i = NB_SM_BEFORE_AVF0_F1; i > 0; i--)
         {
             ring_node_tab[i - 1] = nodeForAveraging;
@@ -153,6 +156,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
             nb_sbm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_burst_sbm_f1 = current_ring_node_asm_burst_sbm_f1->next;
+            DEBUG_CHECK_PTR(current_ring_node_asm_burst_sbm_f1);
             if (lfrCurrentMode == LFR_MODE_BURST)
             {
                 msgForPRC.event = msgForPRC.event | RTEMS_EVENT_BURST_BP1_F1;
@@ -181,6 +185,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
             nb_norm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_norm_f1 = current_ring_node_asm_norm_f1->next;
+            DEBUG_CHECK_PTR(current_ring_node_asm_norm_f1);
             if ((lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                 || (lfrCurrentMode == LFR_MODE_SBM2))
             {
@@ -214,6 +219,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
         {
             status
                 = rtems_message_queue_send(queue_id_prc1, (char*)&msgForPRC, sizeof (asm_msg));
+            DEBUG_CHECK_STATUS(status);
         }
 
         if (status != RTEMS_SUCCESSFUL)
@@ -252,6 +258,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     init_ring(
         ring_to_send_asm_f1, NB_RING_NODES_ASM_F1, (volatile int*)buffer_asm_f1, TOTAL_SIZE_SM);
     current_ring_node_to_send_asm_f1 = ring_to_send_asm_f1;
+    DEBUG_CHECK_PTR(current_ring_node_to_send_asm_f1);
 
     //*************
     // NORM headers
@@ -283,11 +290,13 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     }
 
     status = get_message_queue_id_send(&queue_id_send);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc1(&queue_id_q_p1);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_prc1 %d\n", status);
@@ -300,8 +309,10 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
         status = rtems_message_queue_receive(queue_id_q_p1, incomingData,
             &size, //************************************
             RTEMS_WAIT, RTEMS_NO_TIMEOUT); // wait for a message coming from AVF0
+        DEBUG_CHECK_STATUS(status);
 
         incomingMsg = (asm_msg*)incomingData;
+        DEBUG_CHECK_PTR(incomingMsg);
 
         //***********
         //***********
@@ -409,6 +420,7 @@ rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             // 3) send the spectral matrix packets
             status = rtems_message_queue_send(
                 queue_id_send, &current_ring_node_to_send_asm_f1, sizeof(ring_node*));
+            DEBUG_CHECK_STATUS(status);
 
             // change asm ring node
             current_ring_node_to_send_asm_f1 = current_ring_node_to_send_asm_f1->next;

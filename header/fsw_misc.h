@@ -3,14 +3,14 @@
 
 #include <rtems.h>
 
-#include <grspw.h>
+//#include <grspw.h>
 
 #include <stdio.h>
 
 
-#include "fsw_params.h"
-#include "fsw_spacewire.h"
-#include "lfr_cpu_usage_report.h"
+#include "lfr_common_headers/fsw_params.h"
+//#include "fsw_spacewire.h"
+//#include "lfr_cpu_usage_report.h"
 
 #define WATCHDOG_LOOP_PRINTF 10
 #define WATCHDOG_LOOP_DEBUG  3

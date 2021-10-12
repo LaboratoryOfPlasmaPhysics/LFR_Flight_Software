@@ -8,7 +8,12 @@
 #include <stdlib.h> // abs() is in the stdlib
 
 #include "ASM/spectralmatrices.h"
-#include "fsw_params.h"
+#include "lfr_common_headers/fsw_params.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #define SBM_COEFF_PER_NORM_COEFF 2
 
@@ -62,5 +67,9 @@ extern rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id);
 
 void init_kcoeff_sbm_from_kcoeff_norm(
     float* input_kcoeff, float* output_kcoeff, unsigned char nb_bins_norm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FSW_PROCESSING_H_INCLUDED

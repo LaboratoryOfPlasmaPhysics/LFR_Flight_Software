@@ -33,9 +33,9 @@
  */
 
 #include "avf2_prc2.h"
-#include "mitigations/PAS_filtering.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
+#include "mitigations/PAS_filtering.h"
 
 typedef struct
 {
@@ -49,8 +49,8 @@ nb_sm_before_bp_asm_f2 nb_sm_before_f2 = { 0 };
 
 //***
 // F2
-ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { {0} };
-ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { {0} };
+ring_node_asm asm_ring_norm_f2[NB_RING_NODES_ASM_NORM_F2] = { { 0 } };
+ring_node ring_to_send_asm_f2[NB_RING_NODES_ASM_F2] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
 int buffer_asm_f2[NB_RING_NODES_ASM_F2 * TOTAL_SIZE_SM] = { 0 };
@@ -90,10 +90,12 @@ rtems_task avf2_task(rtems_task_argument argument)
                       // transmissions
     ASM_generic_init_ring(asm_ring_norm_f2, NB_RING_NODES_ASM_NORM_F2);
     current_ring_node_asm_norm_f2 = asm_ring_norm_f2;
+    DEBUG_CHECK_PTR(current_ring_node_asm_norm_f2);
 
     BOOT_PRINTF("in AVF2 ***\n");
 
     status = get_message_queue_id_prc2(&queue_id_prc2);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in AVF2 *** ERR get_message_queue_id_prc2 %d\n", status);
@@ -101,8 +103,9 @@ rtems_task avf2_task(rtems_task_argument argument)
 
     while (1)
     {
-        rtems_event_receive(
+        status = rtems_event_receive(
             RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        DEBUG_CHECK_STATUS(status);
 
         //****************************************
         // initialize the mesage for the MATR task
@@ -130,6 +133,7 @@ rtems_task avf2_task(rtems_task_argument argument)
             nb_norm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_norm_f2 = current_ring_node_asm_norm_f2->next;
+            DEBUG_CHECK_PTR(current_ring_node_asm_norm_f2);
             if ((lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                 || (lfrCurrentMode == LFR_MODE_SBM2))
             {
@@ -161,8 +165,8 @@ rtems_task avf2_task(rtems_task_argument argument)
         // send the message to PRC2
         if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
-            status
-                = rtems_message_queue_send(queue_id_prc2, (char*)&msgForPRC, sizeof (asm_msg));
+            status = rtems_message_queue_send(queue_id_prc2, (char*)&msgForPRC, sizeof(asm_msg));
+            DEBUG_CHECK_STATUS(status);
         }
 
         if (status != RTEMS_SUCCESSFUL)
@@ -197,6 +201,7 @@ rtems_task prc2_task(rtems_task_argument argument)
     init_ring(
         ring_to_send_asm_f2, NB_RING_NODES_ASM_F2, (volatile int*)buffer_asm_f2, TOTAL_SIZE_SM);
     current_ring_node_to_send_asm_f2 = ring_to_send_asm_f2;
+    DEBUG_CHECK_PTR(current_ring_node_to_send_asm_f2);
 
     //*************
     // NORM headers
@@ -206,11 +211,13 @@ rtems_task prc2_task(rtems_task_argument argument)
         PACKET_LENGTH_TM_LFR_SCIENCE_NORM_BP2_F2, NB_BINS_COMPRESSED_SM_F2);
 
     status = get_message_queue_id_send(&queue_id_send);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC2 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc2(&queue_id_q_p2);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC2 *** ERR get_message_queue_id_prc2 %d\n", status);
@@ -223,8 +230,10 @@ rtems_task prc2_task(rtems_task_argument argument)
         status = rtems_message_queue_receive(queue_id_q_p2, incomingData,
             &size, //************************************
             RTEMS_WAIT, RTEMS_NO_TIMEOUT); // wait for a message coming from AVF2
+        DEBUG_CHECK_STATUS(status);
 
         incomingMsg = (asm_msg*)incomingData;
+        DEBUG_CHECK_PTR(incomingMsg);
 
         DEBUG_PRINTF("Before SM_calibrate_and_reorder_f2");
         SM_calibrate_and_reorder_f2(incomingMsg->norm->matrix, asm_f2_patched_norm);
@@ -286,9 +295,11 @@ rtems_task prc2_task(rtems_task_argument argument)
             // 3) send the spectral matrix packets
             status = rtems_message_queue_send(
                 queue_id_send, &current_ring_node_to_send_asm_f2, sizeof(ring_node*));
+            DEBUG_CHECK_STATUS(status);
 
             // change asm ring node
             current_ring_node_to_send_asm_f2 = current_ring_node_to_send_asm_f2->next;
+            DEBUG_CHECK_PTR(current_ring_node_to_send_asm_f2);
         }
 
         update_queue_max_count(queue_id_q_p2, &hk_lfr_q_p2_fifo_size_max);
@@ -309,6 +320,9 @@ void reset_nb_sm_f2(void)
 void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned int nbAverageNormF2,
     asm_msg* msgForMATR)
 {
+    DEBUG_CHECK_PTR(averaged_spec_mat_f2);
+    DEBUG_CHECK_PTR(ring_node);
+    DEBUG_CHECK_PTR(msgForMATR);
     DEBUG_PRINTF("in SM_average_f2");
     float sm_bin;
     unsigned int i;

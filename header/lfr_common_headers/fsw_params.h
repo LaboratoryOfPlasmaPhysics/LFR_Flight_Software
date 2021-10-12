@@ -25,13 +25,16 @@
 #ifndef FSW_PARAMS_H_INCLUDED
 #define FSW_PARAMS_H_INCLUDED
 
-
 #include "ccsds_types.h"
 #include "fsw_params_nb_bytes.h"
 #include "fsw_params_processing.h"
 #include "stdint.h"
 #include "tm_byte_positions.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 /*
  * RTEMS CONFIG
  *
@@ -444,5 +447,9 @@ typedef struct
 #define HALF_ACQUISITION_DURATION_F0 341 // 256 / 24576 * 65536 / 2
 #define HALF_ACQUISITION_DURATION_F1 2048 // 256 /  4096 * 65536 / 2
 #define HALF_ACQUISITION_DURATION_F2 32768 // 256 /   256 * 65536 / 2
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FSW_PARAMS_H_INCLUDED

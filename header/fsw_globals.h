@@ -22,6 +22,7 @@
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <rtems.h>
 #include "lfr_common_headers/fsw_params.h"
 
 extern filterPar_t filterPar;
@@ -30,5 +31,5 @@ extern rw_f_t rw_f;
 extern Packet_TM_LFR_HK_t housekeeping_packet;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 extern fbins_masks_t fbins_masks;
-
+extern rtems_id Task_id[];
 

@@ -1,11 +1,11 @@
 #ifndef FSW_INIT_H_INCLUDED
 #define FSW_INIT_H_INCLUDED
 
-#include <leon.h>
+//#include <leon.h>
 #include <rtems.h>
 
 #include "fsw_misc.h"
-#include "fsw_params.h"
+#include "lfr_common_headers/fsw_params.h"
 #include "fsw_processing.h"
 
 #include "fsw_globals.h"

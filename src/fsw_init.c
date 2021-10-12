@@ -939,12 +939,14 @@ rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id)
  */
 void update_queue_max_count(rtems_id queue_id, unsigned char* fifo_size_max)
 {
+    DEBUG_CHECK_PTR(fifo_size_max);
     uint32_t count;
     rtems_status_code status;
 
     count = 0;
 
     status = rtems_message_queue_get_number_pending(queue_id, &count);
+    DEBUG_CHECK_STATUS(status);
 
     count = count + 1;
 
@@ -979,6 +981,8 @@ void update_queue_max_count(rtems_id queue_id, unsigned char* fifo_size_max)
 void init_ring(
     ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize)
 {
+    DEBUG_CHECK_PTR(ring);
+    DEBUG_CHECK_PTR(buffer);
     unsigned char i;
 
     //***************

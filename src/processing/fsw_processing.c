@@ -32,7 +32,7 @@
  *
  */
 
-#include "fsw_processing.h"
+#include "processing/fsw_processing.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
 #include "fsw_init.h"
@@ -371,6 +371,8 @@ void SM_init_rings(void)
 
 void ASM_generic_init_ring(ring_node_asm* ring, unsigned char nbNodes)
 {
+    DEBUG_CHECK_PTR(ring);
+
     unsigned char i;
 
     ring[nbNodes - 1].next = (ring_node_asm*)&ring[0];
@@ -398,6 +400,7 @@ void SM_reset_current_ring_nodes(void)
 void BP_init_header(bp_packet* packet, unsigned int apid, unsigned char sid,
     unsigned int packetLength, unsigned char blkNr)
 {
+    DEBUG_CHECK_PTR(packet);
     packet->targetLogicalAddress = CCSDS_DESTINATION_ID;
     packet->protocolIdentifier = CCSDS_PROTOCOLE_ID;
     packet->reserved = INIT_CHAR;
@@ -493,7 +496,7 @@ void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
      * BURST paquets are sent everytime.
      *
      */
-
+    DEBUG_CHECK_PTR(data);
     rtems_status_code status;
 
     // SEND PACKET
@@ -502,6 +505,7 @@ void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
     if (time_management_regs->coarse_time >= lastValidEnterModeTime)
     {
         status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
+        DEBUG_CHECK_STATUS(status);
         if (status != RTEMS_SUCCESSFUL)
         {
             LFR_PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status);

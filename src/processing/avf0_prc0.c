@@ -119,8 +119,9 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
 
     while (1)
     {
-        rtems_event_receive(
+        status = rtems_event_receive(
             RTEMS_EVENT_0, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT0
+        DEBUG_CHECK_STATUS(status);
 
         //****************************************
         // initialize the mesage for the MATR task
@@ -132,6 +133,7 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
         //****************************************
 
         nodeForAveraging = getRingNodeForAveraging(0);
+        DEBUG_CHECK_PTR(nodeForAveraging);
         for (int i = NB_SM_BEFORE_AVF0_F1 - 1; i >= 0; i--)
         {
             ring_node_tab[i] = nodeForAveraging;
@@ -156,6 +158,7 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
             nb_sbm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_burst_sbm_f0 = current_ring_node_asm_burst_sbm_f0->next;
+            DEBUG_CHECK_PTR(current_ring_node_asm_burst_sbm_f0);
             if (lfrCurrentMode == LFR_MODE_BURST)
             {
                 msgForPRC.event = msgForPRC.event | RTEMS_EVENT_BURST_BP1_F0;
@@ -184,6 +187,7 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
             nb_norm_bp1 = 0;
             // set another ring for the ASM storage
             current_ring_node_asm_norm_f0 = current_ring_node_asm_norm_f0->next;
+            DEBUG_CHECK_PTR(current_ring_node_asm_norm_f0);
             if ((lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
                 || (lfrCurrentMode == LFR_MODE_SBM2))
             {
@@ -217,6 +221,7 @@ rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
         {
             status
                 = rtems_message_queue_send(queue_id_prc0, (char*)&msgForPRC, sizeof (asm_msg));
+            DEBUG_CHECK_STATUS(status);
         }
 
         if (status != RTEMS_SUCCESSFUL)
@@ -255,6 +260,7 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
     init_ring(
         ring_to_send_asm_f0, NB_RING_NODES_ASM_F0, (volatile int*)buffer_asm_f0, TOTAL_SIZE_SM);
     current_ring_node_to_send_asm_f0 = ring_to_send_asm_f0;
+    DEBUG_CHECK_PTR(current_ring_node_to_send_asm_f0);
 
     //*************
     // NORM headers
@@ -293,11 +299,13 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
     }
 
     status = get_message_queue_id_send(&queue_id);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC0 *** ERR get_message_queue_id_send %d\n", status);
     }
     status = get_message_queue_id_prc0(&queue_id_q_p0);
+    DEBUG_CHECK_STATUS(status);
     if (status != RTEMS_SUCCESSFUL)
     {
         LFR_PRINTF("in PRC0 *** ERR get_message_queue_id_prc0 %d\n", status);
@@ -310,8 +318,10 @@ rtems_task prc0_task(rtems_task_argument lfrRequestedMode)
         status = rtems_message_queue_receive(queue_id_q_p0, incomingData,
             &size, //************************************
             RTEMS_WAIT, RTEMS_NO_TIMEOUT); // wait for a message coming from AVF0
+        DEBUG_CHECK_STATUS(status);
 
         incomingMsg = (asm_msg*)incomingData;
+        DEBUG_CHECK_PTR(incomingMsg);
 
         //****************
         //****************

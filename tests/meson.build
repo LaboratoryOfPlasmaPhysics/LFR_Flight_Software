@@ -27,28 +27,11 @@ if get_option('with-pywrapper')
                     dependencies: [lfr_dep, lfr_bp_dep, pybind11_dep, python3.dependency(embed:true, native:true)])
 
 
-
-    tests ={
-        'helpers':
-        {
-            'sources': ['helpers/main.cpp'],
-            'native': true,
-            'dependencies': [catch_dep, lfr_dep],
-            'cpp_args': ['-std=c++17']
-        }
-    }
-
-
     test_scripts = {
         'SM_calibration':'SM_calibration/test.py'
     }
 
     if get_option('with-tests')
-        foreach test_name,test_params:tests
-            test_exe = executable(test_name, kwargs: test_params, extra_files: 'SM_calibration/test.py')
-            test('test-' + test_name, test_exe)
-        endforeach
-
         foreach test_name,test_script:test_scripts
             test(test_name, python3,
                 args:[meson.current_source_dir()+'/'+test_script, '--verbose'],
@@ -60,3 +43,43 @@ endif
 library('tests_fake',[],
         native: true,
         extra_files:['SM_calibration/test.py'])
+
+if get_option('with-tests')
+    tests ={
+        'iir_filter':
+        {
+            'sources': ['iir_filter/main.cpp'],
+            'native': true,
+            'dependencies': [catch_dep, lfr_dep],
+            'cpp_args': ['-std=c++17']
+        },
+        'basic_parameters':
+        {
+            'sources': ['basic_parameters/main.cpp'],
+            'native': true,
+            'dependencies': [catch_dep, lfr_dep, lfr_bp_dep],
+            'cpp_args': ['-std=c++17', build_machine_endian_def],
+            'c_args': [build_machine_endian_def]
+        },
+        'spectral_matrices':
+        {
+            'sources': ['spectral_matrices/main.cpp'],
+            'native': true,
+            'dependencies': [catch_dep, lfr_dep],
+            'cpp_args': ['-std=c++17', build_machine_endian_def],
+            'c_args': [build_machine_endian_def]
+        },
+        'helpers':
+        {
+            'sources': ['helpers/main.cpp'],
+            'native': true,
+            'dependencies': [catch_dep, lfr_dep],
+            'cpp_args': ['-std=c++17']
+        }
+    }
+
+    foreach test_name,test_params:tests
+        test_exe = executable(test_name, kwargs: test_params, extra_files: 'SM_calibration/test.py')
+        test('test-' + test_name, test_exe)
+    endforeach
+endif

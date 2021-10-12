@@ -25,10 +25,12 @@
 #include "mitigations/reaction_wheel_filtering.h"
 #include "processing/ASM/spectralmatrices.h"
 #include "processing/calibration_matrices.h"
+#include "fsw_debug.h"
 
 inline void clear_spectral_matrix(float* spectral_matrix) __attribute__((always_inline));
 void clear_spectral_matrix(float* spectral_matrix)
 {
+    DEBUG_CHECK_PTR(spectral_matrix);
     for (int i = 0; i < TOTAL_SIZE_SM; i++)
     {
         spectral_matrix[i] = 0.f;
@@ -39,6 +41,11 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
     asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice, unsigned int stop_indice)
 {
+    DEBUG_CHECK_PTR(averaged_spec_mat_NORM);
+    DEBUG_CHECK_PTR(averaged_spec_mat_SBM);
+    DEBUG_CHECK_PTR(ring_node_tab);
+    DEBUG_CHECK_PTR(msgForMATR);
+
     unsigned int numberOfValidSM = 0U;
     int* valid_matrices[8];
     for (int SM_index = 0; SM_index < NB_SM_BEFORE_AVF0_F1; SM_index++)
@@ -105,6 +112,8 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
     const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
     const unsigned char channel)
 {
+    DEBUG_CHECK_PTR(averaged_spec_mat);
+    DEBUG_CHECK_PTR(compressed_spec_mat);
     //*************
     // input format
     // matr0[0 .. 24]      matr1[0 .. 24]       .. matr127[0 .. 24]
@@ -156,6 +165,8 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
 void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normalized,
     const float divider, unsigned int start_indice, unsigned int stop_indice)
 {
+    DEBUG_CHECK_PTR(averaged_spec_mat);
+    DEBUG_CHECK_PTR(averaged_spec_mat_normalized);
     // BUILD DATA
     if (divider == 0.)
     {
@@ -196,6 +207,12 @@ Note that this code is generated with LFR_Flight_Software/python_scripts/Matrix_
 void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matrix,
     float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
 {
+    DEBUG_CHECK_PTR(_intermediary);
+    DEBUG_CHECK_PTR(input_matrix);
+    DEBUG_CHECK_PTR(mag_transition_matrix);
+    DEBUG_CHECK_PTR(elec_transition_matrix);
+    DEBUG_CHECK_PTR(output_matrix);
+
     float* intermediary = (float*)_intermediary;
     intermediary[0] = input_matrix[0] * mag_transition_matrix[0]
         + input_matrix[1] * mag_transition_matrix[2] + input_matrix[3] * mag_transition_matrix[4]
@@ -495,6 +512,11 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices,
     float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
+    DEBUG_CHECK_PTR(intermediary);
+    DEBUG_CHECK_PTR(work_matrix);
+    DEBUG_CHECK_PTR(mag_calibration_matrices);
+    DEBUG_CHECK_PTR(elec_calibration_matrices);
+    DEBUG_CHECK_PTR(output_asm);
     output_asm += start_indice * NB_FLOATS_PER_SM;
     for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
     {
@@ -531,6 +553,8 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
 
 void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm)
 {
+    DEBUG_CHECK_PTR(input_asm);
+    DEBUG_CHECK_PTR(output_asm);
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f0,
@@ -540,6 +564,8 @@ void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm)
 
 void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm)
 {
+    DEBUG_CHECK_PTR(input_asm);
+    DEBUG_CHECK_PTR(output_asm);
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f1,
@@ -549,6 +575,8 @@ void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm)
 
 void SM_calibrate_and_reorder_f2(float* input_asm, float* output_asm)
 {
+    DEBUG_CHECK_PTR(input_asm);
+    DEBUG_CHECK_PTR(output_asm);
     static float work_matrix[NB_FLOATS_PER_SM];
     static _Complex float intermediary[25];
     SM_calibrate_and_reorder(intermediary, work_matrix, input_asm, mag_calibration_matrices_f2,

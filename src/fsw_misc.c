@@ -36,6 +36,8 @@
 #include "processing/iir_filter.h"
 #include "fsw_watchdog.h"
 #include "fsw_housekeeping.h"
+#include "fsw_globals.h"
+#include "tc_tm/tc_handler.h"
 
 int16_t hk_lfr_sc_v_f3 = 0;
 int16_t hk_lfr_sc_e1_f3 = 0;

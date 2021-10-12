@@ -13,8 +13,7 @@
 
 #include "lfr_cpu_usage_report.h"
 #include "fsw_params.h"
-
-extern rtems_id Task_id[];
+#include "fsw_globals.h"
 
 unsigned char lfr_rtems_cpu_usage_report(void)
 {
