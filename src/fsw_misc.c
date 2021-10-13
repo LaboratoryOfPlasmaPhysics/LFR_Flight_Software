@@ -30,14 +30,14 @@
  */
 
 #include "fsw_misc.h"
-#include <stdlib.h>
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
-#include "processing/iir_filter.h"
-#include "fsw_watchdog.h"
-#include "fsw_housekeeping.h"
 #include "fsw_globals.h"
+#include "fsw_housekeeping.h"
+#include "fsw_watchdog.h"
+#include "processing/iir_filter.h"
 #include "tc_tm/tc_handler.h"
+#include <stdlib.h>
 
 int16_t hk_lfr_sc_v_f3 = 0;
 int16_t hk_lfr_sc_e1_f3 = 0;
@@ -215,7 +215,8 @@ rtems_task hous_task(rtems_task_argument argument)
             housekeeping_packet.sy_lfr_common_parameters
                 = parameter_dump_packet.sy_lfr_common_parameters;
             encode_temperatures(&housekeeping_packet);
-            encode_f3_E_field(hk_lfr_sc_v_f3, hk_lfr_sc_e2_f3, hk_lfr_sc_e2_f3 , &housekeeping_packet);
+            encode_f3_E_field(
+                hk_lfr_sc_v_f3, hk_lfr_sc_e2_f3, hk_lfr_sc_e2_f3, &housekeeping_packet);
             encode_cpu_load(&housekeeping_packet);
 
             hk_lfr_le_me_he_update();
@@ -238,7 +239,6 @@ rtems_task hous_task(rtems_task_argument argument)
 }
 
 
-
 /**
  * @brief avgv_task pruduces HK rate elctrical field from F3 data
  * @param argument
@@ -248,7 +248,6 @@ rtems_task avgv_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
 
-#define MOVING_AVERAGE 16
     rtems_status_code status;
     static int old_v = 0;
     static int old_e1 = 0;
@@ -269,49 +268,35 @@ rtems_task avgv_task(rtems_task_argument argument)
     if (rtems_rate_monotonic_ident(name_avgv_rate_monotonic, &AVGV_id) != RTEMS_SUCCESSFUL)
     {
         status = rtems_rate_monotonic_create(name_avgv_rate_monotonic, &AVGV_id);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("rtems_rate_monotonic_create failed with status of %d\n", status);
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     status = rtems_rate_monotonic_cancel(AVGV_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("ERR *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id) ***code: %d\n", status);
-    }
-    else
-    {
-        DEBUG_PRINTF("OK  *** in AVGV *** rtems_rate_monotonic_cancel(AVGV_id)\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     while (1)
     { // launch the rate monotonic task
         status = rtems_rate_monotonic_period(AVGV_id, AVGV_PERIOD);
-        if (status != RTEMS_SUCCESSFUL)
+        DEBUG_CHECK_STATUS(status);
+        current_v = waveform_picker_regs->v;
+        current_e1 = waveform_picker_regs->e1;
+        current_e2 = waveform_picker_regs->e2;
+        // this tests is weak but the only way to detect a new sample
+        // it assumes that there is enough noise to flip at least one bit on v, E1 or E2
+        if ((current_v != old_v) || (current_e1 != old_e1) || (current_e2 != old_e2))
         {
-            LFR_PRINTF("in AVGV *** ERR period: %d\n", status);
-        }
-        else
-        {
-            current_v = waveform_picker_regs->v;
-            current_e1 = waveform_picker_regs->e1;
-            current_e2 = waveform_picker_regs->e2;
-            if ((current_v != old_v) || (current_e1 != old_e1) || (current_e2 != old_e2))
-            {
-                average_v = filter(current_v, &ctx_v);
-                average_e1 = filter(current_e1, &ctx_e1);
-                average_e2 = filter(current_e2, &ctx_e2);
+            average_v = filter(current_v, &ctx_v);
+            average_e1 = filter(current_e1, &ctx_e1);
+            average_e2 = filter(current_e2, &ctx_e2);
 
-                // update int16 values
-                hk_lfr_sc_v_f3 = (int16_t)average_v;
-                hk_lfr_sc_e1_f3 = (int16_t)average_e1;
-                hk_lfr_sc_e2_f3 = (int16_t)average_e2;
-            }
-            old_v = current_v;
-            old_e1 = current_e1;
-            old_e2 = current_e2;
+            // update int16 values
+            hk_lfr_sc_v_f3 = (int16_t)average_v;
+            hk_lfr_sc_e1_f3 = (int16_t)average_e1;
+            hk_lfr_sc_e2_f3 = (int16_t)average_e2;
         }
+        old_v = current_v;
+        old_e1 = current_e1;
+        old_e2 = current_e2;
     }
 
     LFR_PRINTF("in AVGV *** deleting task\n");
@@ -450,8 +435,3 @@ rtems_task calibration_sweep_task(rtems_task_argument unused)
 
 //*****************************
 // init housekeeping parameters
-
-
-
-
-
