@@ -21,11 +21,11 @@
 --                   Contact : Alexis Jeandet
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
+#include "processing/ASM/spectralmatrices.h"
+#include "fsw_debug.h"
 #include "mitigations/PAS_filtering.h"
 #include "mitigations/reaction_wheel_filtering.h"
-#include "processing/ASM/spectralmatrices.h"
 #include "processing/calibration_matrices.h"
-#include "fsw_debug.h"
 
 inline void clear_spectral_matrix(float* spectral_matrix) __attribute__((always_inline));
 void clear_spectral_matrix(float* spectral_matrix)
@@ -106,6 +106,74 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     }
 }
 
+void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned int nbAverageNormF2,
+    asm_msg* msgForMATR)
+{
+    DEBUG_CHECK_PTR(averaged_spec_mat_f2);
+    DEBUG_CHECK_PTR(ring_node);
+    DEBUG_CHECK_PTR(msgForMATR);
+    DEBUG_PRINTF("in SM_average_f2");
+    float sm_bin;
+    unsigned int i;
+    unsigned char keepMatrix;
+
+    // test acquisitionTime validity
+    keepMatrix = acquisitionTimeIsValid(ring_node->coarseTime, ring_node->fineTime, CHANNELF2);
+
+    for (i = 0; i < TOTAL_SIZE_SM; i++)
+    {
+        sm_bin = ((int*)(ring_node->buffer_address))[i];
+        if (nbAverageNormF2 == 0) // average initialization
+        {
+            if (keepMatrix == MATRIX_IS_NOT_POLLUTED) // keep the matrix and add it to the average
+            {
+                averaged_spec_mat_f2[i] = sm_bin;
+            }
+            else // drop the matrix and initialize the average
+            {
+                averaged_spec_mat_f2[i] = INIT_FLOAT;
+            }
+            msgForMATR->coarseTimeNORM = ring_node->coarseTime;
+            msgForMATR->fineTimeNORM = ring_node->fineTime;
+        }
+        else
+        {
+            if (keepMatrix == MATRIX_IS_NOT_POLLUTED) // keep the matrix and add it to the average
+            {
+                averaged_spec_mat_f2[i] = (averaged_spec_mat_f2[i] + sm_bin);
+            }
+            else
+            {
+                // nothing to do, the matrix is not valid
+            }
+        }
+    }
+
+    if (keepMatrix == MATRIX_IS_NOT_POLLUTED)
+    {
+        if (nbAverageNormF2 == 0)
+        {
+            msgForMATR->numberOfSMInASMNORM = 1;
+        }
+        else
+        {
+            msgForMATR->numberOfSMInASMNORM++;
+        }
+    }
+    else
+    {
+        if (nbAverageNormF2 == 0)
+        {
+            msgForMATR->numberOfSMInASMNORM = 0;
+        }
+        else
+        {
+            // nothing to do
+        }
+    }
+    DEBUG_PRINTF("leaving SM_average_f2");
+}
+
 // TODO add unit test
 void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* compressed_spec_mat,
     const float divider, const unsigned char nbBinsCompressedMatrix,
@@ -127,10 +195,9 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
     // Just zero the whole compressed ASM
     // has to be done either way if divider==0. or to initialize average
     {
-        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; _++)
+        for (int i = 0; i < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; i++)
         {
-            *compressed_spec_mat = 0.;
-            compressed_spec_mat++;
+            compressed_spec_mat[i] = 0.;
         }
     }
     if (divider != 0.f)
@@ -153,11 +220,9 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
                 freq_offset++;
             }
         }
-        compressed_asm_ptr = compressed_spec_mat;
-        for (int _ = 0; _ < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; _++)
+        for (int i = 0; i < nbBinsCompressedMatrix * NB_FLOATS_PER_SM; i++)
         {
-            *compressed_asm_ptr = *compressed_asm_ptr / (divider * nbBinsToAverage);
-            compressed_asm_ptr++;
+            compressed_spec_mat[i] = compressed_spec_mat[i] / (divider * nbBinsToAverage);
         }
     }
 }
@@ -170,14 +235,16 @@ void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normali
     // BUILD DATA
     if (divider == 0.)
     {
-        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
+        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM;
+             i++)
         {
             averaged_spec_mat_normalized[i] = 0.;
         }
     }
     else
     {
-        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM; i++)
+        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM;
+             i++)
         {
             averaged_spec_mat_normalized[i] = averaged_spec_mat[i] / divider;
         }
@@ -518,7 +585,8 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     DEBUG_CHECK_PTR(elec_calibration_matrices);
     DEBUG_CHECK_PTR(output_asm);
     output_asm += start_indice * NB_FLOATS_PER_SM;
-    for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice; frequency_offset++)
+    for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice;
+         frequency_offset++)
     {
         float* out_ptr = work_matrix;
         float* in_ptr = input_asm + frequency_offset;

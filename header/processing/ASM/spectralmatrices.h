@@ -62,6 +62,9 @@ extern "C"
         asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice,
         unsigned int stop_indice);
 
+    void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned int nbAverageNormF2,
+        asm_msg* msgForMATR);
+
     void ASM_compress_divide_and_mask(const float* const averaged_spec_mat,
         float* compressed_spec_mat, const float divider, const unsigned char nbBinsCompressedMatrix,
         const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
