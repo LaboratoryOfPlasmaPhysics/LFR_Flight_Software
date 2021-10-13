@@ -18,12 +18,10 @@ SCENARIO("F0/F1 SM averaging", "[]")
     ring_node_asm asm_sbm;
     ring_node_asm asm_norm;
     asm_msg msgForPRC;
-    unsigned int nb_norm_bp1 = 0;
-    unsigned int nb_sbm_bp1 = 0;
 
     GIVEN("some random SMs at F0")
     {
-        THEN("LFR should be able to compute BP1 without crash")
+        THEN("LFR should be able to compute SM average @F0 without crash")
         {
             ring_node* nodeForAveraging = getRingNodeForAveraging(0);
             for (int i = NB_SM_BEFORE_AVF0_F1 - 1; i >= 0; i--)
@@ -31,13 +29,18 @@ SCENARIO("F0/F1 SM averaging", "[]")
                 ring_node_tab[i] = nodeForAveraging;
                 nodeForAveraging = nodeForAveraging->previous;
             }
-            SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
-                &msgForPRC, 0, ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
+            for (int i = 0; i < 8; i++)
+            {
+                unsigned int nb_norm_bp1 = i;
+                unsigned int nb_sbm_bp1 = i;
+                SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
+                    &msgForPRC, 0, ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
+            }
         }
     }
     GIVEN("some random SMs at F1")
     {
-        THEN("LFR should be able to compute BP1 without crash")
+        THEN("LFR should be able to compute SM average @F1 without crash")
         {
             ring_node* nodeForAveraging = getRingNodeForAveraging(1);
             for (int i = NB_SM_BEFORE_AVF0_F1 - 1; i >= 0; i--)
@@ -45,8 +48,26 @@ SCENARIO("F0/F1 SM averaging", "[]")
                 ring_node_tab[i] = nodeForAveraging;
                 nodeForAveraging = nodeForAveraging->previous;
             }
-            SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
-                &msgForPRC, 0, ASM_F1_INDICE_START, ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
+
+            for (int i = 0; i < 8; i++)
+            {
+                unsigned int nb_norm_bp1 = i;
+                unsigned int nb_sbm_bp1 = i;
+                SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
+                    &msgForPRC, 0, ASM_F1_INDICE_START, ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
+            }
+        }
+    }
+    GIVEN("some random SMs at F2")
+    {
+        THEN("LFR should be able to compute SM average @F2 without crash")
+        {
+            ring_node* nodeForAveraging = getRingNodeForAveraging(1);
+            for (int i = 0; i < 8; i++)
+            {
+                unsigned int nb_norm_bp1 = i;
+                SM_average_f2(asm_norm.matrix, nodeForAveraging, nb_norm_bp1, &msgForPRC);
+            }
         }
     }
 }
