@@ -272,7 +272,7 @@ Note that this code is generated with LFR_Flight_Software/python_scripts/Matrix_
 */
 // clang-format on
 void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matrix,
-    float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix)
+    const float* mag_transition_matrix, const float* elec_transition_matrix, float* output_matrix)
 {
     DEBUG_CHECK_PTR(_intermediary);
     DEBUG_CHECK_PTR(input_matrix);
@@ -576,7 +576,7 @@ void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matri
 }
 
 void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix[NB_FLOATS_PER_SM],
-    float* input_asm, float* mag_calibration_matrices, float* elec_calibration_matrices,
+    float* input_asm, const float* mag_calibration_matrices, const float* elec_calibration_matrices,
     float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
     DEBUG_CHECK_PTR(intermediary);

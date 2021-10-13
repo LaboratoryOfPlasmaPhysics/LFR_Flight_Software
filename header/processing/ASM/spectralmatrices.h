@@ -51,7 +51,7 @@ extern "C"
     } asm_msg;
 
     void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
-        float* mag_transition_matrix, float* elec_transition_matrix, float* output_matrix);
+        const float* mag_transition_matrix, const float* elec_transition_matrix, float* output_matrix);
 
     void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm);
     void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm);

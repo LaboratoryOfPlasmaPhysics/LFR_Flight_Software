@@ -39,13 +39,13 @@
 #include <math.h>
 #include <string.h>
 
-#include "tc_tm/tc_load_dump_parameters.h"
-#include "processing/calibration_matrices.h"
-#include "fsw_misc.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
-#include "hw/lfr_regs.h"
 #include "fsw_housekeeping.h"
+#include "fsw_misc.h"
+#include "hw/lfr_regs.h"
+#include "processing/calibration_matrices.h"
+#include "tc_tm/tc_load_dump_parameters.h"
 
 
 DISABLE_MISSING_FIELD_INITIALIZER_WARNING
@@ -1875,6 +1875,8 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 #define DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX DATAFIELD_POS_SY_LFR_KCOEFF_1
 #define DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX                                                       \
     (DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX)
+#define DATAFIELD_POS_SY_LFR_EXTRA_CAL_MATRIX                                                      \
+    (DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX + NB_BYTES_ELEC_CAL_MATRIX)
 #if TOTAL_COMPRESSED_BIN_COUNT != NB_BINS_COMPRESSED_SM
     #error "TOTAL_COMPRESSED_BIN_COUNT must match NB_BINS_COMPRESSED_SM"
 #endif
@@ -1912,64 +1914,52 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     }
     else
     {
-        if (sy_lfr_kcoeff_frequency >= F2_COMPRESSED_BIN_OFFSET
-            && sy_lfr_kcoeff_frequency < NB_BINS_COMPRESSED_SM)
+        if (sy_lfr_kcoeff_frequency >= F2_COMPRESSED_BIN_OFFSET)
         {
-            matrix_index
-                = (sy_lfr_kcoeff_frequency - F2_COMPRESSED_BIN_OFFSET) * NB_BINS_TO_AVERAGE_ASM_F2
-                + ASM_F2_INDICE_START;
+            matrix_index = (sy_lfr_kcoeff_frequency - F2_COMPRESSED_BIN_OFFSET);
             mag_matrix_ptr = mag_calibration_matrices_f2
-                + (ASM_F2_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2);
             elec_matrix_ptr = elec_calibration_matrices_f2
-                + (ASM_F2_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2);
-            extra_mag_matrix_ptr = mag_calibration_matrices_f2
-                + ((ASM_F2_INDICE_START + ASM_F2_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
-            extra_elec_matrix_ptr = elec_calibration_matrices_f2
-                + ((ASM_F2_INDICE_START + ASM_F2_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
+            extra_mag_matrix_ptr
+                = mag_calibration_matrices_f2 + (ASM_F2_KEEP_BINS * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr
+                = elec_calibration_matrices_f2 + (ASM_F2_KEEP_BINS * NB_FLOATS_ELEC_CAL_MATRIX);
 
             if (sy_lfr_kcoeff_frequency == NB_BINS_COMPRESSED_SM - 1)
                 interpolate = yes;
         }
         else if (sy_lfr_kcoeff_frequency >= F1_COMPRESSED_BIN_OFFSET)
         {
-            matrix_index
-                = (sy_lfr_kcoeff_frequency - NB_BINS_COMPRESSED_SM_F0) * NB_BINS_TO_AVERAGE_ASM_F1
-                + ASM_F1_INDICE_START;
+            matrix_index = (sy_lfr_kcoeff_frequency - NB_BINS_COMPRESSED_SM_F0);
             mag_matrix_ptr = mag_calibration_matrices_f1
-                + (ASM_F1_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1);
             elec_matrix_ptr = elec_calibration_matrices_f1
-                + (ASM_F1_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1);
-            extra_mag_matrix_ptr = mag_calibration_matrices_f1
-                + ((ASM_F1_INDICE_START + ASM_F1_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
-            extra_elec_matrix_ptr = elec_calibration_matrices_f1
-                + ((ASM_F1_INDICE_START + ASM_F1_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
+            extra_mag_matrix_ptr
+                = mag_calibration_matrices_f1 + (ASM_F1_KEEP_BINS * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr
+                = elec_calibration_matrices_f1 + (ASM_F1_KEEP_BINS * NB_FLOATS_ELEC_CAL_MATRIX);
         }
         else
         {
-            matrix_index
-                = sy_lfr_kcoeff_frequency * NB_BINS_TO_AVERAGE_ASM_F0 + ASM_F0_INDICE_START;
+            matrix_index = sy_lfr_kcoeff_frequency;
             mag_matrix_ptr = mag_calibration_matrices_f0
-                + (ASM_F0_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0);
             elec_matrix_ptr = elec_calibration_matrices_f0
-                + (ASM_F0_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX)
                 + (matrix_index * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0);
-            extra_mag_matrix_ptr = mag_calibration_matrices_f0
-                + ((ASM_F0_INDICE_START + ASM_F0_KEEP_BINS) * NB_FLOATS_MAG_CAL_MATRIX);
-            extra_elec_matrix_ptr = elec_calibration_matrices_f0
-                + ((ASM_F0_INDICE_START + ASM_F0_KEEP_BINS) * NB_FLOATS_ELEC_CAL_MATRIX);
+            extra_mag_matrix_ptr
+                = mag_calibration_matrices_f0 + (ASM_F0_KEEP_BINS * NB_FLOATS_MAG_CAL_MATRIX);
+            extra_elec_matrix_ptr
+                = elec_calibration_matrices_f0 + (ASM_F0_KEEP_BINS * NB_FLOATS_ELEC_CAL_MATRIX);
         }
     }
 
     if (mag_matrix_ptr != NULL && elec_matrix_ptr != NULL)
     {
-        memcpy(mag_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX,
+        memcpy((void*)mag_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX,
             NB_BYTES_MAG_CAL_MATRIX);
-        memcpy(elec_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX,
+        memcpy((void*)elec_matrix_ptr, TC->dataAndCRC + DATAFIELD_POS_SY_LFR_ELEC_CAL_MATRIX,
             NB_BYTES_ELEC_CAL_MATRIX);
     }
 
@@ -1977,41 +1967,34 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     if (matrix_index < 3)
     {
         memcpy(extra_mag_matrix_ptr + (matrix_index * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX),
-            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX,
-            NB_MAG_COMPONENT_PER_SM * NB_BYTES_PER_FLOAT);
+            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_EXTRA_CAL_MATRIX,
+            NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX * NB_BYTES_PER_FLOAT);
     }
     else if (matrix_index < 5) // The 2 following packets contains one line of last ELEC CAL MATRIX
     {
         memcpy(extra_elec_matrix_ptr
-                + ((matrix_index - NB_MAG_COMPONENT_PER_SM) * NB_ELEC_COMPONENT_PER_SM
-                    * FLOATS_PER_COMPLEX),
-            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_MAG_CAL_MATRIX + NB_BYTES_MAG_CAL_MATRIX,
-            NB_ELEC_COMPONENT_PER_SM * NB_BYTES_PER_FLOAT);
+                + ((matrix_index - 3) * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX),
+            TC->dataAndCRC + DATAFIELD_POS_SY_LFR_EXTRA_CAL_MATRIX,
+            NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX * NB_BYTES_PER_FLOAT);
     }
 
     if (interpolate == yes)
     {
-        interpolate_calibration_matrix(
-            mag_calibration_matrices_f0 + (ASM_F0_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
-            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
-        interpolate_calibration_matrix(
-            elec_calibration_matrices_f0 + (ASM_F0_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
-            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
+        interpolate_calibration_matrix(mag_calibration_matrices_f0, NB_FLOATS_MAG_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
+        interpolate_calibration_matrix(elec_calibration_matrices_f0, NB_FLOATS_ELEC_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F0, NB_BINS_TO_AVERAGE_ASM_F0);
 
-        interpolate_calibration_matrix(
-            mag_calibration_matrices_f1 + (ASM_F1_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
-            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
-        interpolate_calibration_matrix(
-            elec_calibration_matrices_f1 + (ASM_F1_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
-            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
+        interpolate_calibration_matrix(mag_calibration_matrices_f1, NB_FLOATS_MAG_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
+        interpolate_calibration_matrix(elec_calibration_matrices_f1, NB_FLOATS_ELEC_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1);
 
 
-        interpolate_calibration_matrix(
-            mag_calibration_matrices_f2 + (ASM_F2_INDICE_START * NB_FLOATS_MAG_CAL_MATRIX),
-            NB_FLOATS_MAG_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
-        interpolate_calibration_matrix(
-            elec_calibration_matrices_f2 + (ASM_F2_INDICE_START * NB_FLOATS_ELEC_CAL_MATRIX),
-            NB_FLOATS_ELEC_CAL_MATRIX, NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
+        interpolate_calibration_matrix(mag_calibration_matrices_f2, NB_FLOATS_MAG_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
+        interpolate_calibration_matrix(elec_calibration_matrices_f2, NB_FLOATS_ELEC_CAL_MATRIX,
+            NB_BINS_COMPRESSED_SM_F2, NB_BINS_TO_AVERAGE_ASM_F2);
     }
 
     return status;
