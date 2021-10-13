@@ -73,6 +73,7 @@
 #include "fsw_compile_warnings.h"
 #include "hw/uart.h"
 #include "hw/lfr_regs.h"
+#include "fsw_housekeeping.h"
 
 void initCache()
 {
@@ -223,87 +224,59 @@ rtems_task Init(rtems_task_argument ignored)
     create_names(); // create all names
 
     status = create_timecode_timer(); // create the timer used by timecode_irq_handler
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR in create_timer_timecode, code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     status = create_message_queues(); // create message queues
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR in create_message_queues, code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     status = create_all_tasks(); // create all tasks
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR in create_all_tasks, code %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // **************************
     // <SPACEWIRE INITIALIZATION>
     status_spw = spacewire_open_link(); // (1) open the link
-    if (status_spw != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR spacewire_open_link code %d\n", status_spw);
-    }
+    DEBUG_CHECK_STATUS(status_spw);
 
     if (status_spw == RTEMS_SUCCESSFUL) // (2) configure the link
     {
         status_spw = spacewire_configure_link(fdSPW);
-        if (status_spw != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in INIT *** ERR spacewire_configure_link code %d\n", status_spw);
-        }
+        DEBUG_CHECK_STATUS(status_spw);
     }
 
     if (status_spw == RTEMS_SUCCESSFUL) // (3) start the link
     {
         status_spw = spacewire_start_link(fdSPW);
-        if (status_spw != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in INIT *** ERR spacewire_start_link code %d\n", status_spw);
-        }
+        DEBUG_CHECK_STATUS(status_spw);
     }
     // </SPACEWIRE INITIALIZATION>
     // ***************************
 
     status = start_all_tasks(); // start all tasks
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR in start_all_tasks, code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // start RECV and SEND *AFTER* SpaceWire Initialization, due to the timeout of the start call
     // during the initialization
     status = start_recv_send_tasks();
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** ERR start_recv_send_tasks code %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // suspend science tasks, they will be restarted later depending on the mode
     status = suspend_science_tasks(); // suspend science tasks (not done in stop_current_mode if
                                       // current mode = STANDBY)
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in INIT *** in suspend_science_tasks *** ERR code: %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // configure IRQ handling for the waveform picker unit
     status = rtems_interrupt_catch(waveforms_isr, IRQ_SPARC_WAVEFORM_PICKER, &old_isr_handler);
+    DEBUG_CHECK_STATUS(status);
     // configure IRQ handling for the spectral matrices unit
     status
         = rtems_interrupt_catch(spectral_matrices_isr, IRQ_SPARC_SPECTRAL_MATRIX, &old_isr_handler);
+    DEBUG_CHECK_STATUS(status);
 
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if (status_spw != RTEMS_SUCCESSFUL)
     {
         status = rtems_event_send(Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in INIT *** ERR rtems_event_send to SPIQ code %d\n", status);
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     BOOT_PRINTF("delete INIT\n");
@@ -315,10 +288,12 @@ rtems_task Init(rtems_task_argument ignored)
     // generating a tickout if a tickout is generated, the timer is restarted
     status = rtems_timer_fire_after(
         timecode_timer_id, TIMECODE_TIMER_TIMEOUT_INIT, timecode_timer_routine, NULL);
+    DEBUG_CHECK_STATUS(status);
 
     grspw_timecode_callback = &timecode_irq_handler;
 
     status = rtems_task_delete(RTEMS_SELF);
+    DEBUG_CHECK_STATUS(status);
 }
 
 void init_local_mode_parameters(void)
@@ -421,29 +396,34 @@ int create_all_tasks(void) // create all tasks which run in the software
     // RECV
     status = rtems_task_create(Task_name[TASKID_RECV], TASK_PRIORITY_RECV, RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES, RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_RECV]);
+    DEBUG_CHECK_STATUS(status);
     if (status == RTEMS_SUCCESSFUL) // SEND
     {
         status = rtems_task_create(Task_name[TASKID_SEND], TASK_PRIORITY_SEND,
             RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SEND]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // LINK
     {
         status = rtems_task_create(Task_name[TASKID_LINK], TASK_PRIORITY_LINK,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES, RTEMS_DEFAULT_ATTRIBUTES,
             &Task_id[TASKID_LINK]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // ACTN
     {
         status = rtems_task_create(Task_name[TASKID_ACTN], TASK_PRIORITY_ACTN,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_ACTN]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // SPIQ
     {
         status = rtems_task_create(Task_name[TASKID_SPIQ], TASK_PRIORITY_SPIQ,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES, &Task_id[TASKID_SPIQ]);
+        DEBUG_CHECK_STATUS(status);
     }
 
     //******************
@@ -453,36 +433,42 @@ int create_all_tasks(void) // create all tasks which run in the software
         status = rtems_task_create(Task_name[TASKID_AVF0], TASK_PRIORITY_AVF0,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF0]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC0
     {
         status = rtems_task_create(Task_name[TASKID_PRC0], TASK_PRIORITY_PRC0,
             RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT, RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC0]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVF1
     {
         status = rtems_task_create(Task_name[TASKID_AVF1], TASK_PRIORITY_AVF1,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF1]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC1
     {
         status = rtems_task_create(Task_name[TASKID_PRC1], TASK_PRIORITY_PRC1,
             RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT, RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC1]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVF2
     {
         status = rtems_task_create(Task_name[TASKID_AVF2], TASK_PRIORITY_AVF2,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVF2]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC2
     {
         status = rtems_task_create(Task_name[TASKID_PRC2], TASK_PRIORITY_PRC2,
             RTEMS_MINIMUM_STACK_SIZE * STACK_SIZE_MULT, RTEMS_DEFAULT_MODES | RTEMS_NO_PREEMPT,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_PRC2]);
+        DEBUG_CHECK_STATUS(status);
     }
 
     //****************
@@ -492,30 +478,35 @@ int create_all_tasks(void) // create all tasks which run in the software
         status = rtems_task_create(Task_name[TASKID_WFRM], TASK_PRIORITY_WFRM,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_WFRM]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF3
     {
         status = rtems_task_create(Task_name[TASKID_CWF3], TASK_PRIORITY_CWF3,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF3]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF2
     {
         status = rtems_task_create(Task_name[TASKID_CWF2], TASK_PRIORITY_CWF2,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF2]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF1
     {
         status = rtems_task_create(Task_name[TASKID_CWF1], TASK_PRIORITY_CWF1,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CWF1]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // SWBD
     {
         status = rtems_task_create(Task_name[TASKID_SWBD], TASK_PRIORITY_SWBD,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SWBD]);
+        DEBUG_CHECK_STATUS(status);
     }
 
     //*****
@@ -525,36 +516,42 @@ int create_all_tasks(void) // create all tasks which run in the software
         status = rtems_task_create(Task_name[TASKID_LOAD], TASK_PRIORITY_LOAD,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES, RTEMS_DEFAULT_ATTRIBUTES,
             &Task_id[TASKID_LOAD]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // DUMB
     {
         status = rtems_task_create(Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES, RTEMS_DEFAULT_ATTRIBUTES,
             &Task_id[TASKID_DUMB]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // SCRUBBING TASK
     {
         status = rtems_task_create(Task_name[TASKID_SCRB], TASK_PRIORITY_SCRB,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_SCRB]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // HOUS
     {
         status = rtems_task_create(Task_name[TASKID_HOUS], TASK_PRIORITY_HOUS,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_HOUS]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVGV
     {
         status = rtems_task_create(Task_name[TASKID_AVGV], TASK_PRIORITY_AVGV,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_AVGV]);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CALI
     {
         status = rtems_task_create(Task_name[TASKID_CALI], TASK_PRIORITY_CALI,
             RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT, &Task_id[TASKID_CALI]);
+        DEBUG_CHECK_STATUS(status);
     }
 
     return status;
@@ -565,18 +562,12 @@ int start_recv_send_tasks(void)
     rtems_status_code status;
 
     status = rtems_task_start(Task_id[TASKID_RECV], recv_task, 1);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        BOOT_PRINTF("in INIT *** Error starting TASK_RECV\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     if (status == RTEMS_SUCCESSFUL) // SEND
     {
         status = rtems_task_start(Task_id[TASKID_SEND], send_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SEND\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     return status;
@@ -601,27 +592,18 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
     //**********
     // SPACEWIRE
     status = rtems_task_start(Task_id[TASKID_SPIQ], spiq_task, 1);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        BOOT_PRINTF("in INIT *** Error starting TASK_SPIQ\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     if (status == RTEMS_SUCCESSFUL) // LINK
     {
         status = rtems_task_start(Task_id[TASKID_LINK], link_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LINK\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     if (status == RTEMS_SUCCESSFUL) // ACTN
     {
         status = rtems_task_start(Task_id[TASKID_ACTN], actn_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_ACTN\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     //******************
@@ -629,50 +611,32 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
     if (status == RTEMS_SUCCESSFUL) // AVF0
     {
         status = rtems_task_start(Task_id[TASKID_AVF0], avf0_task, LFR_MODE_STANDBY);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF0\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC0
     {
         status = rtems_task_start(Task_id[TASKID_PRC0], prc0_task, LFR_MODE_STANDBY);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC0\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVF1
     {
         status = rtems_task_start(Task_id[TASKID_AVF1], avf1_task, LFR_MODE_STANDBY);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF1\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC1
     {
         status = rtems_task_start(Task_id[TASKID_PRC1], prc1_task, LFR_MODE_STANDBY);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC1\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVF2
     {
         status = rtems_task_start(Task_id[TASKID_AVF2], avf2_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVF2\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // PRC2
     {
         status = rtems_task_start(Task_id[TASKID_PRC2], prc2_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_PRC2\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     //****************
@@ -680,42 +644,27 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
     if (status == RTEMS_SUCCESSFUL) // WFRM
     {
         status = rtems_task_start(Task_id[TASKID_WFRM], wfrm_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_WFRM\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF3
     {
         status = rtems_task_start(Task_id[TASKID_CWF3], cwf3_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF3\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF2
     {
         status = rtems_task_start(Task_id[TASKID_CWF2], cwf2_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF2\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CWF1
     {
         status = rtems_task_start(Task_id[TASKID_CWF1], cwf1_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_CWF1\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // SWBD
     {
         status = rtems_task_start(Task_id[TASKID_SWBD], swbd_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_SWBD\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     //*****
@@ -723,50 +672,32 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
     if (status == RTEMS_SUCCESSFUL) // HOUS
     {
         status = rtems_task_start(Task_id[TASKID_HOUS], hous_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_HOUS\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // AVGV
     {
         status = rtems_task_start(Task_id[TASKID_AVGV], avgv_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_AVGV\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // DUMB
     {
         status = rtems_task_start(Task_id[TASKID_DUMB], dumb_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // SCRUBBING
     {
         status = rtems_task_start(Task_id[TASKID_SCRB], scrubbing_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_DUMB\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // LOAD
     {
         status = rtems_task_start(Task_id[TASKID_LOAD], load_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == RTEMS_SUCCESSFUL) // CALI
     {
         status = rtems_task_start(Task_id[TASKID_CALI], calibration_sweep_task, 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            BOOT_PRINTF("in INIT *** Error starting TASK_LOAD\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     return status;
@@ -774,12 +705,8 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
 
 rtems_status_code create_message_queues(void) // create the five message queues used in the software
 {
-    rtems_status_code status_recv;
-    rtems_status_code status_send;
-    rtems_status_code status_q_p0;
-    rtems_status_code status_q_p1;
-    rtems_status_code status_q_p2;
-    rtems_status_code ret;
+    rtems_status_code status=RTEMS_SUCCESSFUL;
+    rtems_status_code ret=RTEMS_SUCCESSFUL;
     rtems_id queue_id;
 
     ret = RTEMS_SUCCESSFUL;
@@ -787,69 +714,38 @@ rtems_status_code create_message_queues(void) // create the five message queues 
 
     //****************************************
     // create the queue for handling valid TCs
-    status_recv = rtems_message_queue_create(misc_name[QUEUE_RECV], MSG_QUEUE_COUNT_RECV,
+    status = rtems_message_queue_create(misc_name[QUEUE_RECV], MSG_QUEUE_COUNT_RECV,
         CCSDS_TC_PKT_MAX_SIZE, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
-    if (status_recv != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_message_queues *** ERR creating QUEU queue, %d\n", status_recv);
-    }
+    DEBUG_CHECK_STATUS(status);
+    ret|=status;
 
     //************************************************
     // create the queue for handling TM packet sending
-    status_send = rtems_message_queue_create(misc_name[QUEUE_SEND], MSG_QUEUE_COUNT_SEND,
+    status = rtems_message_queue_create(misc_name[QUEUE_SEND], MSG_QUEUE_COUNT_SEND,
         MSG_QUEUE_SIZE_SEND, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
-    if (status_send != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_message_queues *** ERR creating PKTS queue, %d\n", status_send);
-    }
+    DEBUG_CHECK_STATUS(status);
+    ret|=status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f0
-    status_q_p0 = rtems_message_queue_create(misc_name[QUEUE_PRC0], MSG_QUEUE_COUNT_PRC0,
+    status = rtems_message_queue_create(misc_name[QUEUE_PRC0], MSG_QUEUE_COUNT_PRC0,
         sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
-    if (status_q_p0 != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_message_queues *** ERR creating Q_P0 queue, %d\n", status_q_p0);
-    }
+    DEBUG_CHECK_STATUS(status);
+    ret|=status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f1
-    status_q_p1 = rtems_message_queue_create(misc_name[QUEUE_PRC1], MSG_QUEUE_COUNT_PRC1,
+    status = rtems_message_queue_create(misc_name[QUEUE_PRC1], MSG_QUEUE_COUNT_PRC1,
         sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
-    if (status_q_p1 != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_message_queues *** ERR creating Q_P1 queue, %d\n", status_q_p1);
-    }
+    DEBUG_CHECK_STATUS(status);
+    ret|=status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f2
-    status_q_p2 = rtems_message_queue_create(misc_name[QUEUE_PRC2], MSG_QUEUE_COUNT_PRC2,
+    status = rtems_message_queue_create(misc_name[QUEUE_PRC2], MSG_QUEUE_COUNT_PRC2,
         sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
-    if (status_q_p2 != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_message_queues *** ERR creating Q_P2 queue, %d\n", status_q_p2);
-    }
-
-    if (status_recv != RTEMS_SUCCESSFUL)
-    {
-        ret = status_recv;
-    }
-    else if (status_send != RTEMS_SUCCESSFUL)
-    {
-        ret = status_send;
-    }
-    else if (status_q_p0 != RTEMS_SUCCESSFUL)
-    {
-        ret = status_q_p0;
-    }
-    else if (status_q_p1 != RTEMS_SUCCESSFUL)
-    {
-        ret = status_q_p1;
-    }
-    else
-    {
-        ret = status_q_p2;
-    }
+    DEBUG_CHECK_STATUS(status);
+    ret|=status;
 
     return ret;
 }
@@ -859,15 +755,7 @@ rtems_status_code create_timecode_timer(void)
     rtems_status_code status;
 
     status = rtems_timer_create(timecode_timer_name, &timecode_timer_id);
-
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in create_timer_timecode *** ERR creating SPTC timer, %d\n", status);
-    }
-    else
-    {
-        LFR_PRINTF("in create_timer_timecode *** OK creating SPTC timer\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -880,6 +768,7 @@ rtems_status_code get_message_queue_id_send(rtems_id* queue_id)
     queue_name = rtems_build_name('Q', '_', 'S', 'D');
 
     status = rtems_message_queue_ident(queue_name, 0, queue_id);
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -892,6 +781,7 @@ rtems_status_code get_message_queue_id_recv(rtems_id* queue_id)
     queue_name = rtems_build_name('Q', '_', 'R', 'V');
 
     status = rtems_message_queue_ident(queue_name, 0, queue_id);
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -904,6 +794,7 @@ rtems_status_code get_message_queue_id_prc0(rtems_id* queue_id)
     queue_name = rtems_build_name('Q', '_', 'P', '0');
 
     status = rtems_message_queue_ident(queue_name, 0, queue_id);
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -916,6 +807,7 @@ rtems_status_code get_message_queue_id_prc1(rtems_id* queue_id)
     queue_name = rtems_build_name('Q', '_', 'P', '1');
 
     status = rtems_message_queue_ident(queue_name, 0, queue_id);
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -928,6 +820,7 @@ rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id)
     queue_name = rtems_build_name('Q', '_', 'P', '2');
 
     status = rtems_message_queue_ident(queue_name, 0, queue_id);
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }

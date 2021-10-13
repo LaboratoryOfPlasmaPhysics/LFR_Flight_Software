@@ -40,7 +40,7 @@
 #ifdef DEBUG_MESSAGES
     #define DEBUG_PRINTF(...)        printf(__VA_ARGS__)
     #define DEBUG_CHECK_PTR(ptr)     {if((ptr)==NULL){printf("NULL ptr @ %s:%d\n", __FILE__, __LINE__);}}
-    #define DEBUG_CHECK_STATUS(status) {if((status)!=0){printf("Status error @ %s:%d\n", __FILE__, __LINE__);}}
+    #define DEBUG_CHECK_STATUS(status) {if((status)!=0){printf("Status error @ %s:%d\nGot %d", __FILE__, __LINE__,status);}}
 #else
     #define DEBUG_PRINTF(...)
     #define DEBUG_CHECK_PTR(ptr)

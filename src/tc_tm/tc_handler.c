@@ -36,11 +36,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "tc_tm/tc_handler.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
-#include "hw/lfr_regs.h"
 #include "fsw_housekeeping.h"
+#include "hw/lfr_regs.h"
+#include "tc_tm/tc_handler.h"
 
 //***********
 // RTEMS TASK
@@ -73,16 +73,10 @@ rtems_task actn_task(rtems_task_argument unused)
     queue_snd_id = RTEMS_ID_NONE;
 
     status = get_message_queue_id_recv(&queue_rcv_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in ACTN *** ERR get_message_queue_id_recv %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     status = get_message_queue_id_send(&queue_snd_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in ACTN *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     result = LFR_SUCCESSFUL;
     subtype = 0; // subtype of the current TC packet
@@ -93,6 +87,7 @@ rtems_task actn_task(rtems_task_argument unused)
     {
         status = rtems_message_queue_receive(
             queue_rcv_id, (char*)&TC, &size, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        DEBUG_CHECK_STATUS(status);
         getTime(time); // set time to the current time
         if (status != RTEMS_SUCCESSFUL)
         {
@@ -219,32 +214,40 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     bytePosPtr = (unsigned char*)&TC->packetID;
     requestedMode = bytePosPtr[BYTE_POS_CP_MODE_LFR_SET];
-    copyInt32ByChar((unsigned char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
+    copyInt32ByChar(
+        (unsigned char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
     transitionCoarseTime = transitionCoarseTime & COARSE_TIME_MASK;
     status = check_mode_value(requestedMode);
+    DEBUG_CHECK_STATUS(status);
 
     if (status != LFR_SUCCESSFUL) // the mode value is inconsistent
     {
-        send_tm_lfr_tc_exe_inconsistent(TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode);
+        status = send_tm_lfr_tc_exe_inconsistent(
+            TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode);
+        DEBUG_CHECK_STATUS(status);
     }
 
     else // the mode value is valid, check the transition
     {
         status = check_mode_transition(requestedMode);
+        DEBUG_CHECK_STATUS(status);
         if (status != LFR_SUCCESSFUL)
         {
             LFR_PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n");
-            send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+            status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+            DEBUG_CHECK_STATUS(status);
         }
     }
 
     if (status == LFR_SUCCESSFUL) // the transition is valid, check the date
     {
         status = check_transition_date(transitionCoarseTime);
+        DEBUG_CHECK_STATUS(status);
         if (status != LFR_SUCCESSFUL)
         {
             LFR_PRINTF("ERR *** in action_enter_mode *** check_transition_date\n");
-            send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+            status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+            DEBUG_CHECK_STATUS(status);
         }
     }
 
@@ -272,7 +275,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
             default:
                 break;
         }
-
+        DEBUG_CHECK_STATUS(status);
         if (status != RTEMS_SUCCESSFUL)
         {
             status = LFR_EXE_ERROR;
@@ -313,19 +316,23 @@ int action_update_info(ccsdsTelecommandPacket_t* TC)
     // check LFR mode
     mode = (bytePosPtr[BYTE_POS_UPDATE_INFO_PARAMETERS_SET5] & BITS_LFR_MODE) >> SHIFT_LFR_MODE;
     status = check_update_info_hk_lfr_mode(mode);
+    DEBUG_CHECK_STATUS(status);
     if (status == LFR_SUCCESSFUL) // check TDS mode
     {
         mode = (bytePosPtr[BYTE_POS_UPDATE_INFO_PARAMETERS_SET6] & BITS_TDS_MODE) >> SHIFT_TDS_MODE;
         status = check_update_info_hk_tds_mode(mode);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == LFR_SUCCESSFUL) // check THR mode
     {
         mode = (bytePosPtr[BYTE_POS_UPDATE_INFO_PARAMETERS_SET6] & BITS_THR_MODE);
         status = check_update_info_hk_thr_mode(mode);
+        DEBUG_CHECK_STATUS(status);
     }
     if (status == LFR_SUCCESSFUL) // check reaction wheels frequencies
     {
         status = check_all_sy_lfr_rw_f(TC, &pos, &value);
+        DEBUG_CHECK_STATUS(status);
     }
 
     // if the parameters checking succeeds, udpate all parameters
@@ -593,10 +600,12 @@ int restart_asm_activities(unsigned char lfrRequestedMode)
     rtems_status_code status;
 
     status = stop_spectral_matrices();
+    DEBUG_CHECK_STATUS(status);
 
     thisIsAnASMRestart = 1;
 
     status = restart_asm_tasks(lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
     launch_spectral_matrix();
 
@@ -632,6 +641,7 @@ int stop_spectral_matrices(void)
     if (lfrCurrentMode != LFR_MODE_STANDBY)
     {
         status = suspend_asm_tasks();
+        DEBUG_CHECK_STATUS(status);
     }
 
     if (status != RTEMS_SUCCESSFUL)
@@ -683,6 +693,7 @@ int stop_current_mode(void)
     if (lfrCurrentMode != LFR_MODE_STANDBY)
     {
         status = suspend_science_tasks();
+        DEBUG_CHECK_STATUS(status);
     }
 
     if (status != RTEMS_SUCCESSFUL)
@@ -714,6 +725,7 @@ int enter_mode_standby(void)
     int status;
 
     status = stop_current_mode(); // STOP THE CURRENT MODE
+    DEBUG_CHECK_STATUS(status);
 
 #ifdef PRINT_TASK_STATISTICS
     rtems_cpu_usage_report();
@@ -757,6 +769,7 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
     {
         case LFR_MODE_STANDBY:
             status = restart_science_tasks(LFR_MODE_NORMAL); // restart science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -765,7 +778,9 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
             break;
         case LFR_MODE_BURST:
             status = stop_current_mode(); // stop the current mode
+            DEBUG_CHECK_STATUS(status);
             status = restart_science_tasks(LFR_MODE_NORMAL); // restart the science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -775,6 +790,7 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
         case LFR_MODE_SBM1:
             status = restart_asm_activities(
                 LFR_MODE_NORMAL); // this is necessary to restart ASM tasks to update the parameters
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
                                      // close_action
             update_last_valid_transition_date(transitionCoarseTime);
@@ -782,6 +798,7 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
         case LFR_MODE_SBM2:
             status = restart_asm_activities(
                 LFR_MODE_NORMAL); // this is necessary to restart ASM tasks to update the parameters
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
                                      // close_action
             update_last_valid_transition_date(transitionCoarseTime);
@@ -824,7 +841,9 @@ int enter_mode_burst(unsigned int transitionCoarseTime)
 #endif
 
     status = stop_current_mode(); // stop the current mode
+    DEBUG_CHECK_STATUS(status);
     status = restart_science_tasks(LFR_MODE_BURST); // restart the science tasks
+    DEBUG_CHECK_STATUS(status);
     if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
     {
         launch_spectral_matrix();
@@ -871,6 +890,7 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
     {
         case LFR_MODE_STANDBY:
             status = restart_science_tasks(LFR_MODE_SBM1); // restart science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -879,12 +899,15 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
             break;
         case LFR_MODE_NORMAL: // lfrCurrentMode will be updated after the execution of close_action
             status = restart_asm_activities(LFR_MODE_SBM1);
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL;
             update_last_valid_transition_date(transitionCoarseTime);
             break;
         case LFR_MODE_BURST:
             status = stop_current_mode(); // stop the current mode
+            DEBUG_CHECK_STATUS(status);
             status = restart_science_tasks(LFR_MODE_SBM1); // restart the science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -893,6 +916,7 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
             break;
         case LFR_MODE_SBM2:
             status = restart_asm_activities(LFR_MODE_SBM1);
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
                                      // close_action
             update_last_valid_transition_date(transitionCoarseTime);
@@ -941,6 +965,7 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
     {
         case LFR_MODE_STANDBY:
             status = restart_science_tasks(LFR_MODE_SBM2); // restart science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -949,13 +974,16 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
             break;
         case LFR_MODE_NORMAL:
             status = restart_asm_activities(LFR_MODE_SBM2);
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
                                      // close_action
             update_last_valid_transition_date(transitionCoarseTime);
             break;
         case LFR_MODE_BURST:
             status = stop_current_mode(); // stop the current mode
+            DEBUG_CHECK_STATUS(status);
             status = restart_science_tasks(LFR_MODE_SBM2); // restart the science tasks
+            DEBUG_CHECK_STATUS(status);
             if (status == RTEMS_SUCCESSFUL) // relaunch spectral_matrix and waveform_picker modules
             {
                 launch_spectral_matrix();
@@ -964,6 +992,7 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
             break;
         case LFR_MODE_SBM1:
             status = restart_asm_activities(LFR_MODE_SBM2);
+            DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
                                      // close_action
             update_last_valid_transition_date(transitionCoarseTime);
@@ -995,76 +1024,42 @@ int restart_science_tasks(unsigned char lfrRequestedMode)
      *
      */
 
-    rtems_status_code status[NB_SCIENCE_TASKS];
+    rtems_status_code status=RTEMS_SUCCESSFUL;
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
 
-    status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
-    if (status[STATUS_0] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
-    if (status[STATUS_1] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_2] = rtems_task_restart(Task_id[TASKID_WFRM], 1);
-    if (status[STATUS_2] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** WFRM ERR %d\n", status[STATUS_2]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_WFRM], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_3] = rtems_task_restart(Task_id[TASKID_CWF3], 1);
-    if (status[STATUS_3] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** CWF3 ERR %d\n", status[STATUS_3]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_CWF3], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_4] = rtems_task_restart(Task_id[TASKID_CWF2], 1);
-    if (status[STATUS_4] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** CWF2 ERR %d\n", status[STATUS_4]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_CWF2], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_5] = rtems_task_restart(Task_id[TASKID_CWF1], 1);
-    if (status[STATUS_5] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** CWF1 ERR %d\n", status[STATUS_5]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_CWF1], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_6] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
-    if (status[STATUS_6] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_6]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_7] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
-    if (status[STATUS_7] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_7]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_8] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
-    if (status[STATUS_8] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_8]);
-    }
+    status |=  rtems_task_restart(Task_id[TASKID_AVF2], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_9] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
-    if (status[STATUS_9] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_9]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_PRC2], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_2] != RTEMS_SUCCESSFUL) || (status[STATUS_3] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_4] != RTEMS_SUCCESSFUL) || (status[STATUS_5] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_6] != RTEMS_SUCCESSFUL) || (status[STATUS_7] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_8] != RTEMS_SUCCESSFUL) || (status[STATUS_9] != RTEMS_SUCCESSFUL))
+    if (status != RTEMS_SUCCESSFUL)
     {
         ret = RTEMS_UNSATISFIED;
     }
@@ -1086,50 +1081,30 @@ int restart_asm_tasks(unsigned char lfrRequestedMode)
      *
      */
 
-    rtems_status_code status[NB_ASM_TASKS];
+    rtems_status_code status;
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
 
-    status[STATUS_0] = rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
-    if (status[STATUS_0] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF0 ERR %d\n", status[STATUS_0]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_1] = rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
-    if (status[STATUS_1] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC0 ERR %d\n", status[STATUS_1]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_2] = rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
-    if (status[STATUS_2] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF1 ERR %d\n", status[STATUS_2]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_3] = rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
-    if (status[STATUS_3] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC1 ERR %d\n", status[STATUS_3]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_4] = rtems_task_restart(Task_id[TASKID_AVF2], 1);
-    if (status[STATUS_4] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** AVF2 ERR %d\n", status[STATUS_4]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_AVF2], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    status[STATUS_5] = rtems_task_restart(Task_id[TASKID_PRC2], 1);
-    if (status[STATUS_5] != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in restart_science_task *** PRC2 ERR %d\n", status[STATUS_5]);
-    }
+    status |= rtems_task_restart(Task_id[TASKID_PRC2], 1);
+    DEBUG_CHECK_STATUS(status);
 
-    if ((status[STATUS_0] != RTEMS_SUCCESSFUL) || (status[STATUS_1] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_2] != RTEMS_SUCCESSFUL) || (status[STATUS_3] != RTEMS_SUCCESSFUL)
-        || (status[STATUS_4] != RTEMS_SUCCESSFUL) || (status[STATUS_5] != RTEMS_SUCCESSFUL))
+    if (status != RTEMS_SUCCESSFUL)
     {
         ret = RTEMS_UNSATISFIED;
     }

@@ -35,13 +35,13 @@
  *
  */
 
-#include <errno.h>
 #include "fsw_spacewire.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
-#include "fsw_watchdog.h"
 #include "fsw_misc.h"
+#include "fsw_watchdog.h"
 #include "hw/lfr_regs.h"
+#include <errno.h>
 
 rtems_name semq_name = 0;
 rtems_id semq_id = RTEMS_ID_NONE;
@@ -80,47 +80,43 @@ rtems_task spiq_task(rtems_task_argument unused)
 
     while (true)
     {
-        rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT,
+        status = rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT,
             &event_out); // wait for an SPW_LINKERR_EVENT
+        DEBUG_CHECK_STATUS(status);
         LFR_PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n");
 
         // [0] SUSPEND RECV AND SEND TASKS
         status = rtems_task_suspend(Task_id[TASKID_RECV]);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in SPIQ *** ERR suspending RECV Task\n");
-        }
+        DEBUG_CHECK_STATUS(status);
         status = rtems_task_suspend(Task_id[TASKID_SEND]);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in SPIQ *** ERR suspending SEND Task\n");
-        }
+        DEBUG_CHECK_STATUS(status);
 
         // [1] CHECK THE LINK
         status = ioctl(
             fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status (1)
+        DEBUG_CHECK_STATUS(status);
         if (linkStatus != SPW_LINK_OK)
         {
             LFR_PRINTF("in SPIQ *** linkStatus %d, wait...\n", linkStatus);
             status = rtems_task_wake_after(
                 SY_LFR_DPU_CONNECT_TIMEOUT); // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
+            DEBUG_CHECK_STATUS(status);
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
         status = ioctl(
             fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status (2)
+        DEBUG_CHECK_STATUS(status);
         if (linkStatus != SPW_LINK_OK) // [2.a] not in run state, reset the link
         {
             spacewire_read_statistics();
             status = spacewire_several_connect_attemps();
+            DEBUG_CHECK_STATUS(status);
         }
         else // [2.b] in run state, start the link
         {
             status = spacewire_stop_and_start_link(fdSPW); // start the link
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                LFR_PRINTF("in SPIQ *** ERR spacewire_stop_and_start_link %d\n", status);
-            }
+            DEBUG_CHECK_STATUS(status);
         }
 
         // [3] COMPLETE RECOVERY ACTION AFTER SY_LFR_DPU_CONNECT_ATTEMPTS
@@ -128,29 +124,22 @@ rtems_task spiq_task(rtems_task_argument unused)
             == RTEMS_SUCCESSFUL) // [3.a] the link is in run state and has been started successfully
         {
             status = rtems_task_restart(Task_id[TASKID_SEND], 1);
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                LFR_PRINTF("in SPIQ *** ERR resuming SEND Task\n");
-            }
+            DEBUG_CHECK_STATUS(status);
             status = rtems_task_restart(Task_id[TASKID_RECV], 1);
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                LFR_PRINTF("in SPIQ *** ERR resuming RECV Task\n");
-            }
+            DEBUG_CHECK_STATUS(status);
         }
         else // [3.b] the link is not in run state, go in STANDBY mode
         {
             status = enter_mode_standby();
-            if (status != RTEMS_SUCCESSFUL)
-            {
-                LFR_PRINTF("in SPIQ *** ERR enter_standby_mode *** code %d\n", status);
-            }
+            DEBUG_CHECK_STATUS(status);
             {
                 updateLFRCurrentMode(LFR_MODE_STANDBY);
             }
             // wake the LINK task up to wait for the link recovery
             status = rtems_event_send(Task_id[TASKID_LINK], RTEMS_EVENT_0);
+            DEBUG_CHECK_STATUS(status);
             status = rtems_task_suspend(RTEMS_SELF);
+            DEBUG_CHECK_STATUS(status);
         }
     }
 }
@@ -189,16 +178,10 @@ rtems_task recv_task(rtems_task_argument unused)
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
     status = get_message_queue_id_recv(&queue_recv_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in RECV *** ERR get_message_queue_id_recv %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     status = get_message_queue_id_send(&queue_send_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in RECV *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     BOOT_PRINTF("in RECV *** \n");
 
@@ -243,14 +226,16 @@ rtems_task recv_task(rtems_task_argument unused)
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        send_tm_lfr_tc_exe_corrupted(&currentTC, queue_send_id, computed_CRC,
-                            currentTC_LEN_RCV, destinationID);
+                        status = send_tm_lfr_tc_exe_corrupted(&currentTC, queue_send_id,
+                            computed_CRC, currentTC_LEN_RCV, destinationID);
+                        DEBUG_CHECK_STATUS(status);
                     }
                 }
                 else
                 { // send valid TC to the action launcher
                     status = rtems_message_queue_send(queue_recv_id, &currentTC,
                         estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + PROTID_RES_APP);
+                    DEBUG_CHECK_STATUS(status);
                 }
             }
         }
@@ -300,10 +285,7 @@ rtems_task send_task(rtems_task_argument argument)
     init_header_asm(&headerASM);
 
     status = get_message_queue_id_send(&queue_send_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in HOUS *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     BOOT_PRINTF("in SEND *** \n");
 
@@ -311,6 +293,7 @@ rtems_task send_task(rtems_task_argument argument)
     {
         status = rtems_message_queue_receive(
             queue_send_id, incomingData, &size, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+        DEBUG_CHECK_STATUS(status);
 
         if (status != RTEMS_SUCCESSFUL)
         {
@@ -410,13 +393,16 @@ rtems_task link_task(rtems_task_argument argument)
     while (1)
     {
         // wait for an RTEMS_EVENT
-        rtems_event_receive(
+        status = rtems_event_receive(
             RTEMS_EVENT_0, RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        DEBUG_CHECK_STATUS(status);
         LFR_PRINTF("in LINK *** wait for the link\n");
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status
+        DEBUG_CHECK_STATUS(status);
         while (linkStatus != SPW_LINK_OK) // wait for the link
         {
             status = rtems_task_wake_after(SPW_LINK_WAIT); // monitor the link each 100ms
+            DEBUG_CHECK_STATUS(status);
             status = ioctl(
                 fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status
             watchdog_reload();
@@ -424,34 +410,18 @@ rtems_task link_task(rtems_task_argument argument)
 
         spacewire_read_statistics();
         status = spacewire_stop_and_start_link(fdSPW);
-
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in LINK *** ERR link not started %d\n", status);
-        }
-        else
-        {
-            LFR_PRINTF("in LINK *** OK  link started\n");
-        }
+        DEBUG_CHECK_STATUS(status);
 
         // restart the SPIQ task
         status = rtems_task_restart(Task_id[TASKID_SPIQ], 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in SPIQ *** ERR restarting SPIQ Task\n");
-        }
+        DEBUG_CHECK_STATUS(status);
 
         // restart RECV and SEND
         status = rtems_task_restart(Task_id[TASKID_SEND], 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in SPIQ *** ERR restarting SEND Task\n");
-        }
+        DEBUG_CHECK_STATUS(status);
+
         status = rtems_task_restart(Task_id[TASKID_RECV], 1);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in SPIQ *** ERR restarting RECV Task\n");
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 }
 
@@ -467,13 +437,13 @@ int spacewire_open_link(
      */
     rtems_status_code status;
 
-    status = RTEMS_SUCCESSFUL;
+    status = -1;
 
     fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call resets the hardware
     if (fdSPW < 0)
     {
         LFR_PRINTF("ERR *** in configure_spw_link *** error opening " GRSPW_DEVICE_NAME
-                " with ERR %d\n",
+                   " with ERR %d\n",
             errno);
     }
     else
@@ -486,21 +456,17 @@ int spacewire_open_link(
 
 int spacewire_start_link(int fd)
 {
-    rtems_status_code status;
-
-    status = ioctl(fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
-                                                    // -1 default hardcoded driver timeout
-
-    return status;
+    return ioctl(fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
+                                                  // -1 default hardcoded driver timeout
 }
 
 int spacewire_stop_and_start_link(int fd)
 {
-    rtems_status_code status;
+    rtems_status_code status = RTEMS_SUCCESSFUL;
 
     status = ioctl(fd, SPACEWIRE_IOCTRL_STOP); // start fails if link pDev->running != 0
-    status = ioctl(fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
-                                                    // -1 default hardcoded driver timeout
+    status |= ioctl(fd, SPACEWIRE_IOCTRL_START, -1); // returns successfuly if the link is started
+                                                     // -1 default hardcoded driver timeout
 
     return status;
 }
@@ -533,57 +499,33 @@ int spacewire_configure_link(int fd)
     packetsize.txhsize = SPW_TXHSIZE;
 
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_RXBLOCK, 1); // sets the blocking mode for reception
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_RXBLOCK\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_EVENT_ID,
         Task_id[TASKID_SPIQ]); // sets the task ID to which an event is sent when a
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_EVENT_ID\n"); // link-error interrupt occurs
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_DISABLE_ERR,
         0); // automatic link-disabling due to link-error interrupts
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_DISABLE_ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ, 1); // sets the link-error interrupt bit
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_LINK_ERR_IRQ\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK, 1); // transmission blocks
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL,
         1); // transmission blocks when no transmission descriptor is available
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TXBLOCK_ON_FULL\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status = ioctl(fd, SPACEWIRE_IOCTRL_SET_TCODE_CTRL,
         CONF_TCODE_CTRL); // [Time Rx : Time Tx : Link error : Tick-out IRQ]
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_TCODE_CTRL,\n");
-    }
+    DEBUG_CHECK_STATUS(status);
     //
     status
         = ioctl(fd, SPACEWIRE_IOCTRL_SET_PACKETSIZE, packetsize); // set rxsize, txdsize and txhsize
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in SPIQ *** Error SPACEWIRE_IOCTRL_SET_PACKETSIZE,\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -614,13 +556,15 @@ int spacewire_several_connect_attemps(void)
 
         status = rtems_task_wake_after(
             SY_LFR_DPU_CONNECT_TIMEOUT); // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
+        DEBUG_CHECK_STATUS(status);
 
         status_spw = spacewire_stop_and_start_link(fdSPW);
 
         if (status_spw != RTEMS_SUCCESSFUL)
         {
             i = i + 1;
-            LFR_PRINTF("in spacewire_reset_link *** ERR spacewire_start_link code %d\n", status_spw);
+            LFR_PRINTF(
+                "in spacewire_reset_link *** ERR spacewire_start_link code %d\n", status_spw);
         }
         else
         {
@@ -699,9 +643,11 @@ void spacewire_read_statistics(void)
 
     // read the current statistics
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current);
+    DEBUG_CHECK_STATUS(status);
 
     // clear the counters
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_CLR_STATISTICS);
+    DEBUG_CHECK_STATUS(status);
 
     // rx_eep_err
     grspw_stats.rx_eep_err = grspw_stats.rx_eep_err + current.rx_eep_err;
@@ -745,6 +691,7 @@ void spacewire_get_last_error(void)
     update_hk_lfr_last_er = INIT_CHAR;
 
     status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current);
+    DEBUG_CHECK_STATUS(status);
 
     // get current time
     coarseTime = time_management_regs->coarse_time;
@@ -992,7 +939,8 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     housekeeping_packet.hk_lfr_dpu_spw_last_timc = incomingTimecode;
 
     // update the number of tickout that have been generated
-    housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt);
+    housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt
+        = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_dpu_spw_tick_out_cnt);
 
     //**************************
     // HK_LFR_TIMECODE_ERRONEOUS
@@ -1001,7 +949,8 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     {
         // this is unexpected but a tickout could have been raised despite of the timecode being
         // erroneous
-        housekeeping_packet.hk_lfr_timecode_erroneous=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_erroneous);
+        housekeeping_packet.hk_lfr_timecode_erroneous
+            = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_erroneous);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_ERRONEOUS);
     }
 
@@ -1010,7 +959,8 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     // check the coherency between the SpaceWire timecode and the Internal Time
     if (check_timecode_and_internal_time_coherency(incomingTimecode, internalTime) == LFR_DEFAULT)
     {
-        housekeeping_packet.hk_lfr_time_timecode_it=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_it);
+        housekeeping_packet.hk_lfr_time_timecode_it
+            = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_it);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_IT);
     }
 
@@ -1021,7 +971,8 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     {
         if (incomingTimecode != updateTime)
         {
-            housekeeping_packet.hk_lfr_time_timecode_ctr=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_ctr);
+            housekeeping_packet.hk_lfr_time_timecode_ctr
+                = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_ctr);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_CTR);
         }
     }
@@ -1041,6 +992,8 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
     IGNORE_UNUSED_PARAMETER(timer_id);
     IGNORE_UNUSED_PARAMETER(user_data);
 
+    rtems_status_code status;
+
     static unsigned char initStep = 1;
 
     unsigned char currentTimecodeCtr;
@@ -1055,7 +1008,8 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
             // HK_LFR_TIMECODE_MISSING
             // the timecode value has not changed, no valid timecode has been received, the timecode
             // is MISSING
-            housekeeping_packet.hk_lfr_timecode_missing=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
+            housekeeping_packet.hk_lfr_timecode_missing
+                = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_MISSING);
         }
         else if (currentTimecodeCtr == (previousTimecodeCtr + 1))
@@ -1069,7 +1023,8 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
             // HK_LFR_TIMECODE_INVALID
             // the timecode value has changed and the value is not valid, no tickout has been
             // generated this is why the timer has fired
-            housekeeping_packet.hk_lfr_timecode_invalid=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_invalid);
+            housekeeping_packet.hk_lfr_timecode_invalid
+                = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_invalid);
             update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_INVALID);
         }
     }
@@ -1078,11 +1033,13 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
         initStep = 1;
         //************************
         // HK_LFR_TIMECODE_MISSING
-        housekeeping_packet.hk_lfr_timecode_missing=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
+        housekeeping_packet.hk_lfr_timecode_missing
+            = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_timecode_missing);
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_MISSING);
     }
 
-    rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_13);
+    status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_13);
+    DEBUG_CHECK_STATUS(status);
 }
 
 void init_header_cwf(Header_TM_LFR_SCIENCE_CWF_t* header)
@@ -1255,10 +1212,7 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
         }
 
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            ret = LFR_DEFAULT;
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     return ret;
@@ -1346,10 +1300,7 @@ int spw_send_waveform_SWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_SW
 
         // SEND PACKET
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_SWF);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            ret = LFR_DEFAULT;
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     return ret;
@@ -1429,10 +1380,7 @@ int spw_send_waveform_CWF3_light(ring_node* ring_node_to_send, Header_TM_LFR_SCI
 
         // SEND PACKET
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            ret = LFR_DEFAULT;
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 
     return ret;
@@ -1511,10 +1459,7 @@ void spw_send_asm_f0(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 
         // (4) SEND PACKET
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in ASM_send *** ERR %d\n", (int)status);
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 }
 
@@ -1591,10 +1536,7 @@ void spw_send_asm_f1(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 
         // (4) SEND PACKET
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in ASM_send *** ERR %d\n", (int)status);
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 }
 
@@ -1663,10 +1605,7 @@ void spw_send_asm_f2(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 
         // (4) SEND PACKET
         status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_ASM);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("in ASM_send *** ERR %d\n", (int)status);
-        }
+        DEBUG_CHECK_STATUS(status);
     }
 }
 

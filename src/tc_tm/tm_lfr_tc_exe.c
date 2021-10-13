@@ -90,10 +90,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in send_tm_lfr_tc_exe_success *** ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
     update_last_TC_exe(TC, TM.time);
@@ -162,10 +159,7 @@ int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in send_tm_lfr_tc_exe_inconsistent *** ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
     update_last_TC_rej(TC, TM.time);
@@ -229,10 +223,7 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id que
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in send_tm_lfr_tc_exe_not_executable *** ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
     update_last_TC_rej(TC, TM.time);
@@ -293,10 +284,7 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
     update_last_TC_rej(TC, TM.time);
@@ -380,10 +368,7 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in send_tm_lfr_tc_exe_error *** ERR\n");
-    }
+    DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
     update_last_TC_rej(TC, TM.time);

@@ -90,6 +90,7 @@ int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
         || (lfrCurrentMode == LFR_MODE_SBM2))
     {
         status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+        DEBUG_CHECK_STATUS(status);
         flag = LFR_DEFAULT;
     }
 
@@ -133,6 +134,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
     if (lfrCurrentMode == LFR_MODE_BURST)
     {
         status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+        DEBUG_CHECK_STATUS(status);
         flag = LFR_DEFAULT;
     }
 
@@ -146,6 +148,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0 + DATAFIELD_OFFSET, sy_lfr_b_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -156,6 +159,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P1 + DATAFIELD_OFFSET, sy_lfr_b_bp_p1);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -170,6 +174,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_B_BP_P0 + DATAFIELD_OFFSET, sy_lfr_b_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = LFR_DEFAULT;
         }
     }
@@ -205,6 +210,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
     if (lfrCurrentMode == LFR_MODE_SBM1)
     {
         status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+        DEBUG_CHECK_STATUS(status);
         flag = LFR_DEFAULT;
     }
 
@@ -218,6 +224,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0 + DATAFIELD_OFFSET, sy_lfr_s1_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -228,6 +235,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P1 + DATAFIELD_OFFSET, sy_lfr_s1_bp_p1);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -241,6 +249,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S1_BP_P0 + DATAFIELD_OFFSET, sy_lfr_s1_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = LFR_DEFAULT;
         }
     }
@@ -276,6 +285,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
     if (lfrCurrentMode == LFR_MODE_SBM2)
     {
         status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+        DEBUG_CHECK_STATUS(status);
         flag = LFR_DEFAULT;
     }
 
@@ -289,6 +299,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0 + DATAFIELD_OFFSET, sy_lfr_s2_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -299,6 +310,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P1 + DATAFIELD_OFFSET, sy_lfr_s2_bp_p1);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -313,6 +325,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_S2_BP_P0 + DATAFIELD_OFFSET, sy_lfr_s2_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = LFR_DEFAULT;
         }
     }
@@ -343,6 +356,7 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     if (lfrCurrentMode != LFR_MODE_STANDBY)
     {
         status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
+        DEBUG_CHECK_STATUS(status);
     }
     else
     {
@@ -583,10 +597,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     kcoefficient_node_1.status = 1;
     address = (void*)&kcoefficient_node_1;
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in action_dump_kcoefficients *** ERR sending packet 1 , code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     //********
     // PACKET 2
@@ -625,10 +636,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     kcoefficient_node_2.status = 1;
     address = (void*)&kcoefficient_node_2;
     status = rtems_message_queue_send(queue_id, &address, sizeof(ring_node*));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in action_dump_kcoefficients *** ERR sending packet 2, code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -670,10 +678,7 @@ int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     // SEND DATA
     status
         = rtems_message_queue_send(queue_id, &parameter_dump_packet, sizeof(parameter_dump_packet));
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in action_dump *** ERR sending packet, code %d", status);
-    }
+    DEBUG_CHECK_STATUS(status);
 
     return status;
 }
@@ -725,6 +730,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
     {
         status = send_tm_lfr_tc_exe_inconsistent(
             TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L + DATAFIELD_OFFSET, sy_lfr_n_swf_l);
+        DEBUG_CHECK_STATUS(status);
         flag = WRONG_APP_DATA;
     }
     // sy_lfr_n_swf_p
@@ -734,6 +740,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_P + DATAFIELD_OFFSET, sy_lfr_n_swf_p);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -744,6 +751,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P0 + DATAFIELD_OFFSET, sy_lfr_n_bp_p0);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -754,6 +762,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P + DATAFIELD_OFFSET, sy_lfr_n_asm_p);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -765,6 +774,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_ASM_P + DATAFIELD_OFFSET, sy_lfr_n_asm_p);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -775,6 +785,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1 + DATAFIELD_OFFSET, sy_lfr_n_bp_p1);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -786,6 +797,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
         {
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, DATAFIELD_POS_SY_LFR_N_BP_P1 + DATAFIELD_OFFSET, sy_lfr_n_bp_p1);
+            DEBUG_CHECK_STATUS(status);
             flag = LFR_DEFAULT;
         }
     }
@@ -1738,6 +1750,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
     {
         status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
             DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS + DATAFIELD_OFFSET, sy_lfr_pas_filter_modulus);
+        DEBUG_CHECK_STATUS(status);
         flag = WRONG_APP_DATA;
     }
 
@@ -1751,6 +1764,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             parPtr = (char*)&sy_lfr_pas_filter_tbad;
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_PAS_FILTER_TBAD + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -1765,6 +1779,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET + DATAFIELD_OFFSET,
                 sy_lfr_pas_filter_offset);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -1779,6 +1794,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             parPtr = (char*)&sy_lfr_pas_filter_shift;
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_PAS_FILTER_SHIFT + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -1792,6 +1808,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_PAS_FILTER_MODULUS + DATAFIELD_OFFSET,
                 sy_lfr_pas_filter_modulus);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -1805,6 +1822,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             parPtr = (char*)&sy_lfr_sc_rw_delta_f;
             status = send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
                 DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]);
+            DEBUG_CHECK_STATUS(status);
             flag = WRONG_APP_DATA;
         }
     }
@@ -1819,6 +1837,7 @@ int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_
             parPtr = (char*)&sy_lfr_pas_filter_shift;
             status = send_tm_lfr_tc_exe_inconsistent(
                 TC, queue_id, datafield_pos + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]);
+            DEBUG_CHECK_STATUS(status);
         }
     }
 
@@ -1888,6 +1907,7 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
             DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY + DATAFIELD_OFFSET,
             TC->dataAndCRC[DATAFIELD_POS_SY_LFR_KCOEFF_FREQUENCY
                 + 1]); // +1 to get the LSB instead of the MSB
+        DEBUG_CHECK_STATUS(status);
         status = LFR_DEFAULT;
     }
     else

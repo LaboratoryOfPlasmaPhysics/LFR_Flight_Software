@@ -42,6 +42,7 @@ rtems_isr watchdog_isr(rtems_vector_number vector)
     rtems_status_code status_code;
 
     status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_12);
+    DEBUG_CHECK_STATUS(status);
 
     LFR_PRINTF("watchdog_isr *** this is the end, exit(0)\n");
 
