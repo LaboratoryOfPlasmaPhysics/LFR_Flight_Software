@@ -899,9 +899,10 @@ typedef struct
 //**************************
 // TM_LFR_KCOEFFICIENTS_DUMP
 
-#define KCOEFF_BLK_NR_PKT1 30
-#define KCOEFF_BLK_NR_PKT2 6
-#define KCOEFF_BLK_SIZE    130
+
+#define KCOEFF_BLK_MAX_SZ  3900
+#define KCOEFF_BLK_NR_PKT1 676
+#define KCOEFF_BLK_NR_PKT2 338
 #define KCOEFF_PKTCNT      2
 #define PKTNR_1            1
 #define PKTNR_2            2
@@ -930,7 +931,7 @@ typedef struct
     // SOURCE DATA repeated N times with N in [0 .. PA_LFR_KCOEFF_BLK_NR]
     // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 =
     // 3900)
-    unsigned char kcoeff_blks[KCOEFF_BLK_SIZE * KCOEFF_BLK_NR_PKT1];
+    unsigned char kcoeff_blks[KCOEFF_BLK_MAX_SZ];
 
 } Packet_TM_LFR_KCOEFFICIENTS_DUMP_t;
 

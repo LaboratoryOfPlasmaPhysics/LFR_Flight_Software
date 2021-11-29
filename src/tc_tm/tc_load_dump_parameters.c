@@ -2214,7 +2214,7 @@ void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoeffic
     //******************
     // SOURCE DATA repeated N times with N in [0 .. PA_LFR_KCOEFF_BLK_NR]
     // one blk is 2 + 4 * 32 = 130 bytes, 30 blks max in one packet (30 * 130 = 3900)
-    memset(kcoefficients_dump->kcoeff_blks, 0, KCOEFF_BLK_NR_PKT1 * KCOEFF_BLK_SIZE);
+    memset(kcoefficients_dump->kcoeff_blks, 0, KCOEFF_BLK_MAX_SZ);
 }
 
 void increment_seq_counter_destination_id_dump(
