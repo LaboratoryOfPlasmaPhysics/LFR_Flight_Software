@@ -2177,11 +2177,11 @@ void init_kcoefficients_dump(void)
 }
 
 void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoefficients_dump,
-    unsigned char pkt_nr, unsigned char blk_nr)
+    unsigned char pkt_nr, unsigned int blk_nr)
 {
     unsigned int packetLength;
 
-    packetLength = ((blk_nr * KCOEFF_BLK_SIZE) + BYTE_POS_KCOEFFICIENTS_PARAMETES)
+    packetLength = ((blk_nr * NB_BYTES_PER_FLOAT) + BYTE_POS_KCOEFFICIENTS_PARAMETES)
         - CCSDS_TC_TM_PACKET_OFFSET; // 4 bytes for the CCSDS header
 
     kcoefficients_dump->targetLogicalAddress = CCSDS_DESTINATION_ID;
