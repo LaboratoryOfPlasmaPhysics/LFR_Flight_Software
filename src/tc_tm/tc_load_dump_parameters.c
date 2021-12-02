@@ -606,7 +606,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     increment_seq_counter_destination_id_dump(
         kcoefficients_dump_2.packetSequenceControl, TC->sourceID);
 
-    kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
+    kCoeffDumpPtr = kcoefficients_dump_2.kcoeff_blks;
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
     {
 
