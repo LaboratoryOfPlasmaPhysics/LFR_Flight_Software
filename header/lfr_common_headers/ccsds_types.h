@@ -901,8 +901,8 @@ typedef struct
 
 
 #define KCOEFF_BLK_MAX_SZ  3900
-#define KCOEFF_BLK_NR_PKT1 676
-#define KCOEFF_BLK_NR_PKT2 338
+#define KCOEFF_BLK_NR_PKT1 26
+#define KCOEFF_BLK_NR_PKT2 13
 #define KCOEFF_PKTCNT      2
 #define PKTNR_1            1
 #define PKTNR_2            2

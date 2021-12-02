@@ -104,7 +104,7 @@ void floatToChar(float value, unsigned char* ptr);
 void init_parameter_dump(void);
 void init_kcoefficients_dump(void);
 void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoefficients_dump,
-    unsigned char pkt_nr, unsigned int blk_nr);
+    unsigned char pkt_nr, unsigned char blk_nr);
 void increment_seq_counter_destination_id_dump(
     unsigned char* packet_sequence_control, unsigned char destination_id);
 
