@@ -1,6 +1,9 @@
 #ifndef GSCMEMORY_HPP_
 #define GSCMEMORY_HPP_
 
+#include "lfr_common_headers/fsw_params.h"
+#include "fsw_debug.h"
+
 #ifndef LEON3
     #define LEON3
 #endif
@@ -46,8 +49,6 @@
 
 volatile unsigned int* asr16Ptr = (volatile unsigned int*)ASR16_REG_ADDRESS;
 
-#include "lfr_common_headers/fsw_params.h"
-#include "fsw_debug.h"
 
 //***************************
 // CCR Cache control register

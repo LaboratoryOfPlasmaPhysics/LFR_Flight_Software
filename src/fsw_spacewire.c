@@ -40,6 +40,7 @@
 #include "fsw_debug.h"
 #include "fsw_misc.h"
 #include "fsw_watchdog.h"
+#include "fsw_housekeeping.h"
 #include "hw/lfr_regs.h"
 #include <errno.h>
 
@@ -785,25 +786,6 @@ void spacewire_get_last_error(void)
     previous = current;
 }
 
-void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code)
-{
-    unsigned char* coarseTimePtr;
-    unsigned char* fineTimePtr;
-
-    coarseTimePtr = (unsigned char*)&time_management_regs->coarse_time;
-    fineTimePtr = (unsigned char*)&time_management_regs->fine_time;
-
-    housekeeping_packet.hk_lfr_last_er_rid[0] = (unsigned char)((rid & BYTE0_MASK) >> SHIFT_1_BYTE);
-    housekeeping_packet.hk_lfr_last_er_rid[1] = (unsigned char)(rid & BYTE1_MASK);
-    housekeeping_packet.hk_lfr_last_er_code = code;
-    housekeeping_packet.hk_lfr_last_er_time[0] = coarseTimePtr[0];
-    housekeeping_packet.hk_lfr_last_er_time[1] = coarseTimePtr[1];
-    housekeeping_packet.hk_lfr_last_er_time[BYTE_2] = coarseTimePtr[BYTE_2];
-    housekeeping_packet.hk_lfr_last_er_time[BYTE_3] = coarseTimePtr[BYTE_3];
-    housekeeping_packet.hk_lfr_last_er_time[BYTE_4] = fineTimePtr[BYTE_2];
-    housekeeping_packet.hk_lfr_last_er_time[BYTE_5] = fineTimePtr[BYTE_3];
-}
-
 void update_hk_with_grspw_stats(void)
 {
     //****************************
@@ -983,7 +965,7 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
         timecode_timer_id, TIMECODE_TIMER_TIMEOUT, timecode_timer_routine, NULL);
     if (status != RTEMS_SUCCESSFUL)
     {
-        rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_14);
+        send_event_dumb_task(RTEMS_EVENT_14);
     }
 }
 
@@ -1038,7 +1020,7 @@ rtems_timer_service_routine timecode_timer_routine(rtems_id timer_id, void* user
         update_hk_lfr_last_er_fields(RID_LE_LFR_TIMEC, CODE_MISSING);
     }
 
-    status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_13);
+    status = send_event_dumb_task(RTEMS_EVENT_13);
     DEBUG_CHECK_STATUS(status);
 }
 

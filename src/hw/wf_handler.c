@@ -181,7 +181,7 @@ void waveforms_isr_f3(void)
             }
             if (rtems_event_send(Task_id[TASKID_CWF3], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_0);
+                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
             }
         }
     }
@@ -206,7 +206,7 @@ void waveforms_isr_burst(void)
             waveform_picker_regs->addr_data_f2_0 = current_ring_node_f2->buffer_address;
             if (rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST) != RTEMS_SUCCESSFUL)
             {
-                spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_0);
+                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
             }
             waveform_picker_regs->status
                 = waveform_picker_regs->status & RST_WFP_F2_0; // [0100 0100 0001 0000]
@@ -220,7 +220,7 @@ void waveforms_isr_burst(void)
             waveform_picker_regs->addr_data_f2_1 = current_ring_node_f2->buffer_address;
             if (rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST) != RTEMS_SUCCESSFUL)
             {
-                spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_0);
+                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
             }
             waveform_picker_regs->status
                 = waveform_picker_regs->status & RST_WFP_F2_1; // [0100 0100 0010 0000]
@@ -354,7 +354,7 @@ rtems_isr waveforms_isr(rtems_vector_number vector)
     if ((waveform_picker_regs->status & BYTE0_MASK)
         != INIT_CHAR) // [1111 1111 0000 0000] check the error bits
     {
-        spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_10);
+        spare_status = send_event_dumb_task(RTEMS_EVENT_10);
     }
 
     switch (lfrCurrentMode)

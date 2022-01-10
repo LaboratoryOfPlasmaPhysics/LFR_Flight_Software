@@ -22,10 +22,10 @@
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
 #include "fsw_housekeeping.h"
-#include "fsw_globals.h"
-#include "lfr_cpu_usage_report.h"
-#include "fsw_misc.h"
 #include "fsw_debug.h"
+#include "fsw_globals.h"
+#include "fsw_misc.h"
+#include "lfr_cpu_usage_report.h"
 
 
 void init_housekeeping_parameters(void)
@@ -34,7 +34,6 @@ void init_housekeeping_parameters(void)
      *
      */
 
-    unsigned int i = 0;
     unsigned char* parameters;
     unsigned char sizeOfHK;
 
@@ -42,7 +41,7 @@ void init_housekeeping_parameters(void)
 
     parameters = (unsigned char*)&housekeeping_packet;
 
-    for (i = 0; i < sizeOfHK; i++)
+    for (int i = 0; i < sizeOfHK; i++)
     {
         parameters[i] = INIT_CHAR;
     }
@@ -151,9 +150,7 @@ void set_hk_lfr_reset_cause(enum lfr_reset_cause_t lfr_reset_cause)
 
 void increment_hk_counter(unsigned char newValue, unsigned char oldValue, unsigned int* counter)
 {
-    int delta;
-
-    delta = 0;
+    int delta = 0;
 
     if (newValue >= oldValue)
     {
@@ -270,9 +267,7 @@ void hk_lfr_me_update(void)
 void hk_lfr_le_me_he_update()
 {
 
-    unsigned int hk_lfr_he_cnt;
-
-    hk_lfr_he_cnt = (((unsigned int)housekeeping_packet.hk_lfr_he_cnt[0]) * 256)
+    unsigned int hk_lfr_he_cnt = (((unsigned int)housekeeping_packet.hk_lfr_he_cnt[0]) * 256)
         + housekeeping_packet.hk_lfr_he_cnt[1];
 
     // update the low severity error counter
@@ -312,7 +307,8 @@ void set_hk_lfr_time_not_synchro()
             if (synchroLost == 0)
             {
                 synchroLost = 1;
-                housekeeping_packet.hk_lfr_time_not_synchro=increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_not_synchro);
+                housekeeping_packet.hk_lfr_time_not_synchro
+                    = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_not_synchro);
                 update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_NOT_SYNCHRO);
             }
             break;
@@ -350,6 +346,25 @@ void increment_seq_counter(unsigned short* packetSequenceControl)
     }
 
     *packetSequenceControl = segmentation_grouping_flag | sequence_cnt;
+}
+
+void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code)
+{
+    unsigned char* coarseTimePtr;
+    unsigned char* fineTimePtr;
+
+    coarseTimePtr = (unsigned char*)&time_management_regs->coarse_time;
+    fineTimePtr = (unsigned char*)&time_management_regs->fine_time;
+
+    housekeeping_packet.hk_lfr_last_er_rid[0] = (unsigned char)((rid & BYTE0_MASK) >> SHIFT_1_BYTE);
+    housekeeping_packet.hk_lfr_last_er_rid[1] = (unsigned char)(rid & BYTE1_MASK);
+    housekeeping_packet.hk_lfr_last_er_code = code;
+    housekeeping_packet.hk_lfr_last_er_time[0] = coarseTimePtr[0];
+    housekeeping_packet.hk_lfr_last_er_time[1] = coarseTimePtr[1];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_2] = coarseTimePtr[BYTE_2];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_3] = coarseTimePtr[BYTE_3];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_4] = fineTimePtr[BYTE_2];
+    housekeeping_packet.hk_lfr_last_er_time[BYTE_5] = fineTimePtr[BYTE_3];
 }
 
 void set_hk_lfr_ahb_correctable() // CRITICITY L
@@ -418,9 +433,6 @@ unsigned long long int getTimeAsUnsignedLongLongInt()
 }
 
 
-
-
-
 /**
  * @brief get_cpu_load, computes CPU load, CPU load average and CPU load max
  * @param resource_statistics stores:
@@ -430,7 +442,7 @@ unsigned long long int getTimeAsUnsignedLongLongInt()
  *
  * The CPU load average is computed on the last 60 values with a simple moving average.
  */
-void encode_cpu_load(Packet_TM_LFR_HK_t *hk_packet)
+void encode_cpu_load(Packet_TM_LFR_HK_t* hk_packet)
 {
 #define LOAD_AVG_SIZE 60
     static unsigned char cpu_load_hist[LOAD_AVG_SIZE] = { 0 };
@@ -461,5 +473,3 @@ void encode_cpu_load(Packet_TM_LFR_HK_t *hk_packet)
     rtems_cpu_usage_reset();
 #endif
 }
-
-

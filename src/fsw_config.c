@@ -12,19 +12,6 @@ struct drvmgr_key grlib_grspw_0n1_res[] = {
     { "rxPktSize", KEY_TYPE_INT, { (unsigned int)RXPKTSIZE } }, KEY_EMPTY
 };
 
-// If RTEMS_DRVMGR_STARTUP is defined we override the "weak defaults" that is defined by the LEON3
-// BSP.
-
-// struct drvmgr_bus_res grlib_drv_resources =
-//{
-//    .next = NULL,
-//    .resource = {
-//        {DRIVER_AMBAPP_GAISLER_GRSPW_ID, 0, &grlib_grspw_0n1_res[0]},
-//        {DRIVER_AMBAPP_GAISLER_GRSPW_ID, 1, &grlib_grspw_0n1_res[0]},
-//        RES_EMPTY /*  Mark end of resource array */
-//    }
-//};
-
 struct drvmgr_bus_res grlib_drv_resources = { NULL,
     {
         { DRIVER_AMBAPP_GAISLER_GRSPW_ID, 0, &grlib_grspw_0n1_res[0] },

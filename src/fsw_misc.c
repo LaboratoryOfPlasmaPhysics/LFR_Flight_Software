@@ -148,7 +148,9 @@ rtems_task hous_task(rtems_task_argument argument)
 
     // startup phase
     status = rtems_rate_monotonic_period(HK_id, SY_LFR_TIME_SYN_TIMEOUT_in_ticks);
+    DEBUG_CHECK_STATUS(status);
     status = rtems_rate_monotonic_get_status(HK_id, &period_status);
+    DEBUG_CHECK_STATUS(status);
     DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
     while ((period_status.state != RATE_MONOTONIC_EXPIRED)
         && (isSynchronized == false)) // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
@@ -161,11 +163,13 @@ rtems_task hous_task(rtems_task_argument argument)
         else
         {
             status = rtems_rate_monotonic_get_status(HK_id, &period_status);
-
+            DEBUG_CHECK_STATUS(status);
             status = rtems_task_wake_after(HK_SYNC_WAIT); // wait HK_SYNCH_WAIT 100 ms = 10 * 10 ms
+            DEBUG_CHECK_STATUS(status);
         }
     }
     status = rtems_rate_monotonic_cancel(HK_id);
+    DEBUG_CHECK_STATUS(status);
     DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
 
     set_hk_lfr_reset_cause(POWER_ON);
@@ -176,7 +180,7 @@ rtems_task hous_task(rtems_task_argument argument)
         if (status != RTEMS_SUCCESSFUL)
         {
             LFR_PRINTF("in HOUS *** ERR period: %d\n", status);
-            spare_status = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_6);
+            spare_status = send_event_dumb_task(RTEMS_EVENT_6);
         }
         else
         {
@@ -319,7 +323,6 @@ rtems_task dumb_task(rtems_task_argument unused)
 
     IGNORE_UNUSED_PARAMETER(unused);
 
-    unsigned int i;
     unsigned int intEventOut;
     unsigned int coarse_time = 0;
     unsigned int fine_time = 0;
@@ -336,7 +339,7 @@ rtems_task dumb_task(rtems_task_argument unused)
                 | RTEMS_EVENT_9 | RTEMS_EVENT_12 | RTEMS_EVENT_13 | RTEMS_EVENT_14,
             RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out); // wait for an RTEMS_EVENT
         intEventOut = (unsigned int)event_out;
-        for (i = 0; i < NB_RTEMS_EVENTS; i++)
+        for (unsigned int i = 0; i < NB_RTEMS_EVENTS; i++)
         {
             if (((intEventOut >> i) & 1) != 0)
             {

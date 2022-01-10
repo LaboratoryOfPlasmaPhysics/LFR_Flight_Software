@@ -1964,13 +1964,13 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     }
 
     // The 3 first packets contains one line of last MAG CAL MATRIX
-    if (matrix_index < 3)
+    if (extra_mag_matrix_ptr!=NULL &&  matrix_index < 3)
     {
         memcpy(extra_mag_matrix_ptr + (matrix_index * NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX),
             TC->dataAndCRC + DATAFIELD_POS_SY_LFR_EXTRA_CAL_MATRIX,
             NB_MAG_COMPONENT_PER_SM * FLOATS_PER_COMPLEX * NB_BYTES_PER_FLOAT);
     }
-    else if (matrix_index < 5) // The 2 following packets contains one line of last ELEC CAL MATRIX
+    else if (extra_elec_matrix_ptr!=NULL && matrix_index < 5) // The 2 following packets contains one line of last ELEC CAL MATRIX
     {
         memcpy(extra_elec_matrix_ptr
                 + ((matrix_index - 3) * NB_ELEC_COMPONENT_PER_SM * FLOATS_PER_COMPLEX),

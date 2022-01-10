@@ -29,7 +29,6 @@ extern struct param_local_str param_local;
 extern Packet_TM_LFR_PARAMETER_DUMP_t parameter_dump_packet;
 
 extern rtems_name misc_name[];
-extern rtems_id Task_id[]; /* array of task ids */
 
 ring_node* getRingNodeForAveraging(unsigned char frequencyChannel);
 // ISR

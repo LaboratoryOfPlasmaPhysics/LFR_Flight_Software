@@ -108,7 +108,7 @@ void spectral_matrices_isr_f0(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BIT_READY_0_1; // [0011]
-            status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_11);
+            status_code = send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             full_ring_node = current_ring_node_sm_f0->previous;
@@ -123,7 +123,7 @@ void spectral_matrices_isr_f0(int statusReg)
                 ring_node_for_averaging_sm_f0 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF0], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f0 = 0;
             }
@@ -142,7 +142,7 @@ void spectral_matrices_isr_f0(int statusReg)
                 ring_node_for_averaging_sm_f0 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF0], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f0 = 0;
             }
@@ -169,7 +169,7 @@ void spectral_matrices_isr_f1(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BITS_STATUS_F1; // [1100]
-            status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_11);
+            status_code = send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             full_ring_node = current_ring_node_sm_f1->previous;
@@ -184,7 +184,7 @@ void spectral_matrices_isr_f1(int statusReg)
                 ring_node_for_averaging_sm_f1 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF1], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f1 = 0;
             }
@@ -203,7 +203,7 @@ void spectral_matrices_isr_f1(int statusReg)
                 ring_node_for_averaging_sm_f1 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF1], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f1 = 0;
             }
@@ -229,7 +229,7 @@ void spectral_matrices_isr_f2(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BITS_STATUS_F2; // [0011 0000]
-            status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_11);
+            status_code = send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
@@ -240,7 +240,7 @@ void spectral_matrices_isr_f2(int statusReg)
             spectral_matrix_regs->status = BIT_STATUS_F2_0; // [0001 0000]
             if (rtems_event_send(Task_id[TASKID_AVF2], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                status_code = send_event_dumb_task(RTEMS_EVENT_3);
             }
             break;
         case BIT_READY_1:
@@ -252,7 +252,7 @@ void spectral_matrices_isr_f2(int statusReg)
             spectral_matrix_regs->status = BIT_STATUS_F2_1; // [0010 0000]
             if (rtems_event_send(Task_id[TASKID_AVF2], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_3);
+                status_code = send_event_dumb_task(RTEMS_EVENT_3);
             }
             break;
         default:
@@ -278,7 +278,7 @@ void spectral_matrix_isr_error_handler(int statusReg)
 
     if (statusReg & BITS_SM_ERR) // [0111 1100 0000]
     {
-        status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_8);
+        status_code = send_event_dumb_task(RTEMS_EVENT_8);
     }
 
     spectral_matrix_regs->status = spectral_matrix_regs->status & BITS_SM_ERR;

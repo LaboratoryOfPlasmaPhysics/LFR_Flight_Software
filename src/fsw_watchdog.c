@@ -32,6 +32,7 @@
 #include "fsw_watchdog.h"
 #include "hw/timer.h"
 #include "hw/lfr_regs.h"
+#include "fsw_misc.h"
 
 // WATCHDOG, this ISR should never be triggered.
 
@@ -41,7 +42,7 @@ rtems_isr watchdog_isr(rtems_vector_number vector)
 
     rtems_status_code status_code;
 
-    status_code = rtems_event_send(Task_id[TASKID_DUMB], RTEMS_EVENT_12);
+    status_code = send_event_dumb_task(RTEMS_EVENT_12);
     DEBUG_CHECK_STATUS(status);
 
     LFR_PRINTF("watchdog_isr *** this is the end, exit(0)\n");

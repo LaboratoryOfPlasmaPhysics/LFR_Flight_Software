@@ -76,8 +76,7 @@ rtems_task swbd_task(rtems_task_argument argument);
 //******************
 // general functions
 void WFP_init_rings(void);
-void init_ring(
-    ring_node ring[], unsigned char nbNodes, volatile int buffer[], unsigned int bufferSize);
+
 void WFP_reset_current_ring_nodes(void);
 //
 int init_header_continuous_cwf3_light_table(Header_TM_LFR_SCIENCE_CWF_t* headerCWF);

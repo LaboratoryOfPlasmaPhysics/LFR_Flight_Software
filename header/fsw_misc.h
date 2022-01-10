@@ -9,8 +9,7 @@
 
 
 #include "lfr_common_headers/fsw_params.h"
-//#include "fsw_spacewire.h"
-//#include "lfr_cpu_usage_report.h"
+#include "fsw_globals.h"
 
 #define WATCHDOG_LOOP_PRINTF 10
 #define WATCHDOG_LOOP_DEBUG  3
@@ -22,6 +21,10 @@
 #define DUMB_MESSAGE_1  "in DUMB *** timecode_irq_handler"
 #define DUMB_MESSAGE_12 "WATCHDOG timer"
 #define DUMB_MESSAGE_13 "TIMECODE timer"
+
+#ifdef PRINT_MESSAGES_ON_CONSOLE
+    #define DUMB_TASK_ENABLED
+#endif
 
 #define MAX_OF(type)                                                                               \
     (((type)(~0LLU) > (type)((1LLU << ((sizeof(type) << 3) - 1)) - 1LLU))                          \
@@ -46,6 +49,14 @@ rtems_task dumb_task(rtems_task_argument unused);
 rtems_task scrubbing_task(rtems_task_argument unused);
 rtems_task calibration_sweep_task(rtems_task_argument unused);
 
+inline rtems_status_code send_event_dumb_task(rtems_event_set event)
+{
+#ifdef DUMB_TASK_ENABLED
+    return rtems_event_send(Task_id[TASKID_DUMB], event);
+#else
+    return RTEMS_SUCCESSFUL;
+#endif
+}
 
 extern int sched_yield(void);
 extern void rtems_cpu_usage_reset();

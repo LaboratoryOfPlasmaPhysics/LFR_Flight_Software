@@ -65,15 +65,15 @@
     #include <drvmgr/drvmgr_confdefs.h>
 #endif
 
-#include "fsw_debug.h"
 #include "GscMemoryLPP.hpp"
-#include "fsw_config.c"
-#include "fsw_init.h"
-#include "processing/ASM/spectralmatrices.h"
 #include "fsw_compile_warnings.h"
-#include "hw/uart.h"
-#include "hw/lfr_regs.h"
+#include "fsw_config.c"
+#include "fsw_debug.h"
 #include "fsw_housekeeping.h"
+#include "fsw_init.h"
+#include "hw/lfr_regs.h"
+#include "hw/uart.h"
+#include "processing/ASM/spectralmatrices.h"
 
 void initCache()
 {
@@ -518,6 +518,8 @@ int create_all_tasks(void) // create all tasks which run in the software
             &Task_id[TASKID_LOAD]);
         DEBUG_CHECK_STATUS(status);
     }
+
+#ifdef DUMB_TASK_ENABLED
     if (status == RTEMS_SUCCESSFUL) // DUMB
     {
         status = rtems_task_create(Task_name[TASKID_DUMB], TASK_PRIORITY_DUMB,
@@ -525,6 +527,8 @@ int create_all_tasks(void) // create all tasks which run in the software
             &Task_id[TASKID_DUMB]);
         DEBUG_CHECK_STATUS(status);
     }
+#endif
+
     if (status == RTEMS_SUCCESSFUL) // SCRUBBING TASK
     {
         status = rtems_task_create(Task_name[TASKID_SCRB], TASK_PRIORITY_SCRB,
@@ -679,11 +683,15 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
         status = rtems_task_start(Task_id[TASKID_AVGV], avgv_task, 1);
         DEBUG_CHECK_STATUS(status);
     }
+
+#ifdef DUMB_TASK_ENABLED
     if (status == RTEMS_SUCCESSFUL) // DUMB
     {
         status = rtems_task_start(Task_id[TASKID_DUMB], dumb_task, 1);
         DEBUG_CHECK_STATUS(status);
     }
+#endif
+
     if (status == RTEMS_SUCCESSFUL) // SCRUBBING
     {
         status = rtems_task_start(Task_id[TASKID_SCRB], scrubbing_task, 1);
@@ -705,8 +713,8 @@ int start_all_tasks(void) // start all tasks except SEND RECV and HOUS
 
 rtems_status_code create_message_queues(void) // create the five message queues used in the software
 {
-    rtems_status_code status=RTEMS_SUCCESSFUL;
-    rtems_status_code ret=RTEMS_SUCCESSFUL;
+    rtems_status_code status = RTEMS_SUCCESSFUL;
+    rtems_status_code ret = RTEMS_SUCCESSFUL;
     rtems_id queue_id;
 
     ret = RTEMS_SUCCESSFUL;
@@ -717,35 +725,35 @@ rtems_status_code create_message_queues(void) // create the five message queues 
     status = rtems_message_queue_create(misc_name[QUEUE_RECV], MSG_QUEUE_COUNT_RECV,
         CCSDS_TC_PKT_MAX_SIZE, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     DEBUG_CHECK_STATUS(status);
-    ret|=status;
+    ret |= status;
 
     //************************************************
     // create the queue for handling TM packet sending
     status = rtems_message_queue_create(misc_name[QUEUE_SEND], MSG_QUEUE_COUNT_SEND,
         MSG_QUEUE_SIZE_SEND, RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     DEBUG_CHECK_STATUS(status);
-    ret|=status;
+    ret |= status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f0
     status = rtems_message_queue_create(misc_name[QUEUE_PRC0], MSG_QUEUE_COUNT_PRC0,
-        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof(asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     DEBUG_CHECK_STATUS(status);
-    ret|=status;
+    ret |= status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f1
     status = rtems_message_queue_create(misc_name[QUEUE_PRC1], MSG_QUEUE_COUNT_PRC1,
-        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof(asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     DEBUG_CHECK_STATUS(status);
-    ret|=status;
+    ret |= status;
 
     //*****************************************************************************
     // create the queue for handling averaged spectral matrices for processing @ f2
     status = rtems_message_queue_create(misc_name[QUEUE_PRC2], MSG_QUEUE_COUNT_PRC2,
-        sizeof (asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
+        sizeof(asm_msg), RTEMS_FIFO | RTEMS_LOCAL, &queue_id);
     DEBUG_CHECK_STATUS(status);
-    ret|=status;
+    ret |= status;
 
     return ret;
 }
