@@ -59,11 +59,9 @@ void initLookUpTableForCRC(void)
      * The global table lookUpTableForCRC[256] is initiated.
      *
      */
-
-    unsigned int i;
     unsigned int tmp;
 
-    for (i = 0; i < CONST_256; i++)
+    for (unsigned int i = 0; i < CONST_256; i++)
     {
         tmp = 0;
         if ((i & BIT_0) != 0)
@@ -102,7 +100,8 @@ void initLookUpTableForCRC(void)
     }
 }
 
-void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData)
+void GetCRCAsTwoBytes(
+    const unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData)
 {
     /** This function calculates a two bytes Cyclic Redundancy Code.
      *
@@ -173,27 +172,21 @@ int tc_parser(ccsdsTelecommandPacket_t* TCPacket, unsigned int estimatedPacketLe
     {
         status = ILLEGAL_APID;
     }
-    if (status == CCSDS_TM_VALID) // CHECK THE CATEGORY
+    // CHECK THE CATEGORY
+    if (status == CCSDS_TM_VALID && category != CCSDS_PACKET_CATEGORY)
     {
-        if (category != CCSDS_PACKET_CATEGORY)
-        {
-            status = ILLEGAL_APID;
-        }
+        status = ILLEGAL_APID;
     }
-    if (status == CCSDS_TM_VALID) // CHECK THE PACKET_LENGTH FIELD AND THE ESTIMATED PACKET_LENGTH
-                                  // COMPLIANCE
+    // CHECK THE PACKET_LENGTH FIELD AND THE ESTIMATED PACKET_LENGTH COMPLIANCE
+    if (status == CCSDS_TM_VALID && packetLength != estimatedPacketLength)
+
     {
-        if (packetLength != estimatedPacketLength)
-        {
-            status = WRONG_LEN_PKT;
-        }
+        status = WRONG_LEN_PKT;
     }
-    if (status == CCSDS_TM_VALID) // CHECK THAT THE PACKET DOES NOT EXCEED THE MAX SIZE
+    // CHECK THAT THE PACKET DOES NOT EXCEED THE MAX SIZE
+    if (status == CCSDS_TM_VALID && packetLength > CCSDS_TC_PKT_MAX_SIZE)
     {
-        if (packetLength > CCSDS_TC_PKT_MAX_SIZE)
-        {
-            status = WRONG_LEN_PKT;
-        }
+        status = WRONG_LEN_PKT;
     }
     if (status == CCSDS_TM_VALID) // CHECK THE TYPE
     {
@@ -306,9 +299,7 @@ int tc_check_sid(unsigned char sid)
      *
      */
 
-    int status;
-
-    status = WRONG_SRC_ID;
+    int status = WRONG_SRC_ID;
 
     if ((sid == SID_TC_MISSION_TIMELINE) || (sid == SID_TC_TC_SEQUENCES)
         || (sid == SID_TC_RECOVERY_ACTION_CMD) || (sid == SID_TC_BACKUP_MISSION_TIMELINE)
@@ -317,10 +308,6 @@ int tc_check_sid(unsigned char sid)
         || (sid == SID_TC_AOCS) || (sid == SID_TC_RPW_INTERNAL))
     {
         status = CCSDS_TM_VALID;
-    }
-    else
-    {
-        status = WRONG_SRC_ID;
     }
 
     return status;
@@ -337,9 +324,7 @@ int tc_check_length(unsigned char packetSubType, unsigned int length)
      *
      */
 
-    int status;
-
-    status = LFR_SUCCESSFUL;
+    int status = CCSDS_TM_VALID;
 
     switch (packetSubType)
     {
@@ -523,12 +508,9 @@ int tc_check_crc(
      *
      */
 
-    int status;
-    unsigned char* CCSDSContent;
+    int status = CCSDS_TM_VALID;
+    unsigned char* CCSDSContent = (unsigned char*)TCPacket->packetID;
 
-    status = INCOR_CHECKSUM;
-
-    CCSDSContent = (unsigned char*)TCPacket->packetID;
     GetCRCAsTwoBytes(CCSDSContent, computed_CRC,
         length + CCSDS_TC_TM_PACKET_OFFSET
             - BYTES_PER_CRC); // 2 CRC bytes removed from the calculation of the CRC
@@ -540,10 +522,6 @@ int tc_check_crc(
     else if (computed_CRC[1] != CCSDSContent[length + CCSDS_TC_TM_PACKET_OFFSET - 1])
     {
         status = INCOR_CHECKSUM;
-    }
-    else
-    {
-        status = CCSDS_TM_VALID;
     }
 
     return status;

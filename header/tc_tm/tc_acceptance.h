@@ -27,7 +27,7 @@
 // GENERAL USE FUNCTIONS
 unsigned int Crc_opt(unsigned char D, unsigned int Chk);
 void initLookUpTableForCRC(void);
-void GetCRCAsTwoBytes(unsigned char* data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData);
+void GetCRCAsTwoBytes(const unsigned char *data, unsigned char* crcAsTwoBytes, unsigned int sizeOfData);
 
 //*********************
 // ACCEPTANCE FUNCTIONS
