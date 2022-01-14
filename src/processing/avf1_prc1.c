@@ -72,7 +72,7 @@ float compressed_sm_sbm_f1[TOTAL_SIZE_COMPRESSED_ASM_SBM_F1] = { 0 };
 //************
 // RTEMS TASKS
 
-rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
+LFR_NO_RETURN rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
 {
 
     rtems_event_set event_out;
@@ -229,7 +229,7 @@ rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
     }
 }
 
-rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
+LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
 {
     char incomingData[MSG_QUEUE_SIZE_SEND]; // incoming data buffer
     size_t size; // size of the incoming TC packet

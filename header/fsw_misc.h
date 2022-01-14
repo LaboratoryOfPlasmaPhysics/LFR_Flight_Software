@@ -14,6 +14,8 @@
 #define WATCHDOG_LOOP_PRINTF 10
 #define WATCHDOG_LOOP_DEBUG  3
 
+#define LFR_NO_RETURN __attribute__((noreturn))
+
 #define NB_RTEMS_EVENTS 32
 #define EVENT_12        12
 #define EVENT_13        13

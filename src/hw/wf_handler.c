@@ -385,7 +385,7 @@ rtems_isr waveforms_isr(rtems_vector_number vector)
 //************
 // RTEMS TASKS
 
-rtems_task wfrm_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
+LFR_NO_RETURN rtems_task wfrm_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
 {
     /** This RTEMS task is dedicated to the transmission of snapshots of the NORMAL mode.
      *
@@ -446,7 +446,7 @@ rtems_task wfrm_task(rtems_task_argument argument) // used with the waveform pic
     }
 }
 
-rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
+LFR_NO_RETURN rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
 {
     /** This RTEMS task is dedicated to the transmission of continuous waveforms at f3.
      *
@@ -516,7 +516,7 @@ rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform pic
     }
 }
 
-rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN BURST AND SBM2
+LFR_NO_RETURN rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN BURST AND SBM2
 {
     /** This RTEMS task is dedicated to the transmission of continuous waveforms at f2.
      *
@@ -594,7 +594,7 @@ rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN BURST AND SBM
     }
 }
 
-rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN SBM1
+LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN SBM1
 {
     /** This RTEMS task is dedicated to the transmission of continuous waveforms at f1.
      *
@@ -662,7 +662,7 @@ rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN SBM1
     }
 }
 
-rtems_task swbd_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task swbd_task(rtems_task_argument argument)
 {
     /** This RTEMS task is dedicated to the building of snapshots from different continuous
      * waveforms buffers.

@@ -36,7 +36,7 @@
 
 // WATCHDOG, this ISR should never be triggered.
 
-rtems_isr watchdog_isr(rtems_vector_number vector)
+LFR_NO_RETURN rtems_isr watchdog_isr(rtems_vector_number vector)
 {
     IGNORE_UNUSED_PARAMETER(vector);
 

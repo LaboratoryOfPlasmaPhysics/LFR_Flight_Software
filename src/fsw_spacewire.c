@@ -60,7 +60,7 @@ unsigned int* grspwPtr = (unsigned int*)(REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_TIME
 
 //***********
 // RTEMS TASK
-rtems_task spiq_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task spiq_task(rtems_task_argument unused)
 {
     /** This RTEMS task is awaken by an rtems_event sent by the interruption subroutine of the
      * SpaceWire driver.
@@ -138,7 +138,7 @@ rtems_task spiq_task(rtems_task_argument unused)
     }
 }
 
-rtems_task recv_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task recv_task(rtems_task_argument unused)
 {
     /** This RTEMS task is dedicated to the reception of incoming TeleCommands.
      *
@@ -234,7 +234,7 @@ rtems_task recv_task(rtems_task_argument unused)
     }
 }
 
-rtems_task send_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task send_task(rtems_task_argument argument)
 {
     /** This RTEMS task is dedicated to the transmission of TeleMetry packets.
      *
@@ -359,7 +359,7 @@ rtems_task send_task(rtems_task_argument argument)
     }
 }
 
-rtems_task link_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task link_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
     rtems_event_set event_out;

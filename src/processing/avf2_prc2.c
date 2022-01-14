@@ -66,7 +66,7 @@ float compressed_sm_norm_f2[TOTAL_SIZE_COMPRESSED_ASM_NORM_F2] = { 0 };
 
 //***
 // F2
-rtems_task avf2_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task avf2_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
     rtems_event_set event_out;
@@ -176,7 +176,7 @@ rtems_task avf2_task(rtems_task_argument argument)
     }
 }
 
-rtems_task prc2_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task prc2_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
     char incomingData[MSG_QUEUE_SIZE_SEND]; // incoming data buffer

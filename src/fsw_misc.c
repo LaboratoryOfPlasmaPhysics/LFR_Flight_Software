@@ -49,7 +49,7 @@ int16_t hk_lfr_sc_e2_f3 = 0;
  * @return
  */
 
-rtems_task load_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task load_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
 
@@ -105,7 +105,7 @@ rtems_task load_task(rtems_task_argument argument)
  * @param argument
  * @return
  */
-rtems_task hous_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task hous_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
 
@@ -244,7 +244,7 @@ rtems_task hous_task(rtems_task_argument argument)
  * @param argument
  * @return
  */
-rtems_task avgv_task(rtems_task_argument argument)
+LFR_NO_RETURN rtems_task avgv_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
 
@@ -304,7 +304,7 @@ rtems_task avgv_task(rtems_task_argument argument)
     return;
 }
 
-rtems_task dumb_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task dumb_task(rtems_task_argument unused)
 {
     /** This RTEMS taks is used to print messages without affecting the general behaviour of the
      * software.
@@ -356,7 +356,7 @@ rtems_task dumb_task(rtems_task_argument unused)
     }
 }
 
-rtems_task scrubbing_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task scrubbing_task(rtems_task_argument unused)
 {
     /** This RTEMS taks is used to avoid entering IDLE task and also scrub memory to increase
      * scubbing frequency.
@@ -389,7 +389,7 @@ rtems_task scrubbing_task(rtems_task_argument unused)
     }
 }
 
-rtems_task calibration_sweep_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task calibration_sweep_task(rtems_task_argument unused)
 {
     /** This RTEMS taks is used to change calibration signal smapling frequency between snapshots.
      *

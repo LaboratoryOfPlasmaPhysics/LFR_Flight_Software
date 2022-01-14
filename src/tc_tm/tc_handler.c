@@ -45,7 +45,7 @@
 //***********
 // RTEMS TASK
 
-rtems_task actn_task(rtems_task_argument unused)
+LFR_NO_RETURN rtems_task actn_task(rtems_task_argument unused)
 {
     /** This RTEMS task is responsible for launching actions upton the reception of valid
      * TeleCommands.

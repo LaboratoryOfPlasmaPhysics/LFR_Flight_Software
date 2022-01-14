@@ -104,7 +104,7 @@ void initCache()
     faultTolerantScheme();
 }
 
-rtems_task Init(rtems_task_argument ignored)
+LFR_NO_RETURN rtems_task Init(rtems_task_argument ignored)
 {
     /** This is the RTEMS INIT taks, it is the first task launched by the system.
      *
