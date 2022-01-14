@@ -28,11 +28,11 @@
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
 #include "fsw_globals.h"
+#include "fsw_misc.h"
 #include "fsw_processing.h"
 #include "fsw_watchdog.h"
-#include "hw/timer.h"
 #include "hw/lfr_regs.h"
-#include "fsw_misc.h"
+#include "hw/timer.h"
 
 // WATCHDOG, this ISR should never be triggered.
 
@@ -40,10 +40,7 @@ rtems_isr watchdog_isr(rtems_vector_number vector)
 {
     IGNORE_UNUSED_PARAMETER(vector);
 
-    rtems_status_code status_code;
-
-    status_code = send_event_dumb_task(RTEMS_EVENT_12);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_12));
 
     LFR_PRINTF("watchdog_isr *** this is the end, exit(0)\n");
 

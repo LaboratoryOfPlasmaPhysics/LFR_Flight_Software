@@ -82,7 +82,7 @@ rtems_task load_task(rtems_task_argument argument)
 
     while (1)
     {
-        status = rtems_rate_monotonic_period(watchdog_period_id, WATCHDOG_PERIOD);
+        DEBUG_CHECK_STATUS(rtems_rate_monotonic_period(watchdog_period_id, WATCHDOG_PERIOD));
         watchdog_reload();
         i = i + 1;
         if (i == WATCHDOG_LOOP_PRINTF)
@@ -147,10 +147,8 @@ rtems_task hous_task(rtems_task_argument argument)
     }
 
     // startup phase
-    status = rtems_rate_monotonic_period(HK_id, SY_LFR_TIME_SYN_TIMEOUT_in_ticks);
-    DEBUG_CHECK_STATUS(status);
-    status = rtems_rate_monotonic_get_status(HK_id, &period_status);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(rtems_rate_monotonic_period(HK_id, SY_LFR_TIME_SYN_TIMEOUT_in_ticks));
+    DEBUG_CHECK_STATUS(rtems_rate_monotonic_get_status(HK_id, &period_status));
     DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
     while ((period_status.state != RATE_MONOTONIC_EXPIRED)
         && (isSynchronized == false)) // after SY_LFR_TIME_SYN_TIMEOUT ms, starts HK anyway
@@ -162,14 +160,12 @@ rtems_task hous_task(rtems_task_argument argument)
         }
         else
         {
-            status = rtems_rate_monotonic_get_status(HK_id, &period_status);
-            DEBUG_CHECK_STATUS(status);
-            status = rtems_task_wake_after(HK_SYNC_WAIT); // wait HK_SYNCH_WAIT 100 ms = 10 * 10 ms
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(rtems_rate_monotonic_get_status(HK_id, &period_status));
+            // wait HK_SYNCH_WAIT 100 ms = 10 * 10 ms
+            DEBUG_CHECK_STATUS(rtems_task_wake_after(HK_SYNC_WAIT));
         }
     }
-    status = rtems_rate_monotonic_cancel(HK_id);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(rtems_rate_monotonic_cancel(HK_id));
     DEBUG_PRINTF("startup HK, HK_id status = %d\n", period_status.state);
 
     set_hk_lfr_reset_cause(POWER_ON);
@@ -180,7 +176,7 @@ rtems_task hous_task(rtems_task_argument argument)
         if (status != RTEMS_SUCCESSFUL)
         {
             LFR_PRINTF("in HOUS *** ERR period: %d\n", status);
-            spare_status = send_event_dumb_task(RTEMS_EVENT_6);
+            DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_6));
         }
         else
         {
@@ -237,7 +233,7 @@ rtems_task hous_task(rtems_task_argument argument)
 
     LFR_PRINTF("in HOUS *** deleting task\n");
 
-    status = rtems_task_delete(RTEMS_SELF); // should not return
+    DEBUG_CHECK_STATUS(rtems_task_delete(RTEMS_SELF)); // should not return
 
     return;
 }
@@ -271,17 +267,15 @@ rtems_task avgv_task(rtems_task_argument argument)
 
     if (rtems_rate_monotonic_ident(name_avgv_rate_monotonic, &AVGV_id) != RTEMS_SUCCESSFUL)
     {
-        status = rtems_rate_monotonic_create(name_avgv_rate_monotonic, &AVGV_id);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_rate_monotonic_create(name_avgv_rate_monotonic, &AVGV_id));
     }
 
-    status = rtems_rate_monotonic_cancel(AVGV_id);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(rtems_rate_monotonic_cancel(AVGV_id));
 
     while (1)
-    { // launch the rate monotonic task
-        status = rtems_rate_monotonic_period(AVGV_id, AVGV_PERIOD);
-        DEBUG_CHECK_STATUS(status);
+    {
+        // launch the rate monotonic task
+        DEBUG_CHECK_STATUS(rtems_rate_monotonic_period(AVGV_id, AVGV_PERIOD));
         current_v = waveform_picker_regs->v;
         current_e1 = waveform_picker_regs->e1;
         current_e2 = waveform_picker_regs->e2;
@@ -305,7 +299,7 @@ rtems_task avgv_task(rtems_task_argument argument)
 
     LFR_PRINTF("in AVGV *** deleting task\n");
 
-    status = rtems_task_delete(RTEMS_SELF); // should not return
+    DEBUG_CHECK_STATUS(rtems_task_delete(RTEMS_SELF)); // should not return
 
     return;
 }

@@ -172,13 +172,9 @@ static void faultTolerantScheme()
 {
     // [20:19] FT scheme (FT) - “00” = no FT, “01” = 4-bit checking implemented
     unsigned int cacheControlRegister;
-    unsigned int* plugAndPlayRegister;
-    unsigned int vendorId;
-    unsigned int deviceId;
-
-    plugAndPlayRegister = (unsigned int*)REGS_ADDR_PLUGANDPLAY;
-    vendorId = ((*plugAndPlayRegister) & 0xff000000) >> 24;
-    deviceId = ((*plugAndPlayRegister) & 0x00fff000) >> 12;
+    const unsigned int* const plugAndPlayRegister=(unsigned int*)REGS_ADDR_PLUGANDPLAY;
+    const unsigned int vendorId = ((*plugAndPlayRegister) & 0xff000000) >> 24;
+    const unsigned int deviceId = ((*plugAndPlayRegister) & 0x00fff000) >> 12;
 
     cacheControlRegister = CCR_getValue();
 

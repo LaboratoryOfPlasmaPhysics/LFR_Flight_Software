@@ -54,6 +54,7 @@ inline rtems_status_code send_event_dumb_task(rtems_event_set event)
 #ifdef DUMB_TASK_ENABLED
     return rtems_event_send(Task_id[TASKID_DUMB], event);
 #else
+    (void)event;
     return RTEMS_SUCCESSFUL;
 #endif
 }

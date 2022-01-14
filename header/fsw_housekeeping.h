@@ -22,10 +22,10 @@
 --                      Mail : alexis.jeandet@lpp.polytechnique.fr
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <stdbool.h>
-#include <stdint.h>
 #include "ccsds_types.h"
 #include "hw/lfr_regs.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 enum lfr_reset_cause_t
 {
@@ -68,18 +68,15 @@ unsigned long long int getTimeAsUnsignedLongLongInt();
 
 static inline void encode_temperatures(Packet_TM_LFR_HK_t* hk_packet)
 {
-    unsigned char* temp_scm_ptr;
-    unsigned char* temp_pcb_ptr;
-    unsigned char* temp_fpga_ptr;
-
     // SEL1 SEL0
     // 0    0       => PCB
     // 0    1       => FPGA
     // 1    0       => SCM
 
-    temp_scm_ptr = (unsigned char*)&time_management_regs->temp_scm;
-    temp_pcb_ptr = (unsigned char*)&time_management_regs->temp_pcb;
-    temp_fpga_ptr = (unsigned char*)&time_management_regs->temp_fpga;
+    const unsigned char* const temp_scm_ptr = (unsigned char*)&time_management_regs->temp_scm;
+    const unsigned char* const temp_pcb_ptr = (unsigned char*)&time_management_regs->temp_pcb;
+    const unsigned char* const temp_fpga_ptr = (unsigned char*)&time_management_regs->temp_fpga;
+
 
     hk_packet->hk_lfr_temp_scm[0] = temp_scm_ptr[2];
     hk_packet->hk_lfr_temp_scm[1] = temp_scm_ptr[3];
@@ -89,17 +86,19 @@ static inline void encode_temperatures(Packet_TM_LFR_HK_t* hk_packet)
     hk_packet->hk_lfr_temp_fpga[1] = temp_fpga_ptr[3];
 }
 
-static inline void encode_f3_E_field(int16_t V, int16_t E1, int16_t E2, Packet_TM_LFR_HK_t* hk_packet)
+static inline void encode_f3_E_field(
+    int16_t V, int16_t E1, int16_t E2, Packet_TM_LFR_HK_t* hk_packet)
 {
-    unsigned char* _v = (unsigned char*)&V;
-    unsigned char* _e1 = (unsigned char*)&E1;
-    unsigned char* _e2 = (unsigned char*)&E2;
-    hk_packet->hk_lfr_sc_v_f3[0]=_v[0];
-    hk_packet->hk_lfr_sc_v_f3[1]=_v[1];
-    hk_packet->hk_lfr_sc_e1_f3[0]=_e1[0];
-    hk_packet->hk_lfr_sc_e1_f3[1]=_e1[1];
-    hk_packet->hk_lfr_sc_e2_f3[0]=_e2[0];
-    hk_packet->hk_lfr_sc_e2_f3[1]=_e2[1];
+    const unsigned char* const _v = (unsigned char*)&V;
+    const unsigned char* const _e1 = (unsigned char*)&E1;
+    const unsigned char* const _e2 = (unsigned char*)&E2;
+
+    hk_packet->hk_lfr_sc_v_f3[0] = _v[0];
+    hk_packet->hk_lfr_sc_v_f3[1] = _v[1];
+    hk_packet->hk_lfr_sc_e1_f3[0] = _e1[0];
+    hk_packet->hk_lfr_sc_e1_f3[1] = _e1[1];
+    hk_packet->hk_lfr_sc_e2_f3[0] = _e2[0];
+    hk_packet->hk_lfr_sc_e2_f3[1] = _e2[1];
 }
 
 void encode_cpu_load(Packet_TM_LFR_HK_t* hk_packet);

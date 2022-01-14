@@ -44,5 +44,5 @@
 #else
     #define DEBUG_PRINTF(...)
     #define DEBUG_CHECK_PTR(ptr)
-    #define DEBUG_CHECK_STATUS(status)
+    #define DEBUG_CHECK_STATUS(status) status
 #endif

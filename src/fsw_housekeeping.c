@@ -267,9 +267,6 @@ void hk_lfr_me_update(void)
 void hk_lfr_le_me_he_update()
 {
 
-    unsigned int hk_lfr_he_cnt = (((unsigned int)housekeeping_packet.hk_lfr_he_cnt[0]) * 256)
-        + housekeeping_packet.hk_lfr_he_cnt[1];
-
     // update the low severity error counter
     hk_lfr_le_update();
 
@@ -277,13 +274,9 @@ void hk_lfr_le_me_he_update()
     hk_lfr_me_update();
 
     // update the high severity error counter
-    hk_lfr_he_cnt = 0;
-
-    // update housekeeping packet counters, convert unsigned int numbers in 2 bytes numbers
-    // HE
-    housekeeping_packet.hk_lfr_he_cnt[0]
-        = (unsigned char)((hk_lfr_he_cnt & BYTE0_MASK) >> SHIFT_1_BYTE);
-    housekeeping_packet.hk_lfr_he_cnt[1] = (unsigned char)(hk_lfr_he_cnt & BYTE1_MASK);
+    // LFR has no high severity errors
+    housekeeping_packet.hk_lfr_he_cnt[0] = 0;
+    housekeeping_packet.hk_lfr_he_cnt[1] = 0;
 }
 
 void set_hk_lfr_time_not_synchro()
@@ -350,11 +343,10 @@ void increment_seq_counter(unsigned short* packetSequenceControl)
 
 void update_hk_lfr_last_er_fields(unsigned int rid, unsigned char code)
 {
-    unsigned char* coarseTimePtr;
-    unsigned char* fineTimePtr;
-
-    coarseTimePtr = (unsigned char*)&time_management_regs->coarse_time;
-    fineTimePtr = (unsigned char*)&time_management_regs->fine_time;
+    const volatile unsigned char* const coarseTimePtr
+        = (volatile unsigned char*)&time_management_regs->coarse_time;
+    const volatile unsigned char* const fineTimePtr
+        = (volatile unsigned char*)&time_management_regs->fine_time;
 
     housekeeping_packet.hk_lfr_last_er_rid[0] = (unsigned char)((rid & BYTE0_MASK) >> SHIFT_1_BYTE);
     housekeeping_packet.hk_lfr_last_er_rid[1] = (unsigned char)(rid & BYTE1_MASK);

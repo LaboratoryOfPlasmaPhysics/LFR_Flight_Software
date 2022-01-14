@@ -97,21 +97,11 @@ void initCache()
     CCR_resetCacheControlRegister();
     ASR16_resetRegisterProtectionControlRegister();
 
-    cacheControlRegister = CCR_getValue();
-    LFR_PRINTF("(0) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    LFR_PRINTF("(0) ASR16                        = %x\n", *asr16Ptr);
-
     CCR_enableInstructionCache(); // ICS bits
     CCR_enableDataCache(); // DCS bits
     CCR_enableInstructionBurstFetch(); // IB  bit
 
     faultTolerantScheme();
-
-    cacheControlRegister = CCR_getValue();
-    LFR_PRINTF("(1) CCR - Cache Control Register = %x\n", cacheControlRegister);
-    LFR_PRINTF("(1) ASR16 Register protection control register = %x\n", *asr16Ptr);
-
-    LFR_PRINTF("\n");
 }
 
 rtems_task Init(rtems_task_argument ignored)
@@ -127,7 +117,7 @@ rtems_task Init(rtems_task_argument ignored)
     //***********
     // INIT CACHE
 
-    unsigned char* vhdlVersion;
+    const unsigned char* const vhdlVersion = (unsigned char*)(REGS_ADDR_VHDL_VERSION);
 
     reset_lfr();
 
@@ -135,7 +125,6 @@ rtems_task Init(rtems_task_argument ignored)
 
     rtems_cpu_usage_reset();
 
-    rtems_status_code status;
     rtems_status_code status_spw;
     rtems_isr_entry old_isr_handler;
 
@@ -160,7 +149,6 @@ rtems_task Init(rtems_task_argument ignored)
     LFR_PRINTF("%d-", SW_VERSION_N3);
     LFR_PRINTF("%d             **\n", SW_VERSION_N4);
 
-    vhdlVersion = (unsigned char*)(REGS_ADDR_VHDL_VERSION);
     LFR_PRINTF("** VHDL                **\n");
     LFR_PRINTF("** %d-", vhdlVersion[1]);
     LFR_PRINTF("%d-", vhdlVersion[2]);
@@ -223,14 +211,11 @@ rtems_task Init(rtems_task_argument ignored)
 
     create_names(); // create all names
 
-    status = create_timecode_timer(); // create the timer used by timecode_irq_handler
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(create_timecode_timer()); // create the timer used by timecode_irq_handler
 
-    status = create_message_queues(); // create message queues
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(create_message_queues()); // create message queues
 
-    status = create_all_tasks(); // create all tasks
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(create_all_tasks()); // create all tasks
 
     // **************************
     // <SPACEWIRE INITIALIZATION>
@@ -251,32 +236,28 @@ rtems_task Init(rtems_task_argument ignored)
     // </SPACEWIRE INITIALIZATION>
     // ***************************
 
-    status = start_all_tasks(); // start all tasks
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(start_all_tasks()); // start all tasks
 
     // start RECV and SEND *AFTER* SpaceWire Initialization, due to the timeout of the start call
     // during the initialization
-    status = start_recv_send_tasks();
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(start_recv_send_tasks());
 
     // suspend science tasks, they will be restarted later depending on the mode
-    status = suspend_science_tasks(); // suspend science tasks (not done in stop_current_mode if
-                                      // current mode = STANDBY)
-    DEBUG_CHECK_STATUS(status);
+    // suspend science tasks (not done in stop_current_mode if
+    //                           current mode = STANDBY)
+    DEBUG_CHECK_STATUS(suspend_science_tasks());
 
     // configure IRQ handling for the waveform picker unit
-    status = rtems_interrupt_catch(waveforms_isr, IRQ_SPARC_WAVEFORM_PICKER, &old_isr_handler);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(
+        rtems_interrupt_catch(waveforms_isr, IRQ_SPARC_WAVEFORM_PICKER, &old_isr_handler));
     // configure IRQ handling for the spectral matrices unit
-    status
-        = rtems_interrupt_catch(spectral_matrices_isr, IRQ_SPARC_SPECTRAL_MATRIX, &old_isr_handler);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(
+        rtems_interrupt_catch(spectral_matrices_isr, IRQ_SPARC_SPECTRAL_MATRIX, &old_isr_handler));
 
     // if the spacewire link is not up then send an event to the SPIQ task for link recovery
     if (status_spw != RTEMS_SUCCESSFUL)
     {
-        status = rtems_event_send(Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_SPIQ], SPW_LINKERR_EVENT));
     }
 
     BOOT_PRINTF("delete INIT\n");
@@ -286,14 +267,12 @@ rtems_task Init(rtems_task_argument ignored)
     // start the timer to detect a missing spacewire timecode
     // the timeout is larger because the spw IP needs to receive several valid timecodes before
     // generating a tickout if a tickout is generated, the timer is restarted
-    status = rtems_timer_fire_after(
-        timecode_timer_id, TIMECODE_TIMER_TIMEOUT_INIT, timecode_timer_routine, NULL);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(rtems_timer_fire_after(
+        timecode_timer_id, TIMECODE_TIMER_TIMEOUT_INIT, timecode_timer_routine, NULL));
 
     grspw_timecode_callback = &timecode_irq_handler;
 
-    status = rtems_task_delete(RTEMS_SELF);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(rtems_task_delete(RTEMS_SELF));
 }
 
 void init_local_mode_parameters(void)
@@ -302,22 +281,20 @@ void init_local_mode_parameters(void)
      *
      */
 
-    unsigned int i;
-
     // LOCAL PARAMETERS
 
     BOOT_PRINTF("local_sbm1_nb_cwf_max %d \n", param_local.local_sbm1_nb_cwf_max);
     BOOT_PRINTF("local_sbm2_nb_cwf_max %d \n", param_local.local_sbm2_nb_cwf_max);
 
-    // init sequence counters
+    // init/clear sequence counters
 
-    for (i = 0; i < SEQ_CNT_NB_DEST_ID; i++)
+    for (unsigned int i = 0; i < SEQ_CNT_NB_DEST_ID; i++)
     {
-        sequenceCounters_TC_EXE[i] = INIT_CHAR;
-        sequenceCounters_TM_DUMP[i] = INIT_CHAR;
+        sequenceCounters_TC_EXE[i] = 0;
+        sequenceCounters_TM_DUMP[i] = 0;
     }
-    sequenceCounters_SCIENCE_NORMAL_BURST = INIT_CHAR;
-    sequenceCounters_SCIENCE_SBM1_SBM2 = INIT_CHAR;
+    sequenceCounters_SCIENCE_NORMAL_BURST = 0;
+    sequenceCounters_SCIENCE_SBM1_SBM2 = 0;
     sequenceCounterHK = TM_PACKET_SEQ_CTRL_STANDALONE << TM_PACKET_SEQ_SHIFT;
 }
 

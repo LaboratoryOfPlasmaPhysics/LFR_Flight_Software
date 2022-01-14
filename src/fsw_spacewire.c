@@ -38,9 +38,9 @@
 #include "fsw_spacewire.h"
 #include "fsw_compile_warnings.h"
 #include "fsw_debug.h"
+#include "fsw_housekeeping.h"
 #include "fsw_misc.h"
 #include "fsw_watchdog.h"
-#include "fsw_housekeeping.h"
 #include "hw/lfr_regs.h"
 #include <errno.h>
 
@@ -81,33 +81,28 @@ rtems_task spiq_task(rtems_task_argument unused)
 
     while (true)
     {
-        status = rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT,
-            &event_out); // wait for an SPW_LINKERR_EVENT
-        DEBUG_CHECK_STATUS(status);
+        // wait for an SPW_LINKERR_EVENT
+        DEBUG_CHECK_STATUS(
+            rtems_event_receive(SPW_LINKERR_EVENT, RTEMS_WAIT, RTEMS_NO_TIMEOUT, &event_out));
         LFR_PRINTF("in SPIQ *** got SPW_LINKERR_EVENT\n");
 
         // [0] SUSPEND RECV AND SEND TASKS
-        status = rtems_task_suspend(Task_id[TASKID_RECV]);
-        DEBUG_CHECK_STATUS(status);
-        status = rtems_task_suspend(Task_id[TASKID_SEND]);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_task_suspend(Task_id[TASKID_RECV]));
+        DEBUG_CHECK_STATUS(rtems_task_suspend(Task_id[TASKID_SEND]));
 
         // [1] CHECK THE LINK
-        status = ioctl(
-            fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status (1)
-        DEBUG_CHECK_STATUS(status);
+        // get the link status (1)
+        DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus));
         if (linkStatus != SPW_LINK_OK)
         {
             LFR_PRINTF("in SPIQ *** linkStatus %d, wait...\n", linkStatus);
-            status = rtems_task_wake_after(
-                SY_LFR_DPU_CONNECT_TIMEOUT); // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
-            DEBUG_CHECK_STATUS(status);
+            // wait SY_LFR_DPU_CONNECT_TIMEOUT 1000 ms
+            DEBUG_CHECK_STATUS(rtems_task_wake_after(SY_LFR_DPU_CONNECT_TIMEOUT));
         }
 
         // [2] RECHECK THE LINK AFTER SY_LFR_DPU_CONNECT_TIMEOUT
-        status = ioctl(
-            fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status (2)
-        DEBUG_CHECK_STATUS(status);
+        // get the link status (2)
+        DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus));
         if (linkStatus != SPW_LINK_OK) // [2.a] not in run state, reset the link
         {
             spacewire_read_statistics();
@@ -116,31 +111,29 @@ rtems_task spiq_task(rtems_task_argument unused)
         }
         else // [2.b] in run state, start the link
         {
-            status = spacewire_stop_and_start_link(fdSPW); // start the link
+            // start the link
+            status = spacewire_stop_and_start_link(fdSPW);
             DEBUG_CHECK_STATUS(status);
         }
 
         // [3] COMPLETE RECOVERY ACTION AFTER SY_LFR_DPU_CONNECT_ATTEMPTS
-        if (status
-            == RTEMS_SUCCESSFUL) // [3.a] the link is in run state and has been started successfully
+        // [3.a] the link is in run state and has been started successfully
+        if (status == RTEMS_SUCCESSFUL)
         {
-            status = rtems_task_restart(Task_id[TASKID_SEND], 1);
-            DEBUG_CHECK_STATUS(status);
-            status = rtems_task_restart(Task_id[TASKID_RECV], 1);
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(rtems_task_restart(Task_id[TASKID_SEND], 1));
+            DEBUG_CHECK_STATUS(rtems_task_restart(Task_id[TASKID_RECV], 1));
         }
         else // [3.b] the link is not in run state, go in STANDBY mode
         {
             status = enter_mode_standby();
             DEBUG_CHECK_STATUS(status);
+            if (status == RTEMS_SUCCESSFUL)
             {
                 updateLFRCurrentMode(LFR_MODE_STANDBY);
             }
             // wake the LINK task up to wait for the link recovery
-            status = rtems_event_send(Task_id[TASKID_LINK], RTEMS_EVENT_0);
-            DEBUG_CHECK_STATUS(status);
-            status = rtems_task_suspend(RTEMS_SELF);
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_LINK], RTEMS_EVENT_0));
+            DEBUG_CHECK_STATUS(rtems_task_suspend(RTEMS_SELF));
         }
     }
 }
@@ -178,11 +171,8 @@ rtems_task recv_task(rtems_task_argument unused)
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
-    status = get_message_queue_id_recv(&queue_recv_id);
-    DEBUG_CHECK_STATUS(status);
-
-    status = get_message_queue_id_send(&queue_send_id);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(get_message_queue_id_recv(&queue_recv_id));
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_send_id));
 
     BOOT_PRINTF("in RECV *** \n");
 
@@ -227,16 +217,15 @@ rtems_task recv_task(rtems_task_argument unused)
                         {
                             destinationID = currentTC.sourceID;
                         }
-                        status = send_tm_lfr_tc_exe_corrupted(&currentTC, queue_send_id,
-                            computed_CRC, currentTC_LEN_RCV, destinationID);
-                        DEBUG_CHECK_STATUS(status);
+                        DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_corrupted(&currentTC, queue_send_id,
+                            computed_CRC, currentTC_LEN_RCV, destinationID));
                     }
                 }
                 else
-                { // send valid TC to the action launcher
-                    status = rtems_message_queue_send(queue_recv_id, &currentTC,
-                        estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + PROTID_RES_APP);
-                    DEBUG_CHECK_STATUS(status);
+                {
+                    // send valid TC to the action launcher
+                    DEBUG_CHECK_STATUS(rtems_message_queue_send(queue_recv_id, &currentTC,
+                        estimatedPacketLength + CCSDS_TC_TM_PACKET_OFFSET + PROTID_RES_APP));
                 }
             }
         }
@@ -263,30 +252,21 @@ rtems_task send_task(rtems_task_argument argument)
     IGNORE_UNUSED_PARAMETER(argument);
     rtems_status_code status; // RTEMS status code
     char incomingData[MSG_QUEUE_SIZE_SEND]; // incoming data buffer
-    ring_node* incomingRingNodePtr;
-    int ring_node_address;
-    char* charPtr;
+    ring_node* incomingRingNodePtr = NULL;
+    int ring_node_address = 0;
+    char* charPtr=(char*)&ring_node_address;
     spw_ioctl_pkt_send* spw_ioctl_send;
-    size_t size; // size of the incoming TC packet
-    rtems_id queue_send_id;
-    unsigned int sid;
-    unsigned char sidAsUnsignedChar;
+    size_t size = 0; // size of the incoming TC packet
+    rtems_id queue_send_id= RTEMS_ID_NONE;
+    unsigned int sid = 0;
+    unsigned char sidAsUnsignedChar = 0;
     unsigned char type;
-
-    incomingRingNodePtr = NULL;
-    ring_node_address = 0;
-    charPtr = (char*)&ring_node_address;
-    size = 0;
-    queue_send_id = RTEMS_ID_NONE;
-    sid = 0;
-    sidAsUnsignedChar = 0;
 
     init_header_cwf(&headerCWF);
     init_header_swf(&headerSWF);
     init_header_asm(&headerASM);
 
-    status = get_message_queue_id_send(&queue_send_id);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_send_id));
 
     BOOT_PRINTF("in SEND *** \n");
 
