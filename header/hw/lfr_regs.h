@@ -180,13 +180,13 @@ typedef volatile struct
 {
     uint32_t config; // 0x00
     uint32_t status; // 0x04
-    void* f0_0_address; // 0x08
-    void* f0_1_address; // 0x0C
+    volatile void* f0_0_address; // 0x08
+    volatile void* f0_1_address; // 0x0C
     //
-    void* f1_0_address; // 0x10
-    void* f1_1_address; // 0x14
-    void* f2_0_address; // 0x18
-    void* f2_1_address; // 0x1C
+    volatile void* f1_0_address; // 0x10
+    volatile void* f1_1_address; // 0x14
+    volatile void* f2_0_address; // 0x18
+    volatile void* f2_1_address; // 0x1C
     //
     uint32_t f0_0_coarse_time; // 0x20
     uint32_t f0_0_fine_time; // 0x24

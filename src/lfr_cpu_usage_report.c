@@ -37,8 +37,7 @@ unsigned char lfr_rtems_cpu_usage_report(void)
 
     for (uint32_t api_index = 1; api_index <= OBJECTS_APIS_LAST; api_index++)
     {
-        if (!_Objects_Information_table[api_index]) { }
-        else
+        if (_Objects_Information_table[api_index]!=NULL)
         {
             information = _Objects_Information_table[api_index][1];
             if (information != NULL)

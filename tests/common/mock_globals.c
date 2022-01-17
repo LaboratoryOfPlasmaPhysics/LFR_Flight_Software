@@ -53,7 +53,7 @@ void init_ring(
     {
         ring[i].coarseTime = INT32_ALL_F;
         ring[i].fineTime = INT32_ALL_F;
-        ring[i].sid = INIT_CHAR;
+        ring[i].packet_id = INIT_CHAR;
         ring[i].status = INIT_CHAR;
         ring[i].buffer_address = (void*)&(buffer[i * bufferSize]);
     }

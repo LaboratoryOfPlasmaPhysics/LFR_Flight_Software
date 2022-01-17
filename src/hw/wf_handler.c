@@ -196,7 +196,7 @@ void waveforms_isr_burst(void)
     {
         case BIT_WFP_BUFFER_0:
             ring_node_to_send_cwf_f2 = current_ring_node_f2->previous;
-            ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
+            ring_node_to_send_cwf_f2->packet_id = SID_BURST_CWF_F2;
             ring_node_to_send_cwf_f2->coarseTime = waveform_picker_regs->f2_0_coarse_time;
             ring_node_to_send_cwf_f2->fineTime = waveform_picker_regs->f2_0_fine_time;
             current_ring_node_f2 = current_ring_node_f2->next;
@@ -210,7 +210,7 @@ void waveforms_isr_burst(void)
             break;
         case BIT_WFP_BUFFER_1:
             ring_node_to_send_cwf_f2 = current_ring_node_f2->previous;
-            ring_node_to_send_cwf_f2->sid = SID_BURST_CWF_F2;
+            ring_node_to_send_cwf_f2->packet_id = SID_BURST_CWF_F2;
             ring_node_to_send_cwf_f2->coarseTime = waveform_picker_regs->f2_1_coarse_time;
             ring_node_to_send_cwf_f2->fineTime = waveform_picker_regs->f2_1_fine_time;
             current_ring_node_f2 = current_ring_node_f2->next;
@@ -294,7 +294,7 @@ void waveform_isr_normal_sbm1_sbm2(void)
     { // [0011 0000] check the f2 full bit
         // (1) change the receiving buffer for the waveform picker
         ring_node_to_send_cwf_f2 = current_ring_node_f2->previous;
-        ring_node_to_send_cwf_f2->sid = SID_SBM2_CWF_F2;
+        ring_node_to_send_cwf_f2->packet_id = SID_SBM2_CWF_F2;
         current_ring_node_f2 = current_ring_node_f2->next;
         if ((waveform_picker_regs->status & BIT_WFP_BUF_F2_0) == BIT_WFP_BUF_F2_0)
         {
@@ -415,9 +415,9 @@ LFR_NO_RETURN rtems_task wfrm_task(
         if (event_out == RTEMS_EVENT_MODE_NORMAL)
         {
             DEBUG_PRINTF("WFRM received RTEMS_EVENT_MODE_SBM2\n");
-            ring_node_to_send_swf_f0->sid = SID_NORM_SWF_F0;
-            ring_node_swf1_extracted_ptr->sid = SID_NORM_SWF_F1;
-            ring_node_swf2_extracted_ptr->sid = SID_NORM_SWF_F2;
+            ring_node_to_send_swf_f0->packet_id = SID_NORM_SWF_F0;
+            ring_node_swf1_extracted_ptr->packet_id = SID_NORM_SWF_F1;
+            ring_node_swf2_extracted_ptr->packet_id = SID_NORM_SWF_F2;
             DEBUG_CHECK_STATUS(
                 rtems_message_queue_send(queue_id, &ring_node_to_send_swf_f0, sizeof(ring_node*)));
             DEBUG_CHECK_STATUS(rtems_message_queue_send(
@@ -454,7 +454,7 @@ LFR_NO_RETURN rtems_task cwf3_task(
 
     DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id));
 
-    ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+    ring_node_to_send_cwf_f3->packet_id = SID_NORM_CWF_LONG_F3;
 
     // init the ring_node_cwf3_light structure
     ring_node_cwf3_light.buffer_address = wf_cont_f3_light;
@@ -462,7 +462,7 @@ LFR_NO_RETURN rtems_task cwf3_task(
     ring_node_cwf3_light.fineTime = INIT_CHAR;
     ring_node_cwf3_light.next = NULL;
     ring_node_cwf3_light.previous = NULL;
-    ring_node_cwf3_light.sid = SID_NORM_CWF_F3;
+    ring_node_cwf3_light.packet_id = SID_NORM_CWF_F3;
     ring_node_cwf3_light.status = INIT_CHAR;
 
     BOOT_PRINTF("in CWF3 ***\n");
@@ -479,7 +479,7 @@ LFR_NO_RETURN rtems_task cwf3_task(
             if ((parameter_dump_packet.sy_lfr_n_cwf_long_f3 & BIT_CWF_LONG_F3) == BIT_CWF_LONG_F3)
             {
                 LFR_PRINTF("send CWF_LONG_F3\n");
-                ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
+                ring_node_to_send_cwf_f3->packet_id = SID_NORM_CWF_LONG_F3;
                 DEBUG_CHECK_STATUS(
                     rtems_message_queue_send(queue_id, &ring_node_to_send_cwf, sizeof(ring_node*)));
             }
@@ -512,7 +512,6 @@ LFR_NO_RETURN rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN
 
     rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
     rtems_id queue_id = RTEMS_ID_NONE;
-    rtems_status_code status;
     ring_node* ring_node_to_send;
     unsigned long long int acquisitionTimeF0_asLong;
 
@@ -536,14 +535,11 @@ LFR_NO_RETURN rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN
         }
         else if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
-            if (lfrCurrentMode == LFR_MODE_SBM2)
+            if (lfrCurrentMode == LFR_MODE_SBM2
+                && time_management_regs->coarse_time >= lastValidEnterModeTime)
             {
-                // data are sent depending on the transition time
-                if (time_management_regs->coarse_time >= lastValidEnterModeTime)
-                {
-                    DEBUG_CHECK_STATUS(
-                        rtems_message_queue_send(queue_id, &ring_node_to_send, sizeof(ring_node*)));
-                }
+                DEBUG_CHECK_STATUS(
+                    rtems_message_queue_send(queue_id, &ring_node_to_send, sizeof(ring_node*)));
             }
             // launch snapshot extraction if needed
             if (extractSWF2 == true)
@@ -596,15 +592,12 @@ LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN
         rtems_event_receive(RTEMS_EVENT_MODE_NORM_S1_S2, RTEMS_WAIT | RTEMS_EVENT_ANY,
             RTEMS_NO_TIMEOUT, &event_out);
         ring_node_to_send_cwf = getRingNodeToSendCWF(1);
-        ring_node_to_send_cwf_f1->sid = SID_SBM1_CWF_F1;
-        if (lfrCurrentMode == LFR_MODE_SBM1)
+        ring_node_to_send_cwf_f1->packet_id = SID_SBM1_CWF_F1;
+        if (lfrCurrentMode == LFR_MODE_SBM1
+            && time_management_regs->coarse_time >= lastValidEnterModeTime)
         {
-            // data are sent depending on the transition time
-            if (time_management_regs->coarse_time >= lastValidEnterModeTime)
-            {
-                DEBUG_CHECK_STATUS(
-                    rtems_message_queue_send(queue_id, &ring_node_to_send_cwf, sizeof(ring_node*)));
-            }
+            DEBUG_CHECK_STATUS(
+                rtems_message_queue_send(queue_id, &ring_node_to_send_cwf, sizeof(ring_node*)));
         }
         // launch snapshot extraction if needed
         if (extractSWF1 == true)
@@ -1004,7 +997,7 @@ void applyCorrection(double correction)
         }
         else
         {
-            correctionInt = CORR_MULT * floor(correction);
+            correctionInt = (int)((double)CORR_MULT * floor(correction));
         }
     }
     else
@@ -1388,5 +1381,5 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
 
     //*************************************
     // RESTORE THE MODE OF THE CALLING TASK
-    DEBUG_CHECK_STATUS( rtems_task_mode(initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set));
+    DEBUG_CHECK_STATUS(rtems_task_mode(initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set));
 }

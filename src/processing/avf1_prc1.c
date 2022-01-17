@@ -396,7 +396,7 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
                 ASM_F1_INDICE_START, ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
             current_ring_node_to_send_asm_f1->coarseTime = incomingMsg->coarseTimeNORM;
             current_ring_node_to_send_asm_f1->fineTime = incomingMsg->fineTimeNORM;
-            current_ring_node_to_send_asm_f1->sid = SID_NORM_ASM_F1;
+            current_ring_node_to_send_asm_f1->packet_id = SID_NORM_ASM_F1;
 
             // 3) send the spectral matrix packets
             DEBUG_CHECK_STATUS(rtems_message_queue_send(

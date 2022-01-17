@@ -102,7 +102,7 @@ void initCache()
     faultTolerantScheme();
 }
 
-LFR_NO_RETURN rtems_task Init(rtems_task_argument ignored)
+rtems_task Init(rtems_task_argument ignored)
 {
     /** This is the RTEMS INIT taks, it is the first task launched by the system.
      *
@@ -867,7 +867,7 @@ void init_ring(
     {
         ring[i].coarseTime = INT32_ALL_F;
         ring[i].fineTime = INT32_ALL_F;
-        ring[i].sid = INIT_CHAR;
+        ring[i].packet_id = INIT_CHAR;
         ring[i].status = INIT_CHAR;
         ring[i].buffer_address = (volatile void*)&(buffer[i * bufferSize]);
     }

@@ -126,7 +126,9 @@
 #define TC_LEN_UPDT_TIME       18
 
 // PACKET CODES
-#define TM_CODE_K_DUMP 0xb5600b00 // 181 (0xb5) ** 96 (0x60) ** 11 (0x0b) ** 0 (0x00)
+// For others packets ring nodes are identified by SID but K_DUMP has the same SID than SID_NORM_ASM_F0
+// let's use 64 since it's unused
+#define TM_K_DUMP_PKT_ID 64
 
 // TM TYPES
 #define TM_TYPE_TC_EXE         1

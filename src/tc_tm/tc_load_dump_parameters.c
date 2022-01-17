@@ -109,7 +109,7 @@ int action_load_normal_par(const ccsdsTelecommandPacket_t* const TC, rtems_id qu
     return flag;
 }
 
-int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_burst_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id, const unsigned char* const time)
 {
     /** This function updates the LFR registers with the incoming burst parameters.
      *
@@ -184,7 +184,7 @@ int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsig
     return flag;
 }
 
-int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_sbm1_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time)
 {
     /** This function updates the LFR registers with the incoming sbm1 parameters.
      *
@@ -259,7 +259,7 @@ int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
     return flag;
 }
 
-int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_sbm2_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -335,7 +335,7 @@ int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsign
     return flag;
 }
 
-int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_kcoefficients(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -361,7 +361,7 @@ int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     return flag;
 }
 
-int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_fbins_mask(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -385,7 +385,7 @@ int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
     return flag;
 }
 
-int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int action_load_filter_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -518,7 +518,7 @@ int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return flag;
 }
 
-int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_dump_kcoefficients(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time)
 {
     /** This function updates the LFR registers with the incoming sbm2 parameters.
      *
@@ -636,7 +636,7 @@ int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, u
     return status;
 }
 
-int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int action_dump_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function dumps the LFR parameters by sending the appropriate TM packet to the dedicated
      * RTEMS message queue.
@@ -681,7 +681,7 @@ int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 //***********************
 // NORMAL MODE PARAMETERS
 
-int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int check_normal_par_consistency(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     unsigned char msb;
     unsigned char lsb;
@@ -801,7 +801,7 @@ int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
     return flag;
 }
 
-int set_sy_lfr_n_swf_l(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_swf_l(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the number of points of a snapshot (sy_lfr_n_swf_l).
      *
@@ -820,7 +820,7 @@ int set_sy_lfr_n_swf_l(ccsdsTelecommandPacket_t* TC)
     return result;
 }
 
-int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_swf_p(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two snapshots, in s (sy_lfr_n_swf_p).
      *
@@ -839,7 +839,7 @@ int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t* TC)
     return result;
 }
 
-int set_sy_lfr_n_asm_p(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_asm_p(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two full spectral matrices transmission, in s
      * (SY_LFR_N_ASM_P).
@@ -859,7 +859,7 @@ int set_sy_lfr_n_asm_p(ccsdsTelecommandPacket_t* TC)
     return result;
 }
 
-int set_sy_lfr_n_bp_p0(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_bp_p0(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (DFLT_SY_LFR_N_BP_P0).
      *
@@ -877,7 +877,7 @@ int set_sy_lfr_n_bp_p0(ccsdsTelecommandPacket_t* TC)
     return status;
 }
 
-int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_bp_p1(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets (autocorrelation +
      * crosscorrelation), in s (sy_lfr_n_bp_p1).
@@ -896,7 +896,7 @@ int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t* TC)
     return status;
 }
 
-int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_n_cwf_long_f3(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function allows to switch from CWF_F3 packets to CWF_LONG_F3 packets.
      *
@@ -917,7 +917,7 @@ int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t* TC)
 //**********************
 // BURST MODE PARAMETERS
 
-int set_sy_lfr_b_bp_p0(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_b_bp_p0(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_B_BP_P0).
      *
@@ -935,7 +935,7 @@ int set_sy_lfr_b_bp_p0(ccsdsTelecommandPacket_t* TC)
     return status;
 }
 
-int set_sy_lfr_b_bp_p1(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_b_bp_p1(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_B_BP_P1).
      *
@@ -956,7 +956,7 @@ int set_sy_lfr_b_bp_p1(ccsdsTelecommandPacket_t* TC)
 //*********************
 // SBM1 MODE PARAMETERS
 
-int set_sy_lfr_s1_bp_p0(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_s1_bp_p0(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S1_BP_P0).
      *
@@ -974,7 +974,7 @@ int set_sy_lfr_s1_bp_p0(ccsdsTelecommandPacket_t* TC)
     return status;
 }
 
-int set_sy_lfr_s1_bp_p1(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_s1_bp_p1(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S1_BP_P1).
      *
@@ -995,7 +995,7 @@ int set_sy_lfr_s1_bp_p1(ccsdsTelecommandPacket_t* TC)
 //*********************
 // SBM2 MODE PARAMETERS
 
-int set_sy_lfr_s2_bp_p0(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_s2_bp_p0(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S2_BP_P0).
      *
@@ -1013,7 +1013,7 @@ int set_sy_lfr_s2_bp_p0(ccsdsTelecommandPacket_t* TC)
     return status;
 }
 
-int set_sy_lfr_s2_bp_p1(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_s2_bp_p1(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function sets the time between two basic parameter sets, in s (SY_LFR_S2_BP_P1).
      *
@@ -1170,7 +1170,7 @@ void set_hk_lfr_sc_rw_f_flags(void)
     set_hk_lfr_sc_rw_f_flag(WHEEL_4, FREQ_4, rw_f.cp_rpw_sc_rw4_f4);
 }
 
-int check_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float* value)
+int check_sy_lfr_rw_f(const ccsdsTelecommandPacket_t* const TC, int offset, int* pos, float* value)
 {
     float rw_k;
     int ret;
@@ -1191,7 +1191,7 @@ int check_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float*
     return ret;
 }
 
-int check_all_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int* pos, float* value)
+int check_all_sy_lfr_rw_f(const ccsdsTelecommandPacket_t* const TC, int* pos, float* value)
 {
     int ret;
 
@@ -1277,7 +1277,7 @@ int check_all_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int* pos, float* value)
     return ret;
 }
 
-void getReactionWheelsFrequencies(ccsdsTelecommandPacket_t* TC)
+void getReactionWheelsFrequencies(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function get the reaction wheels frequencies in the incoming TC_LFR_UPDATE_INFO and
      * copy the values locally.
@@ -1565,7 +1565,7 @@ void merge_fbins_masks(void)
 //***********
 // FBINS MASK
 
-int set_sy_lfr_fbins(ccsdsTelecommandPacket_t* TC)
+int set_sy_lfr_fbins(const ccsdsTelecommandPacket_t* const TC)
 {
     int status;
     unsigned int k;
@@ -1588,7 +1588,7 @@ int set_sy_lfr_fbins(ccsdsTelecommandPacket_t* TC)
 //***************************
 // TC_LFR_LOAD_PAS_FILTER_PAR
 
-int check_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float* value)
+int check_sy_lfr_rw_k(const ccsdsTelecommandPacket_t * const TC, int offset, int* pos, float* value)
 {
     float rw_k;
     int ret;
@@ -1609,7 +1609,7 @@ int check_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float*
     return ret;
 }
 
-int check_all_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int* pos, float* value)
+int check_all_sy_lfr_rw_k(const ccsdsTelecommandPacket_t * const TC, int* pos, float* value)
 {
     int ret;
 
@@ -1695,7 +1695,7 @@ int check_all_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int* pos, float* value)
     return ret;
 }
 
-int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int check_sy_lfr_filter_parameters(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id)
 {
     int flag;
     rtems_status_code status;
@@ -1860,7 +1860,7 @@ void interpolate_calibration_matrix(
 
 //**************
 // KCOEFFICIENTS
-int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int set_sy_lfr_kcoeff(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id)
 {
 
 #define F0_COMPRESSED_BIN_OFFSET            0
@@ -1995,7 +1995,7 @@ int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return status;
 }
 
-void copyFloatByChar(unsigned char* destination, unsigned char* source)
+void copyFloatByChar(unsigned char* destination, const unsigned char* const source)
 {
     destination[BYTE_0] = source[BYTE_0];
     destination[BYTE_1] = source[BYTE_1];
@@ -2003,7 +2003,7 @@ void copyFloatByChar(unsigned char* destination, unsigned char* source)
     destination[BYTE_3] = source[BYTE_3];
 }
 
-void copyInt32ByChar(unsigned char* destination, unsigned char* source)
+void copyInt32ByChar(unsigned char* destination, const unsigned char* const source)
 {
     destination[BYTE_0] = source[BYTE_0];
     destination[BYTE_1] = source[BYTE_1];
@@ -2011,7 +2011,7 @@ void copyInt32ByChar(unsigned char* destination, unsigned char* source)
     destination[BYTE_3] = source[BYTE_3];
 }
 
-void copyInt16ByChar(unsigned char* destination, unsigned char* source)
+void copyInt16ByChar(unsigned char* destination, const unsigned char* const source)
 {
     destination[BYTE_0] = source[BYTE_0];
     destination[BYTE_1] = source[BYTE_1];
@@ -2019,9 +2019,7 @@ void copyInt16ByChar(unsigned char* destination, unsigned char* source)
 
 void floatToChar(float value, unsigned char* ptr)
 {
-    unsigned char* valuePtr;
-
-    valuePtr = (unsigned char*)&value;
+    const unsigned char* const valuePtr= (const unsigned char*)&value;
 
     ptr[BYTE_0] = valuePtr[BYTE_0];
     ptr[BYTE_1] = valuePtr[BYTE_1];
@@ -2156,7 +2154,7 @@ void init_kcoefficients_dump(void)
 
     kcoefficient_node_1.previous = NULL;
     kcoefficient_node_1.next = NULL;
-    kcoefficient_node_1.sid = TM_CODE_K_DUMP;
+    kcoefficient_node_1.packet_id = TM_K_DUMP_PKT_ID;
     kcoefficient_node_1.coarseTime = INIT_CHAR;
     kcoefficient_node_1.fineTime = INIT_CHAR;
     kcoefficient_node_1.buffer_address = &kcoefficients_dump_1;
@@ -2164,14 +2162,14 @@ void init_kcoefficients_dump(void)
 
     kcoefficient_node_2.previous = NULL;
     kcoefficient_node_2.next = NULL;
-    kcoefficient_node_2.sid = TM_CODE_K_DUMP;
+    kcoefficient_node_2.packet_id = TM_K_DUMP_PKT_ID;
     kcoefficient_node_2.coarseTime = INIT_CHAR;
     kcoefficient_node_2.fineTime = INIT_CHAR;
     kcoefficient_node_2.buffer_address = &kcoefficients_dump_2;
     kcoefficient_node_2.status = INIT_CHAR;
 }
 
-void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoefficients_dump,
+void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* const kcoefficients_dump,
     unsigned char pkt_nr, unsigned char blk_nr)
 {
     unsigned int packetLength;
@@ -2213,7 +2211,7 @@ void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoeffic
 }
 
 void increment_seq_counter_destination_id_dump(
-    unsigned char* packet_sequence_control, unsigned char destination_id)
+    unsigned char* const packet_sequence_control, unsigned char destination_id)
 {
     /** This function increment the packet sequence control parameter of a TC, depending on its
      * destination ID.

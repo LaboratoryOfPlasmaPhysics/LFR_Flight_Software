@@ -42,35 +42,35 @@ extern fbins_masks_t fbins_masks;
 
 int action_load_common_par(const ccsdsTelecommandPacket_t * const TC);
 int action_load_normal_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id, const unsigned char * const time);
-int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_fbins_mask(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_load_filter_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
-int action_dump_kcoefficients(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
-int action_dump_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
+int action_load_burst_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_load_sbm1_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_load_sbm2_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_load_kcoefficients(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_load_fbins_mask(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_load_filter_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
+int action_dump_kcoefficients(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id, const unsigned char * const time);
+int action_dump_par(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
 
 // NORMAL
-int check_normal_par_consistency(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
-int set_sy_lfr_n_swf_l(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_n_swf_p(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_n_asm_p(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_n_bp_p0(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_n_bp_p1(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_n_cwf_long_f3(ccsdsTelecommandPacket_t* TC);
+int check_normal_par_consistency(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id);
+int set_sy_lfr_n_swf_l(const ccsdsTelecommandPacket_t * const TC);
+int set_sy_lfr_n_swf_p(const ccsdsTelecommandPacket_t* const TC);
+int set_sy_lfr_n_asm_p(const ccsdsTelecommandPacket_t* const TC);
+int set_sy_lfr_n_bp_p0(const ccsdsTelecommandPacket_t * const TC);
+int set_sy_lfr_n_bp_p1(const ccsdsTelecommandPacket_t* const TC);
+int set_sy_lfr_n_cwf_long_f3(const ccsdsTelecommandPacket_t * const TC);
 
 // BURST
-int set_sy_lfr_b_bp_p0(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_b_bp_p1(ccsdsTelecommandPacket_t* TC);
+int set_sy_lfr_b_bp_p0(const ccsdsTelecommandPacket_t* const TC);
+int set_sy_lfr_b_bp_p1(const ccsdsTelecommandPacket_t* const TC);
 
 // SBM1
-int set_sy_lfr_s1_bp_p0(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_s1_bp_p1(ccsdsTelecommandPacket_t* TC);
+int set_sy_lfr_s1_bp_p0(const ccsdsTelecommandPacket_t * const TC);
+int set_sy_lfr_s1_bp_p1(const ccsdsTelecommandPacket_t* const TC);
 
 // SBM2
-int set_sy_lfr_s2_bp_p0(ccsdsTelecommandPacket_t* TC);
-int set_sy_lfr_s2_bp_p1(ccsdsTelecommandPacket_t* TC);
+int set_sy_lfr_s2_bp_p0(const ccsdsTelecommandPacket_t* const TC);
+int set_sy_lfr_s2_bp_p1(const ccsdsTelecommandPacket_t* const TC);
 
 // TC_LFR_UPDATE_INFO
 unsigned int check_update_info_hk_lfr_mode(unsigned char mode);
@@ -78,34 +78,33 @@ unsigned int check_update_info_hk_tds_mode(unsigned char mode);
 unsigned int check_update_info_hk_thr_mode(unsigned char mode);
 void set_hk_lfr_sc_rw_f_flag(unsigned char wheel, unsigned char freq, float value);
 void set_hk_lfr_sc_rw_f_flags(void);
-int check_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float* value);
-int check_all_sy_lfr_rw_f(ccsdsTelecommandPacket_t* TC, int* pos, float* value);
-void getReactionWheelsFrequencies(ccsdsTelecommandPacket_t* TC);
+int check_sy_lfr_rw_f(const ccsdsTelecommandPacket_t * const TC, int offset, int* pos, float* value);
+int check_all_sy_lfr_rw_f(const ccsdsTelecommandPacket_t * const TC, int* pos, float* value);
+void getReactionWheelsFrequencies(const ccsdsTelecommandPacket_t * const TC);
 void setFBinMask(unsigned char* fbins_mask, float rw_f, unsigned char deltaFreq, float sy_lfr_rw_k);
 void build_sy_lfr_rw_mask(unsigned int channel);
 void build_sy_lfr_rw_masks();
 void merge_fbins_masks(void);
 
 // FBINS_MASK
-int set_sy_lfr_fbins(ccsdsTelecommandPacket_t* TC);
+int set_sy_lfr_fbins(const ccsdsTelecommandPacket_t * const TC);
 
 // TC_LFR_LOAD_PARS_FILTER_PAR
-int check_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int offset, int* pos, float* value);
-int check_all_sy_lfr_rw_k(ccsdsTelecommandPacket_t* TC, int* pos, float* value);
-int check_sy_lfr_filter_parameters(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
+int check_sy_lfr_rw_k(const ccsdsTelecommandPacket_t * const TC, int offset, int* pos, float* value);
+int check_all_sy_lfr_rw_k(const ccsdsTelecommandPacket_t * const TC, int* pos, float* value);
+int check_sy_lfr_filter_parameters(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
 
 // KCOEFFICIENTS
-int set_sy_lfr_kcoeff(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
-void copyFloatByChar(unsigned char* destination, unsigned char* source);
-void copyInt32ByChar(unsigned char* destination, unsigned char* source);
-void copyInt16ByChar(unsigned char* destination, unsigned char* source);
+int set_sy_lfr_kcoeff(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
+void copyFloatByChar(unsigned char* destination, const unsigned char * const source);
+void copyInt32ByChar(unsigned char* destination, const unsigned char * const source);
+void copyInt16ByChar(unsigned char* destination, const unsigned char * const source);
 void floatToChar(float value, unsigned char* ptr);
 
 void init_parameter_dump(void);
 void init_kcoefficients_dump(void);
-void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* kcoefficients_dump,
+void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t * const kcoefficients_dump,
     unsigned char pkt_nr, unsigned char blk_nr);
-void increment_seq_counter_destination_id_dump(
-    unsigned char* packet_sequence_control, unsigned char destination_id);
+void increment_seq_counter_destination_id_dump(unsigned char * const packet_sequence_control, unsigned char destination_id);
 
 #endif // TC_LOAD_DUMP_PARAMETERS_H

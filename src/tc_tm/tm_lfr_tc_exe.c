@@ -98,7 +98,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return status;
 }
 
-int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue_id,
+int send_tm_lfr_tc_exe_inconsistent(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id,
     unsigned char byte_position, unsigned char rcv_value)
 {
     /** This function sends a TM_LFR_TC_EXE_INCONSISTENT packet in the dedicated RTEMS message

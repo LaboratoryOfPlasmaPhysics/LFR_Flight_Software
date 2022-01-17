@@ -284,7 +284,7 @@ LFR_NO_RETURN rtems_task send_task(rtems_task_argument argument)
                 charPtr[BYTE_2] = incomingData[BYTE_2];
                 charPtr[BYTE_3] = incomingData[BYTE_3];
                 incomingRingNodePtr = (ring_node*)ring_node_address;
-                sid = incomingRingNodePtr->sid;
+                sid = incomingRingNodePtr->packet_id;
                 if ((sid == SID_NORM_CWF_LONG_F3) || (sid == SID_BURST_CWF_F2)
                     || (sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2))
                 {
@@ -311,7 +311,7 @@ LFR_NO_RETURN rtems_task send_task(rtems_task_argument argument)
                 {
                     spw_send_asm_f2(incomingRingNodePtr, &headerASM);
                 }
-                else if (sid == TM_CODE_K_DUMP)
+                else if (sid == TM_K_DUMP_PKT_ID)
                 {
                     spw_send_k_dump(incomingRingNodePtr);
                 }
@@ -1088,7 +1088,7 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
     spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
 
-    sid = ring_node_to_send->sid;
+    sid = ring_node_to_send->packet_id;
 
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
@@ -1172,7 +1172,7 @@ int spw_send_waveform_SWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_SW
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
     dataPtr = (volatile int*)ring_node_to_send->buffer_address;
-    sid = ring_node_to_send->sid;
+    sid = ring_node_to_send->packet_id;
 
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
@@ -1248,7 +1248,7 @@ int spw_send_waveform_CWF3_light(ring_node* ring_node_to_send, Header_TM_LFR_SCI
     rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send_CWF;
     volatile char* dataPtr;
-    unsigned char sid = ring_node_to_send->sid;
+    unsigned char sid = ring_node_to_send->packet_id;
 
     spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
@@ -1311,7 +1311,7 @@ void spw_send_asm_f0(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
     int fineTime;
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
 
-    sid = ring_node_to_send->sid;
+    sid = ring_node_to_send->packet_id;
     spectral_matrix = (volatile float*)ring_node_to_send->buffer_address;
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
@@ -1386,7 +1386,7 @@ void spw_send_asm_f1(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
     int fineTime;
     spw_ioctl_pkt_send spw_ioctl_send_ASM;
 
-    sid = ring_node_to_send->sid;
+    sid = ring_node_to_send->packet_id;
     spectral_matrix = (volatile float*)ring_node_to_send->buffer_address;
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
@@ -1460,7 +1460,7 @@ void spw_send_asm_f2(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 {
     unsigned int length = 0;
     rtems_status_code status;
-    unsigned char sid = ring_node_to_send->sid;
+    unsigned char sid = ring_node_to_send->packet_id;
     volatile float* spectral_matrix;
     int coarseTime;
     int fineTime;

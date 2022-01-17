@@ -121,7 +121,7 @@ typedef volatile struct _rg
     unsigned int fineTime;
     volatile void* buffer_address;
     unsigned int status;
-    unsigned char sid;
+    unsigned char packet_id;
 }ring_node;
 
 //************************
