@@ -64,7 +64,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
 int action_update_info(ccsdsTelecommandPacket_t* TC);
 int action_enable_calibration();
 int action_disable_calibration();
-int action_update_time(ccsdsTelecommandPacket_t* TC);
+int action_update_time(const ccsdsTelecommandPacket_t * const TC);
 
 // mode transition
 int check_mode_value(unsigned char requestedMode);
@@ -97,14 +97,11 @@ void setCalibrationDivisor(unsigned int divisionFactor);
 void setCalibrationData(void);
 void setCalibrationReload(bool state);
 void setCalibrationEnable(bool state);
-#ifdef ENABLE_DEAD_CODE
-void setCalibrationInterleaved(bool state);
-#endif
 void setCalibration(bool state);
-void configureCalibration(bool interleaved);
+void configureCalibration();
 //
-void update_last_TC_exe(ccsdsTelecommandPacket_t* TC, unsigned char* time);
-void update_last_TC_rej(ccsdsTelecommandPacket_t* TC, unsigned char* time);
+void update_last_TC_exe(const ccsdsTelecommandPacket_t * const TC, const unsigned char * const time);
+void update_last_TC_rej(const ccsdsTelecommandPacket_t * const TC, const unsigned char * const time);
 void close_action(ccsdsTelecommandPacket_t* TC, int result, rtems_id queue_id);
 
 extern rtems_status_code get_message_queue_id_send(rtems_id* queue_id);

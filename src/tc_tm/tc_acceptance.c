@@ -49,7 +49,7 @@ unsigned int Crc_opt(unsigned char D, unsigned int Chk)
      */
 
     return (((Chk << SHIFT_1_BYTE) & BYTE0_MASK)
-        ^ lookUpTableForCRC[(((Chk >> SHIFT_1_BYTE) ^ D) & BYTE1_MASK)]);
+        ^ lookUpTableForCRC[((Chk >> SHIFT_1_BYTE) ^ D) & BYTE1_MASK]);
 }
 
 void initLookUpTableForCRC(void)
@@ -497,7 +497,7 @@ int tc_check_length(unsigned char packetSubType, unsigned int length)
 }
 
 int tc_check_crc(
-    ccsdsTelecommandPacket_t* TCPacket, unsigned int length, unsigned char* computed_CRC)
+    const ccsdsTelecommandPacket_t* const TCPacket, unsigned int length, unsigned char* computed_CRC)
 {
     /** This function checks the CRC validity of the corresponding TeleCommand packet.
      *
@@ -509,7 +509,7 @@ int tc_check_crc(
      */
 
     int status = CCSDS_TM_VALID;
-    unsigned char* CCSDSContent = (unsigned char*)TCPacket->packetID;
+    const unsigned char* const CCSDSContent = (unsigned char*)TCPacket->packetID;
 
     GetCRCAsTwoBytes(CCSDSContent, computed_CRC,
         length + CCSDS_TC_TM_PACKET_OFFSET

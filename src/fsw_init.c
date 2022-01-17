@@ -201,7 +201,7 @@ LFR_NO_RETURN rtems_task Init(rtems_task_argument ignored)
     reset_spectral_matrix_regs();
 
     // configure calibration
-    configureCalibration(false); // true means interleaved mode, false is for normal mode
+    configureCalibration();
 
     updateLFRCurrentMode(LFR_MODE_STANDBY);
 
@@ -874,17 +874,17 @@ void init_ring(
 
     //*****
     // NEXT
-    ring[nbNodes - 1].next = (ring_node*)&ring[0];
+    ring[nbNodes - 1].next = &ring[0];
     for (i = 0; i < nbNodes - 1; i++)
     {
-        ring[i].next = (ring_node*)&ring[i + 1];
+        ring[i].next = &ring[i + 1];
     }
 
     //*********
     // PREVIOUS
-    ring[0].previous = (ring_node*)&ring[nbNodes - 1];
+    ring[0].previous = &ring[nbNodes - 1];
     for (i = 1; i < nbNodes; i++)
     {
-        ring[i].previous = (ring_node*)&ring[i - 1];
+        ring[i].previous = &ring[i - 1];
     }
 }

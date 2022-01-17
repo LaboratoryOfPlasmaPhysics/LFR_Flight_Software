@@ -61,7 +61,7 @@ void watchdog_configure(void)
     LEON_Mask_interrupt(
         IRQ_GPTIMER_WATCHDOG); // mask gptimer/watchdog interrupt during configuration
 
-    timer_configure(TIMER_WATCHDOG, CLKDIV_WATCHDOG, IRQ_SPARC_GPTIMER_WATCHDOG, watchdog_isr);
+    timer_configure(TIMER_WATCHDOG, CLKDIV_WATCHDOG, IRQ_SPARC_GPTIMER_WATCHDOG, &watchdog_isr);
 
     LEON_Clear_interrupt(IRQ_GPTIMER_WATCHDOG); // clear gptimer/watchdog interrupt
 }

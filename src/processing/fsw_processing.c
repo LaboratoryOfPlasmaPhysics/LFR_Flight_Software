@@ -95,7 +95,6 @@ ring_node* getRingNodeForAveraging(unsigned char frequencyChannel)
 void spectral_matrices_isr_f0(int statusReg)
 {
     unsigned char status;
-    rtems_status_code status_code;
     ring_node* full_ring_node;
 
     status = (unsigned char)(statusReg
@@ -108,7 +107,7 @@ void spectral_matrices_isr_f0(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BIT_READY_0_1; // [0011]
-            status_code = send_event_dumb_task(RTEMS_EVENT_11);
+            send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             full_ring_node = current_ring_node_sm_f0->previous;
@@ -123,7 +122,7 @@ void spectral_matrices_isr_f0(int statusReg)
                 ring_node_for_averaging_sm_f0 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF0], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                     send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f0 = 0;
             }
@@ -142,7 +141,7 @@ void spectral_matrices_isr_f0(int statusReg)
                 ring_node_for_averaging_sm_f0 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF0], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                     send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f0 = 0;
             }
@@ -155,7 +154,6 @@ void spectral_matrices_isr_f0(int statusReg)
 
 void spectral_matrices_isr_f1(int statusReg)
 {
-    rtems_status_code status_code;
     unsigned char status;
     ring_node* full_ring_node;
 
@@ -169,7 +167,7 @@ void spectral_matrices_isr_f1(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BITS_STATUS_F1; // [1100]
-            status_code = send_event_dumb_task(RTEMS_EVENT_11);
+            send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             full_ring_node = current_ring_node_sm_f1->previous;
@@ -184,7 +182,7 @@ void spectral_matrices_isr_f1(int statusReg)
                 ring_node_for_averaging_sm_f1 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF1], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                    send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f1 = 0;
             }
@@ -203,7 +201,7 @@ void spectral_matrices_isr_f1(int statusReg)
                 ring_node_for_averaging_sm_f1 = full_ring_node;
                 if (rtems_event_send(Task_id[TASKID_AVF1], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
                 {
-                    status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                    send_event_dumb_task(RTEMS_EVENT_3);
                 }
                 nb_sm_f1 = 0;
             }
@@ -217,7 +215,6 @@ void spectral_matrices_isr_f1(int statusReg)
 void spectral_matrices_isr_f2(int statusReg)
 {
     unsigned char status;
-    rtems_status_code status_code;
 
     status = (unsigned char)((statusReg & BITS_STATUS_F2)
         >> SHIFT_4_BITS); // [0011 0000] get the status_ready_matrix_f2_x bits
@@ -229,7 +226,7 @@ void spectral_matrices_isr_f2(int statusReg)
         case BIT_READY_0_1:
             // UNEXPECTED VALUE
             spectral_matrix_regs->status = BITS_STATUS_F2; // [0011 0000]
-            status_code = send_event_dumb_task(RTEMS_EVENT_11);
+            send_event_dumb_task(RTEMS_EVENT_11);
             break;
         case BIT_READY_0:
             ring_node_for_averaging_sm_f2 = current_ring_node_sm_f2->previous;
@@ -240,7 +237,7 @@ void spectral_matrices_isr_f2(int statusReg)
             spectral_matrix_regs->status = BIT_STATUS_F2_0; // [0001 0000]
             if (rtems_event_send(Task_id[TASKID_AVF2], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                send_event_dumb_task(RTEMS_EVENT_3);
             }
             break;
         case BIT_READY_1:
@@ -252,7 +249,7 @@ void spectral_matrices_isr_f2(int statusReg)
             spectral_matrix_regs->status = BIT_STATUS_F2_1; // [0010 0000]
             if (rtems_event_send(Task_id[TASKID_AVF2], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                status_code = send_event_dumb_task(RTEMS_EVENT_3);
+                send_event_dumb_task(RTEMS_EVENT_3);
             }
             break;
         default:
@@ -269,8 +266,6 @@ void spectral_matrix_isr_error_handler(int statusReg)
     //      7                  6             5       4       3       2       1       0
     // [bad_component_err] not defined in the last version of the VHDL code
 
-    rtems_status_code status_code;
-
     //***************************************************
     // the ASM status register is copied in the HK packet
     housekeeping_packet.hk_lfr_vhdl_aa_sm
@@ -278,7 +273,7 @@ void spectral_matrix_isr_error_handler(int statusReg)
 
     if (statusReg & BITS_SM_ERR) // [0111 1100 0000]
     {
-        status_code = send_event_dumb_task(RTEMS_EVENT_8);
+        send_event_dumb_task(RTEMS_EVENT_8);
     }
 
     spectral_matrix_regs->status = spectral_matrix_regs->status & BITS_SM_ERR;
@@ -373,13 +368,11 @@ void ASM_generic_init_ring(ring_node_asm* ring, unsigned char nbNodes)
 {
     DEBUG_CHECK_PTR(ring);
 
-    unsigned char i;
+    ring[nbNodes - 1].next = &ring[0];
 
-    ring[nbNodes - 1].next = (ring_node_asm*)&ring[0];
-
-    for (i = 0; i < nbNodes - 1; i++)
+    for (unsigned char i = 0; i < nbNodes - 1; i++)
     {
-        ring[i].next = (ring_node_asm*)&ring[i + 1];
+        ring[i].next = &ring[i + 1];
     }
 }
 
@@ -471,19 +464,14 @@ void BP_init_header_with_spare(bp_packet_with_spare* packet, unsigned int apid, 
     packet->pa_lfr_bp_blk_nr[1] = blkNr; // BLK_NR LSB
 }
 
-void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
+void BP_send(const char* data, rtems_id queue_id, unsigned int nbBytesToSend)
 {
-    rtems_status_code status;
-
     // SEND PACKET
-    status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status);
-    }
+    DEBUG_CHECK_PTR(data);
+    DEBUG_CHECK_STATUS(rtems_message_queue_send(queue_id, data, nbBytesToSend));
 }
 
-void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
+void BP_send_s1_s2(const char* data, rtems_id queue_id, unsigned int nbBytesToSend)
 {
     /** This function is used to send the BP paquets when needed.
      *
@@ -497,19 +485,13 @@ void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend)
      *
      */
     DEBUG_CHECK_PTR(data);
-    rtems_status_code status;
 
     // SEND PACKET
     // before lastValidTransitionDate, the data are drops even if they are ready
     // this guarantees that no SBM packets will be received before the requested enter mode time
     if (time_management_regs->coarse_time >= lastValidEnterModeTime)
     {
-        status = rtems_message_queue_send(queue_id, data, nbBytesToSend);
-        DEBUG_CHECK_STATUS(status);
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("ERR *** in BP_send *** ERR %d\n", (int)status);
-        }
+        DEBUG_CHECK_STATUS(rtems_message_queue_send(queue_id, data, nbBytesToSend));
     }
 }
 
@@ -561,7 +543,7 @@ void reset_spectral_matrix_regs(void)
     spectral_matrix_regs->matrix_length = DEFAULT_MATRIX_LENGTH; // 25 * 128 / 16 = 200 = 0xc8
 }
 
-void set_time(unsigned char* time, unsigned char* timeInBuffer)
+void set_time(unsigned char* time, const unsigned char* timeInBuffer)
 {
     time[BYTE_0] = timeInBuffer[BYTE_0];
     time[BYTE_1] = timeInBuffer[BYTE_1];
@@ -571,10 +553,9 @@ void set_time(unsigned char* time, unsigned char* timeInBuffer)
     time[BYTE_5] = timeInBuffer[BYTE_7];
 }
 
-unsigned long long int get_acquisition_time(unsigned char* timePtr)
+unsigned long long int get_acquisition_time(const unsigned char* const timePtr)
 {
     unsigned long long int acquisitionTimeAslong;
-    acquisitionTimeAslong = INIT_CHAR;
     acquisitionTimeAslong = ((unsigned long long int)(timePtr[BYTE_0] & SYNC_BIT_MASK)
                                 << SHIFT_5_BYTES) // [0111 1111] mask the synchronization bit
         + ((unsigned long long int)timePtr[BYTE_1] << SHIFT_4_BYTES)

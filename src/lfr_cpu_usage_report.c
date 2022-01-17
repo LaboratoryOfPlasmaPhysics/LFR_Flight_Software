@@ -12,15 +12,13 @@
  */
 
 #include "lfr_cpu_usage_report.h"
-#include "fsw_params.h"
 #include "fsw_globals.h"
+#include "fsw_params.h"
 
 unsigned char lfr_rtems_cpu_usage_report(void)
 {
-    uint32_t api_index;
-    uint32_t information_index;
-    Thread_Control* the_thread;
-    Objects_Information* information;
+    const Thread_Control* the_thread;
+    const Objects_Information* information;
     uint32_t ival;
     uint32_t fval;
 #ifndef __RTEMS_USE_TICKS_FOR_STATISTICS__
@@ -37,7 +35,7 @@ unsigned char lfr_rtems_cpu_usage_report(void)
     ival = 0;
     cpu_load = 0;
 
-    for (api_index = 1; api_index <= OBJECTS_APIS_LAST; api_index++)
+    for (uint32_t api_index = 1; api_index <= OBJECTS_APIS_LAST; api_index++)
     {
         if (!_Objects_Information_table[api_index]) { }
         else
@@ -45,15 +43,13 @@ unsigned char lfr_rtems_cpu_usage_report(void)
             information = _Objects_Information_table[api_index][1];
             if (information != NULL)
             {
-                for (information_index = 1; information_index <= information->maximum;
+                for (uint32_t information_index = 1; information_index <= information->maximum;
                      information_index++)
                 {
                     the_thread = (Thread_Control*)information->local_table[information_index];
 
-                    if (the_thread == NULL) { }
-                    else if (the_thread->Object.id
-                        == Task_id[TASKID_SCRB]) // Only measure scrubbing task load, CPU load is
-                                                 // 100%-Scrubbing
+                    // Only measure scrubbing task load, CPU load is 100%-Scrubbing
+                    if (the_thread != NULL && the_thread->Object.id == Task_id[TASKID_SCRB])
                     {
                         _TOD_Get_uptime(&uptime);
                         _Timestamp_Subtract(&CPU_usage_Uptime_at_last_reset, &uptime, &total);

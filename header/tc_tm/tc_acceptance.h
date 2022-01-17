@@ -37,7 +37,6 @@ int tc_check_type(unsigned char packetType);
 int tc_check_type_subtype(unsigned char packetType, unsigned char packetSubType);
 int tc_check_sid(unsigned char sid);
 int tc_check_length(unsigned char packetType, unsigned int length);
-int tc_check_crc(
-    ccsdsTelecommandPacket_t* TCPacket, unsigned int length, unsigned char* computed_CRC);
+int tc_check_crc(const ccsdsTelecommandPacket_t * const TCPacket, unsigned int length, unsigned char* computed_CRC);
 
 #endif // TC_ACCEPTANCE_H_INCLUDED

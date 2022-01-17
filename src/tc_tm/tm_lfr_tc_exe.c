@@ -89,7 +89,7 @@ int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     TM.pkt_seq_control[1] = TC->packetSequenceControl[1];
 
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
+    status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
     DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
@@ -158,7 +158,7 @@ int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue
     TM.rcv_value = (unsigned char)rcv_value;
 
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
+    status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
     DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
@@ -167,7 +167,7 @@ int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue
     return status;
 }
 
-int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int send_tm_lfr_tc_exe_not_executable(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function sends a TM_LFR_TC_EXE_NOT_EXECUTABLE packet in the dedicated RTEMS message
      * queue.
@@ -222,7 +222,7 @@ int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id que
     TM.lfr_status_word[1] = housekeeping_packet.lfr_status_word[1];
 
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
+    status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
     DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
@@ -283,7 +283,7 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     TM.tc_subtype = TC->serviceSubType; // subtype of the rejected TC
 
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
+    status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
     DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS
@@ -367,7 +367,7 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
     TM.computed_crc[1] = computed_CRC[1];
 
     // SEND DATA
-    status = rtems_message_queue_send(queue_id, &TM, sizeof (TM));
+    status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
     DEBUG_CHECK_STATUS(status);
 
     // UPDATE HK FIELDS

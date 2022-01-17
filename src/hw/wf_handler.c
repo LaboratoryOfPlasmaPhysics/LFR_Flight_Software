@@ -32,10 +32,10 @@
  */
 
 #include "hw/wf_handler.h"
-#include "hw/lfr_regs.h"
-#include "fsw_misc.h"
-#include "fsw_debug.h"
 #include "fsw_compile_warnings.h"
+#include "fsw_debug.h"
+#include "fsw_misc.h"
+#include "hw/lfr_regs.h"
 #include "lfr_common_headers/fsw_params.h"
 
 //***************
@@ -66,7 +66,7 @@ ring_node waveform_ring_f3[NB_RING_NODES_F3] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 ring_node* current_ring_node_f3 = NULL;
 ring_node* ring_node_to_send_cwf_f3 = NULL;
-char wf_cont_f3_light[(NB_SAMPLES_PER_SNAPSHOT)*NB_BYTES_CWF3_LIGHT_BLK] = { 0 };
+char wf_cont_f3_light[NB_SAMPLES_PER_SNAPSHOT * NB_BYTES_CWF3_LIGHT_BLK] = { 0 };
 
 bool extractSWF1 = false;
 bool extractSWF2 = false;
@@ -150,8 +150,6 @@ void reset_extractSWF(void)
 
 void waveforms_isr_f3(void)
 {
-    rtems_status_code spare_status;
-
     if ((lfrCurrentMode == LFR_MODE_NORMAL)
         || (lfrCurrentMode
             == LFR_MODE_BURST) // in BURST the data are used to place v, e1 and e2 in the HK packet
@@ -181,7 +179,7 @@ void waveforms_isr_f3(void)
             }
             if (rtems_event_send(Task_id[TASKID_CWF3], RTEMS_EVENT_0) != RTEMS_SUCCESSFUL)
             {
-                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
+                DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_0));
             }
         }
     }
@@ -190,7 +188,6 @@ void waveforms_isr_f3(void)
 void waveforms_isr_burst(void)
 {
     unsigned char status;
-    rtems_status_code spare_status;
 
     status = (waveform_picker_regs->status & BITS_WFP_STATUS_F2)
         >> SHIFT_WFP_STATUS_F2; // [0011 0000] get the status bits for f2
@@ -206,7 +203,7 @@ void waveforms_isr_burst(void)
             waveform_picker_regs->addr_data_f2_0 = current_ring_node_f2->buffer_address;
             if (rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST) != RTEMS_SUCCESSFUL)
             {
-                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
+                DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_0));
             }
             waveform_picker_regs->status
                 = waveform_picker_regs->status & RST_WFP_F2_0; // [0100 0100 0001 0000]
@@ -220,7 +217,7 @@ void waveforms_isr_burst(void)
             waveform_picker_regs->addr_data_f2_1 = current_ring_node_f2->buffer_address;
             if (rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_BURST) != RTEMS_SUCCESSFUL)
             {
-                spare_status = send_event_dumb_task(RTEMS_EVENT_0);
+                DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_0));
             }
             waveform_picker_regs->status
                 = waveform_picker_regs->status & RST_WFP_F2_1; // [0100 0100 0010 0000]
@@ -232,8 +229,6 @@ void waveforms_isr_burst(void)
 
 void waveform_isr_normal_sbm1_sbm2(void)
 {
-    rtems_status_code status;
-
     //***
     // F0
     if ((waveform_picker_regs->status & BITS_WFP_STATUS_F0)
@@ -261,8 +256,8 @@ void waveform_isr_normal_sbm1_sbm2(void)
                 = waveform_picker_regs->status & RST_WFP_F0_1; // [0001 0001 0000 0010]
         }
         // send an event to the WFRM task for resynchro activities
-        status = rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_SWF_RESYNCH);
-        status = rtems_event_send(Task_id[TASKID_CALI], RTEMS_EVENT_CAL_SWEEP_WAKE);
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_SWF_RESYNCH));
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_CALI], RTEMS_EVENT_CAL_SWEEP_WAKE));
     }
 
     //***
@@ -290,7 +285,7 @@ void waveform_isr_normal_sbm1_sbm2(void)
         }
         // (2) send an event for the the CWF1 task for transmission (and snapshot extraction if
         // needed)
-        status = rtems_event_send(Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_NORM_S1_S2);
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_CWF1], RTEMS_EVENT_MODE_NORM_S1_S2));
     }
 
     //***
@@ -318,7 +313,7 @@ void waveform_isr_normal_sbm1_sbm2(void)
                 = waveform_picker_regs->status & RST_WFP_F2_1; // [0100 0100 0010 0000]
         }
         // (2) send an event for the waveforms transmission
-        status = rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_NORM_S1_S2);
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_CWF2], RTEMS_EVENT_MODE_NORM_S1_S2));
     }
 }
 
@@ -342,8 +337,6 @@ rtems_isr waveforms_isr(rtems_vector_number vector)
     // f3_1 f3_0 f2_1 f2_0 f1_1 f1_0 f0_1 f0_0
     IGNORE_UNUSED_PARAMETER(vector);
 
-    rtems_status_code spare_status;
-
     waveforms_isr_f3();
 
     //*************************************************
@@ -354,7 +347,7 @@ rtems_isr waveforms_isr(rtems_vector_number vector)
     if ((waveform_picker_regs->status & BYTE0_MASK)
         != INIT_CHAR) // [1111 1111 0000 0000] check the error bits
     {
-        spare_status = send_event_dumb_task(RTEMS_EVENT_10);
+        DEBUG_CHECK_STATUS(send_event_dumb_task(RTEMS_EVENT_10));
     }
 
     switch (lfrCurrentMode)
@@ -385,7 +378,8 @@ rtems_isr waveforms_isr(rtems_vector_number vector)
 //************
 // RTEMS TASKS
 
-LFR_NO_RETURN rtems_task wfrm_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
+LFR_NO_RETURN rtems_task wfrm_task(
+    rtems_task_argument argument) // used with the waveform picker VHDL IP
 {
     /** This RTEMS task is dedicated to the transmission of snapshots of the NORMAL mode.
      *
@@ -400,23 +394,15 @@ LFR_NO_RETURN rtems_task wfrm_task(rtems_task_argument argument) // used with th
 
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_event_set event_out;
-    rtems_id queue_id;
-    rtems_status_code status;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    rtems_id queue_id = RTEMS_ID_NONE;
     ring_node* ring_node_swf1_extracted_ptr;
     ring_node* ring_node_swf2_extracted_ptr;
 
-    event_out = EVENT_SETS_NONE_PENDING;
-    queue_id = RTEMS_ID_NONE;
+    ring_node_swf1_extracted_ptr = &ring_node_swf1_extracted;
+    ring_node_swf2_extracted_ptr = &ring_node_swf2_extracted;
 
-    ring_node_swf1_extracted_ptr = (ring_node*)&ring_node_swf1_extracted;
-    ring_node_swf2_extracted_ptr = (ring_node*)&ring_node_swf2_extracted;
-
-    status = get_message_queue_id_send(&queue_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in WFRM *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id));
 
     BOOT_PRINTF("in WFRM ***\n");
 
@@ -432,12 +418,12 @@ LFR_NO_RETURN rtems_task wfrm_task(rtems_task_argument argument) // used with th
             ring_node_to_send_swf_f0->sid = SID_NORM_SWF_F0;
             ring_node_swf1_extracted_ptr->sid = SID_NORM_SWF_F1;
             ring_node_swf2_extracted_ptr->sid = SID_NORM_SWF_F2;
-            status
-                = rtems_message_queue_send(queue_id, &ring_node_to_send_swf_f0, sizeof(ring_node*));
-            status = rtems_message_queue_send(
-                queue_id, &ring_node_swf1_extracted_ptr, sizeof(ring_node*));
-            status = rtems_message_queue_send(
-                queue_id, &ring_node_swf2_extracted_ptr, sizeof(ring_node*));
+            DEBUG_CHECK_STATUS(
+                rtems_message_queue_send(queue_id, &ring_node_to_send_swf_f0, sizeof(ring_node*)));
+            DEBUG_CHECK_STATUS(rtems_message_queue_send(
+                queue_id, &ring_node_swf1_extracted_ptr, sizeof(ring_node*)));
+            DEBUG_CHECK_STATUS(rtems_message_queue_send(
+                queue_id, &ring_node_swf2_extracted_ptr, sizeof(ring_node*)));
         }
         if (event_out == RTEMS_EVENT_SWF_RESYNCH)
         {
@@ -446,7 +432,8 @@ LFR_NO_RETURN rtems_task wfrm_task(rtems_task_argument argument) // used with th
     }
 }
 
-LFR_NO_RETURN rtems_task cwf3_task(rtems_task_argument argument) // used with the waveform picker VHDL IP
+LFR_NO_RETURN rtems_task cwf3_task(
+    rtems_task_argument argument) // used with the waveform picker VHDL IP
 {
     /** This RTEMS task is dedicated to the transmission of continuous waveforms at f3.
      *
@@ -459,20 +446,13 @@ LFR_NO_RETURN rtems_task cwf3_task(rtems_task_argument argument) // used with th
 
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_event_set event_out;
-    rtems_id queue_id;
-    rtems_status_code status;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    rtems_id queue_id = RTEMS_ID_NONE;
     ring_node ring_node_cwf3_light;
     ring_node* ring_node_to_send_cwf;
 
-    event_out = EVENT_SETS_NONE_PENDING;
-    queue_id = RTEMS_ID_NONE;
 
-    status = get_message_queue_id_send(&queue_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in CWF3 *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id));
 
     ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
 
@@ -500,8 +480,8 @@ LFR_NO_RETURN rtems_task cwf3_task(rtems_task_argument argument) // used with th
             {
                 LFR_PRINTF("send CWF_LONG_F3\n");
                 ring_node_to_send_cwf_f3->sid = SID_NORM_CWF_LONG_F3;
-                status = rtems_message_queue_send(
-                    queue_id, &ring_node_to_send_cwf, sizeof(ring_node*));
+                DEBUG_CHECK_STATUS(
+                    rtems_message_queue_send(queue_id, &ring_node_to_send_cwf, sizeof(ring_node*)));
             }
             else
             {
@@ -530,35 +510,29 @@ LFR_NO_RETURN rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN
 
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_event_set event_out;
-    rtems_id queue_id;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    rtems_id queue_id = RTEMS_ID_NONE;
     rtems_status_code status;
     ring_node* ring_node_to_send;
     unsigned long long int acquisitionTimeF0_asLong;
 
-    event_out = EVENT_SETS_NONE_PENDING;
-    queue_id = RTEMS_ID_NONE;
-
     acquisitionTimeF0_asLong = INIT_CHAR;
 
-    status = get_message_queue_id_send(&queue_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in CWF2 *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id));
 
     BOOT_PRINTF("in CWF2 ***\n");
 
     while (1)
     {
         // wait for an RTEMS_EVENT// send the snapshot when built
-        status = rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2);
-        rtems_event_receive(RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
-            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
+        DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_SBM2));
+        DEBUG_CHECK_STATUS(rtems_event_receive(RTEMS_EVENT_MODE_NORM_S1_S2 | RTEMS_EVENT_MODE_BURST,
+            RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out));
         ring_node_to_send = getRingNodeToSendCWF(CHANNELF2);
         if (event_out == RTEMS_EVENT_MODE_BURST)
         { // data are sent whatever the transition time
-            status = rtems_message_queue_send(queue_id, &ring_node_to_send, sizeof(ring_node*));
+            DEBUG_CHECK_STATUS(
+                rtems_message_queue_send(queue_id, &ring_node_to_send, sizeof(ring_node*)));
         }
         else if (event_out == RTEMS_EVENT_MODE_NORM_S1_S2)
         {
@@ -567,8 +541,8 @@ LFR_NO_RETURN rtems_task cwf2_task(rtems_task_argument argument) // ONLY USED IN
                 // data are sent depending on the transition time
                 if (time_management_regs->coarse_time >= lastValidEnterModeTime)
                 {
-                    status = rtems_message_queue_send(
-                        queue_id, &ring_node_to_send, sizeof(ring_node*));
+                    DEBUG_CHECK_STATUS(
+                        rtems_message_queue_send(queue_id, &ring_node_to_send, sizeof(ring_node*)));
                 }
             }
             // launch snapshot extraction if needed
@@ -607,20 +581,12 @@ LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN
 
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_event_set event_out;
-    rtems_id queue_id;
-    rtems_status_code status;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    rtems_id queue_id = RTEMS_ID_NONE;
 
     ring_node* ring_node_to_send_cwf;
 
-    event_out = EVENT_SETS_NONE_PENDING;
-    queue_id = RTEMS_ID_NONE;
-
-    status = get_message_queue_id_send(&queue_id);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in CWF1 *** ERR get_message_queue_id_send %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id));
 
     BOOT_PRINTF("in CWF1 ***\n");
 
@@ -636,8 +602,8 @@ LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN
             // data are sent depending on the transition time
             if (time_management_regs->coarse_time >= lastValidEnterModeTime)
             {
-                status = rtems_message_queue_send(
-                    queue_id, &ring_node_to_send_cwf, sizeof(ring_node*));
+                DEBUG_CHECK_STATUS(
+                    rtems_message_queue_send(queue_id, &ring_node_to_send_cwf, sizeof(ring_node*)));
             }
         }
         // launch snapshot extraction if needed
@@ -645,7 +611,7 @@ LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN
         {
             ring_node_to_send_swf_f1 = ring_node_to_send_cwf;
             // launch the snapshot extraction
-            status = rtems_event_send(Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_NORM_S1_S2);
+            DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_SWBD], RTEMS_EVENT_MODE_NORM_S1_S2));
             extractSWF1 = false;
         }
         if (swf0_ready_flag_f1 == true)
@@ -655,7 +621,7 @@ LFR_NO_RETURN rtems_task cwf1_task(rtems_task_argument argument) // ONLY USED IN
         }
         if ((swf1_ready == true) && (swf2_ready == true)) // swf_f1 is ready after the extraction
         {
-            status = rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL);
+            DEBUG_CHECK_STATUS(rtems_event_send(Task_id[TASKID_WFRM], RTEMS_EVENT_MODE_NORMAL));
             swf1_ready = false;
             swf2_ready = false;
         }
@@ -673,11 +639,8 @@ LFR_NO_RETURN rtems_task swbd_task(rtems_task_argument argument)
 
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_event_set event_out;
-    unsigned long long int acquisitionTimeF0_asLong;
-
-    event_out = EVENT_SETS_NONE_PENDING;
-    acquisitionTimeF0_asLong = INIT_CHAR;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    unsigned long long int acquisitionTimeF0_asLong = 0;
 
     BOOT_PRINTF("in SWBD ***\n");
 
@@ -761,27 +724,21 @@ int send_waveform_CWF3_light(
      *
      */
 
-    unsigned int i;
-    unsigned int j;
-    int ret;
+    int ret = LFR_SUCCESSFUL;
     rtems_status_code status;
 
-    char* sample;
-    int* dataPtr;
-
-    ret = LFR_DEFAULT;
-
-    dataPtr = (int*)ring_node_to_send->buffer_address;
+    const char* sample;
+    const int* const dataPtr = (int*)ring_node_to_send->buffer_address;
 
     ring_node_cwf3_light->coarseTime = ring_node_to_send->coarseTime;
     ring_node_cwf3_light->fineTime = ring_node_to_send->fineTime;
 
     //**********************
     // BUILD CWF3_light DATA
-    for (i = 0; i < NB_SAMPLES_PER_SNAPSHOT; i++)
+    for (unsigned int i = 0; i < NB_SAMPLES_PER_SNAPSHOT; i++)
     {
-        sample = (char*)&dataPtr[(i * NB_WORDS_SWF_BLK)];
-        for (j = 0; j < CWF_BLK_SIZE; j++)
+        sample = (const char*)&dataPtr[i * NB_WORDS_SWF_BLK];
+        for (unsigned int j = 0; j < CWF_BLK_SIZE; j++)
         {
             wf_cont_f3_light[(i * NB_BYTES_CWF3_LIGHT_BLK) + j] = sample[j];
         }
@@ -802,9 +759,7 @@ void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime, un
 {
     unsigned long long int acquisitionTimeAsLong;
     unsigned char localAcquisitionTime[BYTES_PER_TIME];
-    double deltaT;
-
-    deltaT = INIT_FLOAT;
+    double deltaT = 0.;
 
     localAcquisitionTime[BYTE_0] = (unsigned char)(coarseTime >> SHIFT_3_BYTES);
     localAcquisitionTime[BYTE_1] = (unsigned char)(coarseTime >> SHIFT_2_BYTES);
@@ -879,23 +834,19 @@ void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char freque
     unsigned long long int centerTime_asLong;
     unsigned long long int acquisitionTime_asLong;
     unsigned long long int bufferAcquisitionTime_asLong;
-    unsigned char* ptr1;
+    const unsigned char* ptr1;
     unsigned char* ptr2;
-    unsigned char* timeCharPtr;
+    const unsigned char* timeCharPtr;
     unsigned char nb_ring_nodes;
     unsigned long long int frequency_asLong;
-    unsigned long long int nbTicksPerSample_asLong;
+    // set to default value (Don_Initialisation_P2)
+    unsigned long long int nbTicksPerSample_asLong = TICKS_PER_T2;
     long long int nbSamplesPart1_asLong;
-    unsigned long long int sampleOffset_asLong;
+    unsigned long long int sampleOffset_asLong = 0;
 
-    unsigned int deltaT_F0;
-    unsigned int deltaT_F1;
-    unsigned long long int deltaT_F2;
-
-    deltaT_F0 = DELTAT_F0;
-    deltaT_F1 = DELTAT_F1;
-    deltaT_F2 = DELTAT_F2;
-    sampleOffset_asLong = INIT_CHAR;
+    unsigned int deltaT_F0 = DELTAT_F0;
+    unsigned int deltaT_F1 = DELTAT_F1;
+    unsigned long long int deltaT_F2 = DELTAT_F2;
 
     // (1) get the f0 acquisition time => the value is passed in argument
 
@@ -904,7 +855,6 @@ void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char freque
     acquisitionTime_asLong = centerTime_asLong; // set to default value (Don_Initialisation_P2)
     bufferAcquisitionTime_asLong = centerTime_asLong; // set to default value
                                                       // (Don_Initialisation_P2)
-    nbTicksPerSample_asLong = TICKS_PER_T2; // set to default value (Don_Initialisation_P2)
 
     // (3) compute the acquisition time of the current snapshot
     switch (frequencyChannel)
@@ -989,8 +939,8 @@ void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char freque
     for (i = (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK);
          i < (NB_SAMPLES_PER_SNAPSHOT * NB_WORDS_SWF_BLK); i++)
     {
-        swf_extracted[i] = ((int*)ring_node_to_send
-                                ->buffer_address)[(i - (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK))];
+        swf_extracted[i] = ((
+            int*)ring_node_to_send->buffer_address)[i - (nbSamplesPart1_asLong * NB_WORDS_SWF_BLK)];
     }
 }
 
@@ -1004,9 +954,8 @@ double computeCorrection(unsigned char* timePtr)
     unsigned long long int deltaNextTick;
     double deltaPrevious_ms;
     double deltaNext_ms;
-    double correctionInF2;
+    double correctionInF2 = 0.; // set to default value (Don_Initialisation_P2)
 
-    correctionInF2 = 0; // set to default value (Don_Initialisation_P2)
 
     // get acquisition time in fine time ticks
     acquisitionTime = get_acquisition_time(timePtr);
@@ -1014,7 +963,7 @@ double computeCorrection(unsigned char* timePtr)
     // compute center time
     centerTime = acquisitionTime + DELTAT_F0; // (2048. / 24576. / 2.) * 65536. = 2730.667;
     previousTick = centerTime - (centerTime & INT16_ALL_F);
-    nextTick = previousTick + TICKS_PER_S;
+    nextTick = previousTick + (unsigned long long)TICKS_PER_S;
 
     deltaPreviousTick = centerTime - previousTick;
     deltaNextTick = nextTick - centerTime;
@@ -1044,9 +993,7 @@ double computeCorrection(unsigned char* timePtr)
 
 void applyCorrection(double correction)
 {
-    int correctionInt;
-
-    correctionInt = 0;
+    int correctionInt = 0;
 
     if (correction >= 0.)
     {
@@ -1069,7 +1016,7 @@ void applyCorrection(double correction)
         }
         else
         {
-            correctionInt = CORR_MULT * ceil(correction);
+            correctionInt = (int)((double)CORR_MULT * ceil(correction));
         }
     }
     waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
@@ -1086,13 +1033,9 @@ void snapshot_resynchronization(unsigned char* timePtr)
      *
      */
 
-    static double correction = INIT_FLOAT;
+    static double correction = 0.;
     static resynchro_state state = MEASURE;
     static unsigned int nbSnapshots = 0;
-
-    int correctionInt;
-
-    correctionInt = 0;
 
     switch (state)
     {
@@ -1301,7 +1244,7 @@ void set_wfp_delta_snapshot(void)
     delta_snapshot = (parameter_dump_packet.sy_lfr_n_swf_p[0] * CONST_256)
         + parameter_dump_packet.sy_lfr_n_swf_p[1];
 
-    delta_snapshot_in_T2 = delta_snapshot * FREQ_F2;
+    delta_snapshot_in_T2 = delta_snapshot * (unsigned int)FREQ_F2;
     waveform_picker_regs->delta_snapshot = delta_snapshot_in_T2 - 1; // max 4 bytes
 }
 
@@ -1314,10 +1257,10 @@ void set_wfp_delta_f0_f0_2(void)
     delta_snapshot = waveform_picker_regs->delta_snapshot;
     nb_samples_per_snapshot = (parameter_dump_packet.sy_lfr_n_swf_l[0] * CONST_256)
         + parameter_dump_packet.sy_lfr_n_swf_l[1];
-    delta_f0_in_float
-        = (nb_samples_per_snapshot / 2.) * ((1. / FREQ_F2) - (1. / FREQ_F0)) * FREQ_F2;
+    delta_f0_in_float = (float)(((double)nb_samples_per_snapshot / 2.)
+        * ((1. / FREQ_F2) - (1. / FREQ_F0)) * FREQ_F2);
 
-    waveform_picker_regs->delta_f0 = delta_snapshot - floor(delta_f0_in_float);
+    waveform_picker_regs->delta_f0 = delta_snapshot - (int)floor(delta_f0_in_float);
     waveform_picker_regs->delta_f0_2 = DFLT_WFP_DELTA_F0_2;
 }
 
@@ -1340,10 +1283,10 @@ void set_wfp_delta_f1(void)
     delta_snapshot = waveform_picker_regs->delta_snapshot;
     nb_samples_per_snapshot = (parameter_dump_packet.sy_lfr_n_swf_l[0] * CONST_256)
         + parameter_dump_packet.sy_lfr_n_swf_l[1];
-    delta_f1_in_float
-        = (nb_samples_per_snapshot / 2.) * ((1. / FREQ_F2) - (1. / FREQ_F1)) * FREQ_F2;
+    delta_f1_in_float = (float)(((double)nb_samples_per_snapshot / 2.)
+        * ((1. / FREQ_F2) - (1. / FREQ_F1)) * FREQ_F2);
 
-    waveform_picker_regs->delta_f1 = delta_snapshot - floor(delta_f1_in_float);
+    waveform_picker_regs->delta_f1 = delta_snapshot - (int)floor(delta_f1_in_float);
 }
 
 void set_wfp_delta_f2(void) // parameter not used, only delta_f0 and delta_f0_2 are used
@@ -1389,20 +1332,15 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
      *
      */
 
-    unsigned short* sequence_cnt;
+    unsigned short* sequence_cnt = NULL;
     unsigned short segmentation_grouping_flag;
     unsigned short new_packet_sequence_control;
-    rtems_mode initial_mode_set;
-    rtems_mode current_mode_set;
-    rtems_status_code status;
-
-    initial_mode_set = RTEMS_DEFAULT_MODES;
-    current_mode_set = RTEMS_DEFAULT_MODES;
-    sequence_cnt = NULL;
+    rtems_mode initial_mode_set = RTEMS_DEFAULT_MODES;
+    rtems_mode current_mode_set = RTEMS_DEFAULT_MODES;
 
     //******************************************
     // CHANGE THE MODE OF THE CALLING RTEMS TASK
-    status = rtems_task_mode(RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &initial_mode_set);
+    DEBUG_CHECK_STATUS(rtems_task_mode(RTEMS_NO_PREEMPT, RTEMS_PREEMPT_MASK, &initial_mode_set));
 
     if ((sid == SID_NORM_SWF_F0) || (sid == SID_NORM_SWF_F1) || (sid == SID_NORM_SWF_F2)
         || (sid == SID_NORM_CWF_F3) || (sid == SID_NORM_CWF_LONG_F3) || (sid == SID_BURST_CWF_F2)
@@ -1412,18 +1350,19 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
         || (sid == SID_BURST_BP1_F0) || (sid == SID_BURST_BP2_F0) || (sid == SID_BURST_BP1_F1)
         || (sid == SID_BURST_BP2_F1))
     {
-        sequence_cnt = (unsigned short*)&sequenceCounters_SCIENCE_NORMAL_BURST;
+        sequence_cnt = &sequenceCounters_SCIENCE_NORMAL_BURST;
     }
     else if ((sid == SID_SBM1_CWF_F1) || (sid == SID_SBM2_CWF_F2) || (sid == SID_SBM1_BP1_F0)
         || (sid == SID_SBM1_BP2_F0) || (sid == SID_SBM2_BP1_F0) || (sid == SID_SBM2_BP2_F0)
         || (sid == SID_SBM2_BP1_F1) || (sid == SID_SBM2_BP2_F1))
     {
-        sequence_cnt = (unsigned short*)&sequenceCounters_SCIENCE_SBM1_SBM2;
+        sequence_cnt = &sequenceCounters_SCIENCE_SBM1_SBM2;
     }
     else
     {
         sequence_cnt = (unsigned short*)NULL;
-        LFR_PRINTF("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", (int)sid);
+        LFR_PRINTF(
+            "in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", (int)sid);
     }
 
     if (sequence_cnt != NULL)
@@ -1449,5 +1388,5 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
 
     //*************************************
     // RESTORE THE MODE OF THE CALLING TASK
-    status = rtems_task_mode(initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set);
+    DEBUG_CHECK_STATUS( rtems_task_mode(initial_mode_set, RTEMS_PREEMPT_MASK, &current_mode_set));
 }

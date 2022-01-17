@@ -40,8 +40,8 @@ extern unsigned short sequenceCounters_TM_DUMP[];
 
 extern fbins_masks_t fbins_masks;
 
-int action_load_common_par(ccsdsTelecommandPacket_t* TC);
-int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
+int action_load_common_par(const ccsdsTelecommandPacket_t * const TC);
+int action_load_normal_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id, const unsigned char * const time);
 int action_load_burst_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
 int action_load_sbm1_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);
 int action_load_sbm2_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);

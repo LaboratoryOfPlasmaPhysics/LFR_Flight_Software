@@ -51,15 +51,15 @@ void BP_init_header(bp_packet* packet, unsigned int apid, unsigned char sid,
     unsigned int packetLength, unsigned char blkNr);
 void BP_init_header_with_spare(bp_packet_with_spare* packet, unsigned int apid, unsigned char sid,
     unsigned int packetLength, unsigned char blkNr);
-void BP_send(char* data, rtems_id queue_id, unsigned int nbBytesToSend);
-void BP_send_s1_s2(char* data, rtems_id queue_id, unsigned int nbBytesToSend);
+void BP_send(const char *data, rtems_id queue_id, unsigned int nbBytesToSend);
+void BP_send_s1_s2(const char* data, rtems_id queue_id, unsigned int nbBytesToSend);
 
 //******************
 // general functions
 void reset_sm_status(void);
 void reset_spectral_matrix_regs(void);
-void set_time(unsigned char* time, unsigned char* timeInBuffer);
-unsigned long long int get_acquisition_time(unsigned char* timePtr);
+void set_time(unsigned char* time, const unsigned char *timeInBuffer);
+unsigned long long int get_acquisition_time(const unsigned char * const timePtr);
 
 extern rtems_status_code get_message_queue_id_prc1(rtems_id* queue_id);
 extern rtems_status_code get_message_queue_id_prc2(rtems_id* queue_id);

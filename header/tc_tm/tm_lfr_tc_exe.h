@@ -13,7 +13,7 @@ extern unsigned short sequenceCounters_TC_EXE[];
 int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
 int send_tm_lfr_tc_exe_inconsistent(ccsdsTelecommandPacket_t* TC, rtems_id queue_id,
     unsigned char byte_position, unsigned char rcv_value);
-int send_tm_lfr_tc_exe_not_executable(ccsdsTelecommandPacket_t* TC, rtems_id queue_id);
+int send_tm_lfr_tc_exe_not_executable(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
 #ifdef ENABLE_DEAD_CODE
 int send_tm_lfr_tc_exe_not_implemented(
     ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time);

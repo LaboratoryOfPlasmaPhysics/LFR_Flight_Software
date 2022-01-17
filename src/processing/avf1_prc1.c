@@ -54,9 +54,9 @@ nb_sm_before_bp_asm_f1 nb_sm_before_f1 = { 0 };
 
 //***
 // F1
-ring_node_asm asm_ring_norm_f1[NB_RING_NODES_ASM_NORM_F1] = { {0} };
-ring_node_asm asm_ring_burst_sbm_f1[NB_RING_NODES_ASM_BURST_SBM_F1] = { {0} };
-ring_node ring_to_send_asm_f1[NB_RING_NODES_ASM_F1] = { {0} };
+ring_node_asm asm_ring_norm_f1[NB_RING_NODES_ASM_NORM_F1] = { { 0 } };
+ring_node_asm asm_ring_burst_sbm_f1[NB_RING_NODES_ASM_BURST_SBM_F1] = { { 0 } };
+ring_node ring_to_send_asm_f1[NB_RING_NODES_ASM_F1] = { { 0 } };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
 int buffer_asm_f1[NB_RING_NODES_ASM_F1 * TOTAL_SIZE_SM] = { 0 };
@@ -99,8 +99,8 @@ LFR_NO_RETURN rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
     nb_sbm_bp1 = 0;
     nb_sbm_bp2 = 0;
 
-    reset_nb_sm_f1(lfrRequestedMode); // reset the sm counters that drive the BP and ASM
-                                      // computations / transmissions
+    reset_nb_sm_f1((unsigned char)lfrRequestedMode); // reset the sm counters that drive the BP and
+                                                     // ASM computations / transmissions
     ASM_generic_init_ring(asm_ring_norm_f1, NB_RING_NODES_ASM_NORM_F1);
     ASM_generic_init_ring(asm_ring_burst_sbm_f1, NB_RING_NODES_ASM_BURST_SBM_F1);
     current_ring_node_asm_norm_f1 = asm_ring_norm_f1;
@@ -217,8 +217,7 @@ LFR_NO_RETURN rtems_task avf1_task(rtems_task_argument lfrRequestedMode)
         // send the message to PRC
         if (msgForPRC.event != EVENT_SETS_NONE_PENDING)
         {
-            status
-                = rtems_message_queue_send(queue_id_prc1, (char*)&msgForPRC, sizeof (asm_msg));
+            status = rtems_message_queue_send(queue_id_prc1, (char*)&msgForPRC, sizeof(asm_msg));
             DEBUG_CHECK_STATUS(status);
         }
 
@@ -235,7 +234,6 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     size_t size; // size of the incoming TC packet
     asm_msg* incomingMsg;
     //
-    rtems_status_code status;
     rtems_id queue_id_send;
     rtems_id queue_id_q_p1;
     bp_packet_with_spare __attribute__((aligned(4))) packet_norm_bp1;
@@ -243,8 +241,8 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
     bp_packet __attribute__((aligned(4))) packet_sbm_bp1;
     bp_packet __attribute__((aligned(4))) packet_sbm_bp2;
     ring_node* current_ring_node_to_send_asm_f1;
-    float nbSMInASMNORM=0;
-    float nbSMInASMSBM=0;
+    float nbSMInASMNORM = 0;
+    float nbSMInASMSBM = 0;
 
     size = 0;
     queue_id_send = RTEMS_ID_NONE;
@@ -289,27 +287,16 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             (unsigned int)lfrRequestedMode);
     }
 
-    status = get_message_queue_id_send(&queue_id_send);
-    DEBUG_CHECK_STATUS(status);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_send %d\n", status);
-    }
-    status = get_message_queue_id_prc1(&queue_id_q_p1);
-    DEBUG_CHECK_STATUS(status);
-    if (status != RTEMS_SUCCESSFUL)
-    {
-        LFR_PRINTF("in PRC1 *** ERR get_message_queue_id_prc1 %d\n", status);
-    }
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_id_send));
+    DEBUG_CHECK_STATUS(get_message_queue_id_prc1(&queue_id_q_p1));
 
     BOOT_PRINTF("in PRC1 *** lfrRequestedMode = %d\n", (int)lfrRequestedMode);
 
     while (1)
     {
-        status = rtems_message_queue_receive(queue_id_q_p1, incomingData,
-            &size, //************************************
-            RTEMS_WAIT, RTEMS_NO_TIMEOUT); // wait for a message coming from AVF0
-        DEBUG_CHECK_STATUS(status);
+        // wait for a message coming from AVF0
+        DEBUG_CHECK_STATUS(rtems_message_queue_receive(
+            queue_id_q_p1, incomingData, &size, RTEMS_WAIT, RTEMS_NO_TIMEOUT));
 
         incomingMsg = (asm_msg*)incomingData;
         DEBUG_CHECK_PTR(incomingMsg);
@@ -322,16 +309,13 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
         if ((incomingMsg->event & RTEMS_EVENT_BURST_BP1_F1)
             || (incomingMsg->event & RTEMS_EVENT_SBM_BP1_F1))
         {
-            // ASM_patch( incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm );
             SM_calibrate_and_reorder_f1(incomingMsg->burst_sbm->matrix, asm_f1_patched_burst_sbm);
-            nbSMInASMSBM = incomingMsg->numberOfSMInASMSBM;
+            nbSMInASMSBM = (float)incomingMsg->numberOfSMInASMSBM;
             // 1)  compress the matrix for Basic Parameters calculation
             ASM_compress_divide_and_mask(asm_f1_patched_burst_sbm, compressed_sm_sbm_f1,
                 nbSMInASMSBM, NB_BINS_COMPRESSED_SM_SBM_F1, NB_BINS_TO_AVERAGE_ASM_SBM_F1,
                 ASM_F1_INDICE_START, CHANNELF1);
             // 2) compute the BP1 set
-            //            BP1_set( compressed_sm_sbm_f1, k_coeff_intercalib_f1_sbm,
-            //            NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp1.data );
             compute_BP1(compressed_sm_sbm_f1, NB_BINS_COMPRESSED_SM_SBM_F1, packet_sbm_bp1.data);
             // 3) send the BP1 set
             set_time(packet_sbm_bp1.time, (unsigned char*)&incomingMsg->coarseTimeSBM);
@@ -368,9 +352,8 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
         if ((incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
             || (incomingMsg->event & RTEMS_EVENT_NORM_ASM_F1))
         {
-            // ASM_patch( incomingMsg->norm->matrix,      asm_f1_patched_norm      );
             SM_calibrate_and_reorder_f1(incomingMsg->norm->matrix, asm_f1_patched_norm);
-            nbSMInASMNORM = incomingMsg->numberOfSMInASMNORM;
+            nbSMInASMNORM = (float)incomingMsg->numberOfSMInASMNORM;
         }
 
         if (incomingMsg->event & RTEMS_EVENT_NORM_BP1_F1)
@@ -380,8 +363,6 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
                 NB_BINS_COMPRESSED_SM_F1, NB_BINS_TO_AVERAGE_ASM_F1, ASM_F1_INDICE_START,
                 CHANNELF1);
             // 2) compute the BP1 set
-            // BP1_set(compressed_sm_norm_f1, k_coeff_intercalib_f1_norm, NB_BINS_COMPRESSED_SM_F1,
-            //   packet_norm_bp1.data);
             compute_BP1(compressed_sm_norm_f1, NB_BINS_COMPRESSED_SM_F1, packet_norm_bp1.data);
             // 3) send the BP1 set
             set_time(packet_norm_bp1.time, (unsigned char*)&incomingMsg->coarseTimeNORM);
@@ -418,9 +399,8 @@ LFR_NO_RETURN rtems_task prc1_task(rtems_task_argument lfrRequestedMode)
             current_ring_node_to_send_asm_f1->sid = SID_NORM_ASM_F1;
 
             // 3) send the spectral matrix packets
-            status = rtems_message_queue_send(
-                queue_id_send, &current_ring_node_to_send_asm_f1, sizeof(ring_node*));
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(rtems_message_queue_send(
+                queue_id_send, &current_ring_node_to_send_asm_f1, sizeof(ring_node*)));
 
             // change asm ring node
             current_ring_node_to_send_asm_f1 = current_ring_node_to_send_asm_f1->next;

@@ -58,28 +58,19 @@ LFR_NO_RETURN rtems_task actn_task(rtems_task_argument unused)
      */
 
     IGNORE_UNUSED_PARAMETER(unused);
-    int result;
+    int result = LFR_SUCCESSFUL;
     rtems_status_code status; // RTEMS status code
     ccsdsTelecommandPacket_t __attribute__((aligned(4))) TC; // TC sent to the ACTN task
-    size_t size; // size of the incoming TC packet
-    unsigned char subtype; // subtype of the current TC packet
+    size_t size = 0; // size of the incoming TC packet
+    unsigned char subtype = 0; // subtype of the current TC packet
     unsigned char time[BYTES_PER_TIME];
-    rtems_id queue_rcv_id;
-    rtems_id queue_snd_id;
+    rtems_id queue_rcv_id = RTEMS_ID_NONE;
+    rtems_id queue_snd_id = RTEMS_ID_NONE;
 
     memset(&TC, 0, sizeof(ccsdsTelecommandPacket_t));
-    size = 0;
-    queue_rcv_id = RTEMS_ID_NONE;
-    queue_snd_id = RTEMS_ID_NONE;
 
-    status = get_message_queue_id_recv(&queue_rcv_id);
-    DEBUG_CHECK_STATUS(status);
-
-    status = get_message_queue_id_send(&queue_snd_id);
-    DEBUG_CHECK_STATUS(status);
-
-    result = LFR_SUCCESSFUL;
-    subtype = 0; // subtype of the current TC packet
+    DEBUG_CHECK_STATUS(get_message_queue_id_recv(&queue_rcv_id));
+    DEBUG_CHECK_STATUS(get_message_queue_id_send(&queue_snd_id));
 
     BOOT_PRINTF("in ACTN *** \n");
 
@@ -89,11 +80,7 @@ LFR_NO_RETURN rtems_task actn_task(rtems_task_argument unused)
             queue_rcv_id, (char*)&TC, &size, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
         DEBUG_CHECK_STATUS(status);
         getTime(time); // set time to the current time
-        if (status != RTEMS_SUCCESSFUL)
-        {
-            LFR_PRINTF("ERR *** in task ACTN *** error receiving a message, code %d \n", status);
-        }
-        else
+        if (status == RTEMS_SUCCESSFUL)
         {
             subtype = TC.serviceSubType;
             switch (subtype)
@@ -300,18 +287,11 @@ int action_update_info(ccsdsTelecommandPacket_t* TC)
      */
 
     unsigned int val;
-    unsigned int status;
+    unsigned int status = LFR_DEFAULT;
     unsigned char mode;
-    unsigned char* bytePosPtr;
-    int pos;
-    float value;
-
-    pos = INIT_CHAR;
-    value = INIT_FLOAT;
-
-    status = LFR_DEFAULT;
-
-    bytePosPtr = (unsigned char*)&TC->packetID;
+    const unsigned char* const bytePosPtr = (const unsigned char*)&TC->packetID;
+    int pos = 0;
+    float value = 0.;
 
     // check LFR mode
     mode = (bytePosPtr[BYTE_POS_UPDATE_INFO_PARAMETERS_SET5] & BITS_LFR_MODE) >> SHIFT_LFR_MODE;
@@ -382,16 +362,8 @@ int action_enable_calibration()
      * @param queue_id is the id of the queue which handles TM transmission by the SpaceWire driver
      *
      */
-
-    int result;
-
-    result = LFR_DEFAULT;
-
     setCalibration(true);
-
-    result = LFR_SUCCESSFUL;
-
-    return result;
+    return LFR_SUCCESSFUL;
 }
 
 int action_disable_calibration()
@@ -404,18 +376,11 @@ int action_disable_calibration()
      *
      */
 
-    int result;
-
-    result = LFR_DEFAULT;
-
     setCalibration(false);
-
-    result = LFR_SUCCESSFUL;
-
-    return result;
+    return LFR_SUCCESSFUL;
 }
 
-int action_update_time(ccsdsTelecommandPacket_t* TC)
+int action_update_time(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_TIME TeleCommand has been
      * received.
@@ -448,9 +413,7 @@ int action_update_time(ccsdsTelecommandPacket_t* TC)
 // ENTERING THE MODES
 int check_mode_value(unsigned char requestedMode)
 {
-    int status;
-
-    status = LFR_DEFAULT;
+    int status = LFR_DEFAULT;
 
     if ((requestedMode != LFR_MODE_STANDBY) && (requestedMode != LFR_MODE_NORMAL)
         && (requestedMode != LFR_MODE_BURST) && (requestedMode != LFR_MODE_SBM1)
@@ -788,13 +751,6 @@ int enter_mode_normal(unsigned int transitionCoarseTime)
             }
             break;
         case LFR_MODE_SBM1:
-            status = restart_asm_activities(
-                LFR_MODE_NORMAL); // this is necessary to restart ASM tasks to update the parameters
-            DEBUG_CHECK_STATUS(status);
-            status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
-                                     // close_action
-            update_last_valid_transition_date(transitionCoarseTime);
-            break;
         case LFR_MODE_SBM2:
             status = restart_asm_activities(
                 LFR_MODE_NORMAL); // this is necessary to restart ASM tasks to update the parameters
@@ -898,6 +854,7 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
             }
             break;
         case LFR_MODE_NORMAL: // lfrCurrentMode will be updated after the execution of close_action
+        case LFR_MODE_SBM2:
             status = restart_asm_activities(LFR_MODE_SBM1);
             DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL;
@@ -913,13 +870,6 @@ int enter_mode_sbm1(unsigned int transitionCoarseTime)
                 launch_spectral_matrix();
                 launch_waveform_picker(LFR_MODE_SBM1, transitionCoarseTime);
             }
-            break;
-        case LFR_MODE_SBM2:
-            status = restart_asm_activities(LFR_MODE_SBM1);
-            DEBUG_CHECK_STATUS(status);
-            status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
-                                     // close_action
-            update_last_valid_transition_date(transitionCoarseTime);
             break;
         default:
             break;
@@ -973,6 +923,7 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
             }
             break;
         case LFR_MODE_NORMAL:
+        case LFR_MODE_SBM1:
             status = restart_asm_activities(LFR_MODE_SBM2);
             DEBUG_CHECK_STATUS(status);
             status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
@@ -989,13 +940,6 @@ int enter_mode_sbm2(unsigned int transitionCoarseTime)
                 launch_spectral_matrix();
                 launch_waveform_picker(LFR_MODE_SBM2, transitionCoarseTime);
             }
-            break;
-        case LFR_MODE_SBM1:
-            status = restart_asm_activities(LFR_MODE_SBM2);
-            DEBUG_CHECK_STATUS(status);
-            status = LFR_SUCCESSFUL; // lfrCurrentMode will be updated after the execution of
-                                     // close_action
-            update_last_valid_transition_date(transitionCoarseTime);
             break;
         default:
             break;
@@ -1024,7 +968,7 @@ int restart_science_tasks(unsigned char lfrRequestedMode)
      *
      */
 
-    rtems_status_code status=RTEMS_SUCCESSFUL;
+    rtems_status_code status = RTEMS_SUCCESSFUL;
     rtems_status_code ret;
 
     ret = RTEMS_SUCCESSFUL;
@@ -1032,28 +976,28 @@ int restart_science_tasks(unsigned char lfrRequestedMode)
     status |= rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
+    status |= rtems_task_restart(Task_id[TASKID_PRC0], lfrRequestedMode);
     DEBUG_CHECK_STATUS(status);
 
     status |= rtems_task_restart(Task_id[TASKID_WFRM], 1);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_CWF3], 1);
+    status |= rtems_task_restart(Task_id[TASKID_CWF3], 1);
     DEBUG_CHECK_STATUS(status);
 
     status |= rtems_task_restart(Task_id[TASKID_CWF2], 1);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_CWF1], 1);
+    status |= rtems_task_restart(Task_id[TASKID_CWF1], 1);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
+    status |= rtems_task_restart(Task_id[TASKID_AVF1], lfrRequestedMode);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
+    status |= rtems_task_restart(Task_id[TASKID_PRC1], lfrRequestedMode);
     DEBUG_CHECK_STATUS(status);
 
-    status |=  rtems_task_restart(Task_id[TASKID_AVF2], 1);
+    status |= rtems_task_restart(Task_id[TASKID_AVF2], 1);
     DEBUG_CHECK_STATUS(status);
 
     status |= rtems_task_restart(Task_id[TASKID_PRC2], 1);
@@ -1433,70 +1377,21 @@ void setCalibrationData(void)
      *
      */
 
-    unsigned int k;
     unsigned short data;
     float val;
-    float Ts;
+    float Ts = (float)(1. / CAL_FS);
 
-    time_management_regs->calDataPtr = INIT_CHAR;
+    time_management_regs->calDataPtr = 0;
 
-    Ts = 1 / CAL_FS;
 
     // build the signal for the SCM calibration
-    for (k = 0; k < CAL_NB_PTS; k++)
+    for (unsigned int k = 0; k < CAL_NB_PTS; k++)
     {
-        val = CAL_A0 * sin(CAL_W0 * k * Ts) + CAL_A1 * sin(CAL_W1 * k * Ts);
+        val = (float)(CAL_A0 * sin(CAL_W0 * k * Ts) + CAL_A1 * sin(CAL_W1 * k * Ts));
         data = (unsigned short)((val * CAL_SCALE_FACTOR) + CONST_2048);
         time_management_regs->calData = data & CAL_DATA_MASK;
     }
 }
-
-#ifdef ENABLE_DEAD_CODE
-void setCalibrationDataInterleaved(void)
-{
-    /** This function is used to store the values used to drive the DAC in order to generate the SCM
-     * calibration signal
-     *
-     * @param void
-     *
-     * @return void
-     *
-     * In interleaved mode, one can store more values than in normal mode.
-     * The data are stored in bunch of 18 bits, 12 bits from one sample and 6 bits from another
-     * sample. T store 3 values, one need two write operations. s1 [ b11 b10 b9 b8 b7 b6 ] s0 [ b11
-     * b10 b9 b8 b7 b6 b5 b3 b2 b1 b0 ] s1 [ b5  b4  b3 b2 b1 b0 ] s2 [ b11 b10 b9 b8 b7 b6 b5 b3 b2
-     * b1 b0 ]
-     *
-     */
-
-    unsigned int k;
-    float val;
-    float Ts;
-    unsigned short data[CAL_NB_PTS_INTER];
-    unsigned char* dataPtr;
-
-    Ts = 1 / CAL_FS_INTER;
-
-    time_management_regs->calDataPtr = INIT_CHAR;
-
-    // build the signal for the SCM calibration
-    for (k = 0; k < CAL_NB_PTS_INTER; k++)
-    {
-        val = sin(2 * pi * CAL_F0 * k * Ts) + sin(2 * pi * CAL_F1 * k * Ts);
-        data[k] = (unsigned short)((val * CONST_512) + CONST_2048);
-    }
-
-    // write the signal in interleaved mode
-    for (k = 0; k < STEPS_FOR_STORAGE_INTER; k++)
-    {
-        dataPtr = (unsigned char*)&data[(k * BYTES_FOR_2_SAMPLES) + 2];
-        time_management_regs->calData = (data[k * BYTES_FOR_2_SAMPLES] & CAL_DATA_MASK)
-            + ((dataPtr[0] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
-        time_management_regs->calData = (data[(k * BYTES_FOR_2_SAMPLES) + 1] & CAL_DATA_MASK)
-            + ((dataPtr[1] & CAL_DATA_MASK_INTER) << CAL_DATA_SHIFT_INTER);
-    }
-}
-#endif
 
 void setCalibrationReload(bool state)
 {
@@ -1527,22 +1422,6 @@ void setCalibrationEnable(bool state)
     }
 }
 
-#ifdef ENABLE_DEAD_CODE
-void setCalibrationInterleaved(bool state)
-{
-    // this bit drives the multiplexer
-    if (state == true)
-    {
-        time_management_regs->calDACCtrl
-            = time_management_regs->calDACCtrl | BIT_SET_INTERLEAVED; // [0010 0000]
-    }
-    else
-    {
-        time_management_regs->calDACCtrl
-            = time_management_regs->calDACCtrl & MASK_SET_INTERLEAVED; // [1101 1111]
-    }
-}
-#endif
 
 void setCalibration(bool state)
 {
@@ -1560,32 +1439,17 @@ void setCalibration(bool state)
     }
 }
 
-void configureCalibration(bool interleaved)
+void configureCalibration()
 {
-#ifndef ENABLE_DEAD_CODE
-    IGNORE_UNUSED_PARAMETER(interleaved);
-#endif
     setCalibration(false);
-#ifdef ENABLE_DEAD_CODE
-    if (interleaved == true)
-    {
-        setCalibrationInterleaved(true);
-        setCalibrationPrescaler(0); // 25 MHz   => 25 000 000
-        setCalibrationDivisor(CAL_F_DIVISOR_INTER); //          => 240 384
-        setCalibrationDataInterleaved();
-    }
-    else
-#endif
-    {
-        setCalibrationPrescaler(0); // 25 MHz   => 25 000 000
-        setCalibrationDivisor(CAL_F_DIVISOR); //          => 160 256 (39 - 1)
-        setCalibrationData();
-    }
+    setCalibrationPrescaler(0); // 25 MHz   => 25 000 000
+    setCalibrationDivisor(CAL_F_DIVISOR); //          => 160 256 (39 - 1)
+    setCalibrationData();
 }
 
 //****************
 // CLOSING ACTIONS
-void update_last_TC_exe(ccsdsTelecommandPacket_t* TC, unsigned char* time)
+void update_last_TC_exe(const ccsdsTelecommandPacket_t* const TC, const unsigned char* const time)
 {
     /** This function is used to update the HK packets statistics after a successful TC execution.
      *
@@ -1616,7 +1480,7 @@ void update_last_TC_exe(ccsdsTelecommandPacket_t* TC, unsigned char* time)
     housekeeping_packet.hk_lfr_exe_tc_cnt[1] = (unsigned char)(val);
 }
 
-void update_last_TC_rej(ccsdsTelecommandPacket_t* TC, unsigned char* time)
+void update_last_TC_rej(const ccsdsTelecommandPacket_t* const TC, const unsigned char* const time)
 {
     /** This function is used to update the HK packets statistics after a TC rejection.
      *

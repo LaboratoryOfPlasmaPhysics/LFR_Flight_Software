@@ -55,7 +55,7 @@ ring_node kcoefficient_node_1 = { 0 };
 ring_node kcoefficient_node_2 = { 0 };
 ENABLE_MISSING_FIELD_INITIALIZER_WARNING
 
-int action_load_common_par(ccsdsTelecommandPacket_t* TC)
+int action_load_common_par(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function updates the LFR registers with the incoming common parameters.
      *
@@ -70,7 +70,7 @@ int action_load_common_par(ccsdsTelecommandPacket_t* TC)
     return LFR_SUCCESSFUL;
 }
 
-int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsigned char* time)
+int action_load_normal_par(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id,const  unsigned char* const  time)
 {
     /** This function updates the LFR registers with the incoming normal parameters.
      *
@@ -80,17 +80,12 @@ int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
      */
     IGNORE_UNUSED_PARAMETER(time);
 
-    int result;
-    int flag;
-    rtems_status_code status;
-
-    flag = LFR_SUCCESSFUL;
+    int flag = LFR_SUCCESSFUL;
 
     if ((lfrCurrentMode == LFR_MODE_NORMAL) || (lfrCurrentMode == LFR_MODE_SBM1)
         || (lfrCurrentMode == LFR_MODE_SBM2))
     {
-        status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_not_executable(TC, queue_id));
         flag = LFR_DEFAULT;
     }
 
@@ -103,12 +98,12 @@ int action_load_normal_par(ccsdsTelecommandPacket_t* TC, rtems_id queue_id, unsi
     // SET THE PARAMETERS IF THEY ARE CONSISTENT
     if (flag == LFR_SUCCESSFUL)
     {
-        result = set_sy_lfr_n_swf_l(TC);
-        result = set_sy_lfr_n_swf_p(TC);
-        result = set_sy_lfr_n_bp_p0(TC);
-        result = set_sy_lfr_n_bp_p1(TC);
-        result = set_sy_lfr_n_asm_p(TC);
-        result = set_sy_lfr_n_cwf_long_f3(TC);
+        flag |= set_sy_lfr_n_swf_l(TC);
+        flag |= set_sy_lfr_n_swf_p(TC);
+        flag |= set_sy_lfr_n_bp_p0(TC);
+        flag |= set_sy_lfr_n_bp_p1(TC);
+        flag |= set_sy_lfr_n_asm_p(TC);
+        flag |= set_sy_lfr_n_cwf_long_f3(TC);
     }
 
     return flag;
