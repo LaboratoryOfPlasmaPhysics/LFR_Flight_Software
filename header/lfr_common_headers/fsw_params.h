@@ -117,11 +117,11 @@ typedef volatile struct _rg
 {
     volatile struct _rg* previous;
     volatile struct _rg* next;
-    unsigned int sid;
     unsigned int coarseTime;
     unsigned int fineTime;
-    void* buffer_address;
+    volatile void* buffer_address;
     unsigned int status;
+    unsigned char sid;
 }ring_node;
 
 //************************

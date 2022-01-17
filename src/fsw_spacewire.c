@@ -157,17 +157,13 @@ LFR_NO_RETURN rtems_task recv_task(rtems_task_argument unused)
     ccsdsTelecommandPacket_t __attribute__((aligned(4))) currentTC;
     unsigned char computed_CRC[BYTES_PER_CRC];
     unsigned char currentTC_LEN_RCV[BYTES_PER_PKT_LEN];
-    unsigned char destinationID;
+    unsigned char destinationID = 0;
     unsigned int estimatedPacketLength;
     unsigned int parserCode;
-    rtems_status_code status;
-    rtems_id queue_recv_id;
-    rtems_id queue_send_id;
+    rtems_id queue_recv_id = RTEMS_ID_NONE;
+    rtems_id queue_send_id = RTEMS_ID_NONE;
 
     memset(&currentTC, 0, sizeof(ccsdsTelecommandPacket_t));
-    destinationID = 0;
-    queue_recv_id = RTEMS_ID_NONE;
-    queue_send_id = RTEMS_ID_NONE;
 
     initLookUpTableForCRC(); // the table is used to compute Cyclic Redundancy Codes
 
@@ -254,12 +250,11 @@ LFR_NO_RETURN rtems_task send_task(rtems_task_argument argument)
     char incomingData[MSG_QUEUE_SIZE_SEND]; // incoming data buffer
     ring_node* incomingRingNodePtr = NULL;
     int ring_node_address = 0;
-    char* charPtr=(char*)&ring_node_address;
+    char* charPtr = (char*)&ring_node_address;
     spw_ioctl_pkt_send* spw_ioctl_send;
     size_t size = 0; // size of the incoming TC packet
-    rtems_id queue_send_id= RTEMS_ID_NONE;
-    unsigned int sid = 0;
-    unsigned char sidAsUnsignedChar = 0;
+    rtems_id queue_send_id = RTEMS_ID_NONE;
+    unsigned char sid = 0;
     unsigned char type;
 
     init_header_cwf(&headerCWF);
@@ -362,47 +357,37 @@ LFR_NO_RETURN rtems_task send_task(rtems_task_argument argument)
 LFR_NO_RETURN rtems_task link_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
-    rtems_event_set event_out;
-    rtems_status_code status;
-    int linkStatus;
-
-    event_out = EVENT_SETS_NONE_PENDING;
-    linkStatus = 0;
+    rtems_event_set event_out = EVENT_SETS_NONE_PENDING;
+    int linkStatus = 0;
 
     BOOT_PRINTF("in LINK ***\n");
 
     while (1)
     {
         // wait for an RTEMS_EVENT
-        status = rtems_event_receive(
-            RTEMS_EVENT_0, RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_event_receive(
+            RTEMS_EVENT_0, RTEMS_WAIT | RTEMS_EVENT_ANY, RTEMS_NO_TIMEOUT, &event_out));
         LFR_PRINTF("in LINK *** wait for the link\n");
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status
-        DEBUG_CHECK_STATUS(status);
+        // get the link status
+        DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus));
         while (linkStatus != SPW_LINK_OK) // wait for the link
         {
-            status = rtems_task_wake_after(SPW_LINK_WAIT); // monitor the link each 100ms
-            DEBUG_CHECK_STATUS(status);
-            status = ioctl(
-                fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status
+            // monitor the link each 100ms
+            DEBUG_CHECK_STATUS(rtems_task_wake_after(SPW_LINK_WAIT));
+            ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_LINK_STATUS, &linkStatus); // get the link status
             watchdog_reload();
         }
 
         spacewire_read_statistics();
-        status = spacewire_stop_and_start_link(fdSPW);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(spacewire_stop_and_start_link(fdSPW));
 
         // restart the SPIQ task
-        status = rtems_task_restart(Task_id[TASKID_SPIQ], 1);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_task_restart(Task_id[TASKID_SPIQ], 1));
 
         // restart RECV and SEND
-        status = rtems_task_restart(Task_id[TASKID_SEND], 1);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_task_restart(Task_id[TASKID_SEND], 1));
 
-        status = rtems_task_restart(Task_id[TASKID_RECV], 1);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(rtems_task_restart(Task_id[TASKID_RECV], 1));
     }
 }
 
@@ -416,9 +401,7 @@ int spacewire_open_link(
      * @return a valid file descriptor in case of success, -1 in case of a failure
      *
      */
-    rtems_status_code status;
-
-    status = -1;
+    rtems_status_code status = -1;
 
     fdSPW = open(GRSPW_DEVICE_NAME, O_RDWR); // open the device. the open call resets the hardware
     if (fdSPW < 0)
@@ -658,25 +641,15 @@ void spacewire_get_last_error(void)
 {
     static spw_stats previous = { 0 };
     spw_stats current;
-    rtems_status_code status;
 
-    unsigned int hk_lfr_last_er_rid;
-    unsigned char hk_lfr_last_er_code;
-    int coarseTime;
-    int fineTime;
-    unsigned char update_hk_lfr_last_er;
+    unsigned int hk_lfr_last_er_rid = 0;
+    unsigned char hk_lfr_last_er_code = 0;
+    unsigned char update_hk_lfr_last_er = 0;
 
     memset(&current, 0, sizeof(spw_stats));
-    hk_lfr_last_er_rid = INIT_CHAR;
-    hk_lfr_last_er_code = INIT_CHAR;
-    update_hk_lfr_last_er = INIT_CHAR;
 
-    status = ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current);
-    DEBUG_CHECK_STATUS(status);
+    DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_GET_STATISTICS, &current));
 
-    // get current time
-    coarseTime = time_management_regs->coarse_time;
-    fineTime = time_management_regs->fine_time;
 
     // tx_link_err *** no code associated to this field
     // rx_rmap_header_crc_err ***  LE *** in HK
@@ -796,10 +769,10 @@ void update_hk_with_grspw_stats(void)
 
 void spacewire_update_hk_lfr_link_state(unsigned char* hk_lfr_status_word_0)
 {
-    unsigned int* statusRegisterPtr;
+    const unsigned int* const statusRegisterPtr
+        = (unsigned int*)(REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_STATUS_REGISTER);
     unsigned char linkState;
 
-    statusRegisterPtr = (unsigned int*)(REGS_ADDR_GRSPW + APB_OFFSET_GRSPW_STATUS_REGISTER);
     linkState = (unsigned char)(((*statusRegisterPtr) >> SPW_LINK_STAT_POS)
         & STATUS_WORD_LINK_STATE_BITS); // [0000 0111]
 
@@ -823,9 +796,7 @@ unsigned int check_timecode_and_previous_timecode_coherency(unsigned char curren
      */
 
     static unsigned char firstTickout = 1;
-    unsigned char ret;
-
-    ret = LFR_DEFAULT;
+    unsigned char ret = LFR_DEFAULT;
 
     if (firstTickout == 0)
     {
@@ -864,9 +835,7 @@ unsigned int check_timecode_and_previous_timecode_coherency(unsigned char curren
 unsigned int check_timecode_and_internal_time_coherency(
     unsigned char timecode, unsigned char internalTime)
 {
-    unsigned int ret;
-
-    ret = LFR_DEFAULT;
+    unsigned int ret = LFR_DEFAULT;
 
     if (timecode == internalTime)
     {
@@ -929,14 +898,11 @@ void timecode_irq_handler(void* pDev, void* regs, int minor, unsigned int tc)
     //********************
     // HK_LFR_TIMECODE_CTR
     // check the value of the timecode with respect to the last TC_LFR_UPDATE_TIME => SSS-CP-FS-370
-    if (oneTcLfrUpdateTimeReceived == 1)
+    if (oneTcLfrUpdateTimeReceived == 1 && incomingTimecode != updateTime)
     {
-        if (incomingTimecode != updateTime)
-        {
-            housekeeping_packet.hk_lfr_time_timecode_ctr
-                = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_ctr);
-            update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_CTR);
-        }
+        housekeeping_packet.hk_lfr_time_timecode_ctr
+            = increase_unsigned_char_counter(housekeeping_packet.hk_lfr_time_timecode_ctr);
+        update_hk_lfr_last_er_fields(RID_LE_LFR_TIME, CODE_TIMECODE_CTR);
     }
 
     // launch the timecode timer to detect missing or invalid timecodes
@@ -1112,11 +1078,9 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
      *
      */
 
-    unsigned int i;
-    int ret;
+    int ret = LFR_DEFAULT;
     unsigned int coarseTime;
     unsigned int fineTime;
-    rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send_CWF;
     int* dataPtr;
     unsigned char sid;
@@ -1124,7 +1088,6 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
     spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
 
-    ret = LFR_DEFAULT;
     sid = (unsigned char)ring_node_to_send->sid;
 
     coarseTime = ring_node_to_send->coarseTime;
@@ -1138,9 +1101,9 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
     header->blkNr[0] = (unsigned char)(BLK_NR_CWF >> SHIFT_1_BYTE);
     header->blkNr[1] = (unsigned char)(BLK_NR_CWF);
 
-    for (i = 0; i < NB_PACKETS_PER_GROUP_OF_CWF; i++) // send waveform
+    for (unsigned char i = 0; i < NB_PACKETS_PER_GROUP_OF_CWF; i++) // send waveform
     {
-        spw_ioctl_send_CWF.data = (char*)&dataPtr[(i * BLK_NR_CWF * NB_WORDS_SWF_BLK)];
+        spw_ioctl_send_CWF.data = (char*)&dataPtr[(uint32_t)i * BLK_NR_CWF * NB_WORDS_SWF_BLK];
         spw_ioctl_send_CWF.hdr = (char*)header;
         // BUILD THE DATA
         spw_ioctl_send_CWF.dlen = BLK_NR_CWF * NB_BYTES_SWF_BLK;
@@ -1173,8 +1136,7 @@ int spw_send_waveform_CWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_CW
             header->packetID[1] = (unsigned char)(APID_TM_SCIENCE_NORMAL_BURST);
         }
 
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_CWF));
     }
 
     return ret;
@@ -1196,19 +1158,16 @@ int spw_send_waveform_SWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_SW
      *
      */
 
-    unsigned int i;
-    int ret;
+    int ret = LFR_DEFAULT;
     unsigned int coarseTime;
     unsigned int fineTime;
-    rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send_SWF;
     int* dataPtr;
-    unsigned char sid;
+    unsigned int sid;
 
     spw_ioctl_send_SWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_SWF;
     spw_ioctl_send_SWF.options = 0;
 
-    ret = LFR_DEFAULT;
 
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
@@ -1218,9 +1177,9 @@ int spw_send_waveform_SWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_SW
     header->pa_bia_status_info = pa_bia_status_info;
     header->sy_lfr_common_parameters = parameter_dump_packet.sy_lfr_common_parameters;
 
-    for (i = 0; i < PKTCNT_SWF; i++) // send waveform
+    for (unsigned char i = 0; i < PKTCNT_SWF; i++) // send waveform
     {
-        spw_ioctl_send_SWF.data = (char*)&dataPtr[(i * BLK_NR_304 * NB_WORDS_SWF_BLK)];
+        spw_ioctl_send_SWF.data = (char*)&dataPtr[(uint32_t)i * BLK_NR_304 * NB_WORDS_SWF_BLK];
         spw_ioctl_send_SWF.hdr = (char*)header;
 
         // SET PACKET SEQUENCE CONTROL
@@ -1261,8 +1220,7 @@ int spw_send_waveform_SWF(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_SW
         header->pktNr = i + 1; // PKT_NR
 
         // SEND PACKET
-        status = ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_SWF);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(ioctl(fdSPW, SPACEWIRE_IOCTRL_SEND, &spw_ioctl_send_SWF));
     }
 
     return ret;
@@ -1284,20 +1242,16 @@ int spw_send_waveform_CWF3_light(ring_node* ring_node_to_send, Header_TM_LFR_SCI
      *
      */
 
-    unsigned int i;
-    int ret;
+    int ret = LFR_DEFAULT;
     unsigned int coarseTime;
     unsigned int fineTime;
     rtems_status_code status;
     spw_ioctl_pkt_send spw_ioctl_send_CWF;
     char* dataPtr;
-    unsigned char sid;
+    unsigned int sid = ring_node_to_send->sid;
 
     spw_ioctl_send_CWF.hlen = HEADER_LENGTH_TM_LFR_SCIENCE_CWF;
     spw_ioctl_send_CWF.options = 0;
-
-    ret = LFR_DEFAULT;
-    sid = ring_node_to_send->sid;
 
     coarseTime = ring_node_to_send->coarseTime;
     fineTime = ring_node_to_send->fineTime;
@@ -1312,10 +1266,10 @@ int spw_send_waveform_CWF3_light(ring_node* ring_node_to_send, Header_TM_LFR_SCI
 
     //*********************
     // SEND CWF3_light DATA
-    for (i = 0; i < NB_PACKETS_PER_GROUP_OF_CWF_LIGHT; i++) // send waveform
+    for (unsigned char i = 0; i < NB_PACKETS_PER_GROUP_OF_CWF_LIGHT; i++) // send waveform
     {
         spw_ioctl_send_CWF.data
-            = (char*)&dataPtr[(i * BLK_NR_CWF_SHORT_F3 * NB_BYTES_CWF3_LIGHT_BLK)];
+            = (char*)&dataPtr[(uint32_t)i * BLK_NR_CWF_SHORT_F3 * NB_BYTES_CWF3_LIGHT_BLK];
         spw_ioctl_send_CWF.hdr = (char*)header;
         // BUILD THE DATA
         spw_ioctl_send_CWF.dlen = BLK_NR_CWF_SHORT_F3 * NB_BYTES_CWF3_LIGHT_BLK;

@@ -110,7 +110,6 @@ LFR_NO_RETURN rtems_task hous_task(rtems_task_argument argument)
     IGNORE_UNUSED_PARAMETER(argument);
 
     rtems_status_code status;
-    rtems_status_code spare_status;
     rtems_id queue_id;
     rtems_rate_monotonic_period_status period_status;
     bool isSynchronized;
@@ -234,8 +233,6 @@ LFR_NO_RETURN rtems_task hous_task(rtems_task_argument argument)
     LFR_PRINTF("in HOUS *** deleting task\n");
 
     DEBUG_CHECK_STATUS(rtems_task_delete(RTEMS_SELF)); // should not return
-
-    return;
 }
 
 
@@ -248,7 +245,6 @@ LFR_NO_RETURN rtems_task avgv_task(rtems_task_argument argument)
 {
     IGNORE_UNUSED_PARAMETER(argument);
 
-    rtems_status_code status;
     static int old_v = 0;
     static int old_e1 = 0;
     static int old_e2 = 0;
@@ -300,8 +296,6 @@ LFR_NO_RETURN rtems_task avgv_task(rtems_task_argument argument)
     LFR_PRINTF("in AVGV *** deleting task\n");
 
     DEBUG_CHECK_STATUS(rtems_task_delete(RTEMS_SELF)); // should not return
-
-    return;
 }
 
 LFR_NO_RETURN rtems_task dumb_task(rtems_task_argument unused)
@@ -317,12 +311,8 @@ LFR_NO_RETURN rtems_task dumb_task(rtems_task_argument unused)
 
     IGNORE_UNUSED_PARAMETER(unused);
 
-    unsigned int intEventOut;
-    unsigned int coarse_time = 0;
-    unsigned int fine_time = 0;
+    unsigned int intEventOut = EVENT_SETS_NONE_PENDING;
     rtems_event_set event_out;
-
-    event_out = EVENT_SETS_NONE_PENDING;
 
     BOOT_PRINTF("in DUMB *** \n");
 
@@ -337,19 +327,19 @@ LFR_NO_RETURN rtems_task dumb_task(rtems_task_argument unused)
         {
             if (((intEventOut >> i) & 1) != 0)
             {
-                coarse_time = time_management_regs->coarse_time;
-                fine_time = time_management_regs->fine_time;
-                if (i == EVENT_12)
+                switch (i)
                 {
-                    LFR_PRINTF("%s\n", DUMB_MESSAGE_12);
-                }
-                if (i == EVENT_13)
-                {
-                    LFR_PRINTF("%s\n", DUMB_MESSAGE_13);
-                }
-                if (i == EVENT_14)
-                {
-                    LFR_PRINTF("%s\n", DUMB_MESSAGE_1);
+                    case EVENT_12:
+                        LFR_PRINTF("%s\n", DUMB_MESSAGE_12);
+                        break;
+                    case EVENT_13:
+                        LFR_PRINTF("%s\n", DUMB_MESSAGE_13);
+                        break;
+                    case EVENT_14:
+                        LFR_PRINTF("%s\n", DUMB_MESSAGE_1);
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -371,7 +361,7 @@ LFR_NO_RETURN rtems_task scrubbing_task(rtems_task_argument unused)
     BOOT_PRINTF("in SCRUBBING *** \n");
     volatile int i = 0;
     volatile float valuef = 1.;
-    volatile uint32_t* RAM = (uint32_t*)0x40000000;
+    const volatile uint32_t* const RAM = (uint32_t*)0x40000000;
 
 #ifdef ENABLE_SCRUBBING_COUNTER
     housekeeping_packet.lfr_fpga_version[BYTE_0] = 0;

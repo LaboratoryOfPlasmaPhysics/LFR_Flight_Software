@@ -1372,7 +1372,7 @@ void set_wfp_delta_f2(void) // parameter not used, only delta_f0 and delta_f0_2 
 //*****************
 // local parameters
 
-void increment_seq_counter_source_id(unsigned char* packet_sequence_control, unsigned int sid)
+void increment_seq_counter_source_id(unsigned char* packet_sequence_control, unsigned char sid)
 {
     /** This function increments the parameter "sequence_cnt" depending on the sid passed in
      * argument.
@@ -1423,7 +1423,7 @@ void increment_seq_counter_source_id(unsigned char* packet_sequence_control, uns
     else
     {
         sequence_cnt = (unsigned short*)NULL;
-        LFR_PRINTF("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", sid);
+        LFR_PRINTF("in increment_seq_counter_source_id *** ERR apid_destid %d not known\n", (int)sid);
     }
 
     if (sequence_cnt != NULL)

@@ -92,8 +92,6 @@ void initCache()
     // 15  14  13..12  11..10  9..8  7..6  5   4   3..2  1..0
     // IP  DP  ITE     IDE     DTE   DDE   DF  IF  DCS   ICS
 
-    unsigned int cacheControlRegister;
-
     CCR_resetCacheControlRegister();
     ASR16_resetRegisterProtectionControlRegister();
 
@@ -871,7 +869,7 @@ void init_ring(
         ring[i].fineTime = INT32_ALL_F;
         ring[i].sid = INIT_CHAR;
         ring[i].status = INIT_CHAR;
-        ring[i].buffer_address = (void*)&(buffer[i * bufferSize]);
+        ring[i].buffer_address = (volatile void*)&(buffer[i * bufferSize]);
     }
 
     //*****
