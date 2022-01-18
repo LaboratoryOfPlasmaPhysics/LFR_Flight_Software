@@ -509,7 +509,7 @@ int tc_check_crc(
      */
 
     int status = CCSDS_TM_VALID;
-    const unsigned char* const CCSDSContent = (unsigned char*)TCPacket->packetID;
+    const unsigned char* const CCSDSContent = (const unsigned char*)TCPacket->packetID;
 
     GetCRCAsTwoBytes(CCSDSContent, computed_CRC,
         length + CCSDS_TC_TM_PACKET_OFFSET
