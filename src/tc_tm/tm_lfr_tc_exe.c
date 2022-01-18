@@ -320,7 +320,8 @@ int send_tm_lfr_tc_exe_corrupted(const ccsdsTelecommandPacket_t* const TC, rtems
 
     unsigned int estimatedPacketLength
         = (unsigned int)((currentTC_LEN_RCV[0] * CONST_256) + currentTC_LEN_RCV[1]);
-    const unsigned char* const packetDataField = &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
+    const unsigned char* const packetDataField
+        = &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
 
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;

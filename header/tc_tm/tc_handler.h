@@ -102,7 +102,7 @@ void configureCalibration();
 //
 void update_last_TC_exe(const ccsdsTelecommandPacket_t * const TC, const unsigned char * const time);
 void update_last_TC_rej(const ccsdsTelecommandPacket_t * const TC, const unsigned char * const time);
-void close_action(ccsdsTelecommandPacket_t* TC, int result, rtems_id queue_id);
+void close_action(const ccsdsTelecommandPacket_t * const TC, int result, rtems_id queue_id);
 
 extern rtems_status_code get_message_queue_id_send(rtems_id* queue_id);
 extern rtems_status_code get_message_queue_id_recv(rtems_id* queue_id);

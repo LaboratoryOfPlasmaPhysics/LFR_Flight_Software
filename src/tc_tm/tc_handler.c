@@ -1503,7 +1503,7 @@ void update_last_TC_rej(const ccsdsTelecommandPacket_t* const TC, const unsigned
     housekeeping_packet.hk_lfr_rej_tc_cnt[1] = (unsigned char)(val);
 }
 
-void close_action(ccsdsTelecommandPacket_t* TC, int result, rtems_id queue_id)
+void close_action(const ccsdsTelecommandPacket_t* const TC, int result, rtems_id queue_id)
 {
     /** This function is the last step of the TC execution workflow.
      *
