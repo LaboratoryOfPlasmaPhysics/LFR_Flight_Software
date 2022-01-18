@@ -1025,10 +1025,7 @@ int restart_asm_tasks(unsigned char lfrRequestedMode)
      *
      */
 
-    rtems_status_code status;
-    rtems_status_code ret;
-
-    ret = RTEMS_SUCCESSFUL;
+    rtems_status_code status= RTEMS_SUCCESSFUL;
 
     status |= rtems_task_restart(Task_id[TASKID_AVF0], lfrRequestedMode);
     DEBUG_CHECK_STATUS(status);
@@ -1050,10 +1047,10 @@ int restart_asm_tasks(unsigned char lfrRequestedMode)
 
     if (status != RTEMS_SUCCESSFUL)
     {
-        ret = RTEMS_UNSATISFIED;
+        status = RTEMS_UNSATISFIED;
     }
 
-    return ret;
+    return status;
 }
 
 int suspend_science_tasks(void)
