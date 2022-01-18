@@ -197,7 +197,7 @@ int action_enter_mode(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_i
     rtems_status_code status;
     unsigned char requestedMode;
     unsigned int transitionCoarseTime;
-    const unsigned char* const bytePosPtr = (unsigned char*)&TC->packetID;
+    const unsigned char* const bytePosPtr = (const unsigned char*)&TC->packetID;
     requestedMode = bytePosPtr[BYTE_POS_CP_MODE_LFR_SET];
     copyInt32ByChar(
         (unsigned char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);

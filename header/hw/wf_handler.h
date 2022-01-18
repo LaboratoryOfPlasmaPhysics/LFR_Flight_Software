@@ -91,7 +91,7 @@ void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char freque
     int* swf_extracted);
 double computeCorrection(const unsigned char * const timePtr);
 void applyCorrection(double correction);
-void snapshot_resynchronization(unsigned char* timePtr);
+void snapshot_resynchronization(const unsigned char * const timePtr);
 //
 rtems_id get_pkts_queue_id(void);
 

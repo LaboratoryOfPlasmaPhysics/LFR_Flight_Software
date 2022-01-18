@@ -1015,7 +1015,7 @@ void applyCorrection(double correction)
     waveform_picker_regs->delta_snapshot = waveform_picker_regs->delta_snapshot + correctionInt;
 }
 
-void snapshot_resynchronization(unsigned char* timePtr)
+void snapshot_resynchronization(const unsigned char* const timePtr)
 {
     /** This function compute a correction to apply on delta_snapshot.
      *

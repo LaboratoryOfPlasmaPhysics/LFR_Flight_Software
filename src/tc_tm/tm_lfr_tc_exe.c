@@ -41,7 +41,7 @@
 #include "fsw_debug.h"
 #include "hw/lfr_regs.h"
 
-int send_tm_lfr_tc_exe_success(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int send_tm_lfr_tc_exe_success(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function sends a TM_LFR_TC_EXE_SUCCESS packet in the dedicated RTEMS message queue.
      *
@@ -155,7 +155,7 @@ int send_tm_lfr_tc_exe_inconsistent(const ccsdsTelecommandPacket_t* const TC, rt
     TM.tc_service = TC->serviceType; // type of the rejected TC
     TM.tc_subtype = TC->serviceSubType; // subtype of the rejected TC
     TM.byte_position = byte_position;
-    TM.rcv_value = (unsigned char)rcv_value;
+    TM.rcv_value = rcv_value;
 
     // SEND DATA
     status = rtems_message_queue_send(queue_id, &TM, sizeof(TM));
@@ -231,7 +231,7 @@ int send_tm_lfr_tc_exe_not_executable(const ccsdsTelecommandPacket_t* const TC, 
     return status;
 }
 
-int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int send_tm_lfr_tc_exe_error(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function sends a TM_LFR_TC_EXE_ERROR packet in the dedicated RTEMS message queue.
      *
@@ -292,8 +292,9 @@ int send_tm_lfr_tc_exe_error(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     return status;
 }
 
-int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id,
-    unsigned char* computed_CRC, unsigned char* currentTC_LEN_RCV, unsigned char destinationID)
+int send_tm_lfr_tc_exe_corrupted(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id,
+    const unsigned char* const computed_CRC, const unsigned char* const currentTC_LEN_RCV,
+    unsigned char destinationID)
 {
     /** This function sends a TM_LFR_TC_EXE_CORRUPTED packet in the dedicated RTEMS message queue.
      *
@@ -316,16 +317,11 @@ int send_tm_lfr_tc_exe_corrupted(ccsdsTelecommandPacket_t* TC, rtems_id queue_id
 
     rtems_status_code status;
     Packet_TM_LFR_TC_EXE_CORRUPTED_t TM;
-    unsigned int packetLength;
-    unsigned int estimatedPacketLength;
-    unsigned char* packetDataField;
 
-    packetLength = (TC->packetLength[0] * CONST_256)
-        + TC->packetLength[1]; // compute the packet length parameter written in the TC
-    estimatedPacketLength
+    unsigned int estimatedPacketLength
         = (unsigned int)((currentTC_LEN_RCV[0] * CONST_256) + currentTC_LEN_RCV[1]);
-    packetDataField
-        = (unsigned char*)&TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
+    const unsigned char* const packetDataField = &TC->headerFlag_pusVersion_Ack; // get the beginning of the data field
+
 
     TM.targetLogicalAddress = CCSDS_DESTINATION_ID;
     TM.protocolIdentifier = CCSDS_PROTOCOLE_ID;

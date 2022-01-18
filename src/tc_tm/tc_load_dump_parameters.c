@@ -232,8 +232,8 @@ int action_load_sbm1_par(
     // check the consistency between sy_lfr_s1_bp_p0 and sy_lfr_s1_bp_p1
     if (flag == LFR_SUCCESSFUL)
     {
-        aux = ((float)sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0 * S1_BP_P0_SCALE))
-            - floorf(sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0 * S1_BP_P0_SCALE));
+        aux = ((float)sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0 * (float)S1_BP_P0_SCALE))
+            - floorf(sy_lfr_s1_bp_p1 / (sy_lfr_s1_bp_p0 * (float)S1_BP_P0_SCALE));
         if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent(
@@ -707,7 +707,7 @@ int check_normal_par_consistency(const ccsdsTelecommandPacket_t* const TC, rtems
     if (sy_lfr_n_swf_l != DFLT_SY_LFR_N_SWF_L)
     {
         status = send_tm_lfr_tc_exe_inconsistent(
-            TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L + DATAFIELD_OFFSET, sy_lfr_n_swf_l);
+            TC, queue_id, DATAFIELD_POS_SY_LFR_N_SWF_L + DATAFIELD_OFFSET, (char)sy_lfr_n_swf_l);
         DEBUG_CHECK_STATUS(status);
         flag = WRONG_APP_DATA;
     }
@@ -738,7 +738,8 @@ int check_normal_par_consistency(const ccsdsTelecommandPacket_t* const TC, rtems
     // sy_lfr_n_asm_p shall be a whole multiple of sy_lfr_n_bp_p0
     if (flag == LFR_SUCCESSFUL)
     {
-        aux = ((float)sy_lfr_n_asm_p / sy_lfr_n_bp_p0) - floorf(sy_lfr_n_asm_p / sy_lfr_n_bp_p0);
+        aux = ((float)sy_lfr_n_asm_p / sy_lfr_n_bp_p0)
+            - floorf((float)sy_lfr_n_asm_p / (float)sy_lfr_n_bp_p0);
         if (aux > FLOAT_EQUAL_ZERO)
         {
             status = send_tm_lfr_tc_exe_inconsistent(
@@ -1315,8 +1316,8 @@ void setFBinMask(
 
             // compute the fi interval [fi - deltaFreq * 0.285, fi + deltaFreq * 0.285]
             fi = (float)closestBin * deltaFreq;
-            fi_min = fi - ((float)deltaFreq * FI_INTERVAL_COEFF);
-            fi_MAX = fi + ((float)deltaFreq * FI_INTERVAL_COEFF);
+            fi_min = fi - ((float)deltaFreq * (float)FI_INTERVAL_COEFF);
+            fi_MAX = fi + ((float)deltaFreq * (float)FI_INTERVAL_COEFF);
 
             //**************************************************************************************
             // be careful here, one shall take into account that the bin 0 IS DROPPED in the spectra
@@ -1445,8 +1446,6 @@ void build_sy_lfr_rw_masks(void)
 
 void merge_fbins_masks(void)
 {
-    unsigned char k;
-
     const unsigned char* const fbins_f0 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
     const unsigned char* const fbins_f1 = parameter_dump_packet.sy_lfr_fbins_f1_word1;
     const unsigned char* const fbins_f2 = parameter_dump_packet.sy_lfr_fbins_f2_word1;
@@ -1455,7 +1454,7 @@ void merge_fbins_masks(void)
     const unsigned char* const rw_mask_f2 = parameter_dump_packet.sy_lfr_rw_mask_f2_word1;
 
 
-    for (k = 0; k < BYTES_PER_MASK; k++)
+    for (unsigned char k = 0; k < BYTES_PER_MASK; k++)
     {
         fbins_masks.merged_fbins_mask_f0[k] = fbins_f0[k] & rw_mask_f0[k];
         fbins_masks.merged_fbins_mask_f1[k] = fbins_f1[k] & rw_mask_f1[k];
@@ -1645,16 +1644,11 @@ int check_sy_lfr_filter_parameters(const ccsdsTelecommandPacket_t* const TC, rte
 
     //*************************
     // sy_lfr_pas_filter_offset
-    if (flag == LFR_SUCCESSFUL)
+    if (flag == LFR_SUCCESSFUL && sy_lfr_pas_filter_offset > MAX_PAS_FILTER_OFFSET)
     {
-        // TODO either sy_lfr_pas_filter_offset is signed or remove this test!
-        if (sy_lfr_pas_filter_offset > MAX_PAS_FILTER_OFFSET)
-        {
-            DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
-                DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET + DATAFIELD_OFFSET,
-                sy_lfr_pas_filter_offset));
-            flag = WRONG_APP_DATA;
-        }
+        DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
+            DATAFIELD_POS_SY_LFR_PAS_FILTER_OFFSET + DATAFIELD_OFFSET, sy_lfr_pas_filter_offset));
+        flag = WRONG_APP_DATA;
     }
 
     //************************
@@ -1686,15 +1680,12 @@ int check_sy_lfr_filter_parameters(const ccsdsTelecommandPacket_t* const TC, rte
 
     //*********************
     // sy_lfr_sc_rw_delta_f
-    if (flag == LFR_SUCCESSFUL)
+    if (flag == LFR_SUCCESSFUL && sy_lfr_sc_rw_delta_f < MIN_SY_LFR_SC_RW_DELTA_F)
     {
-        if (sy_lfr_sc_rw_delta_f < MIN_SY_LFR_SC_RW_DELTA_F)
-        {
-            parPtr = (const char*)&sy_lfr_sc_rw_delta_f;
-            DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
-                DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]));
-            flag = WRONG_APP_DATA;
-        }
+        parPtr = (const char*)&sy_lfr_sc_rw_delta_f;
+        DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_inconsistent(TC, queue_id,
+            DATAFIELD_POS_SY_LFR_SC_RW_DELTA_F + DATAFIELD_OFFSET, parPtr[FLOAT_LSBYTE]));
+        flag = WRONG_APP_DATA;
     }
 
     //************
