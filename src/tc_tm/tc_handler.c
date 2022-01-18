@@ -184,7 +184,7 @@ int action_reset()
     return LFR_DEFAULT;
 }
 
-int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
+int action_enter_mode(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_id)
 {
     /** This function executes specific actions when a TC_LFR_ENTER_MODE TeleCommand has been
      * received.
@@ -197,9 +197,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
     rtems_status_code status;
     unsigned char requestedMode;
     unsigned int transitionCoarseTime;
-    unsigned char* bytePosPtr;
-
-    bytePosPtr = (unsigned char*)&TC->packetID;
+    const unsigned char* const bytePosPtr = (unsigned char*)&TC->packetID;
     requestedMode = bytePosPtr[BYTE_POS_CP_MODE_LFR_SET];
     copyInt32ByChar(
         (unsigned char*)&transitionCoarseTime, &bytePosPtr[BYTE_POS_CP_LFR_ENTER_MODE_TIME]);
@@ -209,9 +207,8 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
 
     if (status != LFR_SUCCESSFUL) // the mode value is inconsistent
     {
-        status = send_tm_lfr_tc_exe_inconsistent(
-            TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode);
-        DEBUG_CHECK_STATUS(status);
+        DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_inconsistent(
+                               TC, queue_id, BYTE_POS_CP_MODE_LFR_SET, requestedMode));
     }
 
     else // the mode value is valid, check the transition
@@ -221,8 +218,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         if (status != LFR_SUCCESSFUL)
         {
             LFR_PRINTF("ERR *** in action_enter_mode *** check_mode_transition\n");
-            status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_not_executable(TC, queue_id));
         }
     }
 
@@ -233,8 +229,7 @@ int action_enter_mode(ccsdsTelecommandPacket_t* TC, rtems_id queue_id)
         if (status != LFR_SUCCESSFUL)
         {
             LFR_PRINTF("ERR *** in action_enter_mode *** check_transition_date\n");
-            status = send_tm_lfr_tc_exe_not_executable(TC, queue_id);
-            DEBUG_CHECK_STATUS(status);
+            DEBUG_CHECK_STATUS(send_tm_lfr_tc_exe_not_executable(TC, queue_id));
         }
     }
 
