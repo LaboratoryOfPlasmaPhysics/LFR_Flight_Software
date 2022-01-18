@@ -937,7 +937,7 @@ void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char freque
     }
 }
 
-double computeCorrection(unsigned char* timePtr)
+double computeCorrection(const unsigned char* const timePtr)
 {
     unsigned long long int acquisitionTime;
     unsigned long long int centerTime;

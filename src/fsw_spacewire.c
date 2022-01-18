@@ -1352,7 +1352,7 @@ void spw_send_asm_f0(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
         increment_seq_counter_source_id(header->packetSequenceControl, sid);
         header->packetLength[0] = (unsigned char)(length >> SHIFT_1_BYTE);
         header->packetLength[1] = (unsigned char)(length);
-        header->sid = (unsigned char)sid; // SID
+        header->sid = sid; // SID
         header->pa_lfr_pkt_cnt_asm = PKTCNT_ASM;
         header->pa_lfr_pkt_nr_asm = i + 1;
 
@@ -1379,7 +1379,6 @@ void spw_send_asm_f0(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 void spw_send_asm_f1(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* header)
 {
     unsigned int length = 0;
-    rtems_status_code status;
     unsigned char sid;
     volatile float* spectral_matrix;
     int coarseTime;
@@ -1427,7 +1426,7 @@ void spw_send_asm_f1(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
         increment_seq_counter_source_id(header->packetSequenceControl, sid);
         header->packetLength[0] = (unsigned char)(length >> SHIFT_1_BYTE);
         header->packetLength[1] = (unsigned char)(length);
-        header->sid = (unsigned char)sid; // SID
+        header->sid = sid; // SID
         header->pa_lfr_pkt_cnt_asm = PKTCNT_ASM;
         header->pa_lfr_pkt_nr_asm = (unsigned char)(i + 1);
 
@@ -1459,7 +1458,6 @@ void spw_send_asm_f1(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* 
 void spw_send_asm_f2(ring_node* ring_node_to_send, Header_TM_LFR_SCIENCE_ASM_t* header)
 {
     unsigned int length = 0;
-    rtems_status_code status;
     unsigned char sid = ring_node_to_send->packet_id;
     volatile float* spectral_matrix;
     int coarseTime;

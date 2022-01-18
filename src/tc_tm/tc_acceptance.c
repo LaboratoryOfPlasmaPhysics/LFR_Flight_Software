@@ -125,7 +125,7 @@ void GetCRCAsTwoBytes(
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int tc_parser(ccsdsTelecommandPacket_t* TCPacket, unsigned int estimatedPacketLength,
+int tc_parser(const ccsdsTelecommandPacket_t* const TCPacket, unsigned int estimatedPacketLength,
     unsigned char* computed_CRC)
 {
     /** This function parses TeleCommands.
@@ -496,8 +496,8 @@ int tc_check_length(unsigned char packetSubType, unsigned int length)
     return status;
 }
 
-int tc_check_crc(
-    const ccsdsTelecommandPacket_t* const TCPacket, unsigned int length, unsigned char* computed_CRC)
+int tc_check_crc(const ccsdsTelecommandPacket_t* const TCPacket, unsigned int length,
+    unsigned char* computed_CRC)
 {
     /** This function checks the CRC validity of the corresponding TeleCommand packet.
      *

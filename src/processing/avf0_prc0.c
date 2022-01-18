@@ -449,12 +449,7 @@ void reset_nb_sm_f0(unsigned char lfrMode)
         nb_sm_before_f0.burst_sbm_bp1 = nb_sm_before_f0.sbm2_bp1;
         nb_sm_before_f0.burst_sbm_bp2 = nb_sm_before_f0.sbm2_bp2;
     }
-    else if (lfrMode == LFR_MODE_BURST)
-    {
-        nb_sm_before_f0.burst_sbm_bp1 = nb_sm_before_f0.burst_bp1;
-        nb_sm_before_f0.burst_sbm_bp2 = nb_sm_before_f0.burst_bp2;
-    }
-    else
+    else // if (lfrMode == LFR_MODE_BURST) Don't know why default is the same than burst
     {
         nb_sm_before_f0.burst_sbm_bp1 = nb_sm_before_f0.burst_bp1;
         nb_sm_before_f0.burst_sbm_bp2 = nb_sm_before_f0.burst_bp2;

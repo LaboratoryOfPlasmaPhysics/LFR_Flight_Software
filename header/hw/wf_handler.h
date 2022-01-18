@@ -89,7 +89,7 @@ void compute_acquisition_time(unsigned int coarseTime, unsigned int fineTime, un
 void build_snapshot_from_ring(ring_node* ring_node_to_send, unsigned char frequencyChannel,
     unsigned long long acquisitionTimeF0_asLong, ring_node* ring_node_swf_extracted,
     int* swf_extracted);
-double computeCorrection(unsigned char* timePtr);
+double computeCorrection(const unsigned char * const timePtr);
 void applyCorrection(double correction);
 void snapshot_resynchronization(unsigned char* timePtr);
 //

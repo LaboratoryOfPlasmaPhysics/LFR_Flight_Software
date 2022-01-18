@@ -31,7 +31,7 @@ void GetCRCAsTwoBytes(const unsigned char *data, unsigned char* crcAsTwoBytes, u
 
 //*********************
 // ACCEPTANCE FUNCTIONS
-int tc_parser(ccsdsTelecommandPacket_t* TCPacket, unsigned int estimatedPacketLength,
+int tc_parser(const ccsdsTelecommandPacket_t * const TCPacket, unsigned int estimatedPacketLength,
     unsigned char* computed_CRC);
 int tc_check_type(unsigned char packetType);
 int tc_check_type_subtype(unsigned char packetType, unsigned char packetSubType);
