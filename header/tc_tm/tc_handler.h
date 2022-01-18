@@ -61,7 +61,7 @@ rtems_task actn_task(rtems_task_argument unused);
 // TC ACTIONS
 int action_reset();
 int action_enter_mode(const ccsdsTelecommandPacket_t * const TC, rtems_id queue_id);
-int action_update_info(ccsdsTelecommandPacket_t* TC);
+int action_update_info(const ccsdsTelecommandPacket_t * const TC);
 int action_enable_calibration();
 int action_disable_calibration();
 int action_update_time(const ccsdsTelecommandPacket_t * const TC);

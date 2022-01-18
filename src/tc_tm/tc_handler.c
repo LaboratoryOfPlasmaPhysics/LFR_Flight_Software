@@ -267,7 +267,7 @@ int action_enter_mode(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_i
     return status;
 }
 
-int action_update_info(ccsdsTelecommandPacket_t* TC)
+int action_update_info(const ccsdsTelecommandPacket_t* const TC)
 {
     /** This function executes specific actions when a TC_LFR_UPDATE_INFO TeleCommand has been
      * received.

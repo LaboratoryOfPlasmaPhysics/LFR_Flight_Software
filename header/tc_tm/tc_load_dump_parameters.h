@@ -81,7 +81,7 @@ void set_hk_lfr_sc_rw_f_flags(void);
 int check_sy_lfr_rw_f(const ccsdsTelecommandPacket_t * const TC, int offset, int* pos, float* value);
 int check_all_sy_lfr_rw_f(const ccsdsTelecommandPacket_t * const TC, int* pos, float* value);
 void getReactionWheelsFrequencies(const ccsdsTelecommandPacket_t * const TC);
-void setFBinMask(unsigned char* fbins_mask, float rw_f, unsigned char deltaFreq, float sy_lfr_rw_k);
+void setFBinMask(unsigned char* fbins_mask, float rw_f_comp, unsigned char deltaFreq, float sy_lfr_rw_k);
 void build_sy_lfr_rw_mask(unsigned int channel);
 void build_sy_lfr_rw_masks();
 void merge_fbins_masks(void);
