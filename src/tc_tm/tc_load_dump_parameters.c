@@ -1708,17 +1708,19 @@ int check_sy_lfr_filter_parameters(const ccsdsTelecommandPacket_t* const TC, rte
 void interpolate_calibration_matrix(
     float* matrix, unsigned int floats_per_matrix, unsigned int matrices_count, unsigned int gap)
 {
-    unsigned int elements_gap = gap*floats_per_matrix;
+    // Distance between floats of major matrices
+    unsigned int elements_gap = gap * floats_per_matrix;
     for (unsigned int major_bin = 0; major_bin < matrices_count; major_bin++)
     {
         for (unsigned int element = 0; element < floats_per_matrix; element++)
         {
             float alpha = (matrix[elements_gap] - matrix[0]) / (float)gap;
-            float previous_value=matrix[0];
-            for (unsigned int minor_bin = elements_gap; minor_bin < (gap*elements_gap); minor_bin+=elements_gap)
+            float previous_value = matrix[0];
+            for (unsigned int minor_bin = floats_per_matrix; minor_bin < elements_gap;
+                 minor_bin += floats_per_matrix)
             {
-                matrix[minor_bin] = previous_value + alpha;
-                previous_value = matrix[minor_bin];
+                previous_value += alpha;
+                matrix[minor_bin] = previous_value;
             }
             matrix++;
         }
