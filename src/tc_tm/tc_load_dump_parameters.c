@@ -519,13 +519,13 @@ int action_dump_kcoefficients(
 
     // Each packet is 3900 bytes
     // Packet1:
-    // F0 needs 12 bins * 26 floats -> 1248 bytes
-    // F1 needs 14 bins * 26 floats -> 1456 bytes
-    // total -> 2704 bytes
+    // F0 needs 12 bins * (2 bytes + 26 floats + 6 floats) -> 1560 bytes
+    // F1 needs 14 bins * (2 bytes + 26 floats + 6 floats) -> 1820 bytes
+    // total -> 3380 bytes
 
     // Packet2:
-    // F2 needs 13 bins * 26 floats -> 1352 bytes
-    // total -> 1352 bytes
+    // F2 needs 13 bins * (2 bytes + 26 floats + 6 floats) -> 1690 bytes
+    // total -> 1690 bytes
 
 
     //*********
@@ -537,7 +537,9 @@ int action_dump_kcoefficients(
     kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F0; freq++)
     {
-
+        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F0;
+        copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
+        kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
             mag_calibration_matrices_f0
                 + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0),
@@ -547,10 +549,14 @@ int action_dump_kcoefficients(
             elec_calibration_matrices_f0
                 + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F0),
             NB_BYTES_ELEC_CAL_MATRIX);
-        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
+        // stuff with 6 empty floats to keep previous layout -> freq_index[int16] & 32 floats
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX + (6 * sizeof(float));
     }
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F1; freq++)
     {
+        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F1;
+        copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
+        kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
             mag_calibration_matrices_f1
                 + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1),
@@ -560,7 +566,8 @@ int action_dump_kcoefficients(
             elec_calibration_matrices_f1
                 + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F1),
             NB_BYTES_ELEC_CAL_MATRIX);
-        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
+        // stuff with 6 empty floats to keep previous layout -> freq_index[int16] & 32 floats
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX + (6 * sizeof(float));
     }
 
     kcoefficients_dump_1.time[BYTE_0]
@@ -589,7 +596,9 @@ int action_dump_kcoefficients(
     kCoeffDumpPtr = kcoefficients_dump_2.kcoeff_blks;
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
     {
-
+        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F2;
+        copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
+        kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
             mag_calibration_matrices_f2
                 + (freq * NB_FLOATS_MAG_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2),
@@ -599,7 +608,8 @@ int action_dump_kcoefficients(
             elec_calibration_matrices_f2
                 + (freq * NB_FLOATS_ELEC_CAL_MATRIX * NB_BINS_TO_AVERAGE_ASM_F2),
             NB_BYTES_ELEC_CAL_MATRIX);
-        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX;
+        // stuff with 6 empty floats to keep previous layout -> freq_index[int16] & 32 floats
+        kCoeffDumpPtr += NB_BYTES_ELEC_CAL_MATRIX + (6 * sizeof(float));
     }
 
     kcoefficients_dump_2.time[BYTE_0]
@@ -2045,7 +2055,7 @@ void init_kcoefficients_dump_packet(Packet_TM_LFR_KCOEFFICIENTS_DUMP_t* const kc
 {
     unsigned int packetLength;
 
-    packetLength = ((blk_nr * (NB_BYTES_MAG_CAL_MATRIX + NB_BYTES_ELEC_CAL_MATRIX))
+    packetLength = ((blk_nr * (NB_BYTES_PER_KCOEFFICIENTS_BLOCK))
                        + BYTE_POS_KCOEFFICIENTS_PARAMETES)
         - CCSDS_TC_TM_PACKET_OFFSET; // 4 bytes for the CCSDS header
 
