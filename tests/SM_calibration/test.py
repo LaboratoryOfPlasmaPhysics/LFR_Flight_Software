@@ -6,7 +6,9 @@ import numpy as np
 from ddt import ddt, data, unpack
 
 def cplx_random(shape, dtype=np.csingle):
-    return (np.random.random(shape) + np.random.random(shape) * 1j).astype(dtype)
+    k1=np.random.random_sample()*1000.
+    k2=np.random.random_sample()*1000.
+    return (k1*np.random.random(shape) + k2*np.random.random(shape) * 1j).astype(dtype)
 
 def make_SM(Vect):
     return Vect.transpose() @ np.conjugate(Vect)
