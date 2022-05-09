@@ -82,7 +82,7 @@ class AnLFRSpectralMatrix(unittest.TestCase):
           ASM[f] = SM
           CAL_MATRICES[f] = transition
           CALIBRATED_ASM[f] = REF
-      self.assertTrue(np.allclose(lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES), CALIBRATED_ASM, rtol=1e-06, atol=0.))
+      self.assertTrue(np.allclose(lfr.SM_calibrate_and_reorder(ASM,CAL_MATRICES,10,100)[10:100], CALIBRATED_ASM[10:100], rtol=1e-06, atol=0.))
 
 if __name__ == '__main__':
    unittest.main()

@@ -178,7 +178,7 @@ PYBIND11_MODULE(lfr, m)
 
     m.def("SM_calibrate_and_reorder",
         [](py::array_t<std::complex<float>> input_asm,
-            py::array_t<std::complex<float>> calibration_matrix)
+            py::array_t<std::complex<float>> calibration_matrix, std::size_t start, std::size_t stop)
         {
             static float work_matrix[NB_FLOATS_PER_SM];
             static _Complex float intermediary[25];
@@ -192,7 +192,7 @@ PYBIND11_MODULE(lfr, m)
             std::vector<float> _output_matrix(_matrix.size());
             SM_calibrate_and_reorder(intermediary, work_matrix, _matrix.data(),
                 mag_transition_matrix.data(), elec_transition_matrix.data(), _output_matrix.data(),
-                0, 128);
+                start, stop);
             from_lfr_spectral_matrix_repr(_output_matrix, output_matrix);
             return output_matrix;
         });
