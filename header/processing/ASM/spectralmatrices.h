@@ -73,6 +73,31 @@ extern "C"
     void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normalized,
         const float divider, unsigned int start_indice, unsigned int stop_indice);
 
+    static inline void extract_bin_vhdl_repr(const float* vhdl_spec_mat, float dest_matrix[25], int fbin)
+    {
+        float* out_ptr = dest_matrix;
+        const float* in_ptr = vhdl_spec_mat;
+        for (unsigned int line = 0; line < 5; line++)
+        {
+            for (unsigned int column = line; column < 5; column++)
+            {
+                if (line != column) // imaginary part
+                {
+                    out_ptr[0] = in_ptr[2*fbin];
+                    out_ptr[1] = in_ptr[2*fbin+1];
+                    in_ptr += (2 * NB_BINS_PER_SM);
+                    out_ptr+=2;
+                }
+                else
+                {
+                    out_ptr[0] = in_ptr[fbin];
+                    out_ptr++;
+                    in_ptr += NB_BINS_PER_SM;
+                }
+            }
+        }
+    }
+
 #ifdef __cplusplus
 }
 #endif

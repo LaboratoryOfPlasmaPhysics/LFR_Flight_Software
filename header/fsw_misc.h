@@ -51,7 +51,7 @@ rtems_task dumb_task(rtems_task_argument unused);
 rtems_task scrubbing_task(rtems_task_argument unused);
 rtems_task calibration_sweep_task(rtems_task_argument unused);
 
-inline rtems_status_code send_event_dumb_task(rtems_event_set event)
+static inline rtems_status_code send_event_dumb_task(rtems_event_set event)
 {
 #ifdef DUMB_TASK_ENABLED
     return rtems_event_send(Task_id[TASKID_DUMB], event);
@@ -80,3 +80,4 @@ static inline unsigned char increase_unsigned_char_counter(unsigned char counter
 }
 
 #endif // FSW_MISC_H_INCLUDED
+

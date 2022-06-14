@@ -71,3 +71,58 @@ SCENARIO("F0/F1 SM averaging", "[]")
         }
     }
 }
+
+SCENARIO("Picking matrices from VHDL repr SMs", "[]")
+{
+    GIVEN("some SM")
+    {
+        float SM[128 * 25];
+        int index = 0;
+        for (int row = 0; row < 5; row++)
+        {
+            for (int col = row; col < 5; col++)
+            {
+                if (row == col)
+                {
+                    for (int fbin = 0; fbin < 128; fbin++)
+                    {
+                        SM[index++] = fbin * 1000 + col * 10 + row;
+                    }
+                }
+                else
+                {
+                    for (int fbin = 0; fbin < 128; fbin++)
+                    {
+                        SM[index++] = fbin * 1000 + col * 10 + row;
+                        SM[index++] = -(fbin * 1000 + col * 10 + row);
+                    }
+                }
+            }
+        }
+
+        THEN("LFR should be able to extract any bin")
+        {
+            float mat[25];
+            for (int fbin = 0; fbin < 128; fbin++)
+            {
+                extract_bin_vhdl_repr(SM, mat, fbin);
+                int i=0;
+                for (int row = 0; row < 5; row++)
+                {
+                    for (int col = row; col < 5; col++)
+                    {
+                        if (row == col)
+                        {
+                            REQUIRE(mat[i++] == fbin * 1000 + col * 10 + row);
+                        }
+                        else
+                        {
+                            REQUIRE(mat[i++] == fbin * 1000 + col * 10 + row);
+                            REQUIRE(mat[i++] == -(fbin * 1000 + col * 10 + row));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

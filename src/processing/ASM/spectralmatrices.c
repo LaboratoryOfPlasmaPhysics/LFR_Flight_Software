@@ -588,28 +588,7 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice;
          frequency_offset++)
     {
-        float* out_ptr = work_matrix;
-        float* in_ptr = input_asm + frequency_offset;
-        for (unsigned int line = 0; line < 5; line++)
-        {
-            for (unsigned int column = line; column < 5; column++)
-            {
-                *out_ptr = *in_ptr;
-                out_ptr += 1;
-                if (line != column) // imaginary part
-                {
-                    *out_ptr = *(in_ptr + 1);
-                    in_ptr += 2 * NB_BINS_PER_SM;
-                    out_ptr += 1;
-                }
-                else
-                {
-                    in_ptr += NB_BINS_PER_SM + frequency_offset;
-                }
-            }
-            in_ptr -= frequency_offset;
-        }
-
+        extract_bin_vhdl_repr(input_asm, work_matrix, frequency_offset);
         Matrix_change_of_basis(intermediary, work_matrix, mag_calibration_matrices,
             elec_calibration_matrices, output_asm);
 

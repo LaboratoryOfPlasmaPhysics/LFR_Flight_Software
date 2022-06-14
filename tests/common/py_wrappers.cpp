@@ -191,7 +191,7 @@ PYBIND11_MODULE(lfr, m)
                 = extract_spectral_transition_matrix<2, 3>(calibration_matrix);
             std::vector<float> _output_matrix(_matrix.size());
             SM_calibrate_and_reorder(intermediary, work_matrix, _matrix.data(),
-                mag_transition_matrix.data(), elec_transition_matrix.data(), _output_matrix.data(),
+                mag_transition_matrix.data()+(start*2*3*3), elec_transition_matrix.data()+(start*2*2*2), _output_matrix.data(),
                 start, stop);
             from_lfr_spectral_matrix_repr(_output_matrix, output_matrix);
             return output_matrix;
