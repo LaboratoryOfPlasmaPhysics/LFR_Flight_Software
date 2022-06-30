@@ -83,13 +83,13 @@ rtems_task Init(rtems_task_argument ignored)
 
     BENCH(ARG({
         SM_average(input_matrix, output_matrix, ring_node_tab, 0, 0, &asm_msg_, CHANNELF0,
-            ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
+            ASM_F0_INDICE_START, ASM_F0_KEEP_BINS);
     }),
         SM_average_with_clear_duration, 10);
 
     BENCH(ARG({
         SM_average(input_matrix, output_matrix, ring_node_tab, 1, 1, &asm_msg_, CHANNELF0,
-            ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
+            ASM_F0_INDICE_START, ASM_F0_KEEP_BINS);
     }),
         SM_average_duration, 10);
 

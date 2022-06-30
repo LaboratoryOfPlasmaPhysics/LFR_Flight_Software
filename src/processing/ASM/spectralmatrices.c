@@ -39,7 +39,7 @@ void clear_spectral_matrix(float* spectral_matrix)
 
 void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
     ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-    asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice, unsigned int stop_indice)
+    asm_msg* msgForMATR, unsigned char channel, unsigned int start_bin, unsigned int bins_count)
 {
     DEBUG_CHECK_PTR(averaged_spec_mat_NORM);
     DEBUG_CHECK_PTR(averaged_spec_mat_SBM);
@@ -83,25 +83,49 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         msgForMATR->numberOfSMInASMSBM += numberOfValidSM;
     }
 
-    for (unsigned int component = 0; component < 25; component++)
+    unsigned int block_offset = 0;
+    for (unsigned int line = 0; line < 5; line++)
     {
-        // Looping this way is 40% faster ~ 32ms Vs ~54ms
-        // Skiping discarded frequencies gives another speedup
-        for (unsigned int i = (component * 128) + start_indice; i < (component * 128) + stop_indice;
-             i += 2)
+        for (unsigned int column = line; column < 5; column++)
         {
-            register float sum1 = 0.;
-            register float sum2 = 0.;
-            for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
+            // Looping this way is 40% faster ~ 32ms Vs ~54ms
+            // Skiping discarded frequencies gives another speedup
+            unsigned int start_index;
+            unsigned int stop_index;
+            if (line == column) // pure reals
             {
-                sum1 += valid_matrices[SM_index][i];
-                sum2 += valid_matrices[SM_index][i + 1];
+                start_index = block_offset + start_bin;
+                stop_index = start_index + bins_count;
             }
-            averaged_spec_mat_SBM[i] += sum1;
-            averaged_spec_mat_NORM[i] += sum1;
+            else // complexes
+            {
+                start_index = block_offset + (start_bin * 2);
+                stop_index = start_index + (bins_count * 2);
+            }
 
-            averaged_spec_mat_SBM[i + 1] += sum2;
-            averaged_spec_mat_NORM[i + 1] += sum2;
+            for (unsigned int i = start_index; i < stop_index; i += 2)
+            {
+                register float sum1 = 0.;
+                register float sum2 = 0.;
+                for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
+                {
+                    sum1 += valid_matrices[SM_index][i];
+                    sum2 += valid_matrices[SM_index][i + 1];
+                }
+                averaged_spec_mat_SBM[i] += sum1;
+                averaged_spec_mat_NORM[i] += sum1;
+
+                averaged_spec_mat_SBM[i + 1] += sum2;
+                averaged_spec_mat_NORM[i + 1] += sum2;
+            }
+            if (line == column) // pure reals
+            {
+                block_offset += NB_BINS_PER_SM;
+            }
+            else // complexes
+            {
+                block_offset += NB_BINS_PER_SM * 2;
+            }
         }
     }
 }
@@ -232,21 +256,22 @@ void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normali
 {
     DEBUG_CHECK_PTR(averaged_spec_mat);
     DEBUG_CHECK_PTR(averaged_spec_mat_normalized);
+    const float coef = 1.f / divider;
     // BUILD DATA
     if (divider == 0.)
     {
-        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM;
-             i++)
+        for (unsigned int i = (start_indice * NB_FLOATS_PER_SM);
+             i < (stop_indice * NB_FLOATS_PER_SM); i++)
         {
             averaged_spec_mat_normalized[i] = 0.;
         }
     }
     else
     {
-        for (unsigned int i = start_indice * NB_FLOATS_PER_SM; i < stop_indice * NB_FLOATS_PER_SM;
-             i++)
+        for (unsigned int i = (start_indice * NB_FLOATS_PER_SM);
+             i < (stop_indice * NB_FLOATS_PER_SM); i++)
         {
-            averaged_spec_mat_normalized[i] = averaged_spec_mat[i] / divider;
+            averaged_spec_mat_normalized[i] = averaged_spec_mat[i] * coef;
         }
     }
 }
@@ -584,7 +609,7 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
     DEBUG_CHECK_PTR(mag_calibration_matrices);
     DEBUG_CHECK_PTR(elec_calibration_matrices);
     DEBUG_CHECK_PTR(output_asm);
-    output_asm += start_indice * NB_FLOATS_PER_SM;
+    output_asm += (start_indice * NB_FLOATS_PER_SM);
     for (unsigned int frequency_offset = start_indice; frequency_offset < stop_indice;
          frequency_offset++)
     {
@@ -592,8 +617,8 @@ void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix
         Matrix_change_of_basis(intermediary, work_matrix, mag_calibration_matrices,
             elec_calibration_matrices, output_asm);
 
-        mag_calibration_matrices += 3 * 3 * 2;
-        elec_calibration_matrices += 2 * 2 * 2;
+        mag_calibration_matrices += (3 * 3 * 2);
+        elec_calibration_matrices += (2 * 2 * 2);
         output_asm += NB_FLOATS_PER_SM;
     }
 }

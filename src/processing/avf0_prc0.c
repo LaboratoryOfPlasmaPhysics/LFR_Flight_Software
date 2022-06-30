@@ -144,7 +144,7 @@ LFR_NO_RETURN rtems_task avf0_task(rtems_task_argument lfrRequestedMode)
         SM_average(current_ring_node_asm_norm_f0->matrix,
             current_ring_node_asm_burst_sbm_f0->matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
             &msgForPRC, 0, ASM_F0_INDICE_START,
-            ASM_F0_INDICE_START + ASM_F0_KEEP_BINS); // 0 => frequency channel 0
+            ASM_F0_KEEP_BINS); // 0 => frequency channel 0
 
         // update nb_average
         nb_norm_bp1 = nb_norm_bp1 + NB_SM_BEFORE_AVF0_F1;

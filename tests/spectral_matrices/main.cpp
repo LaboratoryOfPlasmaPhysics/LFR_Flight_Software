@@ -34,7 +34,7 @@ SCENARIO("F0/F1 SM averaging", "[]")
                 unsigned int nb_norm_bp1 = i;
                 unsigned int nb_sbm_bp1 = i;
                 SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
-                    &msgForPRC, 0, ASM_F0_INDICE_START, ASM_F0_INDICE_START + ASM_F0_KEEP_BINS);
+                    &msgForPRC, 0, ASM_F0_INDICE_START, ASM_F0_KEEP_BINS);
             }
         }
     }
@@ -54,7 +54,7 @@ SCENARIO("F0/F1 SM averaging", "[]")
                 unsigned int nb_norm_bp1 = i;
                 unsigned int nb_sbm_bp1 = i;
                 SM_average(asm_norm.matrix, asm_sbm.matrix, ring_node_tab, nb_norm_bp1, nb_sbm_bp1,
-                    &msgForPRC, 0, ASM_F1_INDICE_START, ASM_F1_INDICE_START + ASM_F1_KEEP_BINS);
+                    &msgForPRC, 0, ASM_F1_INDICE_START, ASM_F1_KEEP_BINS);
             }
         }
     }
@@ -78,6 +78,7 @@ SCENARIO("Picking matrices from VHDL repr SMs", "[]")
     {
         float SM[128 * 25];
         int index = 0;
+        int component=0;
         for (int row = 0; row < 5; row++)
         {
             for (int col = row; col < 5; col++)
@@ -86,25 +87,33 @@ SCENARIO("Picking matrices from VHDL repr SMs", "[]")
                 {
                     for (int fbin = 0; fbin < 128; fbin++)
                     {
-                        SM[index++] = fbin * 1000 + col * 10 + row;
+                        SM[index++] = fbin;
                     }
                 }
                 else
                 {
                     for (int fbin = 0; fbin < 128; fbin++)
                     {
-                        SM[index++] = fbin * 1000 + col * 10 + row;
-                        SM[index++] = -(fbin * 1000 + col * 10 + row);
+                        SM[index++] = component;
+                        SM[index++] = -component;
                     }
                 }
+                component++;
             }
         }
+        REQUIRE(SM[0]==0);
+        REQUIRE(SM[1]==1);
+        REQUIRE(SM[2]==2);
+        REQUIRE(SM[127]==127);
+        REQUIRE(SM[128]==1);
+        REQUIRE(SM[129]==-1);
 
         THEN("LFR should be able to extract any bin")
         {
             float mat[25];
             for (int fbin = 0; fbin < 128; fbin++)
             {
+                int component=0;
                 extract_bin_vhdl_repr(SM, mat, fbin);
                 int i=0;
                 for (int row = 0; row < 5; row++)
@@ -113,13 +122,14 @@ SCENARIO("Picking matrices from VHDL repr SMs", "[]")
                     {
                         if (row == col)
                         {
-                            REQUIRE(mat[i++] == fbin * 1000 + col * 10 + row);
+                            REQUIRE(mat[i++] == fbin);
                         }
                         else
                         {
-                            REQUIRE(mat[i++] == fbin * 1000 + col * 10 + row);
-                            REQUIRE(mat[i++] == -(fbin * 1000 + col * 10 + row));
+                            REQUIRE(mat[i++] == component);
+                            REQUIRE(mat[i++] == -component);
                         }
+                        component++;
                     }
                 }
             }

@@ -51,7 +51,8 @@ extern "C"
     } asm_msg;
 
     void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
-        const float* mag_transition_matrix, const float* elec_transition_matrix, float* output_matrix);
+        const float* mag_transition_matrix, const float* elec_transition_matrix,
+        float* output_matrix);
 
     void SM_calibrate_and_reorder_f0(float* input_asm, float* output_asm);
     void SM_calibrate_and_reorder_f1(float* input_asm, float* output_asm);
@@ -59,11 +60,11 @@ extern "C"
 
     void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
         ring_node* ring_node_tab[], unsigned int nbAverageNORM, unsigned int nbAverageSBM,
-        asm_msg* msgForMATR, unsigned char channel, unsigned int start_indice,
-        unsigned int stop_indice);
+        asm_msg* msgForMATR, unsigned char channel, unsigned int start_bin,
+        unsigned int bins_count);
 
-    void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned int nbAverageNormF2,
-        asm_msg* msgForMATR);
+    void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node,
+        unsigned int nbAverageNormF2, asm_msg* msgForMATR);
 
     void ASM_compress_divide_and_mask(const float* const averaged_spec_mat,
         float* compressed_spec_mat, const float divider, const unsigned char nbBinsCompressedMatrix,
@@ -73,26 +74,30 @@ extern "C"
     void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normalized,
         const float divider, unsigned int start_indice, unsigned int stop_indice);
 
-    static inline void extract_bin_vhdl_repr(const float* vhdl_spec_mat, float dest_matrix[25], int fbin)
+    static inline void extract_bin_vhdl_repr(
+        const float* vhdl_spec_mat, float dest_matrix[25], int fbin)
     {
         float* out_ptr = dest_matrix;
-        const float* in_ptr = vhdl_spec_mat;
+        const float* in_block_ptr = vhdl_spec_mat;
+        const float* in_ptr = in_block_ptr;
         for (unsigned int line = 0; line < 5; line++)
         {
             for (unsigned int column = line; column < 5; column++)
             {
                 if (line != column) // imaginary part
                 {
-                    out_ptr[0] = in_ptr[2*fbin];
-                    out_ptr[1] = in_ptr[2*fbin+1];
-                    in_ptr += (2 * NB_BINS_PER_SM);
-                    out_ptr+=2;
+                    in_ptr = in_block_ptr + (2 * fbin);
+                    out_ptr[0] = in_ptr[0];
+                    out_ptr[1] = in_ptr[1];
+                    in_block_ptr += (2 * NB_BINS_PER_SM);
+                    out_ptr += 2;
                 }
                 else
                 {
-                    out_ptr[0] = in_ptr[fbin];
+                    in_ptr = in_block_ptr + fbin;
+                    out_ptr[0] = in_ptr[0];
                     out_ptr++;
-                    in_ptr += NB_BINS_PER_SM;
+                    in_block_ptr += NB_BINS_PER_SM;
                 }
             }
         }
