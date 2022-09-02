@@ -235,11 +235,13 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
             for (int frequency_bin = 0; frequency_bin < nbBinsToAverage; frequency_bin++)
             {
                 int fBinMask = getFBinMask(freq_offset, channel);
-                compressed_asm_ptr = compressed_spec_mat + compressed_frequency_bin;
+                compressed_asm_ptr
+                    = compressed_spec_mat + (compressed_frequency_bin * NB_FLOATS_PER_SM);
                 for (int asm_component = 0; asm_component < NB_FLOATS_PER_SM; asm_component++)
                 {
                     *compressed_asm_ptr += (*input_asm_ptr * fBinMask);
                     compressed_asm_ptr++;
+                    input_asm_ptr++;
                 }
                 freq_offset++;
             }
