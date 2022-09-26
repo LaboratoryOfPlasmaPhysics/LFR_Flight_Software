@@ -398,6 +398,8 @@ void compute_BP2(const float* const spectral_matrices, const uint8_t spectral_ma
 
         bp2_frame = _compute_BP2_cross_component(bp2_frame, sm_ptr[ASM_COMP_E1E1],
             sm_ptr[ASM_COMP_E2E2], sm_ptr[ASM_COMP_E1E2], sm_ptr[ASM_COMP_E1E2_imag]);
+
+        bp2_frame += 10;
         sm_ptr = next_matrix(sm_ptr);
     }
 }
