@@ -260,15 +260,15 @@ uint8_t* encode_nvec_z_ellip_dop(
     return bp_buffer_frame + 1;
 }
 
-inline uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp1_buffer_frame)
+inline uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp_buffer_frame)
     __attribute__((always_inline));
-uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp1_buffer_frame)
+uint8_t* encode_uint16_t(const uint16_t value, uint8_t* const bp_buffer_frame)
 {
     DEBUG_CHECK_PTR(bp_buffer_frame);
     const str_uint16_t value_split = { .value = value };
-    bp1_buffer_frame[0] = value_split.str.MSB;
-    bp1_buffer_frame[1] = value_split.str.LSB;
-    return bp1_buffer_frame + 2;
+    bp_buffer_frame[0] = value_split.str.MSB;
+    bp_buffer_frame[1] = value_split.str.LSB;
+    return bp_buffer_frame + 2;
 }
 
 

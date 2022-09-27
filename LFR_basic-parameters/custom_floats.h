@@ -127,7 +127,7 @@ uint16_t to_custom_float_6_10(const float value)
 
     if ((v.str.exponent - 127) < -27)
         return 0;
-    if ((v.str.exponent - 127) > 37)
+    if ((v.str.exponent - 127) > 36)
         return 0xFFFF;
 
     result.str.exponent = v.str.exponent - 127 + 27;
@@ -143,13 +143,21 @@ uint16_t to_custom_float_1_1_6_8(const compressed_complex value)
     str_float_t v_re = { .value = value.real };
 
     if ((v_re.str.exponent - 127) < -27)
-        return 0;
-    if ((v_re.str.exponent - 127) > 37)
-        return 0xFFFF;
+    {
+        result.str.exponent = 0;
+        result.str.mantissa = 0;
+    }
+    else if ((v_re.str.exponent - 127) > 36)
+    {
+        result.str.exponent = 0x3F;
+        result.str.mantissa = 0xFF;
+    }
+    else {
+        result.str.exponent = v_re.str.exponent - 127 + 27;
+        result.str.mantissa = v_re.str.mantissa >> 15;
+    }
 
     result.str.sign = v_re.str.sign;
-    result.str.exponent = v_re.str.exponent - 127 + 27;
-    result.str.mantissa = v_re.str.mantissa >> 15;
     result.str.arg = value.arg;
     return result.value;
 }
