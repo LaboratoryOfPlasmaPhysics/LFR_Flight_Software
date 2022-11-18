@@ -50,7 +50,7 @@ extern "C"
         unsigned int numberOfSMInASMSBM;
     } asm_msg;
 
-    void Matrix_change_of_basis(_Complex float intermediary[25], float* input_matrix,
+    void Matrix_change_of_basis(_Complex float intermediary[25], const float* input_matrix,
         const float* mag_transition_matrix, const float* elec_transition_matrix,
         float* output_matrix);
 
@@ -79,14 +79,13 @@ extern "C"
     {
         float* out_ptr = dest_matrix;
         const float* in_block_ptr = vhdl_spec_mat;
-        const float* in_ptr = in_block_ptr;
         for (unsigned int line = 0; line < 5; line++)
         {
             for (unsigned int column = line; column < 5; column++)
             {
                 if (line != column) // imaginary part
                 {
-                    in_ptr = in_block_ptr + (2 * fbin);
+                    const float* in_ptr = in_block_ptr + (2 * fbin);
                     out_ptr[0] = in_ptr[0];
                     out_ptr[1] = in_ptr[1];
                     in_block_ptr += (2 * NB_BINS_PER_SM);
@@ -94,7 +93,7 @@ extern "C"
                 }
                 else
                 {
-                    in_ptr = in_block_ptr + fbin;
+                    const float*  in_ptr = in_block_ptr + fbin;
                     out_ptr[0] = in_ptr[0];
                     out_ptr++;
                     in_block_ptr += NB_BINS_PER_SM;

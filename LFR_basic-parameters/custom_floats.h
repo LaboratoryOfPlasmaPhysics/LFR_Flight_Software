@@ -126,9 +126,13 @@ uint16_t to_custom_float_6_10(const float value)
     str_float_t v = { .value = value };
 
     if ((v.str.exponent - 127) < -27)
+    {
         return 0;
+    }
     if ((v.str.exponent - 127) > 36)
+    {
         return 0xFFFF;
+    }
 
     result.str.exponent = v.str.exponent - 127 + 27;
     result.str.mantissa = v.str.mantissa >> 13;

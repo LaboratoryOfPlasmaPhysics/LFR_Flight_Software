@@ -32,7 +32,7 @@ int getFBinMask(int index, unsigned char channel)
     unsigned int indexInChar;
     unsigned int indexInTheChar;
     int fbin;
-    unsigned char* sy_lfr_fbins_fx_word1;
+    const unsigned char* sy_lfr_fbins_fx_word1;
 
     sy_lfr_fbins_fx_word1 = parameter_dump_packet.sy_lfr_fbins_f0_word1;
 

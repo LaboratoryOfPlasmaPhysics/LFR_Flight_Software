@@ -65,15 +65,11 @@ unsigned char acquisitionTimeIsValid(
     uint64_t t0;
     uint64_t t1;
     uint64_t tc;
-    uint64_t tbad0;
-    uint64_t tbad1;
 
     uint64_t modulusInFineTime;
     uint64_t offsetInFineTime;
     uint64_t shiftInFineTime;
     uint64_t tbadInFineTime;
-
-    uint64_t timecodeReference;
 
     unsigned char pasFilteringIsEnabled;
     unsigned char ret;
@@ -82,8 +78,6 @@ unsigned char acquisitionTimeIsValid(
     t0 = (((uint64_t)coarseTime) << SHIFT_2_BYTES) + (uint64_t)fineTime;
     t1 = t0;
     tc = t0;
-    tbad0 = t0;
-    tbad1 = t0;
 
     switch (channel)
     {
@@ -108,10 +102,8 @@ unsigned char acquisitionTimeIsValid(
     offsetInFineTime = filterPar.offset_in_finetime;
     shiftInFineTime = filterPar.shift_in_finetime;
     tbadInFineTime = filterPar.tbad_in_finetime;
-    timecodeReference = INIT_INT;
 
     pasFilteringIsEnabled = (filterPar.spare_sy_lfr_pas_filter_enabled & 1); // [0000 0001]
-    ret = MATRIX_IS_NOT_POLLUTED;
 
     if ((tbadInFineTime == 0) || (pasFilteringIsEnabled == 0))
     {
@@ -120,9 +112,9 @@ unsigned char acquisitionTimeIsValid(
     else
     {
         // INTERSECTION TEST #1
-        timecodeReference = (tc - (tc % modulusInFineTime)) - modulusInFineTime;
-        tbad0 = timecodeReference + offsetInFineTime + shiftInFineTime;
-        tbad1 = timecodeReference + offsetInFineTime + shiftInFineTime + tbadInFineTime;
+        uint64_t timecodeReference = (tc - (tc % modulusInFineTime)) - modulusInFineTime;
+        uint64_t tbad0 = timecodeReference + offsetInFineTime + shiftInFineTime;
+        uint64_t tbad1 = timecodeReference + offsetInFineTime + shiftInFineTime + tbadInFineTime;
         ret = isPolluted(t0, t1, tbad0, tbad1);
 
         // INTERSECTION TEST #2

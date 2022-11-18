@@ -5,6 +5,8 @@
  *
  */
 
+#include <math.h>
+
 // TOTAL = 32 coefficients * 4 = 128 octets * 3 * 12 = 4608 octets
 // SX 12 coefficients
 float K14_sx_re = 1;
@@ -43,6 +45,4 @@ float K55_pe = 1;
 float K45_pe_re = 1;
 float K45_pe_im = 1;
 
-#define ALPHA_M (M_PI / 4)
-
-float Alpha_M = ALPHA_M;
+float Alpha_M = (float)(M_PI_4);

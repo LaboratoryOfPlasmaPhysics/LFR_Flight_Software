@@ -118,9 +118,13 @@ inline float wave_ellipticity_estimator(const float mag_PSD, const float nvec_de
 float wave_ellipticity_estimator(const float mag_PSD, const float nvec_denom)
 {
     if (mag_PSD != 0.f)
+    {
         return 2.f * nvec_denom / mag_PSD;
+    }
     else
+    {
         return 0.;
+    }
 }
 
 inline float degree_of_polarization(const float mag_PSD, const float* const spectral_matrix)
@@ -138,9 +142,13 @@ float degree_of_polarization(const float mag_PSD, const float* const spectral_ma
                 + square(spectral_matrix[ASM_COMP_B2B3_imag]));
     const float square_B_trace = square(mag_PSD);
     if (square_B_trace != 0.)
+    {
         return sqrtf((3.f * B_square_trace - square_B_trace) / (2.f * square_B_trace));
+    }
     else
+    {
         return 0.f;
+    }
 }
 
 inline compressed_complex X_poynting_vector(const float* const spectral_matrix)
@@ -213,9 +221,13 @@ with:
         else
         {
             if (__real__ NEBX >= 0.)
-                vphi.real = 1.e+20;
+            {
+                vphi.real = 1.e+20f;
+            }
             else
-                vphi.real = -1.e+20;
+            {
+                vphi.real = -1.e+20f;
+            }
         }
         vphi.arg = fabs(__imag__ NEBX) > fabs(__real__ NEBX);
     }

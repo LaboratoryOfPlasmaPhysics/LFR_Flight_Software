@@ -1802,7 +1802,9 @@ int set_sy_lfr_kcoeff(const ccsdsTelecommandPacket_t* const TC, rtems_id queue_i
                 = elec_calibration_matrices_f2 + (ASM_F2_KEEP_BINS * NB_FLOATS_ELEC_CAL_MATRIX);
 
             if (sy_lfr_kcoeff_frequency == NB_BINS_COMPRESSED_SM - 1)
+            {
                 interpolate = yes;
+            }
         }
         else if (sy_lfr_kcoeff_frequency >= F1_COMPRESSED_BIN_OFFSET)
         {

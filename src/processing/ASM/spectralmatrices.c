@@ -109,8 +109,8 @@ void SM_average(float* averaged_spec_mat_NORM, float* averaged_spec_mat_SBM,
                 register float sum2 = 0.;
                 for (unsigned int SM_index = 0; SM_index < numberOfValidSM; SM_index++)
                 {
-                    sum1 += valid_matrices[SM_index][i];
-                    sum2 += valid_matrices[SM_index][i + 1];
+                    sum1 += (float)(valid_matrices[SM_index][i]);
+                    sum2 += (float)(valid_matrices[SM_index][i + 1]);
                 }
                 averaged_spec_mat_SBM[i] += sum1;
                 averaged_spec_mat_NORM[i] += sum1;
@@ -138,15 +138,14 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
     DEBUG_CHECK_PTR(msgForMATR);
     DEBUG_PRINTF("in SM_average_f2");
     float sm_bin;
-    unsigned int i;
     unsigned char keepMatrix;
 
     // test acquisitionTime validity
     keepMatrix = acquisitionTimeIsValid(ring_node->coarseTime, ring_node->fineTime, CHANNELF2);
 
-    for (i = 0; i < TOTAL_SIZE_SM; i++)
+    for (unsigned int i = 0; i < TOTAL_SIZE_SM; i++)
     {
-        sm_bin = ((int*)(ring_node->buffer_address))[i];
+        sm_bin = (float)(((int*)(ring_node->buffer_address))[i]);
         if (nbAverageNormF2 == 0) // average initialization
         {
             if (keepMatrix == MATRIX_IS_NOT_POLLUTED) // keep the matrix and add it to the average
@@ -198,7 +197,7 @@ void SM_average_f2(float* averaged_spec_mat_f2, ring_node* ring_node, unsigned i
     DEBUG_PRINTF("leaving SM_average_f2");
 }
 
-// TODO add unit test
+
 void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* compressed_spec_mat,
     const float divider, const unsigned char nbBinsCompressedMatrix,
     const unsigned char nbBinsToAverage, const unsigned char ASMIndexStart,
@@ -239,7 +238,7 @@ void ASM_compress_divide_and_mask(const float* const averaged_spec_mat, float* c
                     = compressed_spec_mat + (compressed_frequency_bin * NB_FLOATS_PER_SM);
                 for (int asm_component = 0; asm_component < NB_FLOATS_PER_SM; asm_component++)
                 {
-                    *compressed_asm_ptr += (*input_asm_ptr * fBinMask);
+                    *compressed_asm_ptr += (*input_asm_ptr * (float)fBinMask);
                     compressed_asm_ptr++;
                     input_asm_ptr++;
                 }
@@ -298,7 +297,7 @@ Where each matrix product is done sequencialy for mag and elec transition matric
 Note that this code is generated with LFR_Flight_Software/python_scripts/Matrix_calibration_code_gen.ipynb
 */
 // clang-format on
-void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matrix,
+void Matrix_change_of_basis(_Complex float _intermediary[25], const float* input_matrix,
     const float* mag_transition_matrix, const float* elec_transition_matrix, float* output_matrix)
 {
     DEBUG_CHECK_PTR(_intermediary);
@@ -603,7 +602,7 @@ void Matrix_change_of_basis(_Complex float _intermediary[25], float* input_matri
 }
 
 void SM_calibrate_and_reorder(_Complex float intermediary[25], float work_matrix[NB_FLOATS_PER_SM],
-    float* input_asm, const float* mag_calibration_matrices, const float* elec_calibration_matrices,
+    const float* input_asm, const float* mag_calibration_matrices, const float* elec_calibration_matrices,
     float* output_asm, unsigned int start_indice, unsigned int stop_indice)
 {
     DEBUG_CHECK_PTR(intermediary);
