@@ -67,12 +67,16 @@ else
     build_machine_endian_def = '-DLFR_LITTLE_ENDIAN'
 endif
 
+if get_option('with-gcov') and  meson.is_cross_build()
+    subdir('libgcov')
+endif
 
 subdir('LFR_basic-parameters')
 subdir('src')
-subdir('tests')
-subdir('testbenches/optimization')
-
+if not meson.is_cross_build()
+    subdir('tests')
+    subdir('testbenches/optimization')
+endif
 cppcheck = find_program('cppcheck', required : false)
 
 if cppcheck.found()

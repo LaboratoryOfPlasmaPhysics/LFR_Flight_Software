@@ -84,13 +84,18 @@ if meson.is_cross_build()
         c_args += '-DLPP_DPU_DESTID'
     endif
 
+    fsw_dependencies = [lfr_bp_dep, m_dep]
+    if get_option('with-gcov')
+        fsw_dependencies += [libgcov_dep]
+    endif
+
 
     fsw = executable('fsw', fsw_srcs,
                     include_directories: fsw_inc,
                     c_args: c_args,
                     pie: false,
                     link_args: link_args,
-                    dependencies:[lfr_bp_dep, m_dep],
+                    dependencies:fsw_dependencies,
                     extra_files: fsw_extra_files)
 
 

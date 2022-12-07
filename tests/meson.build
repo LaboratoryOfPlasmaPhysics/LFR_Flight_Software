@@ -1,6 +1,6 @@
 
-catch_dep = dependency('catch2', main : true)
-pybind11_dep = dependency('pybind11')
+catch_dep = dependency('catch2', main : true, native:true)
+pybind11_dep = dependency('pybind11', native:true)
 pymod = import('python')
 python3 = pymod.find_installation('python3')
 
