@@ -537,7 +537,7 @@ int action_dump_kcoefficients(
     kCoeffDumpPtr = kcoefficients_dump_1.kcoeff_blks;
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F0; freq++)
     {
-        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F0;
+        uint16_t bin = 0;
         copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
         kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
@@ -554,7 +554,7 @@ int action_dump_kcoefficients(
     }
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F1; freq++)
     {
-        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F1;
+        uint16_t bin = 1;
         copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
         kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
@@ -596,7 +596,7 @@ int action_dump_kcoefficients(
     kCoeffDumpPtr = kcoefficients_dump_2.kcoeff_blks;
     for (int freq = 0; freq <= NB_BINS_COMPRESSED_SM_F2; freq++)
     {
-        uint16_t bin = freq * NB_BINS_TO_AVERAGE_ASM_F2;
+        uint16_t bin = 2;
         copyInt16ByChar(kCoeffDumpPtr, (unsigned char*)(&bin));
         kCoeffDumpPtr += 2;
         memcpy(kCoeffDumpPtr,
