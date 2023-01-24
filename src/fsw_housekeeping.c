@@ -158,7 +158,7 @@ void increment_hk_counter(unsigned char newValue, unsigned char oldValue, unsign
     }
     else
     {
-        delta = (MAX_OF(unsigned char) - oldValue) + newValue;
+        delta = (MAX_OF(unsigned char) + 1 - oldValue) + newValue;
     }
 
     *counter = *counter + delta;
