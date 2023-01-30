@@ -257,7 +257,6 @@ void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normali
 {
     DEBUG_CHECK_PTR(averaged_spec_mat);
     DEBUG_CHECK_PTR(averaged_spec_mat_normalized);
-    const float coef = 1.f / divider;
     // BUILD DATA
     if (divider == 0.)
     {
@@ -269,6 +268,7 @@ void ASM_divide(const float* averaged_spec_mat, float* averaged_spec_mat_normali
     }
     else
     {
+        const float coef = 1.f / divider;
         for (unsigned int i = (start_indice * NB_FLOATS_PER_SM);
              i < (stop_indice * NB_FLOATS_PER_SM); i++)
         {
