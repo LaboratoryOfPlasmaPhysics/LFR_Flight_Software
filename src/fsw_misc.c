@@ -215,7 +215,7 @@ LFR_NO_RETURN rtems_task hous_task(rtems_task_argument argument)
                 = parameter_dump_packet.sy_lfr_common_parameters;
             encode_temperatures(&housekeeping_packet);
             encode_f3_E_field(
-                hk_lfr_sc_v_f3, hk_lfr_sc_e2_f3, hk_lfr_sc_e2_f3, &housekeeping_packet);
+                hk_lfr_sc_v_f3, hk_lfr_sc_e1_f3, hk_lfr_sc_e2_f3, &housekeeping_packet);
             encode_cpu_load(&housekeeping_packet);
 
             hk_lfr_le_me_he_update();
