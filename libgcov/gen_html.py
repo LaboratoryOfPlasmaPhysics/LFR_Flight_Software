@@ -27,8 +27,8 @@ def generate_individual_report(gcov_trace):
     output_dir = f"{args.output_dir}/{gcov_trace.replace('.txt','')}"
     os.makedirs(output_dir, exist_ok=True)
     subprocess.run([build_gcov_files, "-r", args.build_dir, "-o", output_dir, f"{args.gcov_output_dir}/{gcov_trace}"])
-    subprocess.run(["lcov", "--gcov-tool", args.gcov_path, '-c', '-d', output_dir, '-b', args.build_dir ,  '-o', f'{output_dir}/trace.info'])
-    subprocess.run(["genhtml", '-o', f'{output_dir}',  f'{output_dir}/trace.info'])
+    subprocess.run(["lcov", "--config-file", f"{os.path.dirname(__file__)}/lcovrc", "--gcov-tool", args.gcov_path, '-c', '-d', output_dir, '-b', args.build_dir ,  '-o', f'{output_dir}/trace.info'])
+    subprocess.run(["genhtml", "--config-file", f"{os.path.dirname(__file__)}/lcovrc", '-o', f'{output_dir}',  f'{output_dir}/trace.info'])
     return f'{output_dir}/trace.info'
 
 def generate_total_coverage_report(lcov_traces):
@@ -37,8 +37,8 @@ def generate_total_coverage_report(lcov_traces):
     lcov_args = ["lcov" ]
     for t in lcov_traces:
         lcov_args+= ['-a',t]
-    lcov_args += ["-o", f"{output_dir}/trace.info"]
+    lcov_args += ["--config-file", f"{os.path.dirname(__file__)}/lcovrc", "-o", f"{output_dir}/trace.info"]
     subprocess.run(lcov_args)
-    subprocess.run(["genhtml", '-o', f'{output_dir}', f"{output_dir}/trace.info"])
+    subprocess.run(["genhtml", "--config-file", f"{os.path.dirname(__file__)}/lcovrc", '-o', f'{output_dir}', f"{output_dir}/trace.info"])
 
 generate_total_coverage_report(list(map(generate_individual_report, gcov_traces)))
