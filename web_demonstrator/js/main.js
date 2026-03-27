@@ -45,7 +45,14 @@ function updateUI() {
 
   const plotArea = document.getElementById('plot-area');
   if (stage.render && pipelineData) {
-    stage.render(pipelineData, plotArea);
+    const result = stage.render(plotArea, pipelineData);
+    if (result && typeof result.catch === 'function') {
+      result.catch(err => {
+        plotArea.innerHTML = '<p style="color:#f85149;padding:1em;">Render error: ' +
+          err.message + '</p>';
+        console.error('Stage render error:', err);
+      });
+    }
   } else {
     plotArea.innerHTML = '<p style="color:#8b949e;text-align:center;padding-top:160px">' +
       (pipelineData ? 'Visualization not yet implemented for this stage.' :

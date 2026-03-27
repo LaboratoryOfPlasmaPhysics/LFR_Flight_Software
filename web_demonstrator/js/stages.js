@@ -2,6 +2,7 @@
 
 import * as plots from './plots.js';
 import { HANNING_256 } from './dsp.js';
+import { computeBP1 } from './bp1-wasm.js';
 
 // Extract a 5x5 magnitude matrix from the flat 25-element SM layout at a given bin.
 // Flat layout per bin: for each row i, then j from i to 4:
@@ -213,6 +214,27 @@ export const STAGES = [
         <li><strong>Normal vector</strong>: Wave propagation direction (θ, φ)</li>
         <li><strong>Poynting flux</strong>: Energy flow direction</li>
       </ul>`,
-    render: null, // Task 9
+    render: async (container, data) => {
+      let bp1;
+      try {
+        bp1 = await computeBP1(data.averaged);
+      } catch (e) {
+        container.innerHTML =
+          '<div style="color:#f85149;padding:1em;">' +
+          '<h4>WASM BP1 module failed to load</h4>' +
+          '<p>' + e.message + '</p>' +
+          '<p>Build instructions: run <code>make -C wasm</code> from <code>web_demonstrator/</code> ' +
+          '(requires Emscripten SDK).</p></div>';
+        return;
+      }
+      const binWidth = 24576 / 256;
+      const binLabels = Array.from({ length: 128 }, (_, i) => (i * binWidth).toFixed(0));
+      plots.multiPlot(container, [
+        { fn: plots.barChart, args: [bp1.psdb, binLabels, { title: 'PSDB — Magnetic Power Spectral Density', yLabel: 'Power', color: '#58a6ff' }] },
+        { fn: plots.barChart, args: [bp1.psde, binLabels, { title: 'PSDE — Electric Power Spectral Density', yLabel: 'Power', color: '#3fb950' }] },
+        { fn: plots.timeDomain, args: [[bp1.ellipticity], 1, { title: 'Ellipticity vs Frequency Bin', names: ['Ellipticity'], yLabel: 'Ellipticity' }] },
+        { fn: plots.timeDomain, args: [[bp1.dop], 1, { title: 'Degree of Polarization vs Frequency Bin', names: ['DOP'], yLabel: 'DOP' }] },
+      ]);
+    },
   },
 ];
