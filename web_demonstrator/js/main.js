@@ -44,6 +44,12 @@ function updateUI() {
   document.getElementById('explanation').innerHTML = stage.description;
 
   const plotArea = document.getElementById('plot-area');
+
+  // Purge all existing Plotly plots before re-rendering
+  plotArea.querySelectorAll('.js-plotly-plot').forEach(el => Plotly.purge(el));
+  if (plotArea.classList.contains('js-plotly-plot')) Plotly.purge(plotArea);
+  plotArea.innerHTML = '';
+
   if (stage.render && pipelineData) {
     const result = stage.render(plotArea, pipelineData);
     if (result && typeof result.catch === 'function') {

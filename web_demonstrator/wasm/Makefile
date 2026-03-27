@@ -17,7 +17,7 @@ EMCC_FLAGS := \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME='createBP1Module' \
 	-s EXPORTED_FUNCTIONS='$(EXPORTED_FUNCTIONS)' \
-	-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
+	-s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPF32","HEAPU8"]' \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	--no-entry
 

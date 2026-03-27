@@ -121,16 +121,17 @@ export const STAGES = [
       <p>Without windowing, a finite-length signal block creates artificial discontinuities at
       its edges, spreading energy across all frequency bins.</p>`,
     render: async (container, data) => {
-      plots.multiPlot(container, [
-        {
+      const cfgs = [
+        { fn: plots.timeDomain, args: [[HANNING_256], 24576, { title: 'Hanning Window (256 points)', names: ['Window'] }] },
+      ];
+      for (const [key, band] of Object.entries(data.bands)) {
+        if (!band.windowed) continue;
+        cfgs.push({
           fn: plots.timeDomain,
-          args: [[HANNING_256], 256, { title: 'Hanning Window (256 points)', names: ['Window'] }],
-        },
-        {
-          fn: plots.timeDomain,
-          args: [[data.windowed[0]], 256, { title: 'B1 After Windowing', names: ['B1 windowed'] }],
-        },
-      ]);
+          args: [[band.windowed[0]], band.rate, { title: `B1 After Windowing — ${band.label}`, names: ['B1'] }],
+        });
+      }
+      plots.multiPlot(container, cfgs);
     },
   },
   {
@@ -142,19 +143,20 @@ export const STAGES = [
       <p>This yields <strong>128 useful frequency bins</strong>. The frequency resolution depends
       on the channel: f0 → 96 Hz/bin, f1 → 16 Hz/bin, f2 → 1 Hz/bin.</p>`,
     render: async (container, data) => {
-      const fftB1 = data.fftResults[0]; // B1 is index 0 in SM order
-      const nBins = fftB1.re.length;
-      const binWidth = 24576 / 256;
-      const magnitudes = new Float32Array(nBins);
-      const binFreqs = new Float32Array(nBins);
-      for (let i = 0; i < nBins; i++) {
-        magnitudes[i] = Math.sqrt(fftB1.re[i] ** 2 + fftB1.im[i] ** 2);
-        binFreqs[i] = i * binWidth;
+      const cfgs = [];
+      for (const [key, band] of Object.entries(data.bands)) {
+        if (!band.fftResults) continue;
+        const fftB1 = band.fftResults[0]; // B1 is index 0 in SM order
+        const nBins = fftB1.re.length;
+        const magnitudes = new Float32Array(nBins);
+        const binFreqs = new Float32Array(nBins);
+        for (let i = 0; i < nBins; i++) {
+          magnitudes[i] = Math.sqrt(fftB1.re[i] ** 2 + fftB1.im[i] ** 2);
+          binFreqs[i] = i * band.binWidth;
+        }
+        cfgs.push({ fn: plots.spectrum, args: [magnitudes, binFreqs, { title: `B1 FFT Magnitude — ${band.label}`, name: 'B1' }] });
       }
-      plots.spectrum(container, magnitudes, binFreqs, {
-        title: 'B1 FFT Magnitude',
-        name: 'B1',
-      });
+      plots.multiPlot(container, cfgs);
     },
   },
   {
@@ -167,14 +169,15 @@ export const STAGES = [
       <p>This gives <strong>25 real values per bin</strong>: 5 auto-spectra (diagonal) and
       10 complex cross-spectra (upper triangle, 20 reals). Total: 128 × 25 = 3200 floats.</p>`,
     render: async (container, data) => {
-      const peakBin = findPeakBin(data.sm);
-      const mat = extractSM5x5(data.sm, peakBin);
-      const binWidth = 24576 / 256;
-      const freq = (peakBin * binWidth).toFixed(0);
-      plots.heatmap(container, mat, {
-        title: `Spectral Matrix at peak bin ${peakBin} (~${freq} Hz)`,
-        labels: data.smChannelNames,
-      });
+      const cfgs = [];
+      for (const [key, band] of Object.entries(data.bands)) {
+        if (!band.sm) continue;
+        const peakBin = findPeakBin(band.sm);
+        const mat = extractSM5x5(band.sm, peakBin);
+        const freq = (peakBin * band.binWidth).toFixed(0);
+        cfgs.push({ fn: plots.heatmap, args: [mat, { title: `SM at peak bin ${peakBin} (~${freq} Hz) — ${band.label}`, labels: data.smChannelNames }] });
+      }
+      plots.multiPlot(container, cfgs);
     },
   },
   {
@@ -186,18 +189,19 @@ export const STAGES = [
       <p>Longer averaging periods (4s for Normal mode BP1) further reduce variance,
       trading time resolution for signal-to-noise ratio.</p>`,
     render: async (container, data) => {
-      if (data.smList.length < 2) {
-        container.innerHTML = '<p style="color:#e6edf3;padding:1em;">Insufficient duration: need at least 2 FFT blocks (512 f0 samples) for meaningful averaging.</p>';
+      const cfgs = [];
+      for (const [key, band] of Object.entries(data.bands)) {
+        if (!band.averaged || !band.smList || band.smList.length < 2) continue;
+        const peakBin = findPeakBin(band.averaged);
+        const mat = extractSM5x5(band.averaged, peakBin);
+        const freq = (peakBin * band.binWidth).toFixed(0);
+        cfgs.push({ fn: plots.heatmap, args: [mat, { title: `Averaged SM at peak bin ${peakBin} (~${freq} Hz) — ${band.label} (${band.smList.length} blocks)`, labels: data.smChannelNames }] });
+      }
+      if (cfgs.length === 0) {
+        container.innerHTML = '<p style="color:#e6edf3;padding:1em;">Insufficient data for averaging.</p>';
         return;
       }
-      const peakBin = findPeakBin(data.averaged);
-      const mat = extractSM5x5(data.averaged, peakBin);
-      const binWidth = 24576 / 256;
-      const freq = (peakBin * binWidth).toFixed(0);
-      plots.heatmap(container, mat, {
-        title: `Averaged SM at peak bin ${peakBin} (~${freq} Hz) — ${data.smList.length} blocks`,
-        labels: data.smChannelNames,
-      });
+      plots.multiPlot(container, cfgs);
     },
   },
   {
@@ -215,26 +219,30 @@ export const STAGES = [
         <li><strong>Poynting flux</strong>: Energy flow direction</li>
       </ul>`,
     render: async (container, data) => {
-      let bp1;
-      try {
-        bp1 = await computeBP1(data.averaged);
-      } catch (e) {
-        container.innerHTML =
-          '<div style="color:#f85149;padding:1em;">' +
-          '<h4>WASM BP1 module failed to load</h4>' +
-          '<p>' + e.message + '</p>' +
-          '<p>Build instructions: run <code>make -C wasm</code> from <code>web_demonstrator/</code> ' +
-          '(requires Emscripten SDK).</p></div>';
-        return;
+      const cfgs = [];
+      for (const [key, band] of Object.entries(data.bands)) {
+        if (!band.averaged) continue;
+        let bp1;
+        try {
+          bp1 = await computeBP1(band.averaged);
+        } catch (e) {
+          container.innerHTML =
+            '<div style="color:#f85149;padding:1em;">' +
+            '<h4>WASM BP1 module failed to load</h4>' +
+            '<p>' + e.message + '</p>' +
+            '<p>Build instructions: run <code>make -C wasm</code> from <code>web_demonstrator/</code> ' +
+            '(requires Emscripten SDK).</p></div>';
+          return;
+        }
+        const binLabels = Array.from({ length: 128 }, (_, i) => (i * band.binWidth).toFixed(1));
+        cfgs.push(
+          { fn: plots.barChart, args: [bp1.psdb, binLabels, { title: `PSDB — ${band.label}`, xLabel: 'Frequency (Hz)', yLabel: 'Power', color: '#58a6ff' }] },
+          { fn: plots.barChart, args: [bp1.psde, binLabels, { title: `PSDE — ${band.label}`, xLabel: 'Frequency (Hz)', yLabel: 'Power', color: '#3fb950' }] },
+          { fn: plots.barChart, args: [bp1.ellipticity, binLabels, { title: `Ellipticity — ${band.label}`, xLabel: 'Frequency (Hz)', yLabel: 'Ellipticity', color: '#d29922' }] },
+          { fn: plots.barChart, args: [bp1.dop, binLabels, { title: `DOP — ${band.label}`, xLabel: 'Frequency (Hz)', yLabel: 'DOP', color: '#f778ba' }] },
+        );
       }
-      const binWidth = 24576 / 256;
-      const binLabels = Array.from({ length: 128 }, (_, i) => (i * binWidth).toFixed(0));
-      plots.multiPlot(container, [
-        { fn: plots.barChart, args: [bp1.psdb, binLabels, { title: 'PSDB — Magnetic Power Spectral Density', yLabel: 'Power', color: '#58a6ff' }] },
-        { fn: plots.barChart, args: [bp1.psde, binLabels, { title: 'PSDE — Electric Power Spectral Density', yLabel: 'Power', color: '#3fb950' }] },
-        { fn: plots.timeDomain, args: [[bp1.ellipticity], 1, { title: 'Ellipticity vs Frequency Bin', names: ['Ellipticity'], yLabel: 'Ellipticity' }] },
-        { fn: plots.timeDomain, args: [[bp1.dop], 1, { title: 'Degree of Polarization vs Frequency Bin', names: ['DOP'], yLabel: 'DOP' }] },
-      ]);
+      plots.multiPlot(container, cfgs);
     },
   },
 ];

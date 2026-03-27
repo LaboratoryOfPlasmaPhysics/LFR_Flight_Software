@@ -1,0 +1,19 @@
+{
+  "name": "web_demonstrator",
+  "version": "1.0.0",
+  "description": "Interactive browser-based visualization of the Solar Orbiter LFR signal processing chain.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "npx playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright": "^1.58.2"
+  }
+}

@@ -24,11 +24,11 @@ export function timeDomain(container, signals, sampleRate, options = {}) {
   const layout = {
     ...DARK_LAYOUT,
     title: options.title ?? 'Time Domain',
-    xaxis: { ...DARK_LAYOUT.xaxis, title: 'Time (s)' },
+    xaxis: { ...DARK_LAYOUT.xaxis, title: options.xLabel ?? 'Time (s)' },
     yaxis: { ...DARK_LAYOUT.yaxis, title: options.yLabel ?? 'Amplitude' },
     showlegend: true, legend: { x: 1, xanchor: 'right', y: 1 },
   };
-  Plotly.react(container, traces, layout, { responsive: true });
+  Plotly.newPlot(container, traces, layout, { responsive: true });
 }
 
 export function spectrum(container, magnitudes, binFreqs, options = {}) {
@@ -45,7 +45,7 @@ export function spectrum(container, magnitudes, binFreqs, options = {}) {
     xaxis: { ...DARK_LAYOUT.xaxis, title: 'Frequency (Hz)' },
     yaxis: { ...DARK_LAYOUT.yaxis, title: 'Magnitude (dB)', type: 'log' },
   };
-  Plotly.react(container, traces, layout, { responsive: true });
+  Plotly.newPlot(container, traces, layout, { responsive: true });
 }
 
 export function heatmap(container, matrix, options = {}) {
@@ -60,7 +60,7 @@ export function heatmap(container, matrix, options = {}) {
     title: options.title ?? 'Spectral Matrix',
     yaxis: { ...DARK_LAYOUT.yaxis, autorange: 'reversed' },
   };
-  Plotly.react(container, traces, layout, { responsive: true });
+  Plotly.newPlot(container, traces, layout, { responsive: true });
 }
 
 export function barChart(container, values, labels, options = {}) {
@@ -72,9 +72,10 @@ export function barChart(container, values, labels, options = {}) {
   const layout = {
     ...DARK_LAYOUT,
     title: options.title ?? '',
+    xaxis: { ...DARK_LAYOUT.xaxis, title: options.xLabel ?? '' },
     yaxis: { ...DARK_LAYOUT.yaxis, title: options.yLabel ?? '' },
   };
-  Plotly.react(container, traces, layout, { responsive: true });
+  Plotly.newPlot(container, traces, layout, { responsive: true });
 }
 
 export function polar(container, theta, r, options = {}) {
@@ -92,7 +93,7 @@ export function polar(container, theta, r, options = {}) {
       radialaxis: { gridcolor: '#30363d', linecolor: '#30363d' },
     },
   };
-  Plotly.react(container, traces, layout, { responsive: true });
+  Plotly.newPlot(container, traces, layout, { responsive: true });
 }
 
 export function multiPlot(container, plotConfigs) {

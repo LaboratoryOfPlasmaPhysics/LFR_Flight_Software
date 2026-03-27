@@ -227,38 +227,41 @@ export function runDSPPipeline(raw) {
 
   // 6. Reorder to SM order [B1, B2, B3, E1, E2] = indices [2,3,4,0,1] from E1,E2,B1,B2,B3
   const smOrder = [2, 3, 4, 0, 1];
-  const f0sm = smOrder.map(i => f0[i]);
 
-  // 7. Window + FFT on first 256-sample block of f0
-  const windowed = f0sm.map(ch => applyWindow(ch.subarray(0, 256)));
-  const fftResults = windowed.map(w => fft256(w));
-
-  // 8. Full spectral matrix
-  const sm = fullSpectralMatrix(fftResults);
-
-  // 9. Multiple SMs from consecutive blocks + averaging
-  const blockSize = 256;
-  const numBlocks = Math.floor(f0sm[0].length / blockSize);
-  const smList = [];
-  for (let b = 0; b < numBlocks; b++) {
-    const offset = b * blockSize;
-    const blockFFTs = f0sm.map(ch => fft256(applyWindow(ch.subarray(offset, offset + blockSize))));
-    smList.push(fullSpectralMatrix(blockFFTs));
+  // 7-9. Window + FFT + SM + averaging for each frequency band with enough samples
+  function processBand(bandChannels) {
+    const smCh = smOrder.map(i => bandChannels[i]);
+    const blockSize = 256;
+    const numBlocks = Math.floor(smCh[0].length / blockSize);
+    if (numBlocks === 0) return null;
+    const windowed = smCh.map(ch => applyWindow(ch.subarray(0, blockSize)));
+    const fftResults = windowed.map(w => fft256(w));
+    const sm = fullSpectralMatrix(fftResults);
+    const smList = [];
+    for (let b = 0; b < numBlocks; b++) {
+      const offset = b * blockSize;
+      const blockFFTs = smCh.map(ch => fft256(applyWindow(ch.subarray(offset, offset + blockSize))));
+      smList.push(fullSpectralMatrix(blockFFTs));
+    }
+    const averaged = smList.length > 0 ? averageSM(smList) : sm;
+    return { windowed, fftResults, sm, smList, averaged };
   }
-  const averaged = smList.length > 0 ? averageSM(smList) : sm;
+
+  const bands = {
+    f0: { rate: 24576, channels: f0, label: 'f0 (24,576 Hz)', binWidth: 24576 / 256 },
+    f1: { rate: 4096,  channels: f1, label: 'f1 (4,096 Hz)',  binWidth: 4096 / 256 },
+    f2: { rate: 256,   channels: f2, label: 'f2 (256 Hz)',     binWidth: 256 / 256 },
+  };
+  for (const [key, band] of Object.entries(bands)) {
+    const result = processBand(band.channels);
+    if (result) Object.assign(band, result);
+  }
 
   return {
     input: channels,
     filtered,
-    f0,
-    f1,
-    f2,
-    f3,
-    windowed,
-    fftResults,
-    sm,
-    smList,
-    averaged,
+    f0, f1, f2, f3,
+    bands,
     channelNames: INPUT_CHANNEL_NAMES,
     smChannelNames: SM_CHANNEL_NAMES,
   };

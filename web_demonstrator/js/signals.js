@@ -3,7 +3,7 @@
 import { runDSPPipeline } from './dsp.js';
 
 const ADC_RATE = 98304;
-const DURATION = 0.05;
+const DURATION = 1.0;
 const N = Math.round(ADC_RATE * DURATION);
 
 function zeros() { return new Float32Array(N); }
