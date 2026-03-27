@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LFR Processing Pipeline Demonstrator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>LFR Signal Processing Pipeline</h1>
+    <p class="subtitle">Solar Orbiter / RPW Low Frequency Receiver</p>
+  </header>
+
+  <section id="signal-config" class="collapsed">
+    <button id="config-toggle">Signal Configuration &#9660;</button>
+    <div id="config-panel">
+      <label for="scenario-select">Scenario:</label>
+      <select id="scenario-select">
+        <option value="pure-tone">Pure Tone (1 kHz on B1)</option>
+        <option value="whistler">Whistler Wave (circular polarization)</option>
+        <option value="turbulence">Broadband Turbulence (pink noise)</option>
+        <option value="multi-component">Multi-Component (200 Hz + 3 kHz)</option>
+        <option value="custom">Custom...</option>
+      </select>
+      <div id="custom-controls" style="display:none"></div>
+      <button id="run-pipeline">Run Pipeline</button>
+    </div>
+  </section>
+
+  <nav id="pipeline-bar">
+    <!-- Filled by stages.js -->
+  </nav>
+
+  <div id="nav-buttons">
+    <button id="prev-btn" disabled>&larr; Previous</button>
+    <button id="next-btn">Next &rarr;</button>
+  </div>
+
+  <main id="detail-panel">
+    <div id="plot-area"></div>
+    <aside id="explanation"></aside>
+  </main>
+
+  <script src="lib/plotly-2.35.2.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
