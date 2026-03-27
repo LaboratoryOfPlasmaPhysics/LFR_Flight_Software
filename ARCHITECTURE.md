@@ -45,6 +45,8 @@ The LFR FSW runs on a LEON3-FT (fault-tolerant) soft-core CPU implemented in an 
 
 The software communicates with the RPW DPU (Data Processing Unit) over a SpaceWire link using the CCSDS packet protocol.
 
+> **Try it live:** The [interactive web demonstrator](https://laboratoryofplasmaphysics.github.io/LFR_Flight_Software/) walks through each processing stage (IIR filtering, decimation, FFT, spectral matrices, BP1) using the actual flight code compiled to WebAssembly.
+
 ## Hardware Platform
 
 | Component | Details |

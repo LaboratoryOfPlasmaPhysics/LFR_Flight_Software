@@ -50,6 +50,10 @@ The FPGA SoC handles the heavy computation (digital filtering, FFTs, spectral ma
 | **SBM1** | Selective Burst Mode 1 -- CWF at f1 rate |
 | **SBM2** | Selective Burst Mode 2 -- CWF at f2 rate |
 
+## Interactive Demonstrator
+
+An [interactive web demonstrator](https://laboratoryofplasmaphysics.github.io/LFR_Flight_Software/) lets you explore the LFR signal processing pipeline step by step in your browser -- from raw ADC input through IIR filtering, decimation, FFT, spectral matrix computation, and Basic Parameter extraction (using the actual flight code compiled to WebAssembly). See [`web_demonstrator/`](web_demonstrator/) for details.
+
 ## Architecture Documentation
 
 For a comprehensive technical description of the software architecture, see **[ARCHITECTURE.md](ARCHITECTURE.md)**. It covers:
