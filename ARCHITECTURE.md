@@ -10,6 +10,7 @@ This document provides a comprehensive technical description of the Low Frequenc
 - [Directory Structure](#directory-structure)
 - [Boot and Initialization Sequence](#boot-and-initialization-sequence)
 - [RTEMS Task Architecture](#rtems-task-architecture)
+- [FPGA Digital Filter Chain](#fpga-digital-filter-chain)
 - [Data Acquisition and Flow](#data-acquisition-and-flow)
 - [Spectral Matrix Processing](#spectral-matrix-processing)
 - [Basic Parameters Computation](#basic-parameters-computation)
@@ -48,30 +49,67 @@ The software communicates with the RPW DPU (Data Processing Unit) over a SpaceWi
 
 | Component | Details |
 |-----------|---------|
-| CPU | LEON3-FT @ 25 MHz (SPARC V8) |
-| FPGA | RTAX-4000D |
+| CPU | LEON3-FT @ 25 MHz (SPARC V8), FPU enabled |
+| FPGA | RTAX-4000D (FM board ID `0x03`) |
 | RTOS | RTEMS 4.10 |
-| Interconnect | SpaceWire (GRSPW IP core) |
+| SRAM | 2 × 512K×32-bit chips, 19-bit address, EDAC enabled (SRBANKSZ=8) |
+| ADC | RHF1401, 9 channels × 14-bit, sampled at ~98.304 kHz (clk_24 / 250) |
+| SpaceWire | GRSPW, 2 ports, 10 MHz link rate, RMAP enabled (pirq=11) |
 | Timers | GPTIMER (GRLIB) |
 | UART | APBUART @ 115200 baud |
 
+### Clock Architecture
+
+The FPGA has two independent clock domains:
+
+| Clock | Source | Frequency | Domain |
+|-------|--------|-----------|--------|
+| **clk_25** | 50 MHz oscillator ÷ 2 | 25 MHz | CPU, AHB/APB bus, all digital logic |
+| **clk_24** | 49.152 MHz oscillator ÷ 2 | 24.576 MHz | ADC sampling, digital filter chain |
+
+The 24.576 MHz clock is chosen so that integer decimation ratios produce exact sampling rates: 24576 Hz (f0), 4096 Hz (f1), 256 Hz (f2), 16 Hz (f3).
+
+### Board Variants
+
+| ID | Board | FPGA |
+|----|-------|------|
+| `0x00` | Mini-LFR | A3PE3000 |
+| `0x01` | LFR EM | A3PE3000 |
+| `0x02` | LFR EQM | A3PE3000 |
+| `0x03` | LFR FM (flight) | RTAX4000D |
+| `0x04` | DiscoSpace | A3PE3000 |
+
+### FPGA IP Cores
+
 The FPGA SoC includes custom IP cores for:
 - **Waveform Picker** -- DMA engine that acquires waveform samples at four frequency channels (f0, f1, f2, f3) into CPU memory via double-buffered ring nodes
-- **Spectral Matrix unit** -- computes 128-bin FFTs and cross-spectral matrices in hardware, writing results via DMA
-- **Time Management** -- maintains coarse/fine time synchronized to SpaceWire timecodes
+- **Spectral Matrix unit** -- 256-point Hanning-windowed FFT (Actel CoreFFT IP) + hardware cross-correlation, writing 5×5 Hermitian matrices via DMA
+- **Digital Filter Chain** (`lpp_lfr_filter`) -- IIR + CIC decimation filters producing f0/f1/f2/f3 from the ADC sample stream
+- **Time Management** (`apb_lfr_management`) -- maintains coarse/fine time synchronized to SpaceWire timecodes
 - **Calibration DAC** -- generates calibration signals
+- **ADC Interface** (`top_ad_conv_RHF1401_withFilter`) -- drives the 9-channel RHF1401 ADC with anti-aliasing
 
 ### APB Register Map
 
-| Peripheral | Base Address |
-|-----------|-------------|
-| APBUART | `0x80000100` |
-| GPTIMER | `0x80000300` |
-| GRSPW | `0x80000500` |
-| Time Management | `0x80000600` |
-| Spectral Matrix | `0x80000f00` |
-| Waveform Picker | `0x80000f54` |
-| VHDL Version | `0x80000ff0` |
+| Peripheral | APB Index | Base Address | Notes |
+|-----------|-----------|-------------|-------|
+| APBUART | 1 | `0x80000100` | pirq=2 |
+| IRQMP | 2 | `0x80000200` | Interrupt controller |
+| GPTIMER | 3 | `0x80000300` | pirq=8, 2 timers |
+| GRSPW | 5 | `0x80000500` | pirq=11, 2 ports, RMAP |
+| Time Management | 6 | `0x80000600` | `apb_lfr_management` |
+| LFR (top) | 15 | `0x80000f00` | 4 KB space, pirq_ms=6, pirq_wfp=14 |
+| — Spectral Matrix | — | `0x80000f00` | Within LFR register space |
+| — Waveform Picker | — | `0x80000f54` | Within LFR register space |
+| — VHDL Version | — | `0x80000ff0` | Read-only board/version ID |
+
+### AHB Masters
+
+| Index | Master | Notes |
+|-------|--------|-------|
+| 0 | LEON3-FT CPU | Instruction + data |
+| 1 | GRSPW | SpaceWire DMA |
+| 2 | LFR DMA subsystem | Waveform + Spectral Matrix DMA (5 FIFO channels, round-robin arbiter) |
 
 ### IRQ Lines
 
@@ -281,56 +319,138 @@ For each frequency channel Fx (x = 0, 1, 2):
 | `watchdog_isr` | 9 (SPARC `0x19`) | Should never fire -- calls `exit(0)` if watchdog expires |
 | `timecode_irq_handler` | (callback) | SpaceWire timecode reception callback -- synchronizes local time, detects timecode sequence errors |
 
+## FPGA Digital Filter Chain
+
+The filter chain (`lpp_lfr_filter`) transforms the raw ADC samples into four frequency bands. It operates in the 24.576 MHz clock domain.
+
+### Input Stage
+
+The RHF1401 ADC provides 8 analog channels (5 E-field + 3 B-field) as 14-bit samples at ~98.304 kHz (clk_24 / 250). The ADC interface (`top_ad_conv_RHF1401_withFilter`) manages channel multiplexing and optional per-channel digital filtering.
+
+The 8 raw channels are mapped to 6 output channels per frequency band:
+
+| Output Channel | Content | Notes |
+|---------------|---------|-------|
+| V | Voltage (E-field derived) | Data-shaped from E-field channels |
+| E1 | Electric field 1 | AC or DC coupled (R0/R1/R2 select) |
+| E2 | Electric field 2 | AC or DC coupled (R0/R1/R2 select) |
+| B1 | Magnetic field 1 | Search coil |
+| B2 | Magnetic field 2 | Search coil |
+| B3 | Magnetic field 3 | Search coil |
+
+### Data Shaping
+
+Before decimation, optional data shaping is applied via the `data_shaping` register in the Waveform Picker:
+
+- **SP0**: differential mode, computes f1 − f0 (channel subtraction) with saturation
+- **SP1**: differential mode, computes f2 − f1 (channel subtraction) with saturation
+- **R0, R1, R2**: select AC-coupled (channels 1,2) vs DC-coupled (channels 3,4) E-field inputs
+- **BW**: bandwidth selection
+
+### Decimation Chain
+
+```mermaid
+graph TD
+    ADC["ADC ~98.304 kHz\n8 channels × 14-bit"]
+    IIR1["IIR Filter Stage 1\n5-cell SOS, 9-bit coefs\nall 8 channels"]
+    DS["Data Shaping + Saturation\n6 channels × 16-bit\nV, E1, E2, B1, B2, B3"]
+    DOWN4["Downsample ÷4"]
+    F0["f0 (24576 Hz)"]
+    IIR_F1["IIR Filter\n5-cell, 10-bit coefs, 6 ch"]
+    DOWN6_F1["Downsample ÷6"]
+    F1["f1 (4096 Hz)"]
+    CIC16["CIC Filter cic_lfr_r2 ÷16"]
+    IIR_F2["IIR Filter + Downsample ÷6"]
+    F2["f2 (256 Hz)"]
+    CIC256["CIC Filter ÷256"]
+    IIR_F3["IIR Filter + Downsample ÷6"]
+    F3["f3 (16 Hz)"]
+
+    ADC --> IIR1 --> DS --> DOWN4 --> F0
+    F0 --> IIR_F1 --> DOWN6_F1 --> F1
+    F0 --> CIC16 --> IIR_F2 --> F2
+    F0 --> CIC256 --> IIR_F3 --> F3
+```
+
+### IIR Filter Topology
+
+Each IIR stage is a cascade of 5 second-order sections (biquads). The SOS coefficients are stored as fixed-point values (9-bit or 10-bit depending on stage) with configurable fractional width. These are Butterworth-like low-pass filters designed to prevent aliasing before each decimation step.
+
+### CIC Filter Topology
+
+The CIC (Cascaded Integrator-Comb) filters use 3 integrator stages → decimator → 3 comb stages, with delay D=2. Data grows by 5 bits during integration and is normalized back to 16-bit after the comb section. Two CIC instances produce intermediate rates of ÷16 and ÷256 from f0.
+
 ## Data Acquisition and Flow
 
-LFR measures 5 physical channels: 3 magnetic field components (B1, B2, B3) and 2 electric field components (E1, E2). The FPGA applies cascaded digital filters to produce four frequency bands:
+LFR measures 8 raw analog channels: 5 electric field (E0--E4) and 3 magnetic field (B0--B2) components via a 14-bit ADC (RHF1401) at ~98.304 kHz. After filtering and data shaping, 6 output channels (V, E1, E2, B1, B2, B3) are produced at four frequency bands:
 
-| Channel | Sampling Rate | Bandwidth | Source |
-|---------|--------------|-----------|--------|
-| **f0** | 24576 Hz | DC -- 10 kHz | Wideband |
-| **f1** | 4096 Hz | DC -- 1.7 kHz | Decimated from f0 |
-| **f2** | 256 Hz | DC -- 100 Hz | Decimated from f1 |
-| **f3** | 16 Hz | DC -- 6 Hz | Decimated from f2 |
+| Channel | Sampling Rate | Decimation from f0 | Source |
+|---------|--------------|---------------------|--------|
+| **f0** | 24576 Hz | -- | IIR + ÷4 from ADC rate |
+| **f1** | 4096 Hz | ÷6 | IIR on f0 + ÷6 |
+| **f2** | 256 Hz | ÷96 (CIC ÷16 + ÷6) | CIC on f0 + IIR + ÷6 |
+| **f3** | 16 Hz | ÷1536 (CIC ÷256 + ÷6) | CIC on f0 + IIR + ÷6 |
 
 ### Data Products
 
 The FPGA produces two types of data products per frequency channel:
 
-1. **Waveform snapshots (SWF)** -- time-domain samples, 2688 samples per snapshot (5 components x 16-bit)
-2. **Spectral matrices (SM)** -- 128-bin cross-spectral matrices, each containing 25 float values (the unique elements of a 5x5 Hermitian matrix: 5 auto-spectra + 10 complex cross-spectra)
+1. **Waveform snapshots (SWF)** -- time-domain samples, 2688 samples per snapshot (6 channels × 16-bit packed as 3 × 32-bit words per sample)
+2. **Spectral matrices (SM)** -- the FPGA applies a 256-point Hanning window followed by a 256-point FFT (Actel CoreFFT IP, real input / complex output) on each of 5 components (E1, E2, B1, B2, B3 -- V excluded), then computes the 5×5 cross-spectral matrix via hardware correlation. This yields 128 useful frequency bins × 25 float values (5 auto-spectra + 10 complex cross-spectra)
 
 Both are written to CPU memory via DMA into double-buffered ring nodes.
 
 ### High-Level Data Flow
 
-```
-FPGA Waveform Picker                    FPGA Spectral Matrix Unit
-  |                                        |
-  | DMA into ring buffers                  | DMA into ring buffers
-  v                                        v
-waveforms_isr (IRQ 14)                 spectral_matrices_isr (IRQ 6)
-  |                                        |
-  | RTEMS events                           | RTEMS events
-  v                                        v
-WFRM/SWBD/CWF tasks                   AVF0/AVF1/AVF2 tasks
-  |                                        |
-  | Build TM packets                       | Average SMs -> ASMs
-  |                                        |
-  v                                        v
-SEND queue (Q_SD) <------- PRC0/PRC1/PRC2 tasks
-  |                          |
-  v                          +-- Calibration
-SEND task                    +-- BP1/BP2 computation
-  |                          +-- ASM compression
-  v                          +-- TM packet building
-SpaceWire -> RPW DPU
+```mermaid
+graph TD
+    subgraph FPGA
+        WFP["Waveform Picker"]
+        SMU["Spectral Matrix Unit"]
+    end
+
+    subgraph ISR["Interrupt Service Routines"]
+        WF_ISR["waveforms_isr\n(IRQ 14)"]
+        SM_ISR["spectral_matrices_isr\n(IRQ 6)"]
+    end
+
+    subgraph WF_Tasks["Waveform Tasks"]
+        WFRM["WFRM / SWBD / CWF"]
+    end
+
+    subgraph SM_Tasks["Spectral Matrix Tasks"]
+        AVF["AVF0 / AVF1 / AVF2\nAverage SMs → ASMs"]
+        PRC["PRC0 / PRC1 / PRC2\nCalibration, BP1/BP2\nASM compression"]
+    end
+
+    QSD["SEND queue (Q_SD)"]
+    SEND["SEND task"]
+    SPW["SpaceWire → RPW DPU"]
+
+    WFP -- "DMA into\nring buffers" --> WF_ISR
+    SMU -- "DMA into\nring buffers" --> SM_ISR
+    WF_ISR -- "RTEMS events" --> WFRM
+    SM_ISR -- "RTEMS events" --> AVF
+    WFRM -- "TM packets" --> QSD
+    AVF --> PRC
+    PRC -- "TM packets" --> QSD
+    QSD --> SEND --> SPW
 ```
 
 ## Spectral Matrix Processing
 
 ### Overview
 
-Each spectral matrix (SM) is a 5x5 complex Hermitian matrix computed at 128 frequency bins. It contains 25 real values per bin (5 auto-spectra + 10 complex cross-spectra = 5 + 20 = 25). The total size is `128 * 25 = 3200 floats`.
+The FPGA spectral matrix unit (`lpp_lfr_ms`) processes f0, f1, and f2 samples through a shared pipeline:
+
+1. **Input buffering** -- 5-component samples (E1, E2, B1, B2, B3) are stored in double-buffered FIFOs (A/B ping-pong for f0, single FIFO for f1/f2). Each FIFO holds 256 samples × 5 channels × 16-bit.
+2. **Channel multiplexing** -- an FSM (`fsm_select_channel`) round-robins between f0_A, f0_B, f1, f2, feeding one component at a time to the FFT.
+3. **Windowing** -- a 256-point Hanning window (`window_function` component, 15-bit parameter ROM) is applied to each component.
+4. **FFT** -- Actel/Microsemi CoreFFT IP computes a 256-point real-to-complex FFT (16-bit input → 16-bit real + 16-bit imaginary output).
+5. **Cross-correlation** -- the hardware multiplier-accumulator computes all 25 unique elements of the 5×5 Hermitian matrix: 5 auto-spectra (Re×Re + Im×Im) and 10 complex cross-spectra (conjugate products).
+6. **DMA output** -- completed matrices are written to CPU memory via the DMA subsystem (AHB master, 16-word bursts).
+
+Each spectral matrix (SM) contains 25 real values per frequency bin (5 auto-spectra + 10 complex cross-spectra = 5 + 20 = 25). With 128 bins, the total size is `128 * 25 = 3200 floats`.
 
 The 25 components are indexed as:
 
@@ -420,7 +540,10 @@ Each frequency channel has a ring of DMA buffers (double or triple buffered). Th
 | f2 | 5 | 2688 |
 | f3 | 3 | 2688 |
 
-Each sample block contains 6 values (3 words): V, E1, E2, B1, B2, B3 packed as 16-bit integers.
+Each sample block contains 6 channels × 16-bit = 96 bits, packed as 3 × 32-bit words in memory:
+- Word 0: `[E1(15:0) | V(15:0)]`
+- Word 1: `[B1(15:0) | E2(15:0)]`
+- Word 2: `[B3(15:0) | B2(15:0)]`
 
 ### Waveform Products
 
@@ -438,16 +561,17 @@ f1 and f2 snapshots are derived from continuous acquisition buffers. The SWBD ta
 
 ### Reception Path
 
-```
-SpaceWire read (blocking) --> RECV task
-  --> tc_parser() validates:
-      - APID (0x0CC1)
-      - Packet length
-      - CRC (16-bit lookup table)
-      - Service type/subtype
-      - Source ID
-  --> If valid: post to Q_RV message queue
-  --> If invalid: send TC_EXE_CORRUPTED TM
+```mermaid
+graph LR
+    SPW["SpaceWire\n(blocking read)"]
+    RECV["RECV task"]
+    PARSE["tc_parser()\nAPID, length, CRC\ntype/subtype, source ID"]
+    QRV["Q_RV message queue"]
+    ERR["TC_EXE_CORRUPTED TM"]
+
+    SPW --> RECV --> PARSE
+    PARSE -- "valid" --> QRV
+    PARSE -- "invalid" --> ERR
 ```
 
 ### TC Subtypes and Actions
@@ -501,6 +625,15 @@ TM packets follow the CCSDS space packet protocol with a SpaceWire transport lay
 | TM_LFR_SCIENCE_SBM_CWF_Fx | CWF in SBM modes | Continuous |
 
 ## SpaceWire Communication
+
+### Hardware
+
+The GRSPW IP core (GRLIB) is instantiated with:
+- **2 ports** (redundant hot/cold)
+- **10 MHz link rate** (50 MHz system clock ÷ 5)
+- **RMAP enabled** (Remote Memory Access Protocol for register-level access)
+- **AHB master index 1**, APB slave at pindex=5, paddr=5
+- **IRQ 11** (SPARC trap `0x1b`)
 
 ### Link Management
 
